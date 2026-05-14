@@ -1,10 +1,12 @@
 # CLAUDE.md — Eventar repo
 
 > **For Claude (any session, any subagent): READ THIS BEFORE TOUCHING ANY CODE.**
+> **Also read `AGENTS.md`** (shipped by Next 16 scaffold) — it warns that Next 16 has breaking changes vs training data. ==Verify Next-specific APIs against `node_modules/next/dist/docs/` before writing any code that uses them.==
 
 ## What this repo is
 
-**Eventar** — internal workshop manager. Next.js (App Router) + Tailwind + Supabase + Resend.
+**Eventar** — internal workshop manager. **Next.js 16** (App Router) + Tailwind v4 + Supabase + Resend.
+*Note: vault notes were written assuming Next 15; if you find a discrepancy between vault and Next 16 reality, the Next 16 docs win.*
 
 The PRD calls for: registration → confirmation email → 60-min-before reminder with personal QR → on-site check-in → 10-min-after survey. Up to 200 attendees/event. No attendee accounts.
 
