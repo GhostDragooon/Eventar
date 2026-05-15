@@ -46,6 +46,7 @@ These are mirrored from the vault but worth restating because breaking any of th
 1. **Staff identity keyed on email**, not `auth.users.id`. Lets us swap magic-link → MS SSO later as a Supabase Auth config flip with no app code change. See `10 — Architecture/Auth Flow.md`.
 2. **Insert `email_log` row FIRST, send email SECOND.** Reverse order risks duplicate sends on retry. See `10 — Architecture/Cron + Email.md`.
 3. **`requireStaff()` at the top of every staff Server Action.** No exceptions. See `10 — Architecture/Auth Flow.md`.
+   - **Next 16 rename:** the staff-route gate file is `proxy.ts` at repo root (NOT `middleware.ts` — that name is deprecated). Exported function is `proxy`. Matcher syntax unchanged.
 4. **Service-role key only in `lib/supabase/admin.ts`** with `'server-only'` import. Never expose to browser.
 5. **RLS enabled on every table.** Public writes go through `/api/*` with service-role; RLS still on as defense in depth.
 6. **Single `main` branch.** "Min number of branches" per user direction. Atomic commits per logical unit.
