@@ -35,7 +35,9 @@ export default async function StaffEventEditPage({
         {formatInTz(event.start_time, event.timezone)} →{' '}
         {formatInTz(event.end_time, event.timezone)} ({event.timezone})
       </p>
-      {event.location && <p>{event.location}</p>}
+      {event.venue_name && (
+        <p>{event.venue_name}{event.city ? `, ${event.city}` : ''}{event.country ? `, ${event.country}` : ''}</p>
+      )}
       {event.description && (
         <p className="whitespace-pre-wrap">{event.description}</p>
       )}
