@@ -1,6 +1,3 @@
-declare module 'tz-lookup' {
-  export default function tzlookup(lat: number, lng: number): string;
-}
 import tzlookup from 'tz-lookup';
 
 export function tzFromCoords(latitude: number, longitude: number): string {

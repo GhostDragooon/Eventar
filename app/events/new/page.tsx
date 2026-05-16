@@ -17,7 +17,7 @@ export default function NewEventPage() {
         action={(fd) =>
           start(async () => {
             setErr(null);
-            const res = await createEvent(fd);
+            const res = await createEvent({ event: Object.fromEntries(fd), blocks: [] });
             if (res && 'error' in res) setErr(res.error);
           })
         }

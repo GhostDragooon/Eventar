@@ -1,71 +1,103 @@
 'use server';
+
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { requireStaff } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
+import { tzFromCoords } from '@/lib/tz';
 
-function isValidTimezone(tz: string): boolean {
-  try {
-    new Intl.DateTimeFormat('en', { timeZone: tz }).format(0);
-    return true;
-  } catch {
-    return false;
-  }
-}
+const KINDS = [
+  'workshop','seminar','webinar','scientific_program',
+  'panel','roundtable','keynote','other',
+  'break','transition',
+] as const;
 
-export const eventInputSchema = z
-  .object({
-    title: z.string().trim().min(1, 'Title required').max(200),
-    topic: z.string().trim().max(80).optional().default(''),
-    format: z.enum(['workshop', 'seminar', 'roundtable', 'other']).optional(),
-    start_time: z.string().datetime(),
-    end_time: z.string().datetime(),
-    timezone: z.string().refine(isValidTimezone, 'Invalid IANA timezone'),
-    location: z.string().trim().max(200).optional().default(''),
-    description: z.string().max(4000).optional().default(''),
-    agenda: z.string().max(8000).optional().default(''),
-    max_attendees: z.coerce.number().int().positive().optional(),
-  })
-  .refine((d) => new Date(d.end_time) > new Date(d.start_time), {
-    message: 'End time must be after start time',
-    path: ['end_time'],
-  });
+const topicSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  speaker_name: z.string().trim().min(1).max(100),
+  speaker_credential: z.string().trim().max(120).optional().default(''),
+  speaker_affiliation: z.string().trim().max(120).optional().default(''),
+});
+
+export const blockInputSchema = z.object({
+  start_time: z.string().datetime(),
+  end_time: z.string().datetime(),
+  kind: z.enum(KINDS),
+  title: z.string().trim().min(1).max(200),
+  host: z.string().trim().max(120).optional().default(''),
+  topics: z.array(topicSchema).default([]),
+  notes: z.string().max(2000).optional().default(''),
+  display_order: z.number().int().nonnegative().default(0),
+})
+.refine(d => new Date(d.end_time) > new Date(d.start_time), {
+  message: 'Block end must be after start', path: ['end_time'],
+})
+.refine(d => !(d.kind === 'break' || d.kind === 'transition') || d.topics.length === 0, {
+  message: 'Break/transition blocks must not have topics', path: ['topics'],
+});
+
+export const eventInputSchema = z.object({
+  title: z.string().trim().min(1, 'Event name required').max(200),
+  topic: z.string().trim().max(80).optional().default(''),
+  description: z.string().max(4000).optional().default(''),
+  start_time: z.string().datetime(),
+  end_time: z.string().datetime(),
+  venue_name: z.string().trim().min(1, 'Pick a venue from the dropdown').max(200),
+  venue_address: z.string().trim().max(300).optional().default(''),
+  city: z.string().trim().min(1).max(120),
+  region: z.string().trim().max(120).optional().default(''),
+  country: z.string().trim().min(1).max(120),
+  latitude: z.coerce.number().min(-90).max(90),
+  longitude: z.coerce.number().min(-180).max(180),
+  max_attendees: z.coerce.number().int().positive().optional(),
+})
+.refine(d => new Date(d.end_time) > new Date(d.start_time), {
+  message: 'End time must be after start time', path: ['end_time'],
+});
 
 export type EventInput = z.infer<typeof eventInputSchema>;
+export type BlockInput = z.infer<typeof blockInputSchema>;
 
-export async function createEvent(formData: FormData) {
-  const staff = await requireStaff();
+/** Whether a block's time range fits inside the event envelope. */
+function blockFitsEnvelope(block: BlockInput, event: { start_time: string; end_time: string }): boolean {
+  return new Date(block.start_time) >= new Date(event.start_time)
+      && new Date(block.end_time)   <= new Date(event.end_time);
+}
 
-  const parsed = eventInputSchema.safeParse({
-    title: formData.get('title'),
-    topic: formData.get('topic'),
-    format: formData.get('format') || undefined,
-    start_time: formData.get('start_time'),
-    end_time: formData.get('end_time'),
-    timezone: formData.get('timezone'),
-    location: formData.get('location'),
-    description: formData.get('description'),
-    agenda: formData.get('agenda'),
-    max_attendees: formData.get('max_attendees') || undefined,
-  });
-  if (!parsed.success) {
-    return {
-      error: parsed.error.issues
-        .map((i) => `${i.path.join('.')}: ${i.message}`)
-        .join('; '),
-    };
+export async function createEvent(input: {
+  event: unknown;
+  blocks: unknown;
+}): Promise<{ ok: true; id: string } | { error: string }> {
+  await requireStaff();
+
+  const eventParse = eventInputSchema.safeParse(input.event);
+  if (!eventParse.success) {
+    return { error: eventParse.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ') };
+  }
+  const blocksRaw = Array.isArray(input.blocks) ? input.blocks : [];
+  const blockParse = z.array(blockInputSchema).safeParse(blocksRaw);
+  if (!blockParse.success) {
+    return { error: blockParse.error.issues.map(i => `block ${i.path.join('.')}: ${i.message}`).join('; ') };
   }
 
+  // Envelope-fit validation
+  const outOfEnvelope = blockParse.data.find(b => !blockFitsEnvelope(b, eventParse.data));
+  if (outOfEnvelope) {
+    return { error: `Block "${outOfEnvelope.title}" runs outside the event's start/end window` };
+  }
+
+  const timezone = tzFromCoords(eventParse.data.latitude, eventParse.data.longitude);
+
   const supabase = await supabaseServer();
-  const { data, error } = await supabase
-    .from('events')
-    .insert({ ...parsed.data, created_by: staff.id, status: 'draft' })
-    .select('id')
-    .single();
+  const { data, error } = await supabase.rpc('create_event_with_blocks', {
+    event_input:  { ...eventParse.data, timezone, status: 'draft' },
+    blocks_input: blockParse.data,
+  });
 
   if (error) return { error: error.message };
+  if (!data || typeof data !== 'string') return { error: 'no id returned' };
 
   revalidatePath('/dashboard');
-  redirect(`/events/${data.id}/edit`);
+  redirect(`/events/${data}/edit`);
 }
