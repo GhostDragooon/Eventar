@@ -7,7 +7,7 @@ import { requireStaff } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { tzFromCoords } from '@/lib/tz';
 
-const KINDS = [
+export const KINDS = [
   'workshop','seminar','webinar','scientific_program',
   'panel','roundtable','keynote','other',
   'break','transition',
@@ -37,6 +37,9 @@ export const blockInputSchema = z.object({
   message: 'Break/transition blocks must not have topics', path: ['topics'],
 });
 
+// Hoisted so it's not re-allocated on every Server Action call.
+const blockArraySchema = z.array(blockInputSchema);
+
 export const eventInputSchema = z.object({
   title: z.string().trim().min(1, 'Event name required').max(200),
   topic: z.string().trim().max(80).optional().default(''),
@@ -59,26 +62,36 @@ export const eventInputSchema = z.object({
 export type EventInput = z.infer<typeof eventInputSchema>;
 export type BlockInput = z.infer<typeof blockInputSchema>;
 
-/** Whether a block's time range fits inside the event envelope. */
+function zodErrors(issues: z.ZodIssue[], prefix = ''): string {
+  return issues.map(i => `${prefix}${i.path.join('.')}: ${i.message}`).join('; ');
+}
+
+/**
+ * Returns true when the block's window is fully contained within the event envelope.
+ * Uses inclusive bounds on both ends (block.start >= event.start AND block.end <= event.end).
+ * This is intentionally different from findParallelBlockIds which uses strict < for overlap
+ * detection (where adjacent blocks are NOT considered parallel).
+ */
 function blockFitsEnvelope(block: BlockInput, event: { start_time: string; end_time: string }): boolean {
   return new Date(block.start_time) >= new Date(event.start_time)
       && new Date(block.end_time)   <= new Date(event.end_time);
 }
 
+// createEvent returns { error } on validation/DB failure, or redirects on success (never returns).
 export async function createEvent(input: {
   event: unknown;
   blocks: unknown;
-}): Promise<{ ok: true; id: string } | { error: string }> {
+}): Promise<{ error: string }> {
   await requireStaff();
 
   const eventParse = eventInputSchema.safeParse(input.event);
   if (!eventParse.success) {
-    return { error: eventParse.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ') };
+    return { error: zodErrors(eventParse.error.issues) };
   }
   const blocksRaw = Array.isArray(input.blocks) ? input.blocks : [];
-  const blockParse = z.array(blockInputSchema).safeParse(blocksRaw);
+  const blockParse = blockArraySchema.safeParse(blocksRaw);
   if (!blockParse.success) {
-    return { error: blockParse.error.issues.map(i => `block ${i.path.join('.')}: ${i.message}`).join('; ') };
+    return { error: zodErrors(blockParse.error.issues, 'block ') };
   }
 
   // Envelope-fit validation

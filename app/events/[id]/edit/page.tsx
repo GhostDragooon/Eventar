@@ -20,7 +20,7 @@ export default async function StaffEventEditPage({
   const supabase = await supabaseServer();
   const { data: event } = await supabase
     .from('events')
-    .select('*')
+    .select('id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, country, description, status')
     .eq('id', id)
     .maybeSingle();
   if (!event) notFound();
