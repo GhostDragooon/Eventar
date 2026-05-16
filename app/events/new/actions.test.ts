@@ -29,12 +29,27 @@ describe('eventInputSchema', () => {
     const bad = { ...validEvent, end_time: '2026-06-15T08:00:00.000Z' };
     expect(eventInputSchema.safeParse(bad).success).toBe(false);
   });
-  it('rejects missing venue_name (strict v1)', () => {
+  it('rejects end equal to start', () => {
+    const bad = { ...validEvent, end_time: validEvent.start_time };
+    expect(eventInputSchema.safeParse(bad).success).toBe(false);
+  });
+  it('rejects missing venue_name', () => {
     const { venue_name, ...rest } = validEvent;
+    expect(eventInputSchema.safeParse(rest).success).toBe(false);
+  });
+  it('rejects missing city', () => {
+    const { city, ...rest } = validEvent;
+    expect(eventInputSchema.safeParse(rest).success).toBe(false);
+  });
+  it('rejects missing country', () => {
+    const { country, ...rest } = validEvent;
     expect(eventInputSchema.safeParse(rest).success).toBe(false);
   });
   it('rejects out-of-range latitude', () => {
     expect(eventInputSchema.safeParse({ ...validEvent, latitude: 95 }).success).toBe(false);
+  });
+  it('rejects out-of-range longitude', () => {
+    expect(eventInputSchema.safeParse({ ...validEvent, longitude: 181 }).success).toBe(false);
   });
   it('coerces optional max_attendees', () => {
     const r = eventInputSchema.safeParse({ ...validEvent, max_attendees: '50' });
@@ -59,8 +74,20 @@ describe('blockInputSchema', () => {
   it('accepts a valid workshop block', () => {
     expect(blockInputSchema.safeParse(validBlock).success).toBe(true);
   });
+  it('rejects block end before start', () => {
+    const bad = { ...validBlock, end_time: '2026-06-15T08:00:00.000Z' };
+    expect(blockInputSchema.safeParse(bad).success).toBe(false);
+  });
+  it('rejects block end equal to start', () => {
+    const bad = { ...validBlock, end_time: validBlock.start_time };
+    expect(blockInputSchema.safeParse(bad).success).toBe(false);
+  });
   it('rejects break with non-empty topics', () => {
     const bad = { ...validBlock, kind: 'break' as const };
+    expect(blockInputSchema.safeParse(bad).success).toBe(false);
+  });
+  it('rejects transition with non-empty topics', () => {
+    const bad = { ...validBlock, kind: 'transition' as const };
     expect(blockInputSchema.safeParse(bad).success).toBe(false);
   });
   it('accepts break with empty topics', () => {
