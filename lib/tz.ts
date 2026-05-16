@@ -1,3 +1,12 @@
+declare module 'tz-lookup' {
+  export default function tzlookup(lat: number, lng: number): string;
+}
+import tzlookup from 'tz-lookup';
+
+export function tzFromCoords(latitude: number, longitude: number): string {
+  return tzlookup(latitude, longitude);
+}
+
 export function formatInTz(iso: string, timeZone: string): string {
   const parts = new Intl.DateTimeFormat('en-GB', {
     day: '2-digit', month: 'short', year: 'numeric',
