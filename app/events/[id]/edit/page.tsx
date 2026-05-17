@@ -61,7 +61,7 @@ export default async function StaffEventEditPage({
 
       {(blocks?.length ?? 0) > 0 && (
         <section>
-          <h2 className="text-sm font-medium text-gray-700 mb-2">Program</h2>
+          <h2 className="text-sm font-medium text-gray-700 mb-2">Agenda</h2>
           <ul className="divide-y border rounded-xl">
             {blocks!.map(b => {
               const topics = (Array.isArray(b.topics) ? b.topics : []) as AgendaTopic[];

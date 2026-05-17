@@ -16,19 +16,19 @@ import VenueSection, {
 import DateTimeSection, {
   type DateTimeValue, dateTimeSummary, dateTimeValid,
 } from '@/components/event-form/DateTimeSection';
-import ProgramSection, {
-  type BlockDraft, programSummary, programValid,
-} from '@/components/event-form/ProgramSection';
+import AgendaSection, {
+  type BlockDraft, agendaSummary, agendaValid,
+} from '@/components/event-form/AgendaSection';
 import type { Venue } from '@/lib/mapbox';
 import { deriveEnd } from '@/lib/time';
 import { findParallelBlockIds } from '@/lib/agenda';
 
-type SectionId = 'basics' | 'venue' | 'datetime' | 'program';
+type SectionId = 'basics' | 'venue' | 'datetime' | 'agenda';
 const NEXT_SECTION: Record<SectionId, SectionId> = {
   basics:   'venue',
   venue:    'datetime',
-  datetime: 'program',
-  program:  'program', // terminal: user clicks Save in sticky bar
+  datetime: 'agenda',
+  agenda:   'agenda', // terminal: user clicks Save in sticky bar
 };
 
 export default function NewEventPage() {
@@ -51,10 +51,10 @@ export default function NewEventPage() {
   const v1 = basicsValid(basics);
   const v2 = venueValid(venue);
   const v3 = dateTimeValid(datetime);
-  const v4 = programValid(blocks);
+  const v4 = agendaValid(blocks);
   const canSubmit = v1 && v2 && v3 && v4;
 
-  // For the program summary's parallel-block check
+  // For the agenda summary's parallel-block check
   const parallelIds = (() => {
     const items = blocks.filter(b => b.start && b.end).map(b => ({
       id: b.localId,
@@ -125,9 +125,9 @@ export default function NewEventPage() {
           <DoneRow disabled={!v3} onDone={() => setOpen(NEXT_SECTION.datetime)} />
         </SectionItem>
 
-        <SectionItem id="program" open={open === 'program'} done={v4}
-                     title="Program" summary={programSummary(blocks, parallelIds)}>
-          <ProgramSection date={datetime.date} blocks={blocks} onChange={setBlocks} />
+        <SectionItem id="agenda" open={open === 'agenda'} done={v4}
+                     title="Agenda" summary={agendaSummary(blocks, parallelIds)}>
+          <AgendaSection date={datetime.date} blocks={blocks} onChange={setBlocks} />
         </SectionItem>
       </Accordion>
 

@@ -60,7 +60,7 @@ type Props = {
   onChange: (blocks: BlockDraft[]) => void;
 };
 
-export default function ProgramSection({ date, blocks, onChange }: Props) {
+export default function AgendaSection({ date, blocks, onChange }: Props) {
   const components = blocks.filter(b => !FILLER_KINDS.includes(b.kind));
   const fillers    = blocks.filter(b =>  FILLER_KINDS.includes(b.kind));
 
@@ -136,15 +136,15 @@ export default function ProgramSection({ date, blocks, onChange }: Props) {
   );
 }
 
-export function programSummary(blocks: BlockDraft[], parallelIds: Set<string>): string {
+export function agendaSummary(blocks: BlockDraft[], parallelIds: Set<string>): string {
   const cs = blocks.filter(b => !FILLER_KINDS.includes(b.kind)).length;
   const fs = blocks.filter(b =>  FILLER_KINDS.includes(b.kind)).length;
   const flag = parallelIds.size > 0 ? ' · ⚠ parallel' : '';
   return `${cs} component${cs === 1 ? '' : 's'} · ${fs} break${fs === 1 ? '' : 's'}${flag}`;
 }
 
-export function programValid(_blocks: BlockDraft[]): boolean {
-  return true; // Program is optional for a draft.
+export function agendaValid(_blocks: BlockDraft[]): boolean {
+  return true; // Agenda is optional for a draft.
 }
 
 /* ===== Block editors (lifted verbatim from Phase 1.5 page.tsx) ===== */
