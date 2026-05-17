@@ -24,7 +24,13 @@ export default function VenueSearchBox({ token, onSelect }: Props) {
         setValue(venue.venue_name);
       }}
       placeholder="Search for a venue, hotel, or address…"
-      options={{ types: 'poi,address,place', limit: 10 }}
+      options={{
+        proximity: { lng: 114.1694, lat: 22.3193 },  // Victoria Harbour — biases ranking to HK
+        language:  'en',
+        types:     'poi,address,place',
+        limit:     10,
+        // No `country` filter — global fallback retained per design doc.
+      }}
     />
   );
 }
