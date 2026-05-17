@@ -51,14 +51,15 @@ export default function DateTimeSection({ value, onChange }: Props) {
         />
       </label>
 
-      {/* Start time */}
+      {/* Start time — Base UI ToggleGroup is always array-valued; multiple=false
+          (default) gives single-select semantics, but we wrap/unwrap to a single
+          string at the boundary. */}
       <div>
         <span className="block text-sm font-medium mb-2">Start time</span>
         <div className="overflow-x-auto -mx-1 px-1 pb-1">
           <ToggleGroup
-            type="single"
-            value={value.startTime}
-            onValueChange={(v) => v && onChange({ startTime: v })}
+            value={value.startTime ? [value.startTime] : []}
+            onValueChange={(v) => v[0] && onChange({ startTime: v[0] })}
             className="inline-flex gap-1"
           >
             {TIME_SLOTS.map((slot) => (
@@ -74,9 +75,8 @@ export default function DateTimeSection({ value, onChange }: Props) {
       <div>
         <span className="block text-sm font-medium mb-2">Duration</span>
         <ToggleGroup
-          type="single"
-          value={value.duration}
-          onValueChange={(v) => v && onChange({ duration: v as Duration })}
+          value={value.duration ? [value.duration] : []}
+          onValueChange={(v) => v[0] && onChange({ duration: v[0] as Duration })}
           className="inline-flex gap-1"
         >
           {DURATIONS.map((d) => (
