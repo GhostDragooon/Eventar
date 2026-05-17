@@ -4,6 +4,17 @@ export type BlockTime = {
   end_time: string;
 };
 
+// Shape of a single entry inside agenda_blocks.topics (jsonb). Mirrors
+// topicSchema in app/events/new/actions.ts at the type level; read-side
+// callers (edit + public pages) use this to render speaker rows without
+// `any`.
+export type AgendaTopic = {
+  title: string;
+  speaker_name: string;
+  speaker_credential?: string;
+  speaker_affiliation?: string;
+};
+
 /**
  * Returns the set of block IDs that overlap with at least one other block.
  * Adjacent blocks (one ends exactly when the next starts) are NOT considered parallel.
