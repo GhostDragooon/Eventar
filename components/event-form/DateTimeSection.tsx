@@ -1,33 +1,18 @@
 'use client';
 
 import { Input } from '@/components/ui/input';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { deriveEnd, type Duration } from '@/lib/time';
+import {
+  reduceTimeRange, formatHour, durationLabel,
+  type TimeRangeState,
+} from '@/lib/time-range';
 
-// 30-min increments, 06:00–22:00 inclusive (33 slots).
-const TIME_SLOTS: string[] = (() => {
-  const out: string[] = [];
-  for (let h = 6; h <= 22; h++) {
-    out.push(`${String(h).padStart(2, '0')}:00`);
-    if (h !== 22) out.push(`${String(h).padStart(2, '0')}:30`);
-  }
-  return out;
-})();
-
-const DURATIONS: { value: Duration; label: string }[] = [
-  { value: '30m',    label: '30m' },
-  { value: '1h',     label: '1h'  },
-  { value: '2h',     label: '2h'  },
-  { value: '4h',     label: '4h'  },
-  { value: '8h',     label: '8h'  },
-  { value: 'custom', label: 'custom' },
-];
+// 1-hour chips, 08:00 → 20:00 inclusive (13 slots).
+const HOURS = Array.from({ length: 13 }, (_, i) => i + 8);
 
 export type DateTimeValue = {
-  date: string;        // YYYY-MM-DD
-  startTime: string;   // HH:MM
-  duration: Duration;
-  customEnd: string;   // HH:MM, used only when duration === 'custom'
+  date: string;                  // YYYY-MM-DD
+  startHour: number | null;      // 8..20, or null
+  endHour: number | null;        // 8..20, or null
 };
 
 type Props = {
@@ -36,13 +21,18 @@ type Props = {
 };
 
 export default function DateTimeSection({ value, onChange }: Props) {
-  const endTime = deriveEnd(value.startTime, value.duration, value.customEnd);
+  const range: TimeRangeState = [value.startHour, value.endHour];
+  const [start, end] = range;
+
+  function clickHour(h: number) {
+    const [s, e] = reduceTimeRange(range, h);
+    onChange({ startHour: s, endHour: e });
+  }
 
   return (
     <div className="space-y-5">
-      {/* Date */}
       <label className="block">
-        <span className="block text-sm font-medium mb-1">Date</span>
+        <span className="block text-sm font-medium mb-1 text-gray-900">Date</span>
         <Input
           type="date"
           value={value.date}
@@ -51,70 +41,87 @@ export default function DateTimeSection({ value, onChange }: Props) {
         />
       </label>
 
-      {/* Start time — Base UI ToggleGroup is always array-valued; multiple=false
-          (default) gives single-select semantics, but we wrap/unwrap to a single
-          string at the boundary. */}
       <div>
-        <span className="block text-sm font-medium mb-2">Start time</span>
-        <div className="overflow-x-auto -mx-1 px-1 pb-1">
-          <ToggleGroup
-            value={value.startTime ? [value.startTime] : []}
-            onValueChange={(v) => v[0] && onChange({ startTime: v[0] })}
-            className="inline-flex gap-1"
-          >
-            {TIME_SLOTS.map((slot) => (
-              <ToggleGroupItem key={slot} value={slot} className="px-3">
-                {slot}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
+        <div className="flex items-baseline justify-between mb-2">
+          <span className="text-sm font-medium text-gray-900">Time</span>
+          <RangeReadout start={start} end={end} />
         </div>
-      </div>
-
-      {/* Duration */}
-      <div>
-        <span className="block text-sm font-medium mb-2">Duration</span>
-        <ToggleGroup
-          value={value.duration ? [value.duration] : []}
-          onValueChange={(v) => v[0] && onChange({ duration: v[0] as Duration })}
-          className="inline-flex gap-1"
-        >
-          {DURATIONS.map((d) => (
-            <ToggleGroupItem key={d.value} value={d.value} className="px-3">
-              {d.label}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
-
-        {value.duration === 'custom' && (
-          <label className="block mt-3">
-            <span className="block text-sm font-medium mb-1">Custom end time</span>
-            <Input
-              type="time"
-              value={value.customEnd}
-              onChange={(e) => onChange({ customEnd: e.target.value })}
-              className="w-auto"
-            />
-          </label>
-        )}
-
-        {endTime && value.startTime && (
-          <p className="text-sm text-gray-600 mt-2">→ Ends {endTime}</p>
-        )}
+        <TimePill hours={HOURS} start={start} end={end} onClick={clickHour} />
+        <p className="text-xs text-gray-500 mt-2">
+          {start === null
+            ? 'Tap a chip to set the start time.'
+            : end === null
+            ? 'Tap another chip to set the end time. Tap the same chip to clear.'
+            : 'Tap an end chip to clear, or any other chip to restart.'}
+        </p>
       </div>
     </div>
   );
 }
 
+function RangeReadout({ start, end }: { start: number | null; end: number | null }) {
+  if (start === null) return null;
+  if (end === null) {
+    return <span className="text-sm text-gray-600">Start: {formatHour(start)}</span>;
+  }
+  return (
+    <span className="text-sm text-gray-700">
+      {formatHour(start)}–{formatHour(end)} · <strong>{durationLabel(start, end)}</strong>
+    </span>
+  );
+}
+
+function TimePill({
+  hours, start, end, onClick,
+}: {
+  hours: number[];
+  start: number | null;
+  end: number | null;
+  onClick: (h: number) => void;
+}) {
+  return (
+    <div className="overflow-x-auto -mx-1 px-1 pb-1">
+      <div className="inline-flex rounded-lg border border-gray-300 bg-white overflow-hidden">
+        {hours.map((h, i) => {
+          const isStart = h === start;
+          const isEnd   = h === end;
+          const isInside = start !== null && end !== null && h > start && h < end;
+          const isSelected = isStart || isEnd || isInside;
+
+          return (
+            <button
+              key={h}
+              type="button"
+              onClick={() => onClick(h)}
+              aria-pressed={isSelected}
+              className={[
+                'px-3 py-2 text-sm transition-colors',
+                i !== 0 && 'border-l border-gray-300',
+                isSelected
+                  ? 'bg-blue-600 text-white font-medium'
+                  : 'bg-white text-gray-700 hover:bg-gray-50',
+                isStart && 'rounded-l-md',
+                isEnd   && 'rounded-r-md',
+              ].filter(Boolean).join(' ')}
+            >
+              {h}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ============== exports consumed by app/events/new/page.tsx ============== */
+
 export function dateTimeSummary(v: DateTimeValue): string {
-  const end = deriveEnd(v.startTime, v.duration, v.customEnd);
-  if (!v.date || !v.startTime || !end) return 'Not set';
-  return `${formatDateShort(v.date)}, ${v.startTime}–${end} (${v.duration})`;
+  if (!v.date || v.startHour === null || v.endHour === null) return 'Not set';
+  return `${formatDateShort(v.date)}, ${formatHour(v.startHour)}–${formatHour(v.endHour)} (${durationLabel(v.startHour, v.endHour)})`;
 }
 
 export function dateTimeValid(v: DateTimeValue): boolean {
-  const end = deriveEnd(v.startTime, v.duration, v.customEnd);
-  return Boolean(v.date) && Boolean(v.startTime) && Boolean(end) && end > v.startTime;
+  return Boolean(v.date) && v.startHour !== null && v.endHour !== null && v.endHour > v.startHour;
 }
 
 function formatDateShort(iso: string): string {

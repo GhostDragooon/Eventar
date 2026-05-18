@@ -20,8 +20,8 @@ import AgendaSection, {
   type BlockDraft, agendaSummary, agendaValid,
 } from '@/components/event-form/AgendaSection';
 import type { Venue } from '@/lib/venue';
-import { deriveEnd } from '@/lib/time';
 import { findParallelBlockIds } from '@/lib/agenda';
+import { formatHour } from '@/lib/time-range';
 
 type SectionId = 'basics' | 'venue' | 'datetime' | 'agenda';
 const NEXT_SECTION: Record<SectionId, SectionId> = {
@@ -44,7 +44,7 @@ export default function NewEventPage() {
   });
   const [venue, setVenue] = useState<Venue | null>(null);
   const [datetime, setDatetime] = useState<DateTimeValue>({
-    date: '', startTime: '09:00', duration: '8h', customEnd: '',
+    date: '', startHour: null, endHour: null,
   });
   const [blocks, setBlocks] = useState<BlockDraft[]>([]);
 
@@ -71,13 +71,15 @@ export default function NewEventPage() {
       return;
     }
 
-    const endTime = deriveEnd(datetime.startTime, datetime.duration, datetime.customEnd);
+    // dateTimeValid ensured startHour and endHour are non-null and end > start.
+    const startTime = formatHour(datetime.startHour!);
+    const endTime   = formatHour(datetime.endHour!);
     const event = {
       title:         basics.title,
       topic:         basics.topic || undefined,
       description:   basics.description,
       max_attendees: basics.capacity || undefined,
-      start_time:    new Date(`${datetime.date}T${datetime.startTime}:00`).toISOString(),
+      start_time:    new Date(`${datetime.date}T${startTime}:00`).toISOString(),
       end_time:      new Date(`${datetime.date}T${endTime}:00`).toISOString(),
       ...venue!,
     };
