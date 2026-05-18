@@ -1,5 +1,9 @@
 import type { Venue } from './venue';
 
+// Why this provider and not Mapbox / Google: see
+// docs/plans/2026-05-18-geocoder-decision.md (migration triggers + fallback
+// plan to LocationIQ / Google Places when traffic grows).
+//
 // Structural shape of a single Nominatim search result, scoped to the fields
 // we read. The upstream OpenStreetMap Nominatim API is documented at
 // https://nominatim.org/release-docs/develop/api/Search/ — we only consume
