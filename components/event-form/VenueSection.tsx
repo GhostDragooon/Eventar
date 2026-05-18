@@ -1,9 +1,7 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-import type { Venue } from '@/lib/mapbox';
-
-const VenueSearchBox = dynamic(() => import('@/components/VenueSearchBox'), { ssr: false });
+import VenueSearchBox from '@/components/VenueSearchBox';
+import type { Venue } from '@/lib/venue';
 
 type Props = {
   value: Venue | null;
@@ -13,13 +11,10 @@ type Props = {
 export default function VenueSection({ value, onChange }: Props) {
   return (
     <div className="space-y-3">
-      <VenueSearchBox
-        token={process.env.NEXT_PUBLIC_MAPBOX_TOKEN!}
-        onSelect={onChange}
-      />
+      <VenueSearchBox onSelect={onChange} />
       {value && (
         <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm">
-          <p className="font-medium">📍 {value.venue_name}</p>
+          <p className="font-medium text-gray-900">📍 {value.venue_name}</p>
           {value.venue_address && (
             <p className="text-gray-600">{value.venue_address}</p>
           )}

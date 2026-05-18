@@ -19,7 +19,7 @@ import DateTimeSection, {
 import AgendaSection, {
   type BlockDraft, agendaSummary, agendaValid,
 } from '@/components/event-form/AgendaSection';
-import type { Venue } from '@/lib/mapbox';
+import type { Venue } from '@/lib/venue';
 import { deriveEnd } from '@/lib/time';
 import { findParallelBlockIds } from '@/lib/agenda';
 
