@@ -1,0 +1,138 @@
+'use server';
+
+import { z } from 'zod';
+import { revalidatePath } from 'next/cache';
+import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
+
+// Email regex: matches the validator we use elsewhere (login/actions.ts).
+// Single @, no whitespace, at least one dot in the domain part.
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+export const registrationInputSchema = z.object({
+  event_id:  z.string().uuid(),
+  full_name: z.string().trim().min(1, 'Name required').max(100, 'Name too long'),
+  email:     z.string().trim().toLowerCase().regex(EMAIL_RE, 'Invalid email'),
+});
+
+export type RegistrationInput = z.infer<typeof registrationInputSchema>;
+
+// Returned to the client. The Server Action never throws on user-recoverable
+// errors — it returns a typed result and lets the form render the friendly
+// message.
+export type RegisterResult =
+  | { ok: true }
+  | { error: string };
+
+/**
+ * Register an anonymous visitor for a published event.
+ *
+ * Order of operations matters: per CLAUDE.md rule 5, the email_log row is
+ * inserted BEFORE any "send" attempt. For Phase 2 the "send" is a console
+ * stub; the ordering still applies so the upgrade path to Resend in Phase 7
+ * is a one-line swap.
+ *
+ * Flow:
+ *   1. Zod-validate the input
+ *   2. Read the event (anon RLS — fails if event isn't published)
+ *   3. Capacity check (count vs max_attendees)
+ *   4. INSERT email_log (status='queued')           — service-role
+ *   5. INSERT registrations                          — anon under RLS
+ *       - duplicate unique-violation -> mark email_log failed, return error
+ *   6. console.log the would-be send                 — Phase 7 replaces this
+ *   7. UPDATE email_log (status='sent', sent_at=now())
+ *   8. revalidatePath the public event page
+ */
+export async function registerForEvent(input: unknown): Promise<RegisterResult> {
+  const parse = registrationInputSchema.safeParse(input);
+  if (!parse.success) {
+    return { error: parse.error.issues.map(i => i.message).join('; ') };
+  }
+  const { event_id, full_name, email } = parse.data;
+
+  const anon  = await supabaseServer();
+  const admin = supabaseAdmin();
+
+  // Step 2 — event must exist and be published. Anon RLS already filters
+  // non-published events, but selecting explicit columns lets us read
+  // max_attendees + title for the capacity check + stub message.
+  const { data: event } = await anon
+    .from('events')
+    .select('id, title, status, max_attendees')
+    .eq('id', event_id)
+    .maybeSingle();
+  if (!event || event.status !== 'published') {
+    return { error: 'Registrations are not open for this event.' };
+  }
+
+  // Step 3 — capacity check. NB: this is a best-effort guard; under
+  // concurrent submissions two registrants can both pass and push total
+  // over max_attendees. Acceptable for Eventar's scale (PRD: <=200/event).
+  // See implementation-notes.html T1.
+  if (event.max_attendees != null) {
+    const { count } = await anon
+      .from('registrations')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_id', event_id);
+    if ((count ?? 0) >= event.max_attendees) {
+      return { error: 'This event is at capacity.' };
+    }
+  }
+
+  // Step 4 — email_log FIRST. Even if the next step fails, the ledger row
+  // exists and Phase 9's cron can reconcile.
+  const { data: log, error: logErr } = await admin
+    .from('email_log')
+    .insert({
+      purpose: 'confirmation',
+      event_id,
+      recipient_email: email,
+      status: 'queued',
+    })
+    .select('id')
+    .single();
+  if (logErr || !log) {
+    return { error: 'Could not record registration. Please try again.' };
+  }
+
+  // Step 5 — the actual registration row. Unique(event_id, email) -> 23505.
+  const { data: reg, error: regErr } = await anon
+    .from('registrations')
+    .insert({ event_id, email, full_name })
+    .select('id')
+    .single();
+
+  if (regErr || !reg) {
+    // Mark the email_log row failed so the ledger doesn't keep a stale queue entry.
+    await admin
+      .from('email_log')
+      .update({ status: 'failed', error: regErr?.message ?? 'no-row' })
+      .eq('id', log.id);
+
+    // Duplicate email -> friendly message; everything else -> generic.
+    if (regErr?.code === '23505') {
+      return { error: "You're already registered for this event." };
+    }
+    return { error: 'Registration failed. Please try again.' };
+  }
+
+  // Step 6 — Phase 7 replaces this with a real Resend call.
+  console.log(
+    `[email stub] would send confirmation to ${email} for event "${event.title}" (registration ${reg.id})`,
+  );
+
+  // Step 7 — close the ledger entry. Failure here is logged but doesn't
+  // fail the registration (the row exists; we'll reconcile later).
+  const { error: closeErr } = await admin
+    .from('email_log')
+    .update({ status: 'sent', sent_at: new Date().toISOString(), registration_id: reg.id })
+    .eq('id', log.id);
+  if (closeErr) {
+    console.error('[registerForEvent] failed to close email_log row', { id: log.id, error: closeErr.message });
+  }
+
+  // Step 8 — the public page may show updated counts in future phases.
+  revalidatePath(`/events/${event_id}`);
+
+  return { ok: true };
+}

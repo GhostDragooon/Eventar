@@ -1,7 +1,9 @@
 import { notFound } from 'next/navigation';
 import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { formatInTz } from '@/lib/tz';
 import type { AgendaTopic } from '@/lib/agenda';
+import RegisterCard from '@/components/RegisterCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +17,7 @@ export default async function PublicEventPage({
   const { data: event } = await supabase
     .from('events')
     .select(
-      'id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status',
+      'id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status, max_attendees',
     )
     .eq('id', id)
     .maybeSingle();
@@ -28,6 +30,15 @@ export default async function PublicEventPage({
     .select('id, kind, title, host, topics, start_time, end_time')
     .eq('event_id', id)
     .order('start_time', { ascending: true });
+
+  // Registration count for the capacity check. Anon has no SELECT policy on
+  // `registrations` (PII — full visibility is organizer/manager only), so the
+  // count must come via service-role. The count is non-sensitive (just an
+  // integer), so surfacing it on the public page is safe.
+  const { count: registrationCount } = await supabaseAdmin()
+    .from('registrations')
+    .select('id', { count: 'exact', head: true })
+    .eq('event_id', id);
 
   return (
     <main className="max-w-3xl mx-auto p-6 space-y-6">
@@ -88,7 +99,15 @@ export default async function PublicEventPage({
         </section>
       )}
 
-      <footer className="pt-6 text-sm text-gray-500">Registration opens here in phase 2.</footer>
+      <RegisterCard
+        eventId={event.id}
+        maxAttendees={event.max_attendees}
+        currentCount={registrationCount ?? 0}
+      />
+
+      <footer className="pt-6 text-sm text-gray-500">
+        Confirmation emails go live in phase 7. Reminders + survey in phase 9.
+      </footer>
     </main>
   );
 }
