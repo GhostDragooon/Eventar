@@ -40,7 +40,7 @@
 <h1>Phase 2 — Registration flow — Implementation notes</h1>
 <p class="meta">
   Started 2026-05-20 · Live document, updated as implementation progresses ·
-  <span class="status wip">In progress</span>
+  <span class="status done">Implementation complete; awaiting manual smoke</span>
 </p>
 
 <p>
@@ -101,7 +101,37 @@
 
 <h2>Deviations <span class="status wip">live</span></h2>
 
-<p><em>(none yet — implementation hasn't started in earnest)</em></p>
+<h3><span class="tag dev">V1</span> Zod 4 <code>z.string().uuid()</code> is v4-strict</h3>
+<p>
+  My first test fixture used <code>00000000-0000-0000-0000-000000000001</code> as the
+  <code>event_id</code> — looks like a UUID, isn't a v4. Zod 4's <code>z.string().uuid()</code>
+  rejects anything that doesn't have <code>4</code> as the first digit of the third
+  group and <code>8|9|a|b</code> as the first digit of the fourth. Three test failures
+  surfaced this in 30 seconds. The schema is correct (Postgres <code>gen_random_uuid()</code>
+  always produces v4, so the strict check matches reality). Fixed the fixture, not the
+  schema. Worth flagging as a Zod-4 gotcha for future tests.
+</p>
+
+<h3><span class="tag dev">V2</span> Public-page registration count uses <code>supabaseAdmin()</code></h3>
+<p>
+  Initially wrote the count query against the anon client and only caught the issue
+  on the re-read: anon has no SELECT policy on <code>registrations</code> (PII), so the
+  count would have come back null and the at-capacity check would never fire. Switched
+  to <code>supabaseAdmin()</code> just for the count. The count itself is a non-sensitive
+  integer; surfacing it on the public page is safe. The row PII is still locked behind
+  the organizer/manager policies.
+</p>
+
+<p>
+  Alternative considered: add an RLS policy allowing anon to <em>count</em> but not
+  <em>read</em> registration rows. Postgres RLS doesn't have a way to distinguish
+  COUNT(*) from SELECT — the policy applies row-by-row, so an anon-allow policy would
+  also expose row data. The two cleaner alternatives are (a) <code>supabaseAdmin()</code>
+  for the count (what we shipped — minimal, server-only), or (b) a <code>security
+  definer</code> SQL function <code>public.event_registration_count(uuid)</code> exposed
+  to anon. (b) is more idiomatic but heavier; we'll migrate to it if Phase 6 analytics
+  push more aggregate-style queries through this path.
+</p>
 
 <h2>Tradeoffs <span class="status wip">live</span></h2>
 
@@ -162,12 +192,63 @@
   <tr><td>0. Framework + decisions</td><td><span class="status done">done</span></td><td>—</td><td>This file (created at start of session).</td></tr>
   <tr><td>1. Migration 0006: registrations</td><td><span class="status done">done</span></td><td>local + live</td><td>Applied to project <code>muieupgkpbxpqsrjjwol</code> via Supabase MCP. Table + 4 RLS policies (anon-insert-when-published, organizer-select/update-own, manager-select-all) + unique(event_id, email) + lowercase trigger.</td></tr>
   <tr><td>2. Migration 0007: email_log</td><td><span class="status done">done</span></td><td>local + live</td><td>Applied. Service-role only — no anon/authenticated policies. Partial index on <code>status = 'queued'</code> for Phase 9's pg_cron poller.</td></tr>
-  <tr><td>3. Zod schema TDD</td><td><span class="status open">pending</span></td><td>—</td><td>4 tests, red → green.</td></tr>
-  <tr><td>4. Server Action <code>registerForEvent</code></td><td><span class="status open">pending</span></td><td>—</td><td>email_log-first ordering, friendly errors.</td></tr>
-  <tr><td>5. <code>&lt;RegisterCard /&gt;</code> component</td><td><span class="status open">pending</span></td><td>—</td><td>5 visual states per the mockup.</td></tr>
-  <tr><td>6. Page wiring</td><td><span class="status open">pending</span></td><td>—</td><td>Add to public event page below agenda.</td></tr>
-  <tr><td>7. Verification + manual-smoke handoff</td><td><span class="status open">pending</span></td><td>—</td><td>tsc + lint + tests + build + curl + user smoke.</td></tr>
+  <tr><td>3. Zod schema TDD</td><td><span class="status done">done</span></td><td>2868fe4</td><td>7 tests covering happy path, missing/long name, malformed/cased email, non-uuid id, trim+lowercase normalisation.</td></tr>
+  <tr><td>4. Server Action <code>registerForEvent</code></td><td><span class="status done">done</span></td><td>2868fe4</td><td>8-step flow: Zod → event-read → capacity → <strong>email_log first</strong> → registrations insert → stub log → email_log close → revalidatePath. Duplicate emails yield friendly "already registered" + mark log as failed.</td></tr>
+  <tr><td>5. <code>&lt;RegisterCard /&gt;</code> component</td><td><span class="status done">done</span></td><td>2868fe4</td><td>5 visual states implemented via a tagged-union state machine: idle / submitting / success / error / at-capacity. Buttons disabled while submitting; required-field gating on the submit button.</td></tr>
+  <tr><td>6. Page wiring</td><td><span class="status done">done</span></td><td>2868fe4</td><td>Card lands below agenda, above footer. Page fetches <code>max_attendees</code> + registration count (via admin client — see V2). Footer copy updated: "Confirmation emails go live in phase 7."</td></tr>
+  <tr><td>7. Verification + manual-smoke handoff</td><td><span class="status wip">awaiting user</span></td><td>—</td><td>All automated gates green (tsc + lint + 59/59 tests + next build 8/8 pages, including <code>/events/[id]</code> as ƒ dynamic). User smoke checklist below.</td></tr>
 </table>
+
+<h2>Manual smoke checklist <span class="status wip">awaiting user</span></h2>
+
+<p>
+  The dev server (your <code>pnpm dev</code> on :3000) hot-reloaded the new code.
+  As an authenticated staff user, walk through this in order:
+</p>
+
+<ol>
+  <li>
+    Create a draft event with <strong>max_attendees=2</strong> (so the at-capacity
+    state is reachable). Publish it. Note the event id.
+  </li>
+  <li>
+    Open <code>/events/{id}</code> in incognito. Confirm the page renders with venue,
+    agenda, and a "Register for this event" card at the bottom.
+  </li>
+  <li>
+    Fill in a name + your email → click <strong>Register</strong>. Expect the form to
+    swap to the green "✓ You're registered!" card. Server log should show
+    <code>[email stub] would send confirmation to {email} for event "{title}"
+    (registration {uuid})</code>.
+  </li>
+  <li>
+    Reload <code>/events/{id}</code> in the same incognito session. Form is back (fresh
+    page render). Try to register the <em>same</em> email again. Expect the red banner
+    <em>"You're already registered for this event."</em>
+  </li>
+  <li>
+    Open a second incognito window. Register a <em>different</em> email. Now the event
+    is at 2/2.
+  </li>
+  <li>
+    Reload <code>/events/{id}</code>. Expect the at-capacity card: <em>"This event is
+    at capacity (2/2 registered)…"</em> instead of the form.
+  </li>
+  <li>
+    In Supabase SQL editor, run <code>select email, full_name, status from registrations
+    where event_id = '{id}';</code> — expect 2 rows with the two test emails (lowercased).
+    Then <code>select purpose, recipient_email, status from email_log where event_id =
+    '{id}';</code> — expect 2 rows, both <code>status='sent'</code>.
+  </li>
+  <li>
+    Create a draft event (don't publish) → try <code>/events/{drafted_id}</code> in
+    incognito. Expect 404 (page is anon-gated by RLS + status check).
+  </li>
+</ol>
+
+<p>
+  Report any deviations from these expected outcomes here for follow-up.
+</p>
 
 </body>
 </html>
