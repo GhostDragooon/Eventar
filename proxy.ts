@@ -5,6 +5,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
 export async function proxy(req: NextRequest) {
+  // We bind the Supabase client's cookie-setter to `res`. The client may write
+  // refreshed-session cookies during `getUser()` or clear cookies during
+  // `signOut()`. For the happy path we return `res` directly and those cookies
+  // make it back to the browser. For redirect paths, `redirectWithCookies`
+  // copies the cookies the client wrote onto the redirect response — without
+  // this the signOut path silently fails (browser stays signed in, infinite
+  // redirect loop on next request). Same class of bug as the /auth/callback
+  // fix in commit 3e5a004.
   const res = NextResponse.next();
 
   const supabase = createServerClient(
@@ -21,19 +29,21 @@ export async function proxy(req: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  function redirectWithCookies(url: URL): NextResponse {
+    const redirect = NextResponse.redirect(url);
+    res.cookies.getAll().forEach((c) => redirect.cookies.set(c));
+    return redirect;
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.redirect(new URL('/login', req.url));
+    return redirectWithCookies(new URL('/login', req.url));
   }
 
   const email = user.email?.toLowerCase();
   if (!email) {
     await supabase.auth.signOut();
-    return NextResponse.redirect(
-      new URL('/login?error=not_authorized', req.url),
-    );
+    return redirectWithCookies(new URL('/login?error=not_authorized', req.url));
   }
 
   const { data: staff } = await supabase
@@ -44,9 +54,7 @@ export async function proxy(req: NextRequest) {
 
   if (!staff) {
     await supabase.auth.signOut();
-    return NextResponse.redirect(
-      new URL('/login?error=not_authorized', req.url),
-    );
+    return redirectWithCookies(new URL('/login?error=not_authorized', req.url));
   }
 
   return res;
