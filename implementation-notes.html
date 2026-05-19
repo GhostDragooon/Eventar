@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phase 2 — Implementation notes</title>
+<style>
+  body { font: 14px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro", system-ui, sans-serif;
+         max-width: 880px; margin: 2rem auto; padding: 0 1.25rem; color: #111; }
+  h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+  h2 { font-size: 1.15rem; margin: 2rem 0 0.5rem; padding-top: 1rem; border-top: 1px solid #e5e7eb; }
+  h3 { font-size: 1rem; margin: 1.25rem 0 0.4rem; }
+  .meta { color: #666; font-size: 0.875rem; margin-bottom: 1.5rem; }
+  .status { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 500; }
+  .status.wip { background: #fef3c7; color: #92400e; }
+  .status.done { background: #d1fae5; color: #065f46; }
+  .status.deferred { background: #e0e7ff; color: #3730a3; }
+  .status.open { background: #fee2e2; color: #991b1b; }
+  code, pre { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; font-size: 0.875em; }
+  pre { background: #f9fafb; padding: 0.75rem 1rem; border-radius: 6px; border: 1px solid #e5e7eb;
+        overflow-x: auto; font-size: 0.85rem; }
+  ul, ol { padding-left: 1.5rem; }
+  li { margin: 0.3rem 0; }
+  .tag { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 0.75rem;
+         margin-right: 0.4rem; vertical-align: 0.05em; background: #f3f4f6; color: #444; }
+  .tag.dec  { background: #dbeafe; color: #1e40af; }
+  .tag.dev  { background: #fef3c7; color: #92400e; }
+  .tag.tro  { background: #f0fdf4; color: #166534; }
+  .tag.que  { background: #fee2e2; color: #991b1b; }
+  .ref { font-size: 0.8rem; color: #666; }
+  .ref a { color: #2563eb; text-decoration: none; }
+  .ref a:hover { text-decoration: underline; }
+  table { border-collapse: collapse; width: 100%; margin: 0.5rem 0; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 0.875rem; vertical-align: top; }
+  th { background: #f9fafb; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<h1>Phase 2 — Registration flow — Implementation notes</h1>
+<p class="meta">
+  Started 2026-05-20 · Live document, updated as implementation progresses ·
+  <span class="status wip">In progress</span>
+</p>
+
+<p>
+  This file captures decisions, deviations, tradeoffs, and open questions for the
+  Phase 2 implementation. The <strong>spec</strong> is the inline registration form on
+  <code>/events/[id]</code> with two new tables (<code>registrations</code> + <code>email_log</code>),
+  a Server Action that inserts the email_log row <em>first</em> per
+  <a href="CLAUDE.md">CLAUDE.md</a> rule 5, and stub-logging until Phase 7 wires
+  Resend. Full design discussion lived in the conversation that preceded this file.
+</p>
+
+<h2>Design decisions <span class="status wip">live</span></h2>
+
+<h3><span class="tag dec">D1</span> Shipping the BASE spec, not the 4-option superset</h3>
+<p>
+  Before implementation, four shape options were discussed: (A) base spec, (B) add
+  visible capacity counter, (C) add affiliation field, (D) wrap whole flow in a single RPC for
+  atomicity. The user said "implement &lt;SPEC&gt;" — interpreted as option A only.
+  B / C / D are recorded as open questions below; implementing them later is straightforward.
+</p>
+
+<h3><span class="tag dec">D2</span> Multi-step Server Action over a single RPC</h3>
+<p>
+  Considered: one PG function (<code>register_for_event</code>) that locks the event row,
+  inserts <code>email_log</code>, inserts <code>registrations</code>, and updates
+  <code>email_log</code> atomically. Rejected for now because: (a) the email_log-first
+  ordering is the explicit hard rule from CLAUDE.md and is easier to reason about as
+  separate, traced steps; (b) Phase 7 will wire Resend between the queue insert and the
+  status update, and that split is cleaner outside a single PG function; (c) we already
+  have <a href="lib/supabase/admin.ts">supabaseAdmin</a> for the email_log insert (service-role,
+  bypasses RLS); the anon client handles registrations under RLS. Race condition (two
+  registrants under capacity simultaneously pushing total over capacity) is acknowledged
+  and accepted for MVP scale — see <span class="tag que">Q1</span>.
+</p>
+
+<h3><span class="tag dec">D3</span> Email_log row is service-role-only</h3>
+<p>
+  No RLS policy gives anon or authenticated users access to <code>email_log</code>. The
+  Server Action uses <code>supabaseAdmin()</code> (service-role) for inserts and updates.
+  This keeps the ledger as a server-only operational concern; client code never reads
+  it. Future analytics (Phase 6) and cron sender (Phase 9) will also use service-role.
+</p>
+
+<h3><span class="tag dec">D4</span> Field set is minimum-viable</h3>
+<p>
+  Just <code>full_name</code> and <code>email</code> on the registration form. PRD §5
+  doesn't specify additional fields. Affiliation, phone, dietary preferences, etc. all
+  deferred. The <code>registrations</code> table is open to add columns later without
+  breaking the unique constraint (which is on <code>(event_id, email)</code>).
+</p>
+
+<h3><span class="tag dec">D5</span> Status enum: <code>registered</code>, <code>attended</code>, <code>cancelled</code></h3>
+<p>
+  Only <code>registered</code> (default) is used in Phase 2. <code>attended</code> is set in
+  Phase 4 (check-in). <code>cancelled</code> is for user-self-cancel; no UI in Phase 2,
+  but the value is in the enum to avoid a migration later.
+</p>
+
+<h2>Deviations <span class="status wip">live</span></h2>
+
+<p><em>(none yet — implementation hasn't started in earnest)</em></p>
+
+<h2>Tradeoffs <span class="status wip">live</span></h2>
+
+<h3><span class="tag tro">T1</span> Capacity race condition: accept it</h3>
+<p>
+  Two anon visitors registering simultaneously could both pass the
+  <code>count(*) &lt; max_attendees</code> check and both insert, ending up at
+  <code>max_attendees + 1</code> total. Alternative: row-level lock the event row via
+  <code>SELECT ... FOR UPDATE</code> inside an RPC. Rejected: (a) Eventar's PRD targets
+  ≤200 attendees/event with low concurrent-registration intensity (workshops, not
+  flash sales); (b) we can add a trigger-based hard cap later if it bites in practice;
+  (c) keeping the flow as a multi-step Server Action without an RPC keeps debugging
+  simple in Phases 2–6.
+</p>
+
+<h3><span class="tag tro">T2</span> Stub log instead of real email</h3>
+<p>
+  Per CLAUDE.md hard rule 7 ("Don't add external services prematurely. Resend wired in
+  phase 7") and the vault's <a href="/Users/ivan/Desktop/Eventar/20%20—%20Roadmap/Phased%20Roadmap.md">Phased
+  Roadmap</a> ("entire MVP runs locally with no external service"), Phase 2 only does
+  <code>console.log('[email stub] would send confirmation to X')</code>. The
+  <code>email_log</code> row still goes in first, so when Resend lands the order is
+  already right and we can replay queued rows.
+</p>
+
+<h2>Open questions <span class="status wip">live</span></h2>
+
+<h3><span class="tag que">Q1</span> Should we add the visible capacity counter? <span class="status open">open</span></h3>
+<p>
+  Spec option B from the design conversation. Adds one read query to the page and one
+  display line ("12 of 50 spots remaining"). Defer unless the manual smoke shows the
+  form's "at capacity" message feels confusing after the fact. Cost to add later: 15
+  minutes.
+</p>
+
+<h3><span class="tag que">Q2</span> Should we add an <code>affiliation</code> field? <span class="status open">open</span></h3>
+<p>
+  Useful for Phase 6 analytics (who's coming from where?). Adds one column +
+  one form field. Decision: defer to first user complaint that the registration
+  data is too thin. Migration to add the column later is one ALTER TABLE.
+</p>
+
+<h3><span class="tag que">Q3</span> Should organizer view of registrations land in Phase 2 or Phase 6? <span class="status open">open</span></h3>
+<p>
+  Phase 2 demo per the roadmap shows the anon-side flow only. But adding a basic
+  "Registrations (N)" count to <code>/events/[id]/edit</code> would let the organizer
+  verify their event is working without inspecting the DB. Cost: 20 minutes.
+  Decision: defer to Phase 6, but mention in the manual smoke handoff that the
+  organizer can verify via <code>select count(*) from registrations</code> in SQL editor.
+</p>
+
+<h2>Implementation log</h2>
+
+<p><em>Updated after each commit so the next-most-recent commit shows the live state.</em></p>
+
+<table>
+  <tr><th>Step</th><th>Status</th><th>Commit</th><th>Notes</th></tr>
+  <tr><td>0. Framework + decisions</td><td><span class="status done">done</span></td><td>—</td><td>This file (created at start of session).</td></tr>
+  <tr><td>1. Migration 0006: registrations</td><td><span class="status done">done</span></td><td>local + live</td><td>Applied to project <code>muieupgkpbxpqsrjjwol</code> via Supabase MCP. Table + 4 RLS policies (anon-insert-when-published, organizer-select/update-own, manager-select-all) + unique(event_id, email) + lowercase trigger.</td></tr>
+  <tr><td>2. Migration 0007: email_log</td><td><span class="status done">done</span></td><td>local + live</td><td>Applied. Service-role only — no anon/authenticated policies. Partial index on <code>status = 'queued'</code> for Phase 9's pg_cron poller.</td></tr>
+  <tr><td>3. Zod schema TDD</td><td><span class="status open">pending</span></td><td>—</td><td>4 tests, red → green.</td></tr>
+  <tr><td>4. Server Action <code>registerForEvent</code></td><td><span class="status open">pending</span></td><td>—</td><td>email_log-first ordering, friendly errors.</td></tr>
+  <tr><td>5. <code>&lt;RegisterCard /&gt;</code> component</td><td><span class="status open">pending</span></td><td>—</td><td>5 visual states per the mockup.</td></tr>
+  <tr><td>6. Page wiring</td><td><span class="status open">pending</span></td><td>—</td><td>Add to public event page below agenda.</td></tr>
+  <tr><td>7. Verification + manual-smoke handoff</td><td><span class="status open">pending</span></td><td>—</td><td>tsc + lint + tests + build + curl + user smoke.</td></tr>
+</table>
+
+</body>
+</html>
