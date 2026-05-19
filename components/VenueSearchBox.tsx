@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input';
 import { searchVenues } from '@/lib/nominatim';
 import type { Venue } from '@/lib/venue';
 
-// Hong Kong viewbox (south, west, north, east) — biases results toward HK
-// without restricting them. Format per Nominatim: 'min_lon,max_lat,max_lon,min_lat'.
+// Hong Kong viewbox in Nominatim's documented order — min_lon, max_lat,
+// max_lon, min_lat — i.e. two diagonally opposite corners (NW then SE).
+// `bounded=0` in lib/nominatim.ts keeps this as a *bias*, not a hard filter.
 const HK_VIEWBOX: [number, number, number, number] = [113.8, 22.6, 114.5, 22.1];
 
 type Props = {
@@ -67,7 +68,14 @@ export default function VenueSearchBox({ onSelect }: Props) {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => displayResults.length > 0 && setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 150)}  // delay so click on result registers
+        onBlur={() => {
+          // Abort the in-flight request so a late response can't reopen the
+          // dropdown after the user has already moved on (race condition:
+          // type → blur at T+400 → blur sets setOpen(false) at T+550 → search
+          // response at T+800 would otherwise setOpen(true) again).
+          abortRef.current?.abort();
+          setTimeout(() => setOpen(false), 150);  // delay so click on result registers
+        }}
         placeholder="Search a venue, building, or address…"
         aria-autocomplete="list"
         aria-expanded={open}
