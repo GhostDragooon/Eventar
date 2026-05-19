@@ -23,6 +23,15 @@ export async function sendMagicLink(
   });
 
   // Never leak whether the email exists in `staff`. Same response either way.
-  if (error) return { error: 'Could not send link right now. Try again.' };
+  // But log the underlying error so we can debug rate-limit / config issues
+  // server-side without exposing them to anonymous users.
+  if (error) {
+    console.error('[sendMagicLink] supabase error', {
+      name: error.name,
+      status: error.status,
+      code: (error as { code?: string }).code,
+    });
+    return { error: 'Could not send link right now. Try again.' };
+  }
   return { ok: true };
 }

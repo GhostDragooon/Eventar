@@ -65,6 +65,7 @@ export default function AgendaSection({ date, blocks, onChange }: Props) {
   const fillers    = blocks.filter(b =>  FILLER_KINDS.includes(b.kind));
 
   const parallelIds = useMemo(() => {
+    if (!date) return new Set<string>();  // no date yet → don't fabricate `T${time}` keys
     const items = blocks
       .filter(b => b.start && b.end)
       .map(b => ({ id: b.localId, start_time: `${date}T${b.start}`, end_time: `${date}T${b.end}` }));

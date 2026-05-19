@@ -54,6 +54,10 @@ export default function DateTimeSection({ value, onChange }: Props) {
             ? 'Tap another chip to set the end time. Tap the same chip to clear.'
             : 'Tap an end chip to clear, or any other chip to restart.'}
         </p>
+        <p className="text-xs text-gray-500 mt-1">
+          Times are in your local timezone. The event page will display them in
+          the venue&apos;s local time.
+        </p>
       </div>
     </div>
   );
