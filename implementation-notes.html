@@ -167,6 +167,33 @@
   push more aggregate-style queries through this path.
 </p>
 
+<h3><span class="tag dev">V3</span> Server Action uses <code>supabaseAdmin()</code> for the registrations INSERT too</h3>
+<p>
+  Same class of bug as V2, caught during the live-DB backtest. The Server Action
+  originally did <code>insert(...).select('id').single()</code> through the anon client.
+  The anon RLS policy grants <strong>INSERT</strong> (when event is published) but not
+  <strong>SELECT</strong>. Postgres's <code>RETURNING</code> clause — which Supabase's
+  <code>.select()</code> after insert triggers — requires SELECT on the new row.
+  Anon-INSERT-with-RETURNING fails with the misleading
+  <em>"new row violates row-level security policy"</em>. Verified by hitting the same
+  shape directly via <code>set local role anon</code> — confirmed via backtest A4
+  that pure anon INSERT <em>without</em> a returning works, while the JS client's
+  default insert pattern doesn't.
+</p>
+<p>
+  Two ways to fix: (a) add an anon SELECT policy gated to "newly-inserted-row only"
+  via a returning policy — Postgres doesn't really support this cleanly; (b) use the
+  service-role for the insert. Picked (b). The defense-in-depth value of the anon-INSERT
+  RLS policy is preserved for any <em>direct</em> hits at
+  <code>/rest/v1/registrations</code> (where the client doesn't need RETURNING). The
+  Server Action's own flow already verified <code>event.status = 'published'</code> in
+  step 2 before the insert, so bypassing RLS for this specific call is safe.
+</p>
+<p>
+  Code comment in <a href="app/(public)/events/[id]/actions.ts">actions.ts</a>
+  lines 99–107 documents this in-place so the next reader doesn't have to retrace.
+</p>
+
 <h2>Tradeoffs <span class="status wip">live</span></h2>
 
 <h3><span class="tag tro">T1</span> Capacity race condition: accept it</h3>
@@ -231,6 +258,39 @@
   <tr><td>5. <code>&lt;RegisterCard /&gt;</code> component</td><td><span class="status done">done</span></td><td>2868fe4</td><td>5 visual states implemented via a tagged-union state machine: idle / submitting / success / error / at-capacity. Buttons disabled while submitting; required-field gating on the submit button.</td></tr>
   <tr><td>6. Page wiring</td><td><span class="status done">done</span></td><td>2868fe4</td><td>Card lands below agenda, above footer. Page fetches <code>max_attendees</code> + registration count (via admin client — see V2). Footer copy updated: "Confirmation emails go live in phase 7."</td></tr>
   <tr><td>7. Verification + manual-smoke handoff</td><td><span class="status wip">awaiting user</span></td><td>—</td><td>All automated gates green (tsc + lint + 59/59 tests + next build 8/8 pages, including <code>/events/[id]</code> as ƒ dynamic). User smoke checklist below.</td></tr>
+</table>
+
+<h2>Live-DB backtest results <span class="status done">passed 2026-05-20</span></h2>
+
+<p>
+  Run via Supabase MCP against project <code>muieupgkpbxpqsrjjwol</code>. Verifies the
+  data path end-to-end at the layer below the Server Action — proves that even if the
+  TS layer regresses, the schema + RLS still enforce what they claim. Test data was
+  inserted, asserted on, then cleaned up; the live DB is back to its pre-backtest state.
+</p>
+
+<table>
+  <tr><th>Layer</th><th>Test</th><th>Result</th></tr>
+  <tr><td rowspan="5"><strong>Schema</strong></td>
+      <td>Tables present, RLS enabled, all columns/types match the migration files</td><td><span class="status done">pass</span></td></tr>
+  <tr><td><code>unique(event_id, email)</code> constraint on registrations</td><td><span class="status done">pass</span></td></tr>
+  <tr><td>FK <code>ON DELETE CASCADE</code> on events→registrations and registrations→email_log</td><td><span class="status done">pass</span></td></tr>
+  <tr><td>Partial index <code>email_log_queued_idx WHERE status='queued'</code> (for Phase 9 cron poller)</td><td><span class="status done">pass</span></td></tr>
+  <tr><td><code>lowercase_email</code> BEFORE INSERT/UPDATE trigger on registrations</td><td><span class="status done">pass</span></td></tr>
+
+  <tr><td rowspan="5"><strong>Flow (admin path)</strong></td>
+      <td>email_log INSERT first → registrations INSERT → email_log UPDATE status='sent' (full happy path)</td><td><span class="status done">pass</span></td></tr>
+  <tr><td>Lowercase trigger normalises <code>Backtest-2@Example.COM</code> → <code>backtest-2@example.com</code></td><td><span class="status done">pass</span></td></tr>
+  <tr><td>Duplicate (same case) → unique_violation sqlstate 23505</td><td><span class="status done">pass</span></td></tr>
+  <tr><td>Duplicate (different case) → still rejected (trigger runs before constraint)</td><td><span class="status done">pass</span></td></tr>
+  <tr><td>Cascade: <code>delete from registrations</code> → email_log rows gone (registration_id FK)</td><td><span class="status done">pass</span></td></tr>
+
+  <tr><td rowspan="5"><strong>Defense-in-depth (anon role)</strong></td>
+      <td>A1: anon SELECT registrations → 0 rows (no anon SELECT policy)</td><td><span class="status done">pass</span></td></tr>
+  <tr><td>A2: anon SELECT email_log → 0 rows (no policy at all → deny by default)</td><td><span class="status done">pass</span></td></tr>
+  <tr><td>A3: anon INSERT into <em>draft</em> event → 42501 RLS rejection (with check failed)</td><td><span class="status done">pass</span></td></tr>
+  <tr><td>A4: anon INSERT into <em>published</em> event → success (this is the defense-in-depth path)</td><td><span class="status done">pass</span></td></tr>
+  <tr><td>A5: anon INSERT into email_log → 42501 RLS rejection</td><td><span class="status done">pass</span></td></tr>
 </table>
 
 <h2>Manual smoke checklist <span class="status wip">awaiting user</span></h2>
