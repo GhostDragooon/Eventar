@@ -111,8 +111,10 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
   }
 
   // Step 6 — Phase 7 replaces this with a real Resend call.
+  // Logs UUIDs only per CLAUDE.md rule 10 (no PII in logs). To resolve back
+  // to recipient + event title, SELECT the rows by id.
   console.log(
-    `[email stub] would send confirmation to ${email} for event "${event.title}" (registration ${reg.id})`,
+    `[email stub] would send confirmation for event ${event.id} (registration ${reg.id})`,
   );
 
   // Step 7 — close the ledger entry. Failure here is logged but doesn't
