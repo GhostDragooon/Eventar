@@ -2,7 +2,7 @@ import { vi } from 'vitest';
 vi.mock('server-only', () => ({}));
 
 import { describe, it, expect } from 'vitest';
-import { registrationInputSchema } from './actions';
+import { registrationInputSchema } from './schema';
 
 // Real v4 UUID (third group starts with 4, fourth with 8|9|a|b) — Zod 4's
 // .uuid() validator is version-strict.

@@ -2,7 +2,7 @@ import { vi } from 'vitest';
 vi.mock('server-only', () => ({}));
 
 import { describe, expect, it } from 'vitest';
-import { eventInputSchema, blockInputSchema } from './actions';
+import { eventInputSchema, blockInputSchema } from './schema';
 
 const validEvent = {
   title: 'Internal Workshop',

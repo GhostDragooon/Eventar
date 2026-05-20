@@ -1,28 +1,12 @@
 'use server';
 
-import { z } from 'zod';
+// Next 16: 'use server' files may export ONLY async functions. The Zod schema
+// + types live in ./schema so this module stays compliant. (Earlier Next
+// versions tolerated non-function exports; Next 16 rejects the module at load.)
 import { revalidatePath } from 'next/cache';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-
-// Email regex: matches the validator we use elsewhere (login/actions.ts).
-// Single @, no whitespace, at least one dot in the domain part.
-const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-
-export const registrationInputSchema = z.object({
-  event_id:  z.string().uuid(),
-  full_name: z.string().trim().min(1, 'Name required').max(100, 'Name too long'),
-  email:     z.string().trim().toLowerCase().regex(EMAIL_RE, 'Invalid email'),
-});
-
-export type RegistrationInput = z.infer<typeof registrationInputSchema>;
-
-// Returned to the client. The Server Action never throws on user-recoverable
-// errors — it returns a typed result and lets the form render the friendly
-// message.
-export type RegisterResult =
-  | { ok: true }
-  | { error: string };
+import { registrationInputSchema, type RegisterResult } from './schema';
 
 /**
  * Register an anonymous visitor for a published event.
