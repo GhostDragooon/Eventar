@@ -112,6 +112,40 @@
   schema. Worth flagging as a Zod-4 gotcha for future tests.
 </p>
 
+<h3><span class="tag dev">V3</span> Server Action <em>also</em> needs admin for the insert + capacity count <span class="status open">caught by live-DB backtest</span></h3>
+<p>
+  First-pass review missed two bugs that the live-DB backtest surfaced immediately:
+</p>
+<ol>
+  <li>
+    <strong>Capacity count silently returned 0.</strong> Step 3 of the Server Action did
+    <code>anon.from('registrations').select('id', { count: 'exact', head: true })</code>.
+    Anon has no SELECT policy on <code>registrations</code> (PII), so the count was
+    always 0 — capacity gate <em>never</em> fired and users could register past
+    <code>max_attendees</code>. Same bug class as V2 on the public page, just one
+    function deeper.
+  </li>
+  <li>
+    <strong>Anon insert with <code>RETURNING</code> failed every time.</strong> Step 5
+    did <code>anon.from('registrations').insert(...).select('id').single()</code>. The
+    <code>.select()</code> compiles to PostgreSQL's <code>RETURNING</code> clause, which
+    requires SELECT privilege on the inserted row. Anon has none. Error message
+    "new row violates row-level security policy for table registrations" was misleading;
+    the WITH CHECK passed (subquery confirmed event is published), but the
+    SELECT-for-RETURNING phase was denied.
+    <br>
+    The live backtest table-test isolated this by running insert with and without
+    <code>RETURNING</code> as anon: without succeeded, with failed.
+  </li>
+</ol>
+<p>
+  Fix for both: use <code>supabaseAdmin()</code> for the count and insert in the
+  Server Action. The anon RLS policy stays unchanged — it's still the defense-in-depth
+  guarantee against direct REST API hits to <code>/rest/v1/registrations</code>. The
+  Server Action's step 2 explicit <code>event.status === 'published'</code> check is
+  the primary gate for our own code path.
+</p>
+
 <h3><span class="tag dev">V2</span> Public-page registration count uses <code>supabaseAdmin()</code></h3>
 <p>
   Initially wrote the count query against the anon client and only caught the issue

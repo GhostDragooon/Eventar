@@ -65,12 +65,13 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
     return { error: 'Registrations are not open for this event.' };
   }
 
-  // Step 3 — capacity check. NB: this is a best-effort guard; under
-  // concurrent submissions two registrants can both pass and push total
-  // over max_attendees. Acceptable for Eventar's scale (PRD: <=200/event).
-  // See implementation-notes.html T1.
+  // Step 3 — capacity check. MUST use admin because anon has no SELECT
+  // policy on registrations (PII). With anon, count would always be 0 and
+  // the capacity gate would never fire. Caught by live-DB backtest after
+  // Phase 2 first-pass. (Same fix as the page.tsx count query.)
+  // NB: still best-effort under concurrent submissions; see notes T1.
   if (event.max_attendees != null) {
-    const { count } = await anon
+    const { count } = await admin
       .from('registrations')
       .select('id', { count: 'exact', head: true })
       .eq('event_id', event_id);
@@ -95,8 +96,17 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
     return { error: 'Could not record registration. Please try again.' };
   }
 
-  // Step 5 — the actual registration row. Unique(event_id, email) -> 23505.
-  const { data: reg, error: regErr } = await anon
+  // Step 5 — the actual registration row. MUST use admin: the anon RLS
+  // policy grants INSERT but not SELECT, and Postgres's RETURNING (which
+  // .select() triggers) requires SELECT on the underlying row. Trying this
+  // as anon fails with the misleading "new row violates row-level security
+  // policy" error. The defense-in-depth that anon's RLS provides is still
+  // in place for any direct REST API hits at /rest/v1/registrations — the
+  // policy gates non-published events there. For the Server Action's own
+  // flow, step 2 above already verified event.status='published', so
+  // bypassing RLS via admin here is safe.
+  // Unique(event_id, email) still fires under admin -> 23505.
+  const { data: reg, error: regErr } = await admin
     .from('registrations')
     .insert({ event_id, email, full_name })
     .select('id')
