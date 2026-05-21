@@ -4,6 +4,7 @@ import { supabaseServer } from '@/lib/supabase/server';
 import { formatInTz } from '@/lib/tz';
 import type { AgendaTopic } from '@/lib/agenda';
 import { publishEvent } from './actions';
+import DownloadQrButton from '@/components/DownloadQrButton';
 
 export default async function StaffEventEditPage({
   params,
@@ -114,6 +115,15 @@ export default async function StaffEventEditPage({
         >
           View public page →
         </a>
+      )}
+      {event.status === 'published' && (
+        <section>
+          <h2 className="text-sm font-medium text-gray-700 mb-1">QR code</h2>
+          <p className="text-sm text-gray-600 mb-3">
+            Anyone who scans this lands on the public registration page.
+          </p>
+          <DownloadQrButton eventId={event.id} />
+        </section>
       )}
 
       <p className="text-xs text-gray-500">Full edit UI is deferred. For now, delete and re-create to change details.</p>
