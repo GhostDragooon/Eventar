@@ -1,7 +1,10 @@
 'use server';
+import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
+import QRCode from 'qrcode';
 import { requireStaff } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
+import { slugifyTitle } from '@/lib/slugify';
 
 export async function publishEvent(id: string) {
   await requireStaff();
@@ -22,4 +25,52 @@ export async function publishEvent(id: string) {
   revalidatePath(`/events/${id}/edit`);
   revalidatePath(`/events/${id}`);
   revalidatePath('/dashboard');
+}
+
+export async function getEventQrPng(
+  eventId: string,
+): Promise<{ pngBase64: string; filename: string } | { error: string }> {
+  await requireStaff();
+  const supabase = await supabaseServer();
+
+  const { data: event, error: readErr } = await supabase
+    .from('events')
+    .select('id, title, status')
+    .eq('id', eventId)
+    .maybeSingle();
+  if (readErr) throw readErr;
+
+  // Silent-failure-visibility: surface "not found" rather than letting RLS
+  // turn this into a 0-row success (CLAUDE.md rule 12). Same pattern as
+  // publishEvent above.
+  if (!event) {
+    return { error: 'Event not found.' };
+  }
+
+  // Defense in depth — the UI also gates on event.status === 'published',
+  // but a future refactor that exposes this action elsewhere would skip the
+  // UI guard. Belt + braces.
+  if (event.status !== 'published') {
+    return { error: 'QR is available after publishing.' };
+  }
+
+  // Origin from request headers so this works on localhost, Vercel preview,
+  // and prod (same pattern as sendMagicLink).
+  const h = await headers();
+  const proto = h.get('x-forwarded-proto') ?? 'http';
+  const host = h.get('host') ?? 'localhost:3000';
+  const publicUrl = `${proto}://${host}/events/${event.id}`;
+
+  // qrcode defaults: errorCorrectionLevel 'M' = ~15% tolerance (good for
+  // print under bad lighting). margin 2 (default is 4) maximises QR area.
+  const buf = await QRCode.toBuffer(publicUrl, {
+    errorCorrectionLevel: 'M',
+    width: 512,
+    margin: 2,
+  });
+
+  const slug = slugifyTitle(event.title);
+  const filename = `event-${slug || event.id}.png`;
+
+  return { pngBase64: buf.toString('base64'), filename };
 }
