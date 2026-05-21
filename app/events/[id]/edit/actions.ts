@@ -1,10 +1,9 @@
 'use server';
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
-import QRCode from 'qrcode';
 import { requireStaff } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
-import { slugifyTitle } from '@/lib/slugify';
+import { buildEventQrPng } from '@/lib/qr';
 
 export async function publishEvent(id: string) {
   await requireStaff();
@@ -59,18 +58,7 @@ export async function getEventQrPng(
   const h = await headers();
   const proto = h.get('x-forwarded-proto') ?? 'http';
   const host = h.get('host') ?? 'localhost:3000';
-  const publicUrl = `${proto}://${host}/events/${event.id}`;
+  const origin = `${proto}://${host}`;
 
-  // qrcode defaults: errorCorrectionLevel 'M' = ~15% tolerance (good for
-  // print under bad lighting). margin 2 (default is 4) maximises QR area.
-  const buf = await QRCode.toBuffer(publicUrl, {
-    errorCorrectionLevel: 'M',
-    width: 512,
-    margin: 2,
-  });
-
-  const slug = slugifyTitle(event.title);
-  const filename = `event-${slug || event.id}.png`;
-
-  return { pngBase64: buf.toString('base64'), filename };
+  return buildEventQrPng({ id: event.id, title: event.title }, origin);
 }
