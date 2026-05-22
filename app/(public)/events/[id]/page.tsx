@@ -1,8 +1,10 @@
 import { notFound } from 'next/navigation';
+import { headers } from 'next/headers';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { formatInTz } from '@/lib/tz';
 import type { AgendaTopic } from '@/lib/agenda';
+import { buildEventQrPng } from '@/lib/qr';
 import RegisterCard from '@/components/RegisterCard';
 
 export const dynamic = 'force-dynamic';
@@ -39,6 +41,14 @@ export default async function PublicEventPage({
     .from('registrations')
     .select('id', { count: 'exact', head: true })
     .eq('event_id', id);
+
+  const h = await headers();
+  const proto = h.get('x-forwarded-proto') ?? 'http';
+  const host = h.get('host') ?? 'localhost:3000';
+  const { pngBase64 } = await buildEventQrPng(
+    { id: event.id, title: event.title },
+    `${proto}://${host}`,
+  );
 
   return (
     <main className="max-w-3xl mx-auto p-6 space-y-6">
@@ -98,6 +108,18 @@ export default async function PublicEventPage({
           </ul>
         </section>
       )}
+
+      <section className="flex items-center gap-4">
+        {/* eslint-disable-next-line @next/next/no-img-element -- inline base64 data URL */}
+        <img
+          src={`data:image/png;base64,${pngBase64}`}
+          alt="QR code for this event"
+          className="w-32 h-32"
+        />
+        <p className="text-sm text-gray-600">
+          Scan or share this code to open this event on another device.
+        </p>
+      </section>
 
       <RegisterCard
         eventId={event.id}
