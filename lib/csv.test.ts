@@ -25,6 +25,14 @@ describe('csvEscape', () => {
   it('escapes empty string as empty (no quotes)', () => {
     expect(csvEscape('')).toBe('');
   });
+
+  it('quotes fields with bare CR (Windows clipboard paste)', () => {
+    expect(csvEscape('a\rb')).toBe('"a\rb"');
+  });
+
+  it('quotes fields with CRLF', () => {
+    expect(csvEscape('line1\r\nline2')).toBe('"line1\r\nline2"');
+  });
 });
 
 describe('buildCsv', () => {
@@ -42,5 +50,9 @@ describe('buildCsv', () => {
 
   it('handles a single header row + zero data rows', () => {
     expect(buildCsv([['name', 'email']])).toBe('name,email\r\n');
+  });
+
+  it('preserves empty fields between populated fields', () => {
+    expect(buildCsv([['a', '', 'b']])).toBe('a,,b\r\n');
   });
 });

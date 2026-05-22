@@ -1,11 +1,11 @@
 /**
  * Escape a single CSV field per RFC 4180.
- * Wrap in double quotes if the field contains a comma, double quote, or newline.
+ * Wrap in double quotes if the field contains a comma, double quote, CR, or LF.
  * Internal double quotes are doubled.
  */
 export function csvEscape(field: string): string {
   if (field === '') return '';
-  if (/[",\n]/.test(field)) {
+  if (/[",\r\n]/.test(field)) {
     return `"${field.replace(/"/g, '""')}"`;
   }
   return field;
