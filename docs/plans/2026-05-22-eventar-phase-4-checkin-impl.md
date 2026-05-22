@@ -55,19 +55,32 @@ alter table public.registrations
     check (check_in_method in ('qr','manual'));
 
 -- Backfill existing rows BEFORE adding NOT NULL + UNIQUE.
--- plpgsql loop self-resolves collisions; the strip-ambiguous-chars mirror
--- the app-side ALPHABET in lib/registrationCode.ts (no 0 O 1 I L).
+-- Draws from the full 31-char alphabet (digits 2-9 + uppercase minus
+-- 0 O 1 I L) so backfilled codes look visually identical to new
+-- app-generated ones from lib/registrationCode.ts.
 do $$
 declare
+  alphabet text[] := array[
+    '2','3','4','5','6','7','8','9',
+    'A','B','C','D','E','F','G','H','J','K','M','N','P','Q','R','S','T','U','V','W','X','Y','Z'
+  ];
   r record;
   candidate text;
+  attempts int;
 begin
   for r in select id from public.registrations where registration_code is null loop
+    attempts := 0;
     loop
-      candidate := 'WK-' || upper(substr(md5(random()::text || clock_timestamp()::text), 1, 4));
-      candidate := replace(replace(replace(replace(candidate, '0','2'), 'O','P'), '1','3'), 'I','J');
-      candidate := replace(candidate, 'L','M');
+      candidate := 'WK-'
+        || alphabet[1 + floor(random() * 31)::int]
+        || alphabet[1 + floor(random() * 31)::int]
+        || alphabet[1 + floor(random() * 31)::int]
+        || alphabet[1 + floor(random() * 31)::int];
       exit when not exists (select 1 from public.registrations where registration_code = candidate);
+      attempts := attempts + 1;
+      if attempts > 100 then
+        raise exception 'backfill: 100 collisions for one row — namespace exhausted or RNG broken';
+      end if;
     end loop;
     update public.registrations set registration_code = candidate where id = r.id;
   end loop;
