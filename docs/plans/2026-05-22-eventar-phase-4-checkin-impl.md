@@ -264,7 +264,7 @@ Expected: PASS, 10/10.
 pnpm exec vitest run
 ```
 
-Expected: **88/88 pass** across 10 files (78 prior + 10 new).
+Expected: **87/87 pass** across 10 files (78 prior + 9 new).
 
 **Step 6: Static gates**
 
@@ -1375,7 +1375,7 @@ pnpm exec tsc --noEmit && pnpm exec eslint . && pnpm exec vitest run && pnpm exe
 Expected:
 - tsc: clean
 - eslint: clean
-- vitest: **88/88 pass** across 10 files (78 prior + 10 registrationCode)
+- vitest: **87/87 pass** across 10 files (78 prior + 9 registrationCode)
 - next build: **11 routes** total. New routes: `/events/[id]/checkin`, `/checkin/confirm`.
 
 **Step 2: Manual smoke** (user runs in browser with `pnpm dev` on port 3000)
