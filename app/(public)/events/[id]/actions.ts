@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { registrationInputSchema, type RegisterResult } from './schema';
+import { generateRegistrationCode } from '@/lib/registrationCode';
 
 /**
  * Register an anonymous visitor for a published event.
@@ -89,22 +90,52 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
   // policy gates non-published events there. For the Server Action's own
   // flow, step 2 above already verified event.status='published', so
   // bypassing RLS via admin here is safe.
-  // Unique(event_id, email) still fires under admin -> 23505.
-  const { data: reg, error: regErr } = await admin
-    .from('registrations')
-    .insert({ event_id, email, full_name })
-    .select('id')
-    .single();
+  //
+  // Generate a registration_code inline and retry on 23505 from the
+  // registrations_code_unique constraint specifically (NOT from the
+  // event_id+email constraint — that's the duplicate-registration error
+  // and it has its own handling below). Up to 5 attempts; 31^4 namespace
+  // (see lib/registrationCode.ts) makes 5 collisions in a row astronomically
+  // rare. The unique constraint in the DB is the source of truth.
+  let reg: { id: string } | null = null;
+  let regErr: { code?: string; message: string } | null = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const candidate = generateRegistrationCode();
+    const insertResult = await admin
+      .from('registrations')
+      .insert({ event_id, email, full_name, registration_code: candidate })
+      .select('id')
+      .single();
+    if (insertResult.error) {
+      const isCodeCollision =
+        insertResult.error.code === '23505' &&
+        insertResult.error.message.includes('registrations_code_unique');
+      if (isCodeCollision) continue; // retry with a new candidate
+      regErr = insertResult.error;
+      break;
+    }
+    reg = insertResult.data;
+    break;
+  }
 
-  if (regErr || !reg) {
-    // Mark the email_log row failed so the ledger doesn't keep a stale queue entry.
+  if (!reg) {
+    // Either all 5 collision retries exhausted (astronomically unlikely) or
+    // a non-collision error fell through.
+    // Mark the email_log row failed so the ledger doesn't keep a stale entry.
     await admin
       .from('email_log')
-      .update({ status: 'failed', error: regErr?.message ?? 'no-row' })
+      .update({
+        status: 'failed',
+        error: regErr?.message ?? 'registration insert failed after 5 code-collision retries',
+      })
       .eq('id', log.id);
 
     // Duplicate email -> friendly message; everything else -> generic.
-    if (regErr?.code === '23505') {
+    // The 23505 detection here matches on the event_id+email constraint name
+    // (registrations_event_id_email_key is the conventional name PG generates
+    // for `unique (event_id, email)`); the code-collision branch above
+    // already retried + bailed on registrations_code_unique.
+    if (regErr?.code === '23505' && regErr.message.includes('registrations_event_id_email_key')) {
       return { error: "You're already registered for this event." };
     }
     return { error: 'Registration failed. Please try again.' };
