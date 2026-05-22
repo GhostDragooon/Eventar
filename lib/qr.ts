@@ -16,7 +16,9 @@ export async function buildEventQrPng(
   event: { id: string; title: string },
   origin: string,
 ): Promise<{ pngBase64: string; filename: string }> {
-  const publicUrl = `${origin}/events/${event.id}`;
+  // new URL() normalises trailing slashes in `origin` and throws on garbage,
+  // hardening the contract before public-page callers land in upcoming tasks.
+  const publicUrl = new URL(`/events/${event.id}`, origin).toString();
 
   // qrcode defaults: errorCorrectionLevel 'M' = ~15% tolerance (good for
   // print under bad lighting). margin 2 (default is 4) maximises QR area.
