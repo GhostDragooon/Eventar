@@ -87,10 +87,11 @@ export async function exportRegistrantsCsv(
   // pattern. The integer is non-sensitive; the rows themselves are PII and
   // come further down.
   const admin = supabaseAdmin();
-  const { count: registeredCount } = await admin
+  const { count: registeredCount, error: countErr } = await admin
     .from('registrations')
     .select('id', { count: 'exact', head: true })
     .eq('event_id', event.id);
+  if (countErr) throw countErr;
 
   // "Registration closed" gate: event over OR at capacity. Same trigger logic
   // documented in design doc §C. Service-role row read below is the actual
@@ -107,11 +108,12 @@ export async function exportRegistrantsCsv(
   // Service-role row read: organizer has already passed requireStaff and RLS
   // gated their event read above. The rows-themselves SELECT under admin
   // mirrors the email_log + capacity-count pattern used elsewhere.
-  const { data: rows } = await admin
+  const { data: rows, error: rowsErr } = await admin
     .from('registrations')
     .select('full_name, email, registered_at')
     .eq('event_id', event.id)
     .order('registered_at', { ascending: true });
+  if (rowsErr) throw rowsErr;
 
   // CSV layout per design doc §C: event metadata header, blank separator row,
   // column header, data rows. Times are emitted as raw ISO + (timezone) so the
@@ -122,7 +124,7 @@ export async function exportRegistrantsCsv(
     ['Start', `${event.start_time} (${event.timezone})`],
     ['End', `${event.end_time} (${event.timezone})`],
     ['Venue', event.venue_name],
-    ['Total registered', String(registeredCount ?? 0)],
+    ['Total registered', String(rows?.length ?? 0)],
     [''], // blank separator row
     ['full_name', 'email', 'registered_at'],
   ];
