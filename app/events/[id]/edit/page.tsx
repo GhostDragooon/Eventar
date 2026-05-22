@@ -5,6 +5,8 @@ import { formatInTz } from '@/lib/tz';
 import type { AgendaTopic } from '@/lib/agenda';
 import { publishEvent } from './actions';
 import DownloadQrButton from '@/components/DownloadQrButton';
+import ExportRegistrantsButton from '@/components/ExportRegistrantsButton';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export default async function StaffEventEditPage({
   params,
@@ -22,7 +24,7 @@ export default async function StaffEventEditPage({
   const supabase = await supabaseServer();
   const { data: event } = await supabase
     .from('events')
-    .select('id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status')
+    .select('id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status, max_attendees')
     .eq('id', id)
     .maybeSingle();
   if (!event) notFound();
@@ -32,6 +34,21 @@ export default async function StaffEventEditPage({
     .select('id, kind, title, host, topics, start_time, end_time')
     .eq('event_id', id)
     .order('start_time', { ascending: true });
+
+  // Close gate for the CSV export: registration is "closed" when end_time has
+  // passed OR capacity is reached. Service-role count mirrors the public page +
+  // the exportRegistrantsCsv action's gate. Computing server-side so the button
+  // renders disabled at first paint (no client-side flicker).
+  const { count: registeredCount, error: countErr } = await supabaseAdmin()
+    .from('registrations')
+    .select('id', { count: 'exact', head: true })
+    .eq('event_id', event.id);
+  if (countErr) throw countErr;
+
+  const ended = new Date(event.end_time).getTime() < new Date().getTime();
+  const atCapacity =
+    event.max_attendees != null && (registeredCount ?? 0) >= event.max_attendees;
+  const registrationClosed = ended || atCapacity;
 
   return (
     <main className="max-w-3xl mx-auto p-6 space-y-6">
@@ -122,7 +139,28 @@ export default async function StaffEventEditPage({
           <p className="text-sm text-gray-600 mb-3">
             Anyone who scans this lands on the public registration page.
           </p>
-          <DownloadQrButton eventId={event.id} />
+          <div className="flex flex-wrap gap-3 items-center">
+            <DownloadQrButton eventId={event.id} />
+            <a
+              className="text-blue-700 underline text-sm"
+              href={`/events/${event.id}/poster`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              View poster →
+            </a>
+          </div>
+        </section>
+      )}
+      {event.status === 'published' && (
+        <section>
+          <h2 className="text-sm font-medium text-gray-700 mb-1">Registrant export</h2>
+          <p className="text-sm text-gray-600 mb-3">
+            {registrationClosed
+              ? `Registration closed (${atCapacity ? 'capacity reached' : 'event ended'}). Download the registrant list as CSV.`
+              : 'Export becomes available after registration closes (event ends or capacity is reached).'}
+          </p>
+          <ExportRegistrantsButton eventId={event.id} disabled={!registrationClosed} />
         </section>
       )}
 
