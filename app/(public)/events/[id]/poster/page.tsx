@@ -54,6 +54,8 @@ export default async function EventPosterPage({
 
   return (
     <main className="max-w-3xl mx-auto p-6 space-y-8 print:p-0 print:max-w-none">
+      {/* Locks print margins so the poster looks the same out of Chrome, Safari, and Firefox. */}
+      <style>{`@page { size: A4; margin: 16mm; }`}</style>
       <header className="text-center">
         <p className="text-xs uppercase tracking-wide text-gray-500">
           {event.topic ?? 'Event'}
