@@ -83,37 +83,33 @@ export async function exportRegistrantsCsv(
   if (readErr) throw readErr;
   if (!event) return { error: 'Event not found.' };
 
-  // Service-role count: consistent with the public page's capacity-counter
-  // pattern. The integer is non-sensitive; the rows themselves are PII and
-  // come further down.
-  const admin = supabaseAdmin();
-  const { count: registeredCount, error: countErr } = await admin
-    .from('registrations')
-    .select('id', { count: 'exact', head: true })
-    .eq('event_id', event.id);
-  if (countErr) throw countErr;
-
-  // "Registration closed" gate: event over OR at capacity. Same trigger logic
-  // documented in design doc §C. Service-role row read below is the actual
-  // PII surface, so the gate must be tight.
-  const endTimeMs = new Date(event.end_time).getTime();
-  const atCapacity =
-    event.max_attendees != null && (registeredCount ?? 0) >= event.max_attendees;
-  const ended = endTimeMs < Date.now();
-
-  if (!atCapacity && !ended) {
-    return { error: 'Registration is not closed yet.' };
-  }
-
+  // Single rows query is the source of truth for both the gate and the
+  // metadata count — eliminates the race window where a separate `count`
+  // query and the rows query could disagree if a registration lands in
+  // between. Safe at the 200-attendee project scale.
+  //
   // Service-role row read: organizer has already passed requireStaff and RLS
   // gated their event read above. The rows-themselves SELECT under admin
   // mirrors the email_log + capacity-count pattern used elsewhere.
+  const admin = supabaseAdmin();
   const { data: rows, error: rowsErr } = await admin
     .from('registrations')
     .select('full_name, email, registered_at')
     .eq('event_id', event.id)
     .order('registered_at', { ascending: true });
   if (rowsErr) throw rowsErr;
+
+  // "Registration closed" gate: event over OR at capacity. Same trigger logic
+  // documented in design doc §C.
+  const registeredCount = rows?.length ?? 0;
+  const endTimeMs = new Date(event.end_time).getTime();
+  const atCapacity =
+    event.max_attendees != null && registeredCount >= event.max_attendees;
+  const ended = endTimeMs < Date.now();
+
+  if (!atCapacity && !ended) {
+    return { error: 'Registration is not closed yet.' };
+  }
 
   // CSV layout per design doc §C: event metadata header, blank separator row,
   // column header, data rows. Times are emitted as raw ISO + (timezone) so the
@@ -124,7 +120,7 @@ export async function exportRegistrantsCsv(
     ['Start', `${event.start_time} (${event.timezone})`],
     ['End', `${event.end_time} (${event.timezone})`],
     ['Venue', event.venue_name],
-    ['Total registered', String(rows?.length ?? 0)],
+    ['Total registered', String(registeredCount)],
     [''], // blank separator row
     ['full_name', 'email', 'registered_at'],
   ];
