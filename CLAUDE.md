@@ -111,3 +111,25 @@ If a previous Claude session worked on **CENA** (`/Users/ivan/Desktop/cena`), th
 1. Re-read the relevant vault note.
 2. If still unclear, ask the user before guessing.
 3. Don't introduce decisions that aren't in `02 — Decisions Log.md` without flagging them.
+
+---
+
+## Skill-library first
+
+Before starting any task — including tasks dispatched to subagents — check the available skill library and use what applies. Skills carry hard-won project + tooling discipline (TDD red-then-green, brainstorming-before-code, subagent-driven-development, debugging, etc.) that re-deriving from scratch wastes budget and loses lessons. If multiple skills could apply, process skills (brainstorming, debugging) come before implementation skills (frontend-design, mcp-builder). This rule binds subagents too — when dispatching, brief the subagent to use the relevant skill (e.g. "use `superpowers:test-driven-development` for the pure helper").
+
+## Phase completion protocol
+
+**Every phase ends with three checks before presenting to the user. No exceptions.**
+
+After all impl-plan tasks land + static gates pass (tsc/eslint/vitest/next build), but BEFORE writing the vault note or declaring the phase done:
+
+1. **Dev-perspective review** — dispatch one agent (`superpowers:code-reviewer` or general-purpose) tasked with: code quality, security, race conditions, regressions, hidden state-management bugs (especially React closure-over-stale-state in `useEffect([])` patterns), CLAUDE.md rule compliance, and consistency with existing patterns. Reads the diff + the changed files; runs the gates independently.
+
+2. **User-perspective review** — dispatch a SEPARATE agent (never the same one) tasked with the cold-start user journey: open the app fresh, attempt the new feature's happy path, attempt the obvious wrong-thing-to-do, read every error message in context. Looks for: misleading copy, missing feedback, dead ends, accessibility gaps, "I succeeded but did I do the right thing?" ambiguity. The two perspectives MUST be separate agents — a single agent doing both collapses the two lenses into one.
+
+3. **Backtest** — exercise the code end-to-end against the real (or seeded) DB, not just unit tests. For mutation surfaces (Server Actions, migrations): execute the actual write, query the row back, assert the observable state. For read surfaces: hit the route, parse the response. Backtest catches what unit tests + lint cannot — drifted RLS policies, broken constraint names, integration regressions, "the test mocks the bug away" failures (rule 9).
+
+A phase that hasn't completed all three is not done. Fix what they find, re-run any check that touched the affected surface, then present to the user.
+
+The vault phase note and handoff doc are written AFTER these checks pass — not before.
