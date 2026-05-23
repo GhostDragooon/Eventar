@@ -75,6 +75,17 @@ Bite-sized TDD plans (with full code and commands) live in `docs/plans/`:
 
 When executing a phase, follow its plan task-by-task. Use `superpowers:executing-plans` or `superpowers:subagent-driven-development`.
 
+## Phase-8 deploy gates (do NOT remove without resolving)
+
+Before Phase 8 (Vercel deploy → public internet) lands, these MUST be resolved:
+
+1. **`/checkin/confirm` PII enumeration oracle** — current GET endpoint reveals registrant name for any valid 4-char code, no rate limit. ~923K namespace per event = full registrant list extractable in ~2.6h. See vault note `10 — Architecture/Security + Robustness.md` §14a Risk 1 for mitigation options.
+2. **CSPRNG for registration codes** — `lib/registrationCode.ts` uses `Math.random()`; codes are bearer tokens. Swap to `crypto.randomInt()`. See same vault note §14a Risk 2.
+3. **Host-header spoofing on QR origin** — `lib/qr.ts::buildEventQrPng` derives origin from request headers; add `NEXT_PUBLIC_SITE_URL`. See `docs/plans/handoff_23052026.md` open item 3.
+4. **Supabase migration history drift** — 3 local-only vs 4 remote-only rows; CI `db push` will refuse deploy. See `docs/plans/handoff_23052026.md` open item 2.
+
+---
+
 ## Hard rules (never break)
 
 These are mirrored from the vault but worth restating because breaking any of them creates large recovery cost:
