@@ -12,9 +12,8 @@ export default async function SelfCheckinPage({
 }) {
   const { code } = await searchParams;
 
-  if (!code || !isValidRegistrationCode(code)) {
-    return <UnrecognisedCode />;
-  }
+  if (!code) return <NoCode />;
+  if (!isValidRegistrationCode(code)) return <UnrecognisedCode />;
 
   const admin = supabaseAdmin();
   // The select string with !inner embed confuses supabase-js's generic
@@ -127,6 +126,19 @@ function UnrecognisedCode() {
       <p className="text-sm text-gray-600">
         Please show this code (or your QR) to the event organiser. They can
         check you in manually.
+      </p>
+    </main>
+  );
+}
+
+function NoCode() {
+  return (
+    <main className="max-w-md mx-auto p-6 space-y-4 text-center">
+      <h1 className="text-xl font-semibold">No check-in code</h1>
+      <p className="text-sm text-gray-600">
+        Open this page from your registration link or by scanning your
+        personal QR code. If you don&apos;t have one, ask the event organiser
+        for help.
       </p>
     </main>
   );
