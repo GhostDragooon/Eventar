@@ -35,10 +35,19 @@ export async function selfCheckIn(
   if (error) throw error;
 
   if (!updated) {
-    // Either bad code or already attended. The page-side render distinguishes
-    // these cases at load time; here we just return a generic error since
-    // the user is mid-flow and won't have an opportunity to re-render the page.
-    return { error: 'Already checked in or code not recognised.' };
+    // The page loaded this row successfully, so finding zero rows on UPDATE
+    // means either (a) the row was marked attended by another path between
+    // load and click (the common case), or (b) the row was deleted (rare).
+    // Distinguish via a second lookup so the user gets honest feedback
+    // instead of the conflated "already checked in or code not recognised."
+    const { data: existing, error: lookupErr } = await admin
+      .from('registrations')
+      .select('id, status')
+      .eq('registration_code', code)
+      .maybeSingle();
+    if (lookupErr) throw lookupErr;
+    if (!existing) return { error: 'This registration is no longer valid.' };
+    return { error: "You're already checked in." };
   }
 
   revalidatePath('/checkin/confirm');
