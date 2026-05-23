@@ -154,6 +154,22 @@ export default async function StaffEventEditPage({
       )}
       {event.status === 'published' && (
         <section>
+          <h2 className="text-sm font-medium text-gray-700 mb-1">On-site check-in</h2>
+          <p className="text-sm text-gray-600 mb-3">
+            Tablet-friendly roster with live updates, QR scanner, and manual mark-attended toggle.
+          </p>
+          <a
+            className="inline-flex items-center rounded-md bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700"
+            href={`/events/${event.id}/checkin`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open check-in →
+          </a>
+        </section>
+      )}
+      {event.status === 'published' && (
+        <section>
           <h2 className="text-sm font-medium text-gray-700 mb-1">Registrant export</h2>
           <p className="text-sm text-gray-600 mb-3">
             {registrationClosed
