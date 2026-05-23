@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { supabaseBrowser } from '@/lib/supabase/browser';
 import { formatInTz } from '@/lib/tz';
 import { isValidRegistrationCode } from '@/lib/registrationCode';
 import { markAttended } from './actions';
@@ -36,10 +36,7 @@ export default function RosterClient({
   // Realtime: subscribe to postgres_changes on registrations for this event.
   // Authenticated channel (uses the staff session cookie via @supabase/ssr).
   useEffect(() => {
-    const client = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    );
+    const client = supabaseBrowser();
     const channel = client
       .channel(`registrations:event=${eventId}`)
       .on(
@@ -242,7 +239,11 @@ function ScannerPanel({
   onClose: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
-  const [lastScanned, setLastScanned] = useState<{ code: string; at: number } | null>(null);
+  // useRef (not useState) so the html5-qrcode decoded-text callback — which is
+  // registered ONCE at mount and closes over its initial scope forever — can
+  // read the current debounce state via .current. With useState, the closure
+  // captured `lastScanned = null` permanently and the debounce never fired.
+  const lastScannedRef = useRef<{ code: string; at: number } | null>(null);
 
   useEffect(() => {
     let scanner: import('html5-qrcode').Html5Qrcode | null = null;
@@ -272,8 +273,9 @@ function ScannerPanel({
 
             // Debounce same-code-twice within 3s while QR is held up.
             const now = Date.now();
-            if (lastScanned && lastScanned.code === code && now - lastScanned.at < 3000) return;
-            setLastScanned({ code, at: now });
+            const last = lastScannedRef.current;
+            if (last && last.code === code && now - last.at < 3000) return;
+            lastScannedRef.current = { code, at: now };
 
             onScan(code);
           },
