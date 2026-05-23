@@ -9,7 +9,13 @@ type State =
   | { kind: 'ok' }
   | { kind: 'error'; message: string };
 
-export default function ConfirmButton({ code }: { code: string }) {
+export default function ConfirmButton({
+  code,
+  fullName,
+}: {
+  code: string;
+  fullName: string;
+}) {
   const [state, setState] = useState<State>({ kind: 'idle' });
   const [, startTransition] = useTransition();
 
@@ -36,7 +42,10 @@ export default function ConfirmButton({ code }: { code: string }) {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
+      <p className="text-sm text-gray-600 text-center">
+        Ready to check in, <strong>{fullName}</strong>?
+      </p>
       <button
         type="button"
         onClick={onClick}

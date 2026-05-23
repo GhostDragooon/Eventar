@@ -79,11 +79,8 @@ export default async function SelfCheckinPage({
 
   return (
     <Layout>
-      <p className="text-sm text-gray-600 text-center">
-        Hi <strong>{reg.full_name}</strong>, you&apos;re registered for:
-      </p>
       <EventCard event={event} />
-      <ConfirmButton code={code} />
+      <ConfirmButton code={code} fullName={reg.full_name} />
     </Layout>
   );
 }
