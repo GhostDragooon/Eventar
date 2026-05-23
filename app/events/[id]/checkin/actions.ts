@@ -26,7 +26,7 @@ export async function markAttended(
   method: 'qr' | 'manual',
 ): Promise<
   | { ok: true; registration: { id: string; full_name: string; event_id: string; event_title: string } }
-  | { error: string }
+  | { error: string; alreadyAttendedAt?: string }
 > {
   await requireStaff();
   if (!isValidRegistrationCode(code)) return { error: 'Invalid code format.' };
@@ -57,7 +57,12 @@ export async function markAttended(
       .maybeSingle();
     if (lookupErr) throw lookupErr;
     if (!existing) return { error: 'Code not recognised.' };
-    return { error: `Already attended at ${existing.check_in_at}.` };
+    // Return raw ISO; client formats with eventTimezone (action stays
+    // timezone-agnostic — formatting belongs to the UI layer).
+    return {
+      error: 'Already attended.',
+      alreadyAttendedAt: existing.check_in_at ?? undefined,
+    };
   }
 
   const { data: event, error: evtErr } = await admin

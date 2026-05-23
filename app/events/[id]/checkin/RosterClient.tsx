@@ -81,7 +81,10 @@ export default function RosterClient({
   async function handleMark(code: string, method: 'qr' | 'manual') {
     const res = await markAttended(code, method);
     if ('error' in res) {
-      setToast({ kind: 'err', message: res.error });
+      const suffix = res.alreadyAttendedAt
+        ? ` at ${formatInTz(res.alreadyAttendedAt, eventTimezone)}`
+        : '';
+      setToast({ kind: 'err', message: `${res.error.replace(/\.$/, '')}${suffix}.` });
       return;
     }
     setToast({
