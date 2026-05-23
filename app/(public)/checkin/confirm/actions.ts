@@ -1,0 +1,46 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { supabaseAdmin } from '@/lib/supabase/admin';
+import { isValidRegistrationCode } from '@/lib/registrationCode';
+
+/**
+ * Public self-checkin via the personal QR URL /checkin/confirm?code=WK-XXXX.
+ *
+ * No auth — the code IS the bearer token. Admin client because anon has no
+ * UPDATE policy on registrations. The WHERE status != 'attended' clause
+ * makes the action idempotent so re-tapping the link doesn't re-stamp.
+ *
+ * Mirrors markAttended's idempotency pattern but with method='qr' hard-coded
+ * (self-checkin always counts as QR — the attendee got here via their
+ * personal QR URL).
+ */
+export async function selfCheckIn(
+  code: string,
+): Promise<{ ok: true; eventId: string } | { error: string }> {
+  if (!isValidRegistrationCode(code)) return { error: 'Invalid code format.' };
+
+  const admin = supabaseAdmin();
+  const { data: updated, error } = await admin
+    .from('registrations')
+    .update({
+      status: 'attended',
+      check_in_at: new Date().toISOString(),
+      check_in_method: 'qr',
+    })
+    .eq('registration_code', code)
+    .neq('status', 'attended')
+    .select('id, event_id')
+    .maybeSingle();
+  if (error) throw error;
+
+  if (!updated) {
+    // Either bad code or already attended. The page-side render distinguishes
+    // these cases at load time; here we just return a generic error since
+    // the user is mid-flow and won't have an opportunity to re-render the page.
+    return { error: 'Already checked in or code not recognised.' };
+  }
+
+  revalidatePath('/checkin/confirm');
+  return { ok: true, eventId: updated.event_id };
+}
