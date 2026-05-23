@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/browser';
 import { formatInTz } from '@/lib/tz';
 import { isValidRegistrationCode } from '@/lib/registrationCode';
+import { humanizeCameraError } from '@/lib/cameraError';
 import { markAttended } from './actions';
 
 type RosterRow = {
@@ -286,11 +287,7 @@ function ScannerPanel({
         );
       } catch (e) {
         if (cancelled) return;
-        setError(
-          e instanceof Error
-            ? `Camera unavailable: ${e.message}. Use "Enter code" instead.`
-            : 'Camera unavailable. Use "Enter code" instead.',
-        );
+        setError(humanizeCameraError(e));
       }
     })();
 
