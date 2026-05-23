@@ -161,8 +161,6 @@ export default async function StaffEventEditPage({
           <a
             className="inline-flex items-center rounded-md bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700"
             href={`/events/${event.id}/checkin`}
-            target="_blank"
-            rel="noreferrer"
           >
             Open check-in →
           </a>
