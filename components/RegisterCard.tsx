@@ -29,7 +29,13 @@ export default function RegisterCard({ eventId, maxAttendees, currentCount }: Pr
   if (atCapacity) {
     return (
       <Card>
-        <p className="text-gray-700">
+        <div className="flex items-center gap-md mb-sm">
+          <div className="w-10 h-10 rounded-full bg-error-container text-on-error-container flex items-center justify-center" aria-hidden>
+            <span className="material-symbols-outlined text-[20px]">event_busy</span>
+          </div>
+          <h2 className="font-headline-sm text-[20px] text-on-surface">At capacity</h2>
+        </div>
+        <p className="font-body-md text-body-md text-on-surface-variant">
           This event is at capacity ({currentCount}/{maxAttendees} registered).
           Future events will open registration soon.
         </p>
@@ -41,11 +47,16 @@ export default function RegisterCard({ eventId, maxAttendees, currentCount }: Pr
   if (state.kind === 'success') {
     return (
       <Card>
-        <p className="font-medium text-green-700">✓ You&apos;re registered!</p>
-        <p className="text-sm text-gray-700 mt-2">
+        <div className="flex items-center gap-md mb-sm">
+          <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary flex items-center justify-center" aria-hidden>
+            <span className="material-symbols-outlined text-[20px]" data-fill="1">check_circle</span>
+          </div>
+          <h2 className="font-headline-sm text-[20px] text-on-surface">You&apos;re registered!</h2>
+        </div>
+        <p className="font-body-md text-body-md text-on-surface">
           We&apos;ll email a confirmation to <strong>{state.email}</strong> shortly.
         </p>
-        <p className="text-xs text-gray-500 mt-2">
+        <p className="font-body-md text-[12px] text-on-surface-variant mt-sm italic">
           (Phase 7 will make this real; for now, the server logged the would-send.)
         </p>
       </Card>
@@ -71,10 +82,22 @@ export default function RegisterCard({ eventId, maxAttendees, currentCount }: Pr
   // ─── States 1, 2, 4: Initial / Submitting / Error ─────────────────────
   return (
     <Card>
-      <h2 className="font-medium text-gray-900">Register for this event</h2>
-      <form className="mt-4 space-y-3" onSubmit={onSubmit}>
+      <div className="flex items-center gap-md mb-md">
+        <div className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center" aria-hidden>
+          <span className="material-symbols-outlined text-[20px]">edit_note</span>
+        </div>
+        <div>
+          <h2 className="font-headline-sm text-[20px] text-on-surface">Register</h2>
+          <p className="font-body-md text-[12px] text-on-surface-variant">
+            Free. Takes 30 seconds.
+          </p>
+        </div>
+      </div>
+      <form className="space-y-md" onSubmit={onSubmit}>
         <label className="block">
-          <span className="block text-sm font-medium mb-1 text-gray-900">Full name</span>
+          <span className="block font-label-md text-label-md text-on-surface uppercase mb-xs">
+            Full name
+          </span>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -85,7 +108,9 @@ export default function RegisterCard({ eventId, maxAttendees, currentCount }: Pr
           />
         </label>
         <label className="block">
-          <span className="block text-sm font-medium mb-1 text-gray-900">Email</span>
+          <span className="block font-label-md text-label-md text-on-surface uppercase mb-xs">
+            Email
+          </span>
           <Input
             type="email"
             value={email}
@@ -97,11 +122,23 @@ export default function RegisterCard({ eventId, maxAttendees, currentCount }: Pr
         </label>
 
         {errorMessage && (
-          <p className="text-sm text-red-700">⚠ {errorMessage}</p>
+          <p
+            role="alert"
+            className="font-body-md text-body-md text-error bg-error-container/20 border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
+          >
+            <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden>
+              warning
+            </span>
+            <span>{errorMessage}</span>
+          </p>
         )}
 
-        <div className="flex justify-end pt-1">
-          <Button type="submit" disabled={isSubmitting || !name.trim() || !email.trim()}>
+        <div className="flex justify-end pt-xs">
+          <Button
+            type="submit"
+            disabled={isSubmitting || !name.trim() || !email.trim()}
+            className="min-w-32"
+          >
             {isSubmitting ? 'Registering…' : 'Register'}
           </Button>
         </div>
@@ -112,7 +149,7 @@ export default function RegisterCard({ eventId, maxAttendees, currentCount }: Pr
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-6">
+    <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm">
       {children}
     </section>
   );
