@@ -23,15 +23,18 @@ const NAV: NavItem[] = [
   { href: '#attendees', label: 'Attendees', icon: 'groups', disabled: true, disabledReason: 'Per-event attendee view ships with Phase 5+' },
   { href: '#sessions', label: 'Sessions', icon: 'calendar_today', disabled: true, disabledReason: 'Multi-session events are not yet supported' },
   { href: '#analytics', label: 'Analytics', icon: 'insights', disabled: true, disabledReason: 'Analytics dashboard ships in Phase 6' },
-  { href: '/events/new', label: 'Registration', icon: 'how_to_reg' },
+  { href: '/events/new', label: 'New Event', icon: 'event_available' },
   { href: '#settings', label: 'Settings', icon: 'settings', disabled: true, disabledReason: 'Org settings ship post-Phase-6' },
 ];
 
 function isActive(pathname: string, href: string): boolean {
   if (href.startsWith('#')) return false;
-  if (href === '/dashboard') return pathname === '/dashboard';
-  // /events/new and /events/[id]/* both route through the "Registration" tab.
-  if (href === '/events/new') return pathname.startsWith('/events');
+  // /events/new highlights only the New Event tab. /events/[id]/* (edit,
+  // checkin) highlight Dashboard since that's the landing view for "events
+  // you manage" until a per-event view exists.
+  if (href === '/dashboard') {
+    return pathname === '/dashboard' || /^\/events\/[^/]+(\/.*)?$/.test(pathname);
+  }
   return pathname === href;
 }
 

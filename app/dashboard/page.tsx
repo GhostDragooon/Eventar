@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireStaff, NotAuthorizedError } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
-import { supabaseAdmin } from '@/lib/supabase/admin';
 import { formatInTz } from '@/lib/tz';
 import { StaffShell } from '@/components/shell/StaffShell';
 
@@ -22,14 +21,14 @@ export default async function DashboardPage() {
     .order('start_time', { ascending: false })
     .limit(50);
 
-  // Cross-event totals for the metric cards. Service-role read mirrors the
-  // exportRegistrantsCsv pattern — staff already passed requireStaff above
-  // and we deliberately want metrics across all events the manager has
-  // visibility into (RLS would over-filter for the manager role).
-  const admin = supabaseAdmin();
+  // Metric counts — RLS-aware (NOT service-role). Managers see all
+  // registrations via registrations_manager_select_all; organizers see only
+  // their own via registrations_organizer_select_own. The metric card thus
+  // shows what each role is authorized to see — same boundary as the
+  // attendees-list view they'd open from a per-event row.
   const [{ count: totalRegistered }, { count: totalAttended }] = await Promise.all([
-    admin.from('registrations').select('*', { count: 'exact', head: true }),
-    admin
+    supabase.from('registrations').select('*', { count: 'exact', head: true }),
+    supabase
       .from('registrations')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'attended'),

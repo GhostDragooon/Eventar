@@ -168,10 +168,10 @@ function RegisteredView({
   return (
     <>
       <header className="text-center space-y-sm">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-container text-on-primary rounded-full mb-sm" aria-hidden>
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-container text-on-primary-container rounded-full mb-sm" aria-hidden>
           <span className="material-symbols-outlined text-[32px]">person_check</span>
         </div>
-        <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-primary">
+        <h1 className="font-headline-lg text-headline-lg text-primary">
           Check-in ready
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant">
@@ -204,10 +204,10 @@ function AttendedView({
   return (
     <>
       <header className="text-center space-y-sm">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-container text-on-primary rounded-full mb-sm" aria-hidden>
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-primary text-on-primary rounded-full mb-sm" aria-hidden>
           <span className="material-symbols-outlined text-[32px]" data-fill="1">check_circle</span>
         </div>
-        <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-primary">
+        <h1 className="font-headline-lg text-headline-lg text-primary">
           You&apos;re checked in
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant">

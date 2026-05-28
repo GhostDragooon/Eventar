@@ -48,7 +48,7 @@ export default function RegisterCard({ eventId, maxAttendees, currentCount }: Pr
     return (
       <Card>
         <div className="flex items-center gap-md mb-sm">
-          <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary flex items-center justify-center" aria-hidden>
+          <div className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center" aria-hidden>
             <span className="material-symbols-outlined text-[20px]" data-fill="1">check_circle</span>
           </div>
           <h2 className="font-headline-sm text-[20px] text-on-surface">You&apos;re registered!</h2>
