@@ -49,8 +49,34 @@ function AccordionTrigger({
 function AccordionContent({
   className,
   children,
+  unconstrained = false,
   ...props
-}: AccordionPrimitive.Panel.Props) {
+}: AccordionPrimitive.Panel.Props & { unconstrained?: boolean }) {
+  // `unconstrained`: base-ui measures the panel's scrollHeight only when
+  // `open` toggles (no ResizeObserver), so content that grows AFTER open —
+  // e.g. an inline-expanding date/time picker — gets clipped by the panel's
+  // fixed height + overflow-hidden. Opting out of both (and the slide
+  // animation, which depends on the measured height) lets such sections grow
+  // naturally. Use only for sections that contain inline-expanding controls.
+  if (unconstrained) {
+    return (
+      <AccordionPrimitive.Panel
+        data-slot="accordion-content"
+        className="text-sm"
+        {...props}
+      >
+        <div
+          className={cn(
+            "pt-0 pb-2.5 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4",
+            className
+          )}
+        >
+          {children}
+        </div>
+      </AccordionPrimitive.Panel>
+    )
+  }
+
   return (
     <AccordionPrimitive.Panel
       data-slot="accordion-content"

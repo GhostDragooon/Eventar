@@ -58,15 +58,19 @@ export function TimePicker15({
     };
   }, [open]);
 
-  // On open, scroll the current slot into view (centered if possible). No
-  // setState here — the highlight reset happens in openPicker() instead, so
-  // this effect stays side-effect-only (avoids react-hooks/set-state-in-effect).
+  // On open, center the current slot WITHIN the list only — scrolling the
+  // inner <ul>'s scrollTop directly (not scrollIntoView, which would also
+  // nudge the page now that the panel renders inline). No setState here —
+  // the highlight reset lives in openPicker() (avoids set-state-in-effect).
   useEffect(() => {
     if (!open) return;
     requestAnimationFrame(() => {
+      const list = listRef.current;
       const idx = ((value ?? 9 * 60) / 15) | 0;
-      const el = listRef.current?.querySelector<HTMLElement>(`[data-idx="${idx}"]`);
-      el?.scrollIntoView({ block: 'center' });
+      const el = list?.querySelector<HTMLElement>(`[data-idx="${idx}"]`);
+      if (list && el) {
+        list.scrollTop = el.offsetTop - list.clientHeight / 2 + el.clientHeight / 2;
+      }
     });
   }, [open, value]);
 
@@ -129,16 +133,14 @@ export function TimePicker15({
 
       {open && (
         <div
-          className="absolute left-0 right-0 mt-xs z-50 bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-xl overflow-hidden"
-          // Stop bubbling so the outside-click handler doesn't immediately close.
-          onMouseDown={e => e.stopPropagation()}
+          className="mt-xs bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden"
         >
           <ul
             ref={listRef}
             role="listbox"
             tabIndex={0}
             onKeyDown={onListKey}
-            className="max-h-[280px] overflow-y-auto py-sm focus:outline-none"
+            className="relative max-h-[240px] overflow-y-auto py-sm focus:outline-none"
           >
             {Array.from({ length: 96 }, (_, i) => i * 15).map(min => {
               const isSelected = value === min;

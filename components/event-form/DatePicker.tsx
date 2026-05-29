@@ -117,8 +117,7 @@ export function DatePicker({
         <div
           role="dialog"
           aria-label="Choose date"
-          className="absolute left-0 mt-xs z-50 w-[320px] bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-xl p-md"
-          onMouseDown={e => e.stopPropagation()}
+          className="mt-xs w-full max-w-[360px] bg-surface-container-lowest border border-outline-variant rounded-2xl p-md"
         >
           <div className="flex items-center justify-between mb-md">
             <span className="font-headline-sm text-[18px] text-on-surface">{monthLabel}</span>

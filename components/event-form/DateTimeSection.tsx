@@ -42,7 +42,9 @@ export default function DateTimeSection({ value, onChange }: Props) {
 
   return (
     <div className="space-y-md">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
+      {/* Date on its own row so its inline calendar pushes the time row down
+          cleanly (no grid-cell misalignment). Start/End share a 2-col row. */}
+      <div className="max-w-[360px]">
         <Labelled label="Date" required>
           <DatePicker
             value={value.date}
@@ -50,6 +52,8 @@ export default function DateTimeSection({ value, onChange }: Props) {
             ariaLabel="Event date"
           />
         </Labelled>
+      </div>
+      <div className="grid grid-cols-2 gap-md">
         <Labelled label="Start" required>
           <TimePicker15
             value={value.startMinutes}

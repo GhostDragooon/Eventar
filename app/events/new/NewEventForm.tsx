@@ -187,13 +187,15 @@ export default function NewEventForm() {
             </SectionItem>
 
             <SectionItem id="datetime" open={open === 'datetime'} done={v3}
-                         title={SECTION_META.datetime.label} summary={dateTimeSummary(datetime)}>
+                         title={SECTION_META.datetime.label} summary={dateTimeSummary(datetime)}
+                         unconstrained>
               <DateTimeSection value={datetime} onChange={(p) => setDatetime({ ...datetime, ...p })} />
               <DoneRow disabled={!v3} onDone={() => setOpen(NEXT_SECTION.datetime)} />
             </SectionItem>
 
             <SectionItem id="agenda" open={open === 'agenda'} done={v4}
-                         title={SECTION_META.agenda.label} summary={agendaSummary(blocks, parallelIds)}>
+                         title={SECTION_META.agenda.label} summary={agendaSummary(blocks, parallelIds)}
+                         unconstrained>
               <AgendaSection
                 date={datetime.date}
                 eventStartMinutes={datetime.startMinutes}
@@ -233,10 +235,11 @@ export default function NewEventForm() {
 }
 
 function SectionItem({
-  id, open, done, title, summary, children,
+  id, open, done, title, summary, children, unconstrained = false,
 }: {
   id: SectionId; open: boolean; done: boolean; title: string; summary: string;
   children: React.ReactNode;
+  unconstrained?: boolean;
 }) {
   const meta = SECTION_META[id];
   return (
@@ -273,7 +276,7 @@ function SectionItem({
           </div>
         </div>
       </AccordionTrigger>
-      <AccordionContent className="pt-sm pb-lg">
+      <AccordionContent className="pt-sm pb-lg" unconstrained={unconstrained}>
         {children}
       </AccordionContent>
     </AccordionItem>
