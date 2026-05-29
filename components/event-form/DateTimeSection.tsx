@@ -1,18 +1,31 @@
 'use client';
 
-import { Input } from '@/components/ui/input';
+import { DatePicker } from './DatePicker';
 import {
-  reduceTimeRange, formatHour, durationLabel,
-  type TimeRangeState,
-} from '@/lib/time-range';
+  TimePicker15,
+  formatMinutes12h,
+  formatMinutes24h,
+  formatDurationMinutes,
+} from './TimePicker15';
 
-// 1-hour chips, 08:00 → 20:00 inclusive (13 slots).
-const HOURS = Array.from({ length: 13 }, (_, i) => i + 8);
+/**
+ * Phase-4.6-followup: switched the picker from a 1h chip strip to two
+ * popover-style pickers per the mockup (calendar grid + 15-min slot list).
+ *
+ * State shape changed from { startHour, endHour } in 0..23 hours to
+ * { startMinutes, endMinutes } in 0..1439 minutes (always a multiple of
+ * 15 by construction — the picker only emits those). NewEventForm reads
+ * the same fields with formatMinutes24h to build the ISO timestamps.
+ *
+ * The duration bar relocated here from AgendaSection per user feedback —
+ * event-level Date & Time is where total event duration belongs; agenda
+ * blocks just need start/end pickers.
+ */
 
 export type DateTimeValue = {
-  date: string;                  // YYYY-MM-DD
-  startHour: number | null;      // 8..20, or null
-  endHour: number | null;        // 8..20, or null
+  date: string;                    // YYYY-MM-DD
+  startMinutes: number | null;     // 0..1439, multiple of 15
+  endMinutes: number | null;
 };
 
 type Props = {
@@ -21,115 +34,119 @@ type Props = {
 };
 
 export default function DateTimeSection({ value, onChange }: Props) {
-  const range: TimeRangeState = [value.startHour, value.endHour];
-  const [start, end] = range;
+  const dur = durationOrNull(value.startMinutes, value.endMinutes);
 
-  function clickHour(h: number) {
-    const [s, e] = reduceTimeRange(range, h);
-    onChange({ startHour: s, endHour: e });
-  }
+  // Duration bar scale: a workshop is realistically 1–12h. Clamp to 12h so
+  // a normal-length event uses most of the bar width without saturating.
+  const barPct = dur !== null ? Math.min(100, (dur / (12 * 60)) * 100) : 0;
 
   return (
-    <div className="space-y-5">
-      <label className="block">
-        <span className="block text-sm font-medium mb-1 text-gray-900">Date</span>
-        <Input
-          type="date"
-          value={value.date}
-          onChange={(e) => onChange({ date: e.target.value })}
-          className="w-auto"
-        />
-      </label>
-
-      <div>
-        <div className="flex items-baseline justify-between mb-2">
-          <span className="text-sm font-medium text-gray-900">Time</span>
-          <RangeReadout start={start} end={end} />
-        </div>
-        <TimePill hours={HOURS} start={start} end={end} onClick={clickHour} />
-        <p className="text-xs text-gray-500 mt-2">
-          {start === null
-            ? 'Tap a chip to set the start time.'
-            : end === null
-            ? 'Tap another chip to set the end time. Tap the same chip to clear.'
-            : 'Tap an end chip to clear, or any other chip to restart.'}
-        </p>
-        <p className="text-xs text-gray-500 mt-1">
-          Times are in your local timezone. The event page will display them in
-          the venue&apos;s local time.
-        </p>
+    <div className="space-y-md">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
+        <Labelled label="Date" required>
+          <DatePicker
+            value={value.date}
+            onChange={(iso) => onChange({ date: iso })}
+            ariaLabel="Event date"
+          />
+        </Labelled>
+        <Labelled label="Start" required>
+          <TimePicker15
+            value={value.startMinutes}
+            onChange={(m) => onChange({ startMinutes: m })}
+            ariaLabel="Event start time"
+          />
+        </Labelled>
+        <Labelled label="End" required>
+          <TimePicker15
+            value={value.endMinutes}
+            onChange={(m) => onChange({ endMinutes: m })}
+            invalid={
+              value.startMinutes !== null &&
+              value.endMinutes !== null &&
+              value.endMinutes <= value.startMinutes
+            }
+            disabled={value.startMinutes === null}
+            ariaLabel="Event end time"
+          />
+        </Labelled>
       </div>
+
+      {/* Duration bar + label (moved here from AgendaSection per user feedback). */}
+      {dur !== null && (
+        <div className="flex items-center gap-sm">
+          <div className="flex-1 h-1.5 bg-surface-container-highest rounded-full overflow-hidden" aria-hidden>
+            <div
+              className="h-full bg-primary rounded-full transition-all duration-300"
+              style={{ width: `${barPct}%` }}
+            />
+          </div>
+          <span className="font-label-md text-label-md text-on-surface-variant whitespace-nowrap">
+            {formatDurationMinutes(dur)}
+          </span>
+        </div>
+      )}
+
+      {value.startMinutes !== null && value.endMinutes !== null && value.endMinutes <= value.startMinutes && (
+        <p className="font-body-md text-body-md text-error flex items-center gap-xs">
+          <span className="material-symbols-outlined text-[16px]" aria-hidden>warning</span>
+          End must be after Start.
+        </p>
+      )}
+
+      <p className="font-body-md text-[12px] text-on-surface-variant">
+        Times are in your local timezone. The event page will display them in
+        the venue&apos;s local time.
+      </p>
     </div>
   );
 }
 
-function RangeReadout({ start, end }: { start: number | null; end: number | null }) {
-  if (start === null) return null;
-  if (end === null) {
-    return <span className="text-sm text-gray-600">Start: {formatHour(start)}</span>;
-  }
-  return (
-    <span className="text-sm text-gray-700">
-      {formatHour(start)}–{formatHour(end)} · <strong>{durationLabel(start, end)}</strong>
-    </span>
-  );
-}
-
-function TimePill({
-  hours, start, end, onClick,
+function Labelled({
+  label,
+  children,
+  required,
 }: {
-  hours: number[];
-  start: number | null;
-  end: number | null;
-  onClick: (h: number) => void;
+  label: string;
+  children: React.ReactNode;
+  required?: boolean;
 }) {
   return (
-    <div className="overflow-x-auto -mx-1 px-1 pb-1">
-      <div className="inline-flex rounded-lg border border-gray-300 bg-white overflow-hidden">
-        {hours.map((h, i) => {
-          const isStart = h === start;
-          const isEnd   = h === end;
-          const isInside = start !== null && end !== null && h > start && h < end;
-          const isSelected = isStart || isEnd || isInside;
-
-          return (
-            <button
-              key={h}
-              type="button"
-              onClick={() => onClick(h)}
-              aria-pressed={isSelected}
-              className={[
-                'px-3 py-2 text-sm transition-colors',
-                i !== 0 && 'border-l border-gray-300',
-                isSelected
-                  ? 'bg-blue-600 text-white font-medium'
-                  : 'bg-white text-gray-700 hover:bg-gray-50',
-                isStart && 'rounded-l-md',
-                isEnd   && 'rounded-r-md',
-              ].filter(Boolean).join(' ')}
-            >
-              {h}
-            </button>
-          );
-        })}
-      </div>
-    </div>
+    <label className="block">
+      <span className="block font-label-md text-label-md uppercase tracking-wider text-on-surface mb-xs">
+        {label}{required && <span className="text-error ml-xs" aria-label="required">*</span>}
+      </span>
+      {children}
+    </label>
   );
 }
 
-/* ============== exports consumed by app/events/new/page.tsx ============== */
+/* ============== exports consumed by NewEventForm.tsx ============== */
 
 export function dateTimeSummary(v: DateTimeValue): string {
-  if (!v.date || v.startHour === null || v.endHour === null) return 'Not set';
-  return `${formatDateShort(v.date)}, ${formatHour(v.startHour)}–${formatHour(v.endHour)} (${durationLabel(v.startHour, v.endHour)})`;
+  if (!v.date || v.startMinutes === null || v.endMinutes === null) return 'Not set';
+  const dur = v.endMinutes - v.startMinutes;
+  return `${formatDateShort(v.date)}, ${formatMinutes12h(v.startMinutes)}–${formatMinutes12h(v.endMinutes)} (${formatDurationMinutes(dur)})`;
 }
 
 export function dateTimeValid(v: DateTimeValue): boolean {
-  return Boolean(v.date) && v.startHour !== null && v.endHour !== null && v.endHour > v.startHour;
+  return Boolean(v.date)
+    && v.startMinutes !== null
+    && v.endMinutes !== null
+    && v.endMinutes > v.startMinutes;
+}
+
+/** Re-export so NewEventForm can build the ISO without re-importing it. */
+export { formatMinutes24h };
+
+function durationOrNull(s: number | null, e: number | null): number | null {
+  if (s === null || e === null) return null;
+  if (e <= s) return null;
+  return e - s;
 }
 
 function formatDateShort(iso: string): string {
   if (!iso) return '';
-  const d = new Date(`${iso}T00:00:00`);
+  const d = new Date(`${iso}T12:00:00`);
   return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 }

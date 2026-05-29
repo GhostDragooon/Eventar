@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { findParallelBlockIds } from '@/lib/agenda';
+import { TimePicker15 } from './TimePicker15';
 
 export type TopicDraft = {
   title: string;
@@ -58,7 +59,7 @@ function labelForKind(k: BlockKind): string {
   return map[k];
 }
 
-/* ─── Validation helpers (pure) ───────────────────────────────────────── */
+/* ─── Time helpers (HH:MM ⇄ minutes) ─────────────────────────────────── */
 
 function isHHMM(s: string): boolean {
   return /^\d{2}:\d{2}$/.test(s);
@@ -69,20 +70,14 @@ function hhmmToMinutes(s: string): number | null {
   if (h < 0 || h > 23 || m < 0 || m > 59) return null;
   return h * 60 + m;
 }
-function durationMinutes(start: string, end: string): number | null {
-  const s = hhmmToMinutes(start);
-  const e = hhmmToMinutes(end);
-  if (s === null || e === null) return null;
-  if (e <= s) return null;
-  return e - s;
+function hhmmFromMinutes(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
-function formatDuration(mins: number): string {
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  if (h === 0) return `${m}m`;
-  if (m === 0) return `${h}h`;
-  return `${h}h ${m}m`;
-}
+
+/* ─── Validation (pure) ──────────────────────────────────────────────── */
+
 function topicHasErrors(t: TopicDraft): boolean {
   return !t.title.trim() || !t.speaker_name.trim();
 }
@@ -90,34 +85,56 @@ type BlockErrors = {
   start: boolean;
   end: boolean;
   endBeforeStart: boolean;
+  envelope: boolean;     // block falls outside the event's start/end window
   title: boolean;
   topicIndices: number[];
 };
-function blockErrors(block: BlockDraft): BlockErrors {
+function blockErrors(
+  block: BlockDraft,
+  eventStartMin: number | null,
+  eventEndMin: number | null,
+): BlockErrors {
   const startOk = isHHMM(block.start);
   const endOk = isHHMM(block.end);
-  const endBeforeStart = startOk && endOk && (hhmmToMinutes(block.end)! <= hhmmToMinutes(block.start)!);
+  const bs = hhmmToMinutes(block.start);
+  const be = hhmmToMinutes(block.end);
+  const endBeforeStart = bs !== null && be !== null && be <= bs;
+  // Envelope: only checkable when both the event window AND this block's
+  // times are fully set. If unknown, don't flag (other errors cover gaps).
+  const envelope =
+    eventStartMin !== null && eventEndMin !== null &&
+    bs !== null && be !== null &&
+    (bs < eventStartMin || be > eventEndMin);
   const titleMissing = !block.title.trim();
   const topicIndices = block.topics.map((t, i) => topicHasErrors(t) ? i : -1).filter(i => i >= 0);
   return {
     start: !startOk,
     end: !endOk,
     endBeforeStart,
+    envelope,
     title: titleMissing,
     topicIndices,
   };
 }
 function blockHasErrors(e: BlockErrors): boolean {
-  return e.start || e.end || e.endBeforeStart || e.title || e.topicIndices.length > 0;
+  return e.start || e.end || e.endBeforeStart || e.envelope || e.title || e.topicIndices.length > 0;
 }
 
 type Props = {
   date: string;
+  eventStartMinutes: number | null;
+  eventEndMinutes: number | null;
   blocks: BlockDraft[];
   onChange: (blocks: BlockDraft[]) => void;
 };
 
-export default function AgendaSection({ date, blocks, onChange }: Props) {
+export default function AgendaSection({
+  date,
+  eventStartMinutes,
+  eventEndMinutes,
+  blocks,
+  onChange,
+}: Props) {
   const components = blocks.filter(b => !FILLER_KINDS.includes(b.kind));
   const fillers    = blocks.filter(b =>  FILLER_KINDS.includes(b.kind));
 
@@ -129,10 +146,10 @@ export default function AgendaSection({ date, blocks, onChange }: Props) {
     return findParallelBlockIds(items);
   }, [blocks, date]);
 
-  // Touched-set: a block becomes "touched" once any field in it receives a
-  // blur event. Until touched, the block does NOT show signal-red — it's a
-  // freshly-added empty card. This avoids the hostile UX of screaming
-  // errors immediately on add.
+  // Touched-set: a block becomes "touched" once the user interacts with any
+  // field in it (picks a time, or blurs a text field). Until touched, the
+  // block does NOT show signal-red — it's a freshly-added empty card. This
+  // avoids the hostile UX of screaming errors immediately on add.
   const [touched, setTouched] = useState<Set<string>>(new Set());
   function markTouched(localId: string) {
     setTouched(prev => {
@@ -190,6 +207,7 @@ export default function AgendaSection({ date, blocks, onChange }: Props) {
             block={b}
             parallel={parallelIds.has(b.localId)}
             touched={touched.has(b.localId)}
+            errors={blockErrors(b, eventStartMinutes, eventEndMinutes)}
             onTouch={() => markTouched(b.localId)}
             onChange={(patch) => update(b.localId, patch)}
             onRemove={() => remove(b.localId)}
@@ -216,6 +234,7 @@ export default function AgendaSection({ date, blocks, onChange }: Props) {
             key={b.localId}
             block={b}
             touched={touched.has(b.localId)}
+            errors={blockErrors(b, eventStartMinutes, eventEndMinutes)}
             onTouch={() => markTouched(b.localId)}
             onChange={(patch) => update(b.localId, patch)}
             onRemove={() => remove(b.localId)}
@@ -235,16 +254,22 @@ export function agendaSummary(blocks: BlockDraft[], parallelIds: Set<string>): s
 
 /**
  * Agenda is optional — an empty agenda is valid. But if the user has added
- * blocks, each block must pass the same essential-field check the per-block
- * red shell uses. Without this, bad blocks slip to the server and surface
- * as opaque Zod errors there (rule #12 — fail visibly at the boundary
- * closest to the user).
+ * blocks, each block must pass essential-field + window checks (the same
+ * ones the per-block red shell uses). Without this, bad blocks slip to the
+ * server and surface as opaque Zod / envelope errors there only after the
+ * user clicks Publish (rule #12 — fail visibly, at the boundary closest to
+ * the user). The event window is threaded in so the envelope check
+ * (block fits inside event start/end) can run client-side.
  */
-export function agendaValid(blocks: BlockDraft[]): boolean {
-  return blocks.every(b => !blockHasErrors(blockErrors(b)));
+export function agendaValid(
+  blocks: BlockDraft[],
+  eventStartMinutes: number | null,
+  eventEndMinutes: number | null,
+): boolean {
+  return blocks.every(b => !blockHasErrors(blockErrors(b, eventStartMinutes, eventEndMinutes)));
 }
 
-/* ===== Block editors (lifted verbatim from Phase 1.5 page.tsx) ===== */
+/* ===== Block editors ===== */
 
 function Labelled({
   label,
@@ -266,97 +291,61 @@ function Labelled({
 }
 
 /**
- * TimeRow: implements T20 — entry-first time selector.
- * - Start input is always visible.
- * - End input only appears once Start has a value. (Lower friction; you
- *   pick End once you know where you're starting from.)
- * - Duration strip + label show under the row once BOTH are valid and
- *   end > start. Error message shows if end <= start.
- *
- * The "bar" the user asked for is the duration strip — a horizontal
- * line whose width reflects the block's duration on a 0–8h scale (8h
- * being a long-form workshop, the longest sensible single-block duration).
+ * Two 15-minute TimePicker15 popovers. The End picker stays disabled until
+ * Start is set (entry-first — you pick End once you know the start). The
+ * duration bar that used to live here moved to the event-level Date & Time
+ * section per user feedback; agenda blocks only need the two pickers plus
+ * inline error messages (end-before-start, outside-window).
  */
-function TimeRow({
-  start,
-  end,
+function TimeFields({
+  block,
   errors,
   touched,
   onChange,
-  onBlur,
+  onTouch,
 }: {
-  start: string;
-  end: string;
+  block: BlockDraft;
   errors: BlockErrors;
   touched: boolean;
   onChange: (patch: { start?: string; end?: string }) => void;
-  onBlur: () => void;
+  onTouch: () => void;
 }) {
-  const dur = durationMinutes(start, end);
-  const showStartErr = touched && errors.start;
-  const showEndErr   = touched && (errors.end || errors.endBeforeStart);
-  const showEndInput = isHHMM(start);
-
-  // Duration bar scale: clamp 0–8h to 0–100%. 8h max keeps the bar useful
-  // for typical 30-min to multi-hour blocks without being dwarfed by edge
-  // cases (overnight events round to 100% — that's fine, those are rare).
-  const barPct = dur !== null ? Math.min(100, (dur / (8 * 60)) * 100) : 0;
+  const startMin = hhmmToMinutes(block.start);
+  const endMin = hhmmToMinutes(block.end);
+  const showStartErr = touched && (errors.start || errors.envelope);
+  const showEndErr   = touched && (errors.end || errors.endBeforeStart || errors.envelope);
 
   return (
     <div className="space-y-sm">
       <div className="grid grid-cols-2 gap-md">
         <Labelled label="Start" required>
-          <input
-            className={`${inputBase} ${showStartErr ? inputErr : inputOk}`}
-            type="time"
-            value={start}
-            onChange={e => onChange({ start: e.target.value })}
-            onBlur={onBlur}
-            aria-invalid={showStartErr || undefined}
+          <TimePicker15
+            value={startMin}
+            onChange={(m) => { onChange({ start: hhmmFromMinutes(m) }); onTouch(); }}
+            invalid={showStartErr}
+            ariaLabel="Block start time"
           />
         </Labelled>
-        {showEndInput ? (
-          <Labelled label="End" required>
-            <input
-              className={`${inputBase} ${showEndErr ? inputErr : inputOk}`}
-              type="time"
-              value={end}
-              onChange={e => onChange({ end: e.target.value })}
-              onBlur={onBlur}
-              aria-invalid={showEndErr || undefined}
-            />
-          </Labelled>
-        ) : (
-          <div
-            className="flex items-end pb-sm font-body-md text-body-md text-on-surface-variant italic"
-            aria-hidden
-          >
-            End time appears once Start is set.
-          </div>
-        )}
+        <Labelled label="End" required>
+          <TimePicker15
+            value={endMin}
+            onChange={(m) => { onChange({ end: hhmmFromMinutes(m) }); onTouch(); }}
+            invalid={showEndErr}
+            disabled={startMin === null}
+            ariaLabel="Block end time"
+          />
+        </Labelled>
       </div>
-
-      {/* Duration strip + label — appears once both are filled and valid. */}
-      {dur !== null && (
-        <div className="flex items-center gap-sm">
-          <div
-            className="flex-1 h-1 bg-surface-container-highest rounded-full overflow-hidden"
-            aria-hidden
-          >
-            <div
-              className="h-full bg-primary rounded-full transition-all duration-300"
-              style={{ width: `${barPct}%` }}
-            />
-          </div>
-          <span className="font-label-md text-label-md text-on-surface-variant whitespace-nowrap">
-            {formatDuration(dur)}
-          </span>
-        </div>
-      )}
       {touched && errors.endBeforeStart && (
         <p className="font-body-md text-body-md text-error flex items-center gap-xs">
           <span className="material-symbols-outlined text-[16px]" aria-hidden>warning</span>
           End must be after Start.
+        </p>
+      )}
+      {touched && errors.envelope && !errors.endBeforeStart && (
+        <p className="font-body-md text-body-md text-error flex items-center gap-xs">
+          <span className="material-symbols-outlined text-[16px]" aria-hidden>warning</span>
+          This block runs outside the event&apos;s start/end window.
         </p>
       )}
     </div>
@@ -377,8 +366,10 @@ function BlockErrorBanner({
   if (errors.topicIndices.length > 0) {
     missing.push(`topic ${errors.topicIndices.map(i => i + 1).join(', ')} (title + speaker)`);
   }
-  if (missing.length === 0 && !errors.endBeforeStart) return null;
-  if (errors.endBeforeStart && missing.length === 0) return null; // surfaced inline already
+  // endBeforeStart and envelope are surfaced inline by TimeFields; the banner
+  // only covers missing required fields. If the only problems are time-order
+  // / window ones, the banner stays silent (no duplicate messaging).
+  if (missing.length === 0) return null;
 
   return (
     <p
@@ -393,13 +384,49 @@ function BlockErrorBanner({
   );
 }
 
-function BlockEditor({ block, parallel, touched, onTouch, onChange, onRemove }: {
-  block: BlockDraft; parallel: boolean; touched: boolean;
+/**
+ * Block header per user feedback: kind badge (outline, no fill) immediately
+ * followed by the Remove button (filled red) — both anchored top-left. This
+ * "flips" the prior design (kind was filled, Remove was text-only). The
+ * filled-red Remove anchoring the left edge reads as more visually
+ * deliberate. The optional Parallel-session flag floats to the right.
+ */
+function BlockHeader({
+  kind,
+  parallel,
+  onRemove,
+}: {
+  kind: BlockKind;
+  parallel: boolean;
+  onRemove: () => void;
+}) {
+  return (
+    <header className="flex items-center gap-sm flex-wrap">
+      <span className="font-label-md text-label-md uppercase tracking-wider border border-outline-variant text-on-surface-variant px-sm py-xs rounded">
+        {labelForKind(kind)}
+      </span>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="font-label-md text-label-md uppercase tracking-wider bg-error text-on-error px-sm py-xs rounded hover:opacity-90 transition-opacity"
+      >
+        Remove
+      </button>
+      {parallel && (
+        <span className="ml-auto font-label-md text-label-md bg-tertiary-fixed text-on-tertiary-fixed-variant px-sm py-xs rounded">
+          ⚠ Parallel session
+        </span>
+      )}
+    </header>
+  );
+}
+
+function BlockEditor({ block, parallel, touched, errors, onTouch, onChange, onRemove }: {
+  block: BlockDraft; parallel: boolean; touched: boolean; errors: BlockErrors;
   onTouch: () => void;
   onChange: (patch: Partial<BlockDraft>) => void;
   onRemove: () => void;
 }) {
-  const errors = blockErrors(block);
   const showRedShell = touched && blockHasErrors(errors);
 
   return (
@@ -409,33 +436,14 @@ function BlockEditor({ block, parallel, touched, onTouch, onChange, onRemove }: 
         (showRedShell ? 'border-error' : 'border-outline-variant')
       }
     >
-      <header className="flex items-center justify-between">
-        <div className="flex items-center gap-sm">
-          <span className="font-label-md text-label-md uppercase tracking-wider bg-on-surface text-surface-container-lowest px-sm py-xs rounded">
-            {labelForKind(block.kind)}
-          </span>
-          {parallel && (
-            <span className="font-label-md text-label-md bg-tertiary-fixed text-on-tertiary-fixed-variant px-sm py-xs rounded">
-              ⚠ Parallel session
-            </span>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={onRemove}
-          className="font-label-md text-label-md text-error hover:underline"
-        >
-          Remove
-        </button>
-      </header>
+      <BlockHeader kind={block.kind} parallel={parallel} onRemove={onRemove} />
 
-      <TimeRow
-        start={block.start}
-        end={block.end}
+      <TimeFields
+        block={block}
         errors={errors}
         touched={touched}
         onChange={(patch) => onChange(patch)}
-        onBlur={onTouch}
+        onTouch={onTouch}
       />
 
       <Labelled label="Title" required>
@@ -534,103 +542,41 @@ function BlockEditor({ block, parallel, touched, onTouch, onChange, onRemove }: 
   );
 }
 
-function FillerEditor({ block, touched, onTouch, onChange, onRemove }: {
-  block: BlockDraft; touched: boolean;
+function FillerEditor({ block, touched, errors, onTouch, onChange, onRemove }: {
+  block: BlockDraft; touched: boolean; errors: BlockErrors;
   onTouch: () => void;
   onChange: (patch: Partial<BlockDraft>) => void;
   onRemove: () => void;
 }) {
-  const errors = blockErrors(block);
   const showRedShell = touched && blockHasErrors(errors);
 
   return (
     <div
       className={
-        'rounded-[20px] p-md space-y-sm bg-surface-container-lowest border-2 transition-colors ' +
+        'rounded-[20px] p-md space-y-md bg-surface-container-lowest border-2 transition-colors ' +
         (showRedShell ? 'border-error' : 'border-outline-variant')
       }
     >
-      <div className="grid grid-cols-12 gap-sm items-end">
-        <div className="col-span-12 md:col-span-3">
-          <Labelled label="Start" required>
-            <input
-              className={`${inputBase} ${touched && errors.start ? inputErr : inputOk}`}
-              type="time"
-              value={block.start}
-              onChange={e => onChange({ start: e.target.value })}
-              onBlur={onTouch}
-              aria-invalid={(touched && errors.start) || undefined}
-            />
-          </Labelled>
-        </div>
-        <div className="col-span-12 md:col-span-3">
-          {isHHMM(block.start) ? (
-            <Labelled label="End" required>
-              <input
-                className={`${inputBase} ${touched && (errors.end || errors.endBeforeStart) ? inputErr : inputOk}`}
-                type="time"
-                value={block.end}
-                onChange={e => onChange({ end: e.target.value })}
-                onBlur={onTouch}
-                aria-invalid={(touched && (errors.end || errors.endBeforeStart)) || undefined}
-              />
-            </Labelled>
-          ) : (
-            <div className="font-body-md text-[12px] text-on-surface-variant italic pb-sm">
-              End time appears once Start is set.
-            </div>
-          )}
-        </div>
-        <div className="col-span-12 md:col-span-5">
-          <Labelled label="What" required>
-            <input
-              className={`${inputBase} ${touched && errors.title ? inputErr : inputOk}`}
-              placeholder={block.kind === 'break' ? 'Lunch / coffee' : 'Walk to room B'}
-              value={block.title}
-              onChange={e => onChange({ title: e.target.value })}
-              onBlur={onTouch}
-              aria-invalid={(touched && errors.title) || undefined}
-            />
-          </Labelled>
-        </div>
-        <div className="col-span-12 md:col-span-1 flex justify-end">
-          <button
-            type="button"
-            onClick={onRemove}
-            className="font-label-md text-label-md text-error hover:underline pb-sm"
-            aria-label="Remove block"
-          >
-            ×
-          </button>
-        </div>
-      </div>
+      <BlockHeader kind={block.kind} parallel={false} onRemove={onRemove} />
 
-      {/* Duration strip + error inline (same affordance as rich block) */}
-      {(() => {
-        const dur = durationMinutes(block.start, block.end);
-        if (dur !== null) {
-          const barPct = Math.min(100, (dur / (8 * 60)) * 100);
-          return (
-            <div className="flex items-center gap-sm">
-              <div className="flex-1 h-1 bg-surface-container-highest rounded-full overflow-hidden" aria-hidden>
-                <div className="h-full bg-primary rounded-full transition-all duration-300" style={{ width: `${barPct}%` }} />
-              </div>
-              <span className="font-label-md text-label-md text-on-surface-variant whitespace-nowrap">
-                {formatDuration(dur)}
-              </span>
-            </div>
-          );
-        }
-        if (touched && errors.endBeforeStart) {
-          return (
-            <p className="font-body-md text-body-md text-error flex items-center gap-xs">
-              <span className="material-symbols-outlined text-[16px]" aria-hidden>warning</span>
-              End must be after Start.
-            </p>
-          );
-        }
-        return null;
-      })()}
+      <TimeFields
+        block={block}
+        errors={errors}
+        touched={touched}
+        onChange={(patch) => onChange(patch)}
+        onTouch={onTouch}
+      />
+
+      <Labelled label="What" required>
+        <input
+          className={`${inputBase} ${touched && errors.title ? inputErr : inputOk}`}
+          placeholder={block.kind === 'break' ? 'Lunch / coffee' : 'Walk to room B'}
+          value={block.title}
+          onChange={e => onChange({ title: e.target.value })}
+          onBlur={onTouch}
+          aria-invalid={(touched && errors.title) || undefined}
+        />
+      </Labelled>
 
       {touched && <BlockErrorBanner errors={errors} kindLabel="filler" />}
     </div>

@@ -22,7 +22,7 @@ import AgendaSection, {
 } from '@/components/event-form/AgendaSection';
 import type { Venue } from '@/lib/venue';
 import { findParallelBlockIds } from '@/lib/agenda';
-import { formatHour } from '@/lib/time-range';
+import { formatMinutes24h } from '@/components/event-form/DateTimeSection';
 
 type SectionId = 'basics' | 'venue' | 'datetime' | 'agenda';
 const NEXT_SECTION: Record<SectionId, SectionId> = {
@@ -55,14 +55,14 @@ export default function NewEventForm() {
   });
   const [venue, setVenue] = useState<Venue | null>(null);
   const [datetime, setDatetime] = useState<DateTimeValue>({
-    date: '', startHour: null, endHour: null,
+    date: '', startMinutes: null, endMinutes: null,
   });
   const [blocks, setBlocks] = useState<BlockDraft[]>([]);
 
   const v1 = basicsValid(basics);
   const v2 = venueValid(venue);
   const v3 = dateTimeValid(datetime);
-  const v4 = agendaValid(blocks);
+  const v4 = agendaValid(blocks, datetime.startMinutes, datetime.endMinutes);
   const validSections = [v1, v2, v3, v4];
   const completedCount = validSections.filter(Boolean).length;
   const completionPct = Math.round((completedCount / validSections.length) * 100);
@@ -89,9 +89,9 @@ export default function NewEventForm() {
     }
     setIntent(nextIntent);
 
-    // dateTimeValid ensured startHour and endHour are non-null and end > start.
-    const startTime = formatHour(datetime.startHour!);
-    const endTime   = formatHour(datetime.endHour!);
+    // dateTimeValid ensured startMinutes and endMinutes are non-null and end > start.
+    const startTime = formatMinutes24h(datetime.startMinutes!);
+    const endTime   = formatMinutes24h(datetime.endMinutes!);
     const event = {
       title:         basics.title,
       topic:         basics.topic || undefined,
@@ -194,7 +194,13 @@ export default function NewEventForm() {
 
             <SectionItem id="agenda" open={open === 'agenda'} done={v4}
                          title={SECTION_META.agenda.label} summary={agendaSummary(blocks, parallelIds)}>
-              <AgendaSection date={datetime.date} blocks={blocks} onChange={setBlocks} />
+              <AgendaSection
+                date={datetime.date}
+                eventStartMinutes={datetime.startMinutes}
+                eventEndMinutes={datetime.endMinutes}
+                blocks={blocks}
+                onChange={setBlocks}
+              />
             </SectionItem>
           </Accordion>
 
