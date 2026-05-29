@@ -53,65 +53,70 @@ export default async function EventPosterPage({
   );
 
   return (
-    <main className="max-w-3xl mx-auto p-6 space-y-8 print:p-0 print:max-w-none">
+    <main className="max-w-3xl mx-auto p-grid-margin space-y-xl bg-background print:p-0 print:max-w-none print:bg-white">
       {/* Locks print margins so the poster looks the same out of Chrome, Safari, and Firefox. */}
       <style>{`@page { size: A4; margin: 16mm; }`}</style>
       <header className="text-center">
-        <p className="text-xs uppercase tracking-wide text-gray-500">
+        <p className="font-label-md text-label-md uppercase tracking-widest text-primary">
           {event.topic ?? 'Event'}
         </p>
-        <h1 className="text-5xl font-semibold mt-2 print:text-4xl">{event.title}</h1>
-        <p className="text-gray-700 mt-3 text-lg">
+        <h1 className="font-display text-display text-on-surface mt-sm print:text-4xl">{event.title}</h1>
+        <p className="font-body-lg text-body-lg text-on-surface-variant mt-md">
           {formatInTz(event.start_time, event.timezone)} →{' '}
           {formatInTz(event.end_time, event.timezone)} ({event.timezone})
         </p>
-        <p className="text-gray-700 mt-1">
-          📍 {event.venue_name}
+        <p className="font-body-md text-body-md text-on-surface-variant mt-xs flex items-center justify-center gap-xs">
+          <span className="material-symbols-outlined text-[18px] print:hidden" aria-hidden>location_on</span>
+          {event.venue_name}
           {event.venue_address ? `, ${event.venue_address}` : ''} — {event.city}
           {event.region ? `, ${event.region}` : ''}, {event.country}
         </p>
       </header>
 
       <section className="flex flex-col items-center">
-        {/* eslint-disable-next-line @next/next/no-img-element -- inline base64 data URL, not a remote asset */}
-        <img
-          src={`data:image/png;base64,${pngBase64}`}
-          alt="QR code — scan to open this event"
-          className="w-64 h-64 print:w-80 print:h-80"
-        />
-        <p className="text-sm text-gray-600 mt-2">Scan to register</p>
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-md print:border-0 print:p-0">
+          {/* eslint-disable-next-line @next/next/no-img-element -- inline base64 data URL, not a remote asset */}
+          <img
+            src={`data:image/png;base64,${pngBase64}`}
+            alt="QR code — scan to open this event"
+            className="w-64 h-64 print:w-80 print:h-80"
+          />
+        </div>
+        <p className="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant mt-sm">
+          Scan to register
+        </p>
       </section>
 
       {event.description && (
-        <section>
-          <h2 className="text-lg font-medium mb-2">About</h2>
-          <p className="whitespace-pre-wrap text-gray-800">{event.description}</p>
+        <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg print:border-0 print:p-0">
+          <h2 className="font-headline-sm text-[20px] text-on-surface mb-sm">About</h2>
+          <p className="font-body-md text-body-md whitespace-pre-wrap text-on-surface">{event.description}</p>
         </section>
       )}
 
       {(blocks?.length ?? 0) > 0 && (
-        <section>
-          <h2 className="text-lg font-medium mb-2">Agenda</h2>
-          <ul className="divide-y border rounded-xl">
+        <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg print:border-0 print:p-0">
+          <h2 className="font-headline-sm text-[20px] text-on-surface mb-md">Agenda</h2>
+          <ul className="divide-y divide-outline-variant">
             {blocks!.map(b => {
               const topics = (Array.isArray(b.topics) ? b.topics : []) as AgendaTopic[];
               return (
-                <li key={b.id} className="p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs uppercase tracking-wide text-gray-500">{b.kind}</span>
-                    <span className="text-sm text-gray-700">
+                <li key={b.id} className="py-md first:pt-0 last:pb-0">
+                  <div className="flex items-center justify-between flex-wrap gap-sm">
+                    <span className="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">{b.kind}</span>
+                    <span className="font-body-md text-body-md text-on-surface-variant">
                       {formatInTz(b.start_time, event.timezone)} → {formatInTz(b.end_time, event.timezone)}
                     </span>
                   </div>
-                  <p className="font-medium mt-1">{b.title}</p>
-                  {b.host && <p className="text-sm text-gray-600">Chair: {b.host}</p>}
+                  <p className="font-title-lg text-title-lg text-on-surface mt-xs">{b.title}</p>
+                  {b.host && <p className="font-body-md text-body-md text-on-surface-variant">Chair: {b.host}</p>}
                   {topics.length > 0 && (
-                    <ul className="mt-2 text-sm space-y-1">
+                    <ul className="mt-sm font-body-md text-body-md text-on-surface space-y-xs">
                       {topics.map((t, i) => (
                         <li key={i}>
                           • {t.title} — <em>{t.speaker_name}</em>
-                          {t.speaker_credential && <span className="text-gray-500"> ({t.speaker_credential})</span>}
-                          {t.speaker_affiliation && <span className="text-gray-500">, {t.speaker_affiliation}</span>}
+                          {t.speaker_credential && <span className="text-on-surface-variant"> ({t.speaker_credential})</span>}
+                          {t.speaker_affiliation && <span className="text-on-surface-variant">, {t.speaker_affiliation}</span>}
                         </li>
                       ))}
                     </ul>

@@ -19,6 +19,28 @@ export default function LoginPage() {
   );
 }
 
+function Brand() {
+  return (
+    <div className="flex items-center justify-center gap-sm mb-lg">
+      <span className="material-symbols-outlined text-primary text-[28px]" aria-hidden>
+        event
+      </span>
+      <span className="font-headline-sm text-headline-sm text-primary font-black">Eventar</span>
+    </div>
+  );
+}
+
+function Card({ children }: { children: React.ReactNode }) {
+  return (
+    <main className="min-h-screen grid place-items-center p-grid-margin bg-background">
+      <div className="w-full max-w-sm bg-surface-container-lowest rounded-[20px] border border-outline-variant shadow-sm p-xl">
+        <Brand />
+        {children}
+      </div>
+    </main>
+  );
+}
+
 function LoginForm() {
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
@@ -33,7 +55,13 @@ function LoginForm() {
   const err = actionErr ?? urlErr;
 
   return (
-    <main className="min-h-screen grid place-items-center p-6 bg-gray-50">
+    <Card>
+      <h1 className="font-headline-sm text-headline-sm text-on-surface text-center">
+        Sign in
+      </h1>
+      <p className="font-body-md text-body-md text-on-surface-variant text-center mt-xs mb-lg">
+        We&apos;ll email you a one-tap sign-in link.
+      </p>
       <form
         action={(fd) =>
           start(async () => {
@@ -44,29 +72,46 @@ function LoginForm() {
             else setMsg('Check your inbox for a sign-in link.');
           })
         }
-        className="w-full max-w-sm bg-white rounded-2xl shadow-sm p-8 space-y-4"
+        className="space-y-md"
       >
-        <h1 className="text-2xl font-semibold">Sign in to Eventar</h1>
-        <p className="text-sm text-gray-600">
-          We&apos;ll email you a one-tap sign-in link.
-        </p>
-        <input
-          name="email"
-          type="email"
-          required
-          placeholder="you@company.com"
-          className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black/10"
-        />
+        <label className="block">
+          <span className="block font-label-md text-label-md uppercase tracking-wider text-on-surface mb-xs">
+            Email
+          </span>
+          <input
+            name="email"
+            type="email"
+            required
+            placeholder="you@company.com"
+            className="w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+          />
+        </label>
         <button
           disabled={pending}
-          className="w-full rounded-md bg-black text-white py-2 font-medium disabled:opacity-50"
+          className="w-full rounded-lg bg-primary text-on-primary font-label-md text-label-md py-md hover:opacity-90 transition-opacity disabled:opacity-50"
         >
           {pending ? 'Sending…' : 'Email me a link'}
         </button>
-        {msg && <p className="text-sm text-green-700">{msg}</p>}
-        {err && <p className="text-sm text-red-700">{err}</p>}
+
+        {msg && (
+          <p className="font-body-md text-body-md text-on-surface bg-secondary-container/40 border border-secondary-container rounded-lg px-md py-sm flex items-start gap-sm">
+            <span className="material-symbols-outlined text-primary text-[18px] mt-[2px]" aria-hidden>
+              mark_email_read
+            </span>
+            <span>{msg}</span>
+          </p>
+        )}
+        {err && (
+          <p
+            role="alert"
+            className="font-body-md text-body-md text-error bg-error-container/20 border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
+          >
+            <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden>warning</span>
+            <span>{err}</span>
+          </p>
+        )}
       </form>
-    </main>
+    </Card>
   );
 }
 
@@ -75,11 +120,9 @@ function LoginForm() {
 // boundary at prerender time).
 function LoginShell() {
   return (
-    <main className="min-h-screen grid place-items-center p-6 bg-gray-50">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm p-8 space-y-4">
-        <h1 className="text-2xl font-semibold">Sign in to Eventar</h1>
-        <p className="text-sm text-gray-600">Loading…</p>
-      </div>
-    </main>
+    <Card>
+      <h1 className="font-headline-sm text-headline-sm text-on-surface text-center">Sign in</h1>
+      <p className="font-body-md text-body-md text-on-surface-variant text-center mt-xs">Loading…</p>
+    </Card>
   );
 }
