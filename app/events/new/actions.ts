@@ -33,12 +33,23 @@ function blockFitsEnvelope(block: BlockInput, event: { start_time: string; end_t
       && new Date(block.end_time)   <= new Date(event.end_time);
 }
 
+// Status the caller is asking for. Defaults to 'draft' so older call sites
+// (and the test suite) keep working unchanged. Validated against an explicit
+// enum so an unknown value can never reach the RPC.
+const statusSchema = z.enum(['draft', 'published']).default('draft');
+
 // createEvent returns { error } on validation/DB failure, or redirects on success (never returns).
 export async function createEvent(input: {
   event: unknown;
   blocks: unknown;
+  status?: unknown;
 }): Promise<{ error: string }> {
   await requireStaff();
+
+  const statusParse = statusSchema.safeParse(input.status);
+  if (!statusParse.success) {
+    return { error: `status: ${statusParse.error.issues[0]?.message ?? 'invalid'}` };
+  }
 
   const eventParse = eventInputSchema.safeParse(input.event);
   if (!eventParse.success) {
@@ -60,7 +71,7 @@ export async function createEvent(input: {
 
   const supabase = await supabaseServer();
   const { data, error } = await supabase.rpc('create_event_with_blocks', {
-    event_input:  { ...eventParse.data, timezone, status: 'draft' },
+    event_input:  { ...eventParse.data, timezone, status: statusParse.data },
     blocks_input: blockParse.data,
   });
 

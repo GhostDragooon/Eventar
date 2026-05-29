@@ -32,15 +32,18 @@ const NEXT_SECTION: Record<SectionId, SectionId> = {
   agenda:   'agenda', // terminal: user clicks Save in sticky bar
 };
 
-const SECTION_META: Record<SectionId, { icon: string; iconBg: string; iconColor: string }> = {
-  basics:   { icon: 'info',             iconBg: 'bg-primary-fixed',    iconColor: 'text-primary' },
-  venue:    { icon: 'location_on',      iconBg: 'bg-secondary-fixed',  iconColor: 'text-secondary' },
-  datetime: { icon: 'calendar_month',   iconBg: 'bg-tertiary-fixed',   iconColor: 'text-tertiary' },
-  agenda:   { icon: 'view_agenda',      iconBg: 'bg-primary-fixed',    iconColor: 'text-primary' },
+const SECTION_META: Record<SectionId, { icon: string; iconBg: string; iconColor: string; label: string }> = {
+  basics:   { icon: 'info',           iconBg: 'bg-primary-fixed',   iconColor: 'text-primary',   label: 'Basics' },
+  venue:    { icon: 'location_on',    iconBg: 'bg-secondary-fixed', iconColor: 'text-secondary', label: 'Venue' },
+  datetime: { icon: 'calendar_month', iconBg: 'bg-tertiary-fixed',  iconColor: 'text-tertiary',  label: 'Date & Time' },
+  agenda:   { icon: 'view_agenda',    iconBg: 'bg-primary-fixed',   iconColor: 'text-primary',   label: 'Agenda' },
 };
+
+type Intent = 'draft' | 'publish';
 
 export default function NewEventForm() {
   const [pending, start] = useTransition();
+  const [intent, setIntent] = useState<Intent | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   // Base UI Accordion is array-valued; multiple=false (default) gives
@@ -60,6 +63,12 @@ export default function NewEventForm() {
   const v2 = venueValid(venue);
   const v3 = dateTimeValid(datetime);
   const v4 = agendaValid(blocks);
+  const validSections = [v1, v2, v3, v4];
+  const completedCount = validSections.filter(Boolean).length;
+  const completionPct = Math.round((completedCount / validSections.length) * 100);
+  // Save Draft: just needs Basics/Venue/Date+Time (Agenda optional).
+  // Publish:    same gate — agenda is still optional. Distinguishing copy
+  // makes it obvious which button does what.
   const canSubmit = v1 && v2 && v3 && v4;
 
   // For the agenda summary's parallel-block check
@@ -72,12 +81,13 @@ export default function NewEventForm() {
     return findParallelBlockIds(items);
   })();
 
-  function onSubmit() {
+  function onSubmit(nextIntent: Intent) {
     setErr(null);
     if (!v1 || !v2 || !v3) {
       setErr('Complete Basics, Venue, and Date & Time first.');
       return;
     }
+    setIntent(nextIntent);
 
     // dateTimeValid ensured startHour and endHour are non-null and end > start.
     const startTime = formatHour(datetime.startHour!);
@@ -103,13 +113,21 @@ export default function NewEventForm() {
     }));
 
     start(async () => {
-      const res = await createEvent({ event, blocks: blocksPayload });
-      if (res && 'error' in res) setErr(res.error);
+      const res = await createEvent({
+        event,
+        blocks: blocksPayload,
+        status: nextIntent === 'publish' ? 'published' : 'draft',
+      });
+      if (res && 'error' in res) {
+        setErr(res.error);
+        setIntent(null);
+      }
+      // success redirects, so no else branch needed
     });
   }
 
   return (
-    <div className="pb-32">
+    <div className="pb-xxl">
       <nav aria-label="Breadcrumb" className="flex items-center gap-xs text-on-surface-variant mb-sm">
         <Link href="/dashboard" className="font-label-md text-label-md uppercase tracking-wider hover:text-primary">
           Dashboard
@@ -118,62 +136,91 @@ export default function NewEventForm() {
         <span className="font-label-md text-label-md uppercase tracking-wider text-primary">New event</span>
       </nav>
 
-      <header className="mb-xl max-w-2xl">
-        <h1 className="font-headline-lg text-headline-lg text-on-surface">
-          Create Event
-        </h1>
-        <p className="font-body-lg text-body-lg text-on-surface-variant mt-sm">
-          Configure the core details. Work through each section; you can save as a draft when the basics are set.
-        </p>
-      </header>
-
-      <Accordion
-        value={[open]}
-        onValueChange={(v) => v[0] && setOpen(v[0] as SectionId)}
-        className="space-y-md max-w-3xl"
-      >
-        <SectionItem id="basics" open={open === 'basics'} done={v1}
-                     title="Basics" summary={basicsSummary(basics)}>
-          <BasicsSection value={basics} onChange={(p) => setBasics({ ...basics, ...p })} />
-          <DoneRow disabled={!v1} onDone={() => setOpen(NEXT_SECTION.basics)} />
-        </SectionItem>
-
-        <SectionItem id="venue" open={open === 'venue'} done={v2}
-                     title="Venue" summary={venueSummary(venue)}>
-          <VenueSection value={venue} onChange={setVenue} />
-          <DoneRow disabled={!v2} onDone={() => setOpen(NEXT_SECTION.venue)} />
-        </SectionItem>
-
-        <SectionItem id="datetime" open={open === 'datetime'} done={v3}
-                     title="Date & Time" summary={dateTimeSummary(datetime)}>
-          <DateTimeSection value={datetime} onChange={(p) => setDatetime({ ...datetime, ...p })} />
-          <DoneRow disabled={!v3} onDone={() => setOpen(NEXT_SECTION.datetime)} />
-        </SectionItem>
-
-        <SectionItem id="agenda" open={open === 'agenda'} done={v4}
-                     title="Agenda" summary={agendaSummary(blocks, parallelIds)}>
-          <AgendaSection date={datetime.date} blocks={blocks} onChange={setBlocks} />
-        </SectionItem>
-      </Accordion>
-
-      {/* Sticky bottom bar — sits above the StaffShell footer */}
-      <div className="fixed bottom-0 inset-x-0 md:left-64 bg-surface-container-lowest border-t border-outline-variant p-md z-30">
-        <div className="max-w-3xl mx-auto flex items-center gap-md">
-          <ProgressDots states={[v1, v2, v3, v4]} />
-          {err && (
-            <p className="font-body-md text-body-md text-error flex-1" role="alert">
-              {err}
-            </p>
-          )}
+      {/* Header — title + dual action buttons (Save Draft + Publish Event) */}
+      <header className="mb-xl flex flex-col md:flex-row md:items-end md:justify-between gap-md">
+        <div className="max-w-2xl">
+          <h1 className="font-headline-lg text-headline-lg text-on-surface">
+            Create Event
+          </h1>
+          <p className="font-body-lg text-body-lg text-on-surface-variant mt-sm">
+            Configure the core details. Save as a draft anytime; publish when the
+            registration page is ready to go live.
+          </p>
+        </div>
+        <div className="flex gap-sm shrink-0">
           <Button
             type="button"
-            onClick={onSubmit}
+            variant="outline"
+            onClick={() => onSubmit('draft')}
             disabled={!canSubmit || pending}
-            className="ml-auto"
           >
-            {pending ? 'Saving…' : 'Save as draft'}
+            {pending && intent === 'draft' ? 'Saving…' : 'Save Draft'}
+          </Button>
+          <Button
+            type="button"
+            onClick={() => onSubmit('publish')}
+            disabled={!canSubmit || pending}
+          >
+            {pending && intent === 'publish' ? 'Publishing…' : 'Publish Event'}
           </Button>
         </div>
+      </header>
+
+      {/* 8/4 grid: form on left, status panel sticky-right on lg */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-grid-gutter items-start">
+        <div className="lg:col-span-8 space-y-md">
+          <Accordion
+            value={[open]}
+            onValueChange={(v) => v[0] && setOpen(v[0] as SectionId)}
+            className="space-y-md"
+          >
+            <SectionItem id="basics" open={open === 'basics'} done={v1}
+                         title={SECTION_META.basics.label} summary={basicsSummary(basics)}>
+              <BasicsSection value={basics} onChange={(p) => setBasics({ ...basics, ...p })} />
+              <DoneRow disabled={!v1} onDone={() => setOpen(NEXT_SECTION.basics)} />
+            </SectionItem>
+
+            <SectionItem id="venue" open={open === 'venue'} done={v2}
+                         title={SECTION_META.venue.label} summary={venueSummary(venue)}>
+              <VenueSection value={venue} onChange={setVenue} />
+              <DoneRow disabled={!v2} onDone={() => setOpen(NEXT_SECTION.venue)} />
+            </SectionItem>
+
+            <SectionItem id="datetime" open={open === 'datetime'} done={v3}
+                         title={SECTION_META.datetime.label} summary={dateTimeSummary(datetime)}>
+              <DateTimeSection value={datetime} onChange={(p) => setDatetime({ ...datetime, ...p })} />
+              <DoneRow disabled={!v3} onDone={() => setOpen(NEXT_SECTION.datetime)} />
+            </SectionItem>
+
+            <SectionItem id="agenda" open={open === 'agenda'} done={v4}
+                         title={SECTION_META.agenda.label} summary={agendaSummary(blocks, parallelIds)}>
+              <AgendaSection date={datetime.date} blocks={blocks} onChange={setBlocks} />
+            </SectionItem>
+          </Accordion>
+
+          {err && (
+            <p
+              role="alert"
+              className="font-body-md text-body-md text-error bg-error-container/20 border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
+            >
+              <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden>warning</span>
+              <span className="flex-1">{err}</span>
+            </p>
+          )}
+        </div>
+
+        {/* Right column — Status / Setup Completion (sticky on lg) */}
+        <aside className="lg:col-span-4 lg:sticky lg:top-grid-margin space-y-md self-start">
+          <StatusPanel
+            completionPct={completionPct}
+            checklist={[
+              { label: 'Basic Details Added',  done: v1 },
+              { label: 'Venue Set',            done: v2 },
+              { label: 'Date & Time Defined',  done: v3 },
+              { label: 'Agenda Drafted',       done: v4 },
+            ]}
+          />
+        </aside>
       </div>
     </div>
   );
@@ -235,19 +282,64 @@ function DoneRow({ disabled, onDone }: { disabled: boolean; onDone: () => void }
   );
 }
 
-function ProgressDots({ states }: { states: boolean[] }) {
+/**
+ * Right-column status panel — mirrors the "STATUS: DRAFT / Setup Completion"
+ * card from the New Event Setup mockup. Lifts the dark indigo card with
+ * progress bar + checkmark list; deferred items show a hollow ring.
+ *
+ * "Status" stays Draft on this page — the form has never saved, so the
+ * draft/published distinction is the user's INTENT (encoded by which
+ * action button they click), not a stored value. After save the user is
+ * redirected to /events/[id]/edit where the live event status pill lives.
+ */
+function StatusPanel({
+  completionPct,
+  checklist,
+}: {
+  completionPct: number;
+  checklist: { label: string; done: boolean }[];
+}) {
   return (
-    <div
-      className="flex items-center gap-xs"
-      aria-label={`${states.filter(Boolean).length} of ${states.length} sections complete`}
-    >
-      {states.map((on, i) => (
-        <span
-          key={i}
-          aria-hidden
-          className={`h-2 w-2 rounded-full transition-colors ${on ? 'bg-primary' : 'bg-outline-variant'}`}
-        />
-      ))}
+    <div className="bg-primary text-on-primary p-xl rounded-[20px] shadow-xl overflow-hidden relative">
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-lg">
+          <span className="font-label-md text-label-md uppercase bg-on-primary/15 px-md py-xs rounded-full tracking-wider">
+            Status: Draft
+          </span>
+          <span className="material-symbols-outlined text-on-primary/60" aria-hidden>auto_awesome</span>
+        </div>
+        <p className="font-label-md text-label-md uppercase tracking-wider text-on-primary/80 mb-xs">
+          Setup Completion
+        </p>
+        <div
+          className="w-full bg-on-primary/20 h-2 rounded-full mb-xl overflow-hidden"
+          role="progressbar"
+          aria-valuenow={completionPct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div
+            className="bg-on-primary h-full transition-all duration-500"
+            style={{ width: `${completionPct}%` }}
+          />
+        </div>
+        <ul className="space-y-md">
+          {checklist.map((item) => (
+            <li key={item.label} className={`flex items-center gap-md ${item.done ? '' : 'opacity-60'}`}>
+              <span
+                className="material-symbols-outlined text-[20px]"
+                aria-hidden
+                data-fill={item.done ? '1' : undefined}
+              >
+                {item.done ? 'check_circle' : 'radio_button_unchecked'}
+              </span>
+              <span className="font-label-md text-label-md">{item.label}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {/* Decorative blur */}
+      <div className="absolute -right-12 -bottom-12 w-48 h-48 bg-on-primary/5 rounded-full blur-3xl" aria-hidden />
     </div>
   );
 }
