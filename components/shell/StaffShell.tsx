@@ -29,11 +29,13 @@ const NAV: NavItem[] = [
 
 function isActive(pathname: string, href: string): boolean {
   if (href.startsWith('#')) return false;
-  // /events/new highlights only the New Event tab. /events/[id]/* (edit,
-  // checkin) highlight Dashboard since that's the landing view for "events
-  // you manage" until a per-event view exists.
+  // /events/new highlights ONLY the New Event tab. /events/[id]/* (edit,
+  // checkin, etc.) highlights Dashboard since that's the landing view for
+  // "events you manage" until a per-event view exists. The regex below
+  // uses a negative-lookahead to exclude /events/new specifically — without
+  // it /events/new matches and both Dashboard and New Event would light up.
   if (href === '/dashboard') {
-    return pathname === '/dashboard' || /^\/events\/[^/]+(\/.*)?$/.test(pathname);
+    return pathname === '/dashboard' || /^\/events\/(?!new(\/|$))[^/]+(\/.*)?$/.test(pathname);
   }
   return pathname === href;
 }
