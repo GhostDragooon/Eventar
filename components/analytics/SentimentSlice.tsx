@@ -43,14 +43,14 @@ export function SentimentSlice({
           Expectations
         </div>
       </div>
-      <div className="flex-grow flex flex-col gap-sm">
+      <div className="flex-grow flex items-center gap-sm">
         <div className="h-6 flex-grow bg-surface-container-high rounded-full overflow-hidden relative">
           <div
             className="h-full bg-primary rounded-full"
             style={{ width: `${happyRate == null ? 0 : Math.round(happyRate * 100)}%` }}
           />
         </div>
-        <div className="flex justify-between gap-md flex-wrap">
+        <div className="flex justify-between gap-md flex-shrink-0">
           {(['exceeded', 'met', 'partially', 'not_met'] as Q4Slug[]).map((slug) => (
             <div key={slug} className="text-[10px] flex items-center gap-1">
               <div className={`w-1.5 h-1.5 rounded-full ${SLUG_COLOR[slug]}`} />
