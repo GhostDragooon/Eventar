@@ -15,7 +15,7 @@ export function operationalInsightText(m: NarrativeMetrics): string {
   if (m.showUpRate < 0.6) {
     return `Show-up rate (${pct(m.showUpRate)}) is below the band where reminders and timing typically deliver — worth reviewing promo cadence, reminder send-time, and venue logistics before the next event.`;
   }
-  if (m.showUpRate >= 0.75 && happy >= 0.9) {
+  if (m.showUpRate >= 0.6 && happy >= 0.9) {
     return `Show-up (${pct(m.showUpRate)}) and satisfaction (${pct(happy)}) are both in the healthy band — the event is on track. Focus future iterations on the requests in Q5.`;
   }
   return `Show-up rate ${pct(m.showUpRate)}; satisfaction ${m.happyRate == null ? '—' : pct(happy)}. Mixed signals — review Q5 requests and the highlights below for actionable next steps.`;

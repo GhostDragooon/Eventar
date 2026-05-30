@@ -21,6 +21,12 @@ describe('operationalInsightText', () => {
     const out = operationalInsightText({ showUpRate: 0.85, happyRate: 0.92, responseRate: 0.3 });
     expect(out.toLowerCase()).toContain('low response');
   });
+
+  it('falls back to "mixed signals" with em-dash when happyRate is null', () => {
+    const out = operationalInsightText({ showUpRate: 0.65, happyRate: null, responseRate: 0.6 });
+    expect(out.toLowerCase()).toContain('mixed signals');
+    expect(out).toContain('—');
+  });
 });
 
 describe('keyMetricAnalysisText', () => {
