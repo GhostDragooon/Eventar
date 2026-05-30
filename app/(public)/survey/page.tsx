@@ -44,18 +44,22 @@ export default async function SurveyPage({
   // inference and the row gets typed as GenericStringError. Cast to the
   // shape we actually request — small and contained (same pattern as
   // confirm/page.tsx RegRow).
+  type EventEmbed = {
+    id: string;
+    title: string;
+    status: string;
+    start_time: string;
+    timezone: string;
+    venue_name: string;
+  };
   type RegRow = {
     id: string;
-    full_name: string;
     status: string;
-    events:
-      | { id: string; title: string; status: string }
-      | Array<{ id: string; title: string; status: string }>
-      | null;
+    events: EventEmbed | Array<EventEmbed> | null;
   };
   const { data: reg } = (await admin
     .from('registrations')
-    .select('id, full_name, status, events!inner(id, title, status)')
+    .select('id, status, events!inner(id, title, status, start_time, timezone, venue_name)')
     .eq('registration_code', code)
     .maybeSingle()) as { data: RegRow | null };
 
@@ -129,7 +133,13 @@ export default async function SurveyPage({
 
   return (
     <PublicShell>
-      <SurveyForm code={code} eventTitle={event.title} />
+      <SurveyForm
+        code={code}
+        eventTitle={event.title}
+        eventStartTime={event.start_time}
+        eventTimezone={event.timezone}
+        eventVenueName={event.venue_name}
+      />
     </PublicShell>
   );
 }

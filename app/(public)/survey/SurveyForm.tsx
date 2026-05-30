@@ -29,9 +29,15 @@ const CHOICE_UNSELECTED = 'border-outline-variant hover:bg-green-50';
 export default function SurveyForm({
   code,
   eventTitle,
+  eventStartTime,
+  eventTimezone,
+  eventVenueName,
 }: {
   code: string;
   eventTitle: string;
+  eventStartTime: string;
+  eventTimezone: string;
+  eventVenueName: string;
 }) {
   const [sessionFormat, setSessionFormat] = useState<SessionFormat>();
   const [keyHighlights, setKeyHighlights] = useState('');
