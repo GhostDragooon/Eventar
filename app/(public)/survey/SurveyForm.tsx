@@ -132,7 +132,7 @@ export default function SurveyForm({
                 </div>
                 <p className="font-headline-sm text-headline-sm">Thank you</p>
                 <p className="font-body-md text-body-md text-on-primary/80">
-                  Your feedback was recorded.
+                  Your feedback for <em>{eventTitle}</em> was recorded.
                 </p>
               </div>
             ) : (
