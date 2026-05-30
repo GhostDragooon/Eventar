@@ -36,7 +36,12 @@ export async function submitSurvey(
     .select('id, status, events!inner(id, status)')
     .eq('registration_code', code)
     .maybeSingle()) as { data: RegRow | null; error: unknown };
-  if (lookupErr) throw lookupErr;
+  if (lookupErr) {
+    // Fail visibly (Rule 12) — log server-side, return friendly copy so the form's
+    // error-state branch renders instead of Next's default error UI.
+    console.error('[submitSurvey] registration lookup failed', lookupErr);
+    return { error: "We couldn't save your feedback. Please check your connection and try again." };
+  }
   if (!reg || !reg.events) return { error: 'This code is not recognised.' };
   const event = Array.isArray(reg.events) ? reg.events[0] : reg.events;
   if (!event || event.status !== 'published') return { error: 'This code is not recognised.' };
@@ -57,7 +62,8 @@ export async function submitSurvey(
     if ((insertErr as { code?: string }).code === '23505') {
       return { error: "You've already submitted this survey." };
     }
-    throw insertErr;
+    console.error('[submitSurvey] insert failed', insertErr);
+    return { error: "We couldn't save your feedback. Please check your connection and try again." };
   }
 
   revalidatePath('/survey');
