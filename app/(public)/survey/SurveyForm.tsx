@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { formatInTz } from '@/lib/tz';
 import {
   SESSION_FORMAT_OPTIONS,
   VALUE_PROPOSITION_OPTIONS,
@@ -83,6 +84,20 @@ export default function SurveyForm({
         {/* Left focal header (4/12) */}
         <div className="col-span-12 lg:col-span-4 sticky lg:top-20">
           <h1 className="font-headline-md text-headline-md text-primary mb-sm">{eventTitle}</h1>
+          <div className="font-body-md text-body-md text-on-surface-variant mb-md space-y-1">
+            <p className="flex items-start gap-xs">
+              <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden>
+                schedule
+              </span>
+              <span>{formatInTz(eventStartTime, eventTimezone)}</span>
+            </p>
+            <p className="flex items-start gap-xs">
+              <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden>
+                location_on
+              </span>
+              <span>{eventVenueName}</span>
+            </p>
+          </div>
           <p className="font-body-md text-body-md text-on-surface-variant mb-lg leading-relaxed">
             Thank you for contributing your professional expertise. Please complete this brief
             assessment to help us enhance future events.
