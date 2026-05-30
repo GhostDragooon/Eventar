@@ -34,4 +34,9 @@ describe('arrivalLatency', () => {
     ];
     expect(arrivalLatency(rows, START)).toBe(1);
   });
+
+  it('returns null for malformed startTime (instead of silently 0)', () => {
+    const rows = [{ check_in_at: '2026-06-01T10:00:00Z' }];
+    expect(arrivalLatency(rows, 'not-a-date')).toBeNull();
+  });
 });

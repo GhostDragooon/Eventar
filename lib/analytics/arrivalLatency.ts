@@ -4,6 +4,7 @@ type Row = { check_in_at: string | null };
 
 export function arrivalLatency(rows: Row[], startTime: string): number | null {
   const startMs = new Date(startTime).getTime();
+  if (Number.isNaN(startMs)) return null;
   let onTime = 0;
   let denom = 0;
   for (const row of rows) {
