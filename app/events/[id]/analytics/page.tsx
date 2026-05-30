@@ -133,7 +133,7 @@ export default async function EventAnalyticsPage({
           icon="event_note"
           iconBg="fixed"
           title="Agenda (Q1)"
-          prompt={'"Which session format did you find most useful?"'}
+          prompt={'"Which event format did you find most valuable?"'}
           distribution={q1}
           layout="grid"
           priorityPill="Priority Expansion"
@@ -156,7 +156,7 @@ export default async function EventAnalyticsPage({
           icon="chat"
           iconBg="primary"
           title="Requests (Q5)"
-          prompt={'"Which areas would you prioritize for our next event?"'}
+          prompt={'"Select areas for future programmatic expansion:"'}
           distribution={q5}
           layout="stack"
           sliceBgClass="bg-primary/5"

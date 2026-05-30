@@ -14,7 +14,7 @@ export function HighlightCommentSlice({
       icon="campaign"
       iconBg="secondary-container"
       title="Content (Q2)"
-      prompt={'"What stood out as a key highlight from this event?"'}
+      prompt={'"Which speaker or session provided the most clinical utility?"'}
     >
       <div className="w-full flex justify-between items-center">
         <div className="flex flex-col">
