@@ -23,7 +23,7 @@ type State =
   | { kind: 'error'; message: string };
 
 const CHOICE_BASE =
-  'flex items-center px-md py-2.5 border cursor-pointer transition-colors rounded-full';
+  'flex items-center px-md py-2.5 border cursor-pointer transition-colors rounded-full has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary has-[:focus-visible]:ring-offset-1';
 const CHOICE_SELECTED = 'border-green-600 bg-green-50';
 const CHOICE_UNSELECTED = 'border-outline-variant hover:bg-green-50';
 
