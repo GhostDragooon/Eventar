@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<!--
+  Phase 5 survey — canonical layout/design reference (user-provided mockup).
+  Port to React: app/(public)/survey/page.tsx + SurveyForm.tsx, wrapped in PublicShell.
+  DO NOT reproduce the mockup's own <header>/<footer> — PublicShell provides app chrome.
+  The Tailwind config below uses the SAME token names the app already defines, so most
+  classes port 1:1. Green selected-state + segmented :checked become React state-driven
+  conditional classes (controlled component, like ConfirmButton).
+  Value→slug map (see lib/surveyTemplate.ts):
+    format: Presentations→scientific_presentations, Panel discussion→clinical_panels,
+            Interactive session→interactive_qa, Networking→peer_networking
+    value_aspect: Practical insights→clinical_application, Speaker quality→faculty_caliber,
+            Networking opportunities→peer_collaboration
+    expectations: Exceeded→exceeded, Met→met, Partially→partially, Not Met→not_met
+    future: interaction→expanded_qa, depth→increased_clinical_depth,
+            networking→structured_networking, diverse→subspecialty_topics
+-->
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<title>Post-Event Survey</title>
+<style>
+  body { background-color: #fbf8ff; }
+  .segmented-button input:checked + div { background-color: #142175; color: #fff; border-color: #142175; }
+  .choice-container { transition: all 0.3s ease-in-out; }
+  .choice-container:has(input:checked) { border-color: #16a34a !important; background-color: #f0fdf4 !important; }
+</style>
+</head>
+<body class="flex flex-col min-h-screen text-on-surface font-body-md bg-background">
+<main class="flex-grow w-full max-w-7xl mx-auto px-grid-margin py-xl">
+<div class="grid grid-cols-12 gap-grid-gutter items-start">
+<!-- Left Focal Header (4/12) — event title is DYNAMIC (eventTitle prop). -->
+<div class="col-span-12 lg:col-span-4 sticky lg:top-20">
+<h1 class="font-headline-md text-headline-md text-primary mb-sm">{eventTitle}</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mb-lg leading-relaxed">
+  Thank you for contributing your professional expertise. Please complete this brief assessment to help us enhance future events.
+</p>
+<!-- NOTE: mockup had a "CME Credit Eligibility / 8.0 AMA PRA Category 1 Credits" panel here.
+     Replaced with honest generic copy (the CME claim doesn't generalize / can't be hardcoded). -->
+<div class="bg-primary/5 border border-primary/10 p-md rounded-lg">
+<div class="flex items-center gap-sm text-primary mb-1">
+<span class="material-symbols-outlined text-xl">lock</span>
+<p class="font-label-md text-label-md uppercase tracking-wide font-bold">Anonymous feedback</p>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+  Your responses are anonymous and help shape future events.
+</p>
+</div>
+</div>
+<!-- Survey Content (8/12) -->
+<div class="col-span-12 lg:col-span-8">
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
+<form class="space-y-lg" id="post-event-survey">
+<!-- Q1 Session Format (single) -->
+<div class="space-y-sm">
+<label class="block font-label-md text-label-md text-outline uppercase tracking-wider">01. Session Format</label>
+<h3 class="font-title-lg text-body-lg font-semibold text-on-surface">Which event format did you find most valuable?</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
+<label class="flex items-center px-md py-2.5 border border-outline-variant cursor-pointer transition-colors choice-container rounded-full hover:bg-green-50">
+<input class="w-4 h-4 text-primary focus:ring-primary border-outline-variant" name="format" type="radio" value="Presentations"/>
+<span class="ml-3 font-body-md text-on-surface">Scientific Presentations</span>
+</label>
+<label class="flex items-center px-md py-2.5 border border-outline-variant cursor-pointer transition-colors choice-container hover:bg-green-50 rounded-full">
+<input class="w-4 h-4 text-primary focus:ring-primary border-outline-variant" name="format" type="radio" value="Panel discussion"/>
+<span class="ml-3 font-body-md text-on-surface">Clinical Panel Discussions</span>
+</label>
+<label class="flex items-center px-md py-2.5 border border-outline-variant cursor-pointer transition-colors choice-container hover:bg-green-50 rounded-full">
+<input class="w-4 h-4 text-primary focus:ring-primary border-outline-variant" name="format" type="radio" value="Interactive session"/>
+<span class="ml-3 font-body-md text-on-surface">Interactive Q&amp;A Sessions</span>
+</label>
+<label class="flex items-center px-md py-2.5 border border-outline-variant cursor-pointer transition-colors choice-container hover:bg-green-50 rounded-full">
+<input class="w-4 h-4 text-primary focus:ring-primary border-outline-variant" name="format" type="radio" value="Networking"/>
+<span class="ml-3 font-body-md text-on-surface">Peer Networking</span>
+</label>
+</div>
+</div>
+<!-- Q2 Key Highlights (text) -->
+<div class="space-y-sm">
+<label class="block font-label-md text-label-md text-outline uppercase tracking-wider">02. Key Highlights</label>
+<h3 class="font-title-lg text-body-lg font-semibold text-on-surface">Which speaker or session provided the most clinical utility?</h3>
+<textarea class="w-full h-24 p-3 border border-outline-variant rounded focus:ring-1 focus:ring-primary focus:border-primary outline-none font-body-md transition-all resize-none" placeholder="Enter session name or specific clinical takeaway..."></textarea>
+</div>
+<!-- Q3 Value Proposition (single; 3rd option spans 2 cols) -->
+<div class="space-y-sm">
+<label class="block font-label-md text-label-md text-outline uppercase tracking-wider">03. Value Proposition</label>
+<h3 class="font-title-lg text-body-lg font-semibold text-on-surface">What was the most valuable aspect of this summit?</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
+<label class="flex items-center px-md py-2.5 border border-outline-variant cursor-pointer transition-colors choice-container hover:bg-green-50 rounded-full">
+<input class="w-4 h-4 text-primary focus:ring-primary border-outline-variant" name="value_aspect" type="radio" value="Practical insights"/>
+<span class="ml-3 font-body-md text-on-surface">Practical insights for clinical application</span>
+</label>
+<label class="flex items-center px-md py-2.5 border border-outline-variant cursor-pointer transition-colors choice-container hover:bg-green-50 rounded-full">
+<input class="w-4 h-4 text-primary focus:ring-primary border-outline-variant" name="value_aspect" type="radio" value="Speaker quality"/>
+<span class="ml-3 font-body-md text-on-surface">Scientific caliber of faculty</span>
+</label>
+<label class="flex items-center px-md py-2.5 border border-outline-variant cursor-pointer transition-colors md:col-span-2 choice-container hover:bg-green-50 rounded-full">
+<input class="w-4 h-4 text-primary focus:ring-primary border-outline-variant" name="value_aspect" type="radio" value="Networking opportunities"/>
+<span class="ml-3 font-body-md text-on-surface">Peer-to-peer collaboration opportunities</span>
+</label>
+</div>
+</div>
+<!-- Q4 Expectations (segmented: selected → primary indigo) -->
+<div class="space-y-sm">
+<label class="block font-label-md text-label-md text-outline uppercase tracking-wider">04. Expectations</label>
+<h3 class="font-title-lg text-body-lg font-semibold text-on-surface">Overall, did the event meet your professional expectations?</h3>
+<div class="flex items-center w-full border border-outline-variant overflow-hidden pt-1 rounded-full p-1 gap-1">
+<label class="segmented-button flex-1 text-center cursor-pointer">
+<input class="sr-only" name="expectations" type="radio" value="Exceeded"/>
+<div class="py-2.5 font-body-md hover:bg-surface-container-low transition-all rounded-full">Exceeded</div>
+</label>
+<label class="segmented-button flex-1 text-center cursor-pointer">
+<input class="sr-only" name="expectations" type="radio" value="Met"/>
+<div class="py-2.5 font-body-md hover:bg-surface-container-low transition-all rounded-full">Met</div>
+</label>
+<label class="segmented-button flex-1 text-center cursor-pointer">
+<input class="sr-only" name="expectations" type="radio" value="Partially"/>
+<div class="py-2.5 font-body-md hover:bg-surface-container-low transition-all rounded-full">Partially</div>
+</label>
+<label class="segmented-button flex-1 text-center cursor-pointer">
+<input class="sr-only" name="expectations" type="radio" value="Not Met"/>
+<div class="py-2.5 font-body-md hover:bg-surface-container-low transition-all rounded-full">Not Met</div>
+</label>
+</div>
+</div>
+<!-- Q5 Future Preferences (multi) -->
+<div class="space-y-sm">
+<label class="block font-label-md text-label-md text-outline uppercase tracking-wider">05. Future Preferences</label>
+<h3 class="font-title-lg text-body-lg font-semibold text-on-surface">Select areas for future programmatic expansion:</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
+<label class="flex items-center px-md py-2.5 border border-outline-variant cursor-pointer transition-colors choice-container hover:bg-green-50 rounded-full">
+<input class="w-4 h-4 text-primary focus:ring-primary border-outline-variant rounded-full" name="future" type="checkbox" value="interaction"/>
+<span class="ml-3 font-body-md text-on-surface">Expanded Interactive Q&amp;A</span>
+</label>
+<label class="flex items-center px-md py-2.5 border border-outline-variant cursor-pointer transition-colors choice-container hover:bg-green-50 rounded-full">
+<input class="w-4 h-4 text-primary focus:ring-primary border-outline-variant rounded-full" name="future" type="checkbox" value="depth"/>
+<span class="ml-3 font-body-md text-on-surface">Increased Clinical Depth</span>
+</label>
+<label class="flex items-center px-md py-2.5 border border-outline-variant cursor-pointer transition-colors choice-container hover:bg-green-50 rounded-full">
+<input class="w-4 h-4 text-primary focus:ring-primary border-outline-variant rounded-full" name="future" type="checkbox" value="networking"/>
+<span class="ml-3 font-body-md text-on-surface">Structured Networking</span>
+</label>
+<label class="flex items-center px-md py-2.5 border border-outline-variant cursor-pointer transition-colors choice-container hover:bg-green-50 rounded-full">
+<input class="w-4 h-4 text-primary focus:ring-primary border-outline-variant rounded-full" name="future" type="checkbox" value="diverse"/>
+<span class="ml-3 font-body-md text-on-surface">Diverse Sub-specialty Topics</span>
+</label>
+</div>
+</div>
+<!-- Action Area -->
+<div class="pt-lg border-t border-outline-variant flex flex-col sm:flex-row items-center justify-between gap-md">
+<p class="font-body-md text-on-surface-variant text-sm italic">Approximate completion time: 2 minutes</p>
+<button class="w-full sm:w-auto bg-primary text-on-primary font-medium text-body-md shadow-sm hover:bg-opacity-90 transition-all rounded-full px-xl py-3" type="submit">Submit</button>
+</div>
+</form>
+</div>
+<!-- NOTE: mockup had an external oncology stock image + quote here. Dropped (fragile external URL, off-domain). -->
+</div>
+</div>
+</main>
+</body></html>
