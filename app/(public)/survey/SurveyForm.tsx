@@ -79,7 +79,7 @@ export default function SurveyForm({
   }
 
   return (
-    <main className="flex-grow w-full max-w-7xl mx-auto px-grid-margin py-xl">
+    <div className="flex-grow w-full max-w-7xl mx-auto px-grid-margin py-xl">
       <div className="grid grid-cols-12 gap-grid-gutter items-start">
         {/* Left focal header (4/12) */}
         <div className="col-span-12 lg:col-span-4 sticky lg:top-20">
@@ -326,6 +326,6 @@ export default function SurveyForm({
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
