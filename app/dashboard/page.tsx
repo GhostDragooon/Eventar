@@ -4,6 +4,10 @@ import { requireStaff, NotAuthorizedError } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { formatInTz } from '@/lib/tz';
 import { StaffShell } from '@/components/shell/StaffShell';
+import { LayerOneTiles } from '@/components/analytics/LayerOneTiles';
+import { EventRowStrip } from '@/components/analytics/EventRowStrip';
+import { arrivalLatency } from '@/lib/analytics/arrivalLatency';
+import { happyRate } from '@/lib/analytics/happyRate';
 
 export default async function DashboardPage() {
   let staff;
@@ -26,13 +30,62 @@ export default async function DashboardPage() {
   // their own via registrations_organizer_select_own. The metric card thus
   // shows what each role is authorized to see — same boundary as the
   // attendees-list view they'd open from a per-event row.
-  const [{ count: totalRegistered }, { count: totalAttended }] = await Promise.all([
+  const eventIds = (events ?? []).map((e) => e.id);
+
+  const [{ count: totalRegistered }, { count: totalAttended }, regsByEventRes, surveysByEventRes] = await Promise.all([
     supabase.from('registrations').select('*', { count: 'exact', head: true }),
-    supabase
-      .from('registrations')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'attended'),
+    supabase.from('registrations').select('*', { count: 'exact', head: true }).eq('status', 'attended'),
+    eventIds.length > 0
+      ? supabase.from('registrations').select('event_id, status, check_in_at').in('event_id', eventIds)
+      : Promise.resolve({ data: [], error: null }),
+    eventIds.length > 0
+      ? supabase.from('survey_responses').select('event_id, expectations').in('event_id', eventIds)
+      : Promise.resolve({ data: [], error: null }),
   ]);
+
+  if (regsByEventRes.error) throw regsByEventRes.error;
+  if (surveysByEventRes.error) throw surveysByEventRes.error;
+
+  const regsByEvent = (regsByEventRes.data ?? []) as { event_id: string; status: string; check_in_at: string | null }[];
+  const surveysByEvent = (surveysByEventRes.data ?? []) as { event_id: string; expectations: string | null }[];
+
+  const perEvent = new Map<string, { registered: number; attended: number; checkIns: (string | null)[]; surveys: { expectations: string | null }[] }>();
+  for (const e of events ?? []) {
+    perEvent.set(e.id, { registered: 0, attended: 0, checkIns: [], surveys: [] });
+  }
+  for (const r of regsByEvent) {
+    const p = perEvent.get(r.event_id);
+    if (!p) continue;
+    p.registered++;
+    if (r.status === 'attended') p.attended++;
+    p.checkIns.push(r.check_in_at);
+  }
+  for (const s of surveysByEvent) {
+    const p = perEvent.get(s.event_id);
+    if (!p) continue;
+    p.surveys.push({ expectations: s.expectations });
+  }
+
+  // Layer-1 tiles: capacity utilization + arrival on-time rate across visible events
+  const cappedEvents = (events ?? []).filter((e) => e.max_attendees != null);
+  const totalCapacity = cappedEvents.reduce((sum, e) => sum + (e.max_attendees ?? 0), 0);
+  const totalRegisteredInCapped = cappedEvents.reduce((sum, e) => sum + (perEvent.get(e.id)?.registered ?? 0), 0);
+  const capacityPct = totalCapacity > 0 ? Math.round((totalRegisteredInCapped / totalCapacity) * 100) : null;
+
+  let onTime = 0;
+  let totalCheckIns = 0;
+  for (const e of events ?? []) {
+    const p = perEvent.get(e.id);
+    if (!p) continue;
+    const eRows = p.checkIns.map((c) => ({ check_in_at: c }));
+    const eOnTime = arrivalLatency(eRows, e.start_time);
+    if (eOnTime != null) {
+      const eCheckCount = p.checkIns.filter((c) => c != null).length;
+      onTime += eOnTime * eCheckCount;
+      totalCheckIns += eCheckCount;
+    }
+  }
+  const arrivalOnTimePct = totalCheckIns > 0 ? Math.round((onTime / totalCheckIns) * 100) : null;
 
   const totalEvents = events?.length ?? 0;
   const registered = totalRegistered ?? 0;
@@ -98,6 +151,9 @@ export default async function DashboardPage() {
         />
       </section>
 
+      {/* Phase 6 — Layer-1 aggregate tiles (capacity + arrival) */}
+      <LayerOneTiles capacityPct={capacityPct} arrivalOnTimePct={arrivalOnTimePct} />
+
       <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] shadow-sm">
         <div className="p-md border-b border-outline-variant flex justify-between items-center">
           <h2 className="font-title-lg text-title-lg text-on-surface">Events</h2>
@@ -134,7 +190,7 @@ export default async function DashboardPage() {
                 }
               >
                 <Link
-                  href={`/events/${e.id}/edit`}
+                  href={`/events/${e.id}/analytics`}
                   className="flex items-start gap-md p-md hover:bg-surface-container-low transition-colors group"
                 >
                   <div className="w-28 flex flex-col gap-xs shrink-0">
@@ -165,6 +221,15 @@ export default async function DashboardPage() {
                         </span>
                       )}
                     </div>
+                    <EventRowStrip
+                      registered={perEvent.get(e.id)?.registered ?? 0}
+                      attended={perEvent.get(e.id)?.attended ?? 0}
+                      surveys={perEvent.get(e.id)?.surveys.length ?? 0}
+                      happyPct={(() => {
+                        const hr = happyRate(perEvent.get(e.id)?.surveys ?? [], 'expectations');
+                        return hr == null ? null : Math.round(hr * 100);
+                      })()}
+                    />
                   </div>
                 </Link>
               </li>
