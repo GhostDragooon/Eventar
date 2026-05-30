@@ -63,13 +63,13 @@ export default function NewEventForm() {
   const v2 = venueValid(venue);
   const v3 = dateTimeValid(datetime);
   const v4 = agendaValid(blocks, datetime.startMinutes, datetime.endMinutes);
-  const validSections = [v1, v2, v3, v4];
-  const completedCount = validSections.filter(Boolean).length;
-  const completionPct = Math.round((completedCount / validSections.length) * 100);
-  // Save Draft: just needs Basics/Venue/Date+Time (Agenda optional).
-  // Publish:    same gate — agenda is still optional. Distinguishing copy
-  // makes it obvious which button does what.
-  const canSubmit = v1 && v2 && v3 && v4;
+  // Completion = the three REQUIRED sections. Agenda is optional, so it does
+  // not count toward "ready to publish" (an empty agenda is valid). It gets a
+  // separate optional row in the checklist that only shows complete once the
+  // user has actually drafted at least one valid block.
+  const requiredValid = [v1, v2, v3];
+  const completionPct = Math.round((requiredValid.filter(Boolean).length / requiredValid.length) * 100);
+  const agendaDrafted = blocks.length > 0 && v4;
 
   // For the agenda summary's parallel-block check
   const parallelIds = (() => {
@@ -83,8 +83,27 @@ export default function NewEventForm() {
 
   function onSubmit(nextIntent: Intent) {
     setErr(null);
-    if (!v1 || !v2 || !v3) {
-      setErr('Complete Basics, Venue, and Date & Time first.');
+    // Validate in section order; on the first failure, jump the user to that
+    // section and explain. Buttons stay enabled (disabled-with-no-reason reads
+    // as "broken"), so the click is what surfaces what's still needed.
+    if (!v1) {
+      setOpen('basics');
+      setErr('Add the event basics (name) to continue.');
+      return;
+    }
+    if (!v2) {
+      setOpen('venue');
+      setErr('Pick a venue from the dropdown to continue.');
+      return;
+    }
+    if (!v3) {
+      setOpen('datetime');
+      setErr('Set the date, start, and end time to continue.');
+      return;
+    }
+    if (!v4) {
+      setOpen('agenda');
+      setErr('Fix the highlighted agenda blocks (each needs a valid time inside the event window, plus a title).');
       return;
     }
     setIntent(nextIntent);
@@ -152,14 +171,14 @@ export default function NewEventForm() {
             type="button"
             variant="outline"
             onClick={() => onSubmit('draft')}
-            disabled={!canSubmit || pending}
+            disabled={pending}
           >
             {pending && intent === 'draft' ? 'Saving…' : 'Save Draft'}
           </Button>
           <Button
             type="button"
             onClick={() => onSubmit('publish')}
-            disabled={!canSubmit || pending}
+            disabled={pending}
           >
             {pending && intent === 'publish' ? 'Publishing…' : 'Publish Event'}
           </Button>
@@ -181,7 +200,8 @@ export default function NewEventForm() {
             </SectionItem>
 
             <SectionItem id="venue" open={open === 'venue'} done={v2}
-                         title={SECTION_META.venue.label} summary={venueSummary(venue)}>
+                         title={SECTION_META.venue.label} summary={venueSummary(venue)}
+                         unconstrained>
               <VenueSection value={venue} onChange={setVenue} />
               <DoneRow disabled={!v2} onDone={() => setOpen(NEXT_SECTION.venue)} />
             </SectionItem>
@@ -225,7 +245,7 @@ export default function NewEventForm() {
               { label: 'Basic Details Added',  done: v1 },
               { label: 'Venue Set',            done: v2 },
               { label: 'Date & Time Defined',  done: v3 },
-              { label: 'Agenda Drafted',       done: v4 },
+              { label: 'Agenda (optional)',    done: agendaDrafted, optional: true },
             ]}
           />
         </aside>
@@ -294,7 +314,9 @@ function DoneRow({ disabled, onDone }: { disabled: boolean; onDone: () => void }
 /**
  * Right-column status panel — mirrors the "STATUS: DRAFT / Setup Completion"
  * card from the New Event Setup mockup. Lifts the dark indigo card with
- * progress bar + checkmark list; deferred items show a hollow ring.
+ * progress bar + checkmark list. Completion counts only the required
+ * sections; required-but-incomplete items show a hollow ring, optional
+ * incomplete items show a muted dash (never a false checkmark).
  *
  * "Status" stays Draft on this page — the form has never saved, so the
  * draft/published distinction is the user's INTENT (encoded by which
@@ -306,7 +328,7 @@ function StatusPanel({
   checklist,
 }: {
   completionPct: number;
-  checklist: { label: string; done: boolean }[];
+  checklist: { label: string; done: boolean; optional?: boolean }[];
 }) {
   return (
     <div className="bg-primary text-on-primary p-xl rounded-[20px] shadow-xl overflow-hidden relative">
@@ -333,18 +355,27 @@ function StatusPanel({
           />
         </div>
         <ul className="space-y-md">
-          {checklist.map((item) => (
-            <li key={item.label} className={`flex items-center gap-md ${item.done ? '' : 'opacity-60'}`}>
-              <span
-                className="material-symbols-outlined text-[20px]"
-                aria-hidden
-                data-fill={item.done ? '1' : undefined}
-              >
-                {item.done ? 'check_circle' : 'radio_button_unchecked'}
-              </span>
-              <span className="font-label-md text-label-md">{item.label}</span>
-            </li>
-          ))}
+          {checklist.map((item) => {
+            // Optional, not-yet-done items render in a muted "—" state so the
+            // panel never claims an empty optional step is complete.
+            const icon = item.done
+              ? 'check_circle'
+              : item.optional
+                ? 'remove'
+                : 'radio_button_unchecked';
+            return (
+              <li key={item.label} className={`flex items-center gap-md ${item.done ? '' : 'opacity-60'}`}>
+                <span
+                  className="material-symbols-outlined text-[20px]"
+                  aria-hidden
+                  data-fill={item.done ? '1' : undefined}
+                >
+                  {icon}
+                </span>
+                <span className="font-label-md text-label-md">{item.label}</span>
+              </li>
+            );
+          })}
         </ul>
       </div>
       {/* Decorative blur */}
