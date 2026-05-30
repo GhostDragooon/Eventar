@@ -220,7 +220,7 @@ export default function SurveyForm({
                       return (
                         <label key={opt.value} className="flex-1 text-center cursor-pointer">
                           <input
-                            className="sr-only"
+                            className="sr-only peer"
                             name="expectations"
                             type="radio"
                             value={opt.value}
@@ -228,7 +228,7 @@ export default function SurveyForm({
                             onChange={() => setExpectations(opt.value)}
                           />
                           <div
-                            className={`py-2.5 font-body-md transition-all rounded-full ${
+                            className={`py-2.5 font-body-md transition-all rounded-full peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-1 ${
                               selected
                                 ? 'bg-primary text-on-primary'
                                 : 'hover:bg-surface-container-low'
