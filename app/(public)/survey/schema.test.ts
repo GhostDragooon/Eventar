@@ -43,4 +43,10 @@ describe('surveyInputSchema', () => {
     expect(r.success).toBe(true);
     if (r.success) expect(r.data.key_highlights).toBe('hi');
   });
+
+  it('coerces empty key_highlights to undefined', () => {
+    const r = surveyInputSchema.safeParse({ key_highlights: '' });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.key_highlights).toBeUndefined();
+  });
 });

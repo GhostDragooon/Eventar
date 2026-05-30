@@ -10,7 +10,7 @@ import {
 // All fields optional (product decision: all questions optional, empty submit allowed).
 export const surveyInputSchema = z.object({
   session_format:     z.enum(SESSION_FORMAT_VALUES).optional(),
-  key_highlights:     z.string().trim().max(KEY_HIGHLIGHTS_MAX, 'Too long').optional(),
+  key_highlights:     z.string().trim().max(KEY_HIGHLIGHTS_MAX, 'Too long').transform((v) => (v === '' ? undefined : v)).optional(),
   value_proposition:  z.enum(VALUE_PROPOSITION_VALUES).optional(),
   expectations:       z.enum(EXPECTATIONS_VALUES).optional(),
   future_preferences: z.array(z.enum(FUTURE_PREFERENCE_VALUES)).default([]),
