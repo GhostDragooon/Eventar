@@ -1,0 +1,173 @@
+import { supabaseAdmin } from '@/lib/supabase/admin';
+import { isValidRegistrationCode } from '@/lib/registrationCode';
+import { PublicShell } from '@/components/shell/PublicShell';
+import SurveyForm from './SurveyForm';
+
+export const dynamic = 'force-dynamic';
+
+export default async function SurveyPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ code?: string }>;
+}) {
+  const { code } = await searchParams;
+
+  if (!code) {
+    return (
+      <PublicShell>
+        <PageWrap>
+          <EmptyState
+            icon="quiz"
+            title="No survey code"
+            body="Open this page from the survey link we emailed you, or scan your personal QR code. If you can't find it, ask the event organiser for help."
+          />
+        </PageWrap>
+      </PublicShell>
+    );
+  }
+  if (!isValidRegistrationCode(code)) {
+    return (
+      <PublicShell>
+        <PageWrap>
+          <EmptyState
+            icon="error"
+            title="Code not recognised"
+            body="Please use the survey link we emailed you, or ask the event organiser for help."
+          />
+        </PageWrap>
+      </PublicShell>
+    );
+  }
+
+  const admin = supabaseAdmin();
+  // The select string with !inner embed confuses supabase-js's generic
+  // inference and the row gets typed as GenericStringError. Cast to the
+  // shape we actually request — small and contained (same pattern as
+  // confirm/page.tsx RegRow).
+  type RegRow = {
+    id: string;
+    full_name: string;
+    status: string;
+    events:
+      | { id: string; title: string; status: string }
+      | Array<{ id: string; title: string; status: string }>
+      | null;
+  };
+  const { data: reg } = (await admin
+    .from('registrations')
+    .select('id, full_name, status, events!inner(id, title, status)')
+    .eq('registration_code', code)
+    .maybeSingle()) as { data: RegRow | null };
+
+  if (!reg || !reg.events) {
+    return (
+      <PublicShell>
+        <PageWrap>
+          <EmptyState
+            icon="error"
+            title="Code not recognised"
+            body="Please use the survey link we emailed you, or ask the event organiser for help."
+          />
+        </PageWrap>
+      </PublicShell>
+    );
+  }
+
+  // The supabase-js typing for embedded selects can return the relation as
+  // an object OR an array depending on relationship cardinality.
+  // registrations.event_id -> events.id is many-to-one, so it's always an
+  // object here, but TS doesn't know that. Narrow:
+  const event = Array.isArray(reg.events) ? reg.events[0] : reg.events;
+  if (!event || event.status !== 'published') {
+    return (
+      <PublicShell>
+        <PageWrap>
+          <EmptyState
+            icon="error"
+            title="Code not recognised"
+            body="Please use the survey link we emailed you, or ask the event organiser for help."
+          />
+        </PageWrap>
+      </PublicShell>
+    );
+  }
+
+  if (reg.status !== 'attended') {
+    return (
+      <PublicShell>
+        <PageWrap>
+          <EmptyState
+            icon="hourglass_empty"
+            title="Survey not available yet"
+            body="This survey opens once you've been checked in at the event. If you've already attended, please ask the organiser."
+          />
+        </PageWrap>
+      </PublicShell>
+    );
+  }
+
+  // Already submitted? (idempotent UX — the DB unique constraint is the real
+  // guard; this just avoids showing the form a second time.)
+  const { data: existing } = await admin
+    .from('survey_responses')
+    .select('id')
+    .eq('registration_id', reg.id)
+    .maybeSingle();
+  if (existing) {
+    return (
+      <PublicShell>
+        <PageWrap>
+          <EmptyState
+            icon="check_circle"
+            title="Thanks — already submitted"
+            body={`We've already recorded your feedback for ${event.title}.`}
+          />
+        </PageWrap>
+      </PublicShell>
+    );
+  }
+
+  return (
+    <PublicShell>
+      <SurveyForm code={code} eventTitle={event.title} />
+    </PublicShell>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Layout                                                                     */
+/* -------------------------------------------------------------------------- */
+
+function PageWrap({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="w-full max-w-md mx-auto px-grid-margin py-lg space-y-md">
+      {children}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* States                                                                     */
+/* -------------------------------------------------------------------------- */
+
+function EmptyState({
+  icon,
+  title,
+  body,
+}: {
+  icon: string;
+  title: string;
+  body: string;
+}) {
+  return (
+    <div className="text-center space-y-sm">
+      <div className="inline-flex items-center justify-center w-16 h-16 bg-secondary-container text-on-secondary-container rounded-full mb-sm" aria-hidden>
+        <span className="material-symbols-outlined text-[32px]">{icon}</span>
+      </div>
+      <h1 className="font-headline-sm text-headline-sm text-on-surface">{title}</h1>
+      <p className="font-body-md text-body-md text-on-surface-variant max-w-sm mx-auto">
+        {body}
+      </p>
+    </div>
+  );
+}
