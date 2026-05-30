@@ -191,6 +191,20 @@ export default async function StaffEventEditPage({
               </ActionCard>
 
               <ActionCard
+                icon="analytics"
+                title="Analytics"
+                body="Registrations, attendance, and post-event survey results."
+              >
+                <Link
+                  href={`/events/${event.id}/analytics`}
+                  className="inline-flex items-center gap-xs font-label-md text-label-md text-primary hover:underline"
+                >
+                  View analytics
+                  <span className="material-symbols-outlined text-[16px]" aria-hidden>arrow_forward</span>
+                </Link>
+              </ActionCard>
+
+              <ActionCard
                 icon="qr_code_2"
                 title="QR code"
                 body="Anyone who scans this lands on the public registration page."
