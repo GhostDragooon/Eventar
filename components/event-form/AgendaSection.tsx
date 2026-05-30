@@ -323,7 +323,7 @@ function TimeFields({
             value={startMin}
             onChange={(m) => { onChange({ start: hhmmFromMinutes(m) }); onTouch(); }}
             invalid={showStartErr}
-            ariaLabel="Block start time"
+            ariaLabel="Block start time (required)"
           />
         </Labelled>
         <Labelled label="End" required>
@@ -332,7 +332,7 @@ function TimeFields({
             onChange={(m) => { onChange({ end: hhmmFromMinutes(m) }); onTouch(); }}
             invalid={showEndErr}
             disabled={startMin === null}
-            ariaLabel="Block end time"
+            ariaLabel="Block end time (required) — pick a start time first if disabled"
           />
         </Labelled>
       </div>

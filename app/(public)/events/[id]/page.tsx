@@ -171,9 +171,6 @@ export default async function PublicEventPage({
               </div>
             </ContentCard>
 
-            <p className="font-body-md text-[12px] text-on-surface-variant italic px-md">
-              Confirmation emails go live in phase 7. Reminders + survey in phase 9.
-            </p>
           </section>
         </div>
       </div>

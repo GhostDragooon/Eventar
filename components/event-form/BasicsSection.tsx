@@ -15,11 +15,19 @@ type Props = {
   onChange: (patch: Partial<BasicsValue>) => void;
 };
 
+function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
+  return (
+    <span className="block font-label-md text-label-md uppercase tracking-wider text-on-surface mb-xs">
+      {children}{required && <span className="text-error ml-xs" aria-label="required">*</span>}
+    </span>
+  );
+}
+
 export default function BasicsSection({ value, onChange }: Props) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-md">
       <label className="block">
-        <span className="block text-sm font-medium mb-1">Event name</span>
+        <FieldLabel required>Event name</FieldLabel>
         <Input
           value={value.title}
           onChange={(e) => onChange({ title: e.target.value })}
@@ -29,7 +37,7 @@ export default function BasicsSection({ value, onChange }: Props) {
       </label>
 
       <label className="block">
-        <span className="block text-sm font-medium mb-1">Topic tag (optional)</span>
+        <FieldLabel>Topic tag (optional)</FieldLabel>
         <Input
           value={value.topic}
           onChange={(e) => onChange({ topic: e.target.value })}
@@ -38,7 +46,7 @@ export default function BasicsSection({ value, onChange }: Props) {
       </label>
 
       <label className="block">
-        <span className="block text-sm font-medium mb-1">Description</span>
+        <FieldLabel>Description</FieldLabel>
         <Textarea
           value={value.description}
           onChange={(e) => onChange({ description: e.target.value })}
@@ -48,7 +56,7 @@ export default function BasicsSection({ value, onChange }: Props) {
       </label>
 
       <label className="block">
-        <span className="block text-sm font-medium mb-1">Capacity (optional)</span>
+        <FieldLabel>Capacity (optional)</FieldLabel>
         <Input
           type="number"
           min={1}

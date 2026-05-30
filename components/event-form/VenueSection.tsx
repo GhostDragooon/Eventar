@@ -10,21 +10,24 @@ type Props = {
 
 export default function VenueSection({ value, onChange }: Props) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-md">
       <VenueSearchBox onSelect={onChange} />
       {value && (
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm">
-          <p className="font-medium text-gray-900">📍 {value.venue_name}</p>
+        <div className="rounded-lg border border-outline-variant bg-surface-container-low p-md">
+          <p className="font-body-md text-body-md font-semibold text-on-surface flex items-center gap-xs">
+            <span className="material-symbols-outlined text-[18px] text-primary" aria-hidden>location_on</span>
+            {value.venue_name}
+          </p>
           {value.venue_address && (
-            <p className="text-gray-600">{value.venue_address}</p>
+            <p className="font-body-md text-body-md text-on-surface-variant ml-[26px]">{value.venue_address}</p>
           )}
-          <p className="text-gray-600">
+          <p className="font-body-md text-body-md text-on-surface-variant ml-[26px]">
             {value.city}
             {value.region ? `, ${value.region}` : ''}, {value.country}
           </p>
           <button
             type="button"
-            className="mt-2 text-xs text-blue-700 hover:underline"
+            className="mt-sm font-label-md text-label-md text-primary hover:underline"
             onClick={() => onChange(null)}
           >
             Clear

@@ -83,11 +83,11 @@ export default function VenueSearchBox({ onSelect }: Props) {
 
       {open && (displayResults.length > 0 || displayLoading) && (
         <ul
-          className="absolute z-10 left-0 right-0 mt-1 max-h-72 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-md"
+          className="absolute z-20 left-0 right-0 mt-xs max-h-72 overflow-y-auto rounded-lg border border-outline-variant bg-surface-container-lowest shadow-lg"
           role="listbox"
         >
           {displayLoading && displayResults.length === 0 && (
-            <li className="px-3 py-2 text-sm text-gray-500">Searching…</li>
+            <li className="px-md py-sm font-body-md text-body-md text-on-surface-variant">Searching…</li>
           )}
           {displayResults.map((v, i) => (
             <li key={i} role="option" aria-selected="false">
@@ -95,10 +95,10 @@ export default function VenueSearchBox({ onSelect }: Props) {
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}  // prevent input blur
                 onClick={() => pick(v)}
-                className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
+                className="w-full text-left px-md py-sm hover:bg-surface-container-low transition-colors"
               >
-                <div className="font-medium text-gray-900">{v.venue_name}</div>
-                <div className="text-gray-600 text-xs mt-0.5 truncate">
+                <div className="font-body-md text-body-md font-semibold text-on-surface">{v.venue_name}</div>
+                <div className="font-body-md text-[12px] text-on-surface-variant mt-[2px] truncate">
                   {v.venue_address || `${v.city}${v.region ? `, ${v.region}` : ''}, ${v.country}`}
                 </div>
               </button>
@@ -108,7 +108,7 @@ export default function VenueSearchBox({ onSelect }: Props) {
       )}
 
       {!tooShort && !displayLoading && displayResults.length === 0 && open && (
-        <div className="absolute z-10 left-0 right-0 mt-1 rounded-lg border border-gray-200 bg-white shadow-md px-3 py-2 text-sm text-gray-500">
+        <div className="absolute z-20 left-0 right-0 mt-xs rounded-lg border border-outline-variant bg-surface-container-lowest shadow-lg px-md py-sm font-body-md text-body-md text-on-surface-variant">
           No matches. Try a more specific name or the venue&apos;s address.
         </div>
       )}

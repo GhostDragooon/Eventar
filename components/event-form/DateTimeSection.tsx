@@ -49,7 +49,7 @@ export default function DateTimeSection({ value, onChange }: Props) {
           <DatePicker
             value={value.date}
             onChange={(iso) => onChange({ date: iso })}
-            ariaLabel="Event date"
+            ariaLabel="Event date (required)"
           />
         </Labelled>
       </div>
@@ -58,7 +58,7 @@ export default function DateTimeSection({ value, onChange }: Props) {
           <TimePicker15
             value={value.startMinutes}
             onChange={(m) => onChange({ startMinutes: m })}
-            ariaLabel="Event start time"
+            ariaLabel="Event start time (required)"
           />
         </Labelled>
         <Labelled label="End" required>
@@ -71,7 +71,7 @@ export default function DateTimeSection({ value, onChange }: Props) {
               value.endMinutes <= value.startMinutes
             }
             disabled={value.startMinutes === null}
-            ariaLabel="Event end time"
+            ariaLabel="Event end time (required) — pick a start time first if disabled"
           />
         </Labelled>
       </div>
@@ -129,8 +129,13 @@ function Labelled({
 
 export function dateTimeSummary(v: DateTimeValue): string {
   if (!v.date || v.startMinutes === null || v.endMinutes === null) return 'Not set';
-  const dur = v.endMinutes - v.startMinutes;
-  return `${formatDateShort(v.date)}, ${formatMinutes12h(v.startMinutes)}–${formatMinutes12h(v.endMinutes)} (${formatDurationMinutes(dur)})`;
+  const times = `${formatMinutes12h(v.startMinutes)}–${formatMinutes12h(v.endMinutes)}`;
+  // Only append a duration when the range is valid; otherwise the collapsed
+  // summary would show a negative duration (e.g. "-1h 30m") for end ≤ start.
+  const dur = v.endMinutes > v.startMinutes
+    ? ` (${formatDurationMinutes(v.endMinutes - v.startMinutes)})`
+    : '';
+  return `${formatDateShort(v.date)}, ${times}${dur}`;
 }
 
 export function dateTimeValid(v: DateTimeValue): boolean {

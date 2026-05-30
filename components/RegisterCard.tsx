@@ -56,9 +56,6 @@ export default function RegisterCard({ eventId, maxAttendees, currentCount }: Pr
         <p className="font-body-md text-body-md text-on-surface">
           We&apos;ll email a confirmation to <strong>{state.email}</strong> shortly.
         </p>
-        <p className="font-body-md text-[12px] text-on-surface-variant mt-sm italic">
-          (Phase 7 will make this real; for now, the server logged the would-send.)
-        </p>
       </Card>
     );
   }

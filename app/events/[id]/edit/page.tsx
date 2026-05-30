@@ -143,7 +143,8 @@ export default async function StaffEventEditPage({
           )}
 
           <p className="font-body-md text-[12px] text-on-surface-variant italic">
-            Full edit UI is deferred. For now, delete and re-create to change details.
+            Editing event details isn&apos;t available yet — this view is read-only.
+            Need a change? Ask an admin.
           </p>
         </div>
 
