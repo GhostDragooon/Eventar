@@ -9,6 +9,7 @@ type Props = {
   responseCount: number;
   attended: number;
   latestSurvey: LatestSurvey;
+  nowMs: number;
 };
 
 export function FeedbackSection({
@@ -17,6 +18,7 @@ export function FeedbackSection({
   responseCount,
   attended,
   latestSurvey,
+  nowMs,
 }: Props) {
   return (
     <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm mb-lg">
@@ -58,7 +60,7 @@ export function FeedbackSection({
                 &ldquo;{latestSurvey.key_highlights.trim()}&rdquo;
               </p>
               <p className="font-label-md text-label-md text-on-surface-variant mt-xs">
-                — submitted {timeAgo(latestSurvey.submitted_at)}
+                — submitted {timeAgo(latestSurvey.submitted_at, nowMs)}
               </p>
             </blockquote>
           )}
@@ -78,8 +80,8 @@ export function FeedbackSection({
   );
 }
 
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
+function timeAgo(iso: string, nowMs: number): string {
+  const diff = nowMs - new Date(iso).getTime();
   const minutes = Math.floor(diff / 60_000);
   if (minutes < 1) return 'just now';
   if (minutes < 60) return `${minutes} min ago`;

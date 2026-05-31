@@ -98,6 +98,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
         responseCount={responseCount}
         attended={attended}
         latestSurvey={latestSurvey}
+        nowMs={nowMs}
       />
     </StaffShell>
   );
