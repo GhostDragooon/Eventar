@@ -133,6 +133,7 @@ export default async function DashboardPage() {
       <GeneralCategoryBand
         days={days}
         nextEventTitle={nextEvent?.title ?? null}
+        nextIsLive={nextEvent?.lifecycle === 'live'}
         counts={counts}
         aggregateRegistration={aggregateRegistration}
         yourCompleted={yourCompleted}

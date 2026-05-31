@@ -6,6 +6,7 @@ import { TeamTaskCompletionTile } from './tiles/TeamTaskCompletionTile';
 export type GeneralCategoryProps = {
   days: number | null;
   nextEventTitle: string | null;
+  nextIsLive?: boolean;
   counts: { drafted: number; registering: number; upcoming: number; live: number; completed: number };
   aggregateRegistration: number;
   yourCompleted: number;
@@ -15,7 +16,7 @@ export type GeneralCategoryProps = {
 export function GeneralCategoryBand(p: GeneralCategoryProps) {
   return (
     <section className="grid grid-cols-1 md:grid-cols-4 gap-grid-gutter mb-xl">
-      <DaysUntilTile days={p.days} eventTitle={p.nextEventTitle} />
+      <DaysUntilTile days={p.days} eventTitle={p.nextEventTitle} nextIsLive={p.nextIsLive} />
       <EventsByStatusTile counts={p.counts} />
       <AggregateRegistrationTile total={p.aggregateRegistration} />
       <TeamTaskCompletionTile completed={p.yourCompleted} total={p.yourTotal} />
