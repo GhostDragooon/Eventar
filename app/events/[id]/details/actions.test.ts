@@ -20,6 +20,9 @@ let mockEventRow: { id: string; start_time: string } | null = {
 };
 let mockReadError: { message: string } | null = null;
 let mockUpdateError: { message: string } | null = null;
+// What the update().eq().select().maybeSingle() chain returns. `null` simulates
+// RLS-blocked write (0 rows matched the .eq filter, no error surfaced).
+let mockUpdatedRow: { id: string } | null = { id: eventId };
 
 vi.mock('@/lib/supabase/server', () => ({
   supabaseServer: vi.fn(async () => ({
@@ -32,8 +35,11 @@ vi.mock('@/lib/supabase/server', () => ({
       update: (payload: Record<string, unknown>) => {
         lastUpdate = payload;
         return {
-          eq: (_col: string, _val: string) =>
-            Promise.resolve({ error: mockUpdateError }),
+          eq: (_col: string, _val: string) => ({
+            select: (_cols: string) => ({
+              maybeSingle: async () => ({ data: mockUpdatedRow, error: mockUpdateError }),
+            }),
+          }),
         };
       },
     }),
@@ -48,6 +54,7 @@ beforeEach(() => {
   mockEventRow = { id: eventId, start_time: eventStartTime };
   mockReadError = null;
   mockUpdateError = null;
+  mockUpdatedRow = { id: eventId };
 });
 
 describe('updateRegistrationClose', () => {
@@ -96,5 +103,25 @@ describe('updateRegistrationClose', () => {
     expect(result.error).toBeDefined();
     expect(result.error).toMatch(/not found/i);
     expect(lastUpdate).toBeNull();
+  });
+
+  it('returns error when update is silently blocked by RLS (0 rows affected)', async () => {
+    // RLS scenario: manager-role staff calling update on an event they don't
+    // own. Supabase returns { data: null, error: null } because no rows match
+    // the .eq filter under the RLS policy. Without the explicit guard, the
+    // action would return {} (success) but the DB row would be unchanged —
+    // CLAUDE.md rule 12 violation. The guard surfaces this as an error.
+    mockUpdatedRow = null;
+    const result = await updateRegistrationClose(
+      eventId,
+      '2026-06-15T08:00:00.000Z',
+    );
+    expect(result.error).toBeDefined();
+    expect(result.error).toMatch(/not found|not owned/i);
+    // The update payload was still sent (we can't detect RLS pre-flight),
+    // but the post-update guard catches the empty result.
+    expect(lastUpdate).toEqual({
+      registration_close_at: new Date('2026-06-15T08:00:00.000Z').toISOString(),
+    });
   });
 });

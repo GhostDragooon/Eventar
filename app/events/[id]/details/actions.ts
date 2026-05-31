@@ -52,11 +52,19 @@ export async function updateRegistrationClose(
     }
   }
 
-  const { error: updateError } = await supabase
+  // .select('id') + .maybeSingle() lets us detect when the update affected 0
+  // rows — which happens when RLS silently blocks (e.g. manager-role staff
+  // trying to update an event they don't own). Without this check the action
+  // would return success but the row would be unchanged. CLAUDE.md rule 12;
+  // same pattern as publishEvent in /events/[id]/edit/actions.ts.
+  const { data: updated, error: updateError } = await supabase
     .from('events')
     .update({ registration_close_at: parsedDate ? parsedDate.toISOString() : null })
-    .eq('id', eventId);
+    .eq('id', eventId)
+    .select('id')
+    .maybeSingle();
 
   if (updateError) return { error: updateError.message };
+  if (!updated) return { error: 'Update failed — event not found or not owned by you.' };
   return {};
 }
