@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Phase 6.5 Visual Decisions | Eventar</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Source+Serif+4:opsz,wght@8..60,400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "primary": "#142175",
+          "on-primary": "#ffffff",
+          "primary-container": "#2e3a8c",
+          "on-primary-container": "#9ea9ff",
+          "primary-fixed": "#dfe0ff",
+          "secondary": "#565e74",
+          "secondary-fixed": "#dae2fd",
+          "on-secondary-fixed": "#131c2f",
+          "on-secondary-fixed-variant": "#3f465c",
+          "tertiary": "#4b2000",
+          "tertiary-container": "#6d3200",
+          "tertiary-fixed": "#ffdbc7",
+          "tertiary-fixed-dim": "#ffb689",
+          "on-tertiary-fixed": "#311300",
+          "error": "#ba1a1a",
+          "error-container": "#ffdad6",
+          "on-error-container": "#93000a",
+          "background": "#fbf8ff",
+          "on-background": "#1b1b21",
+          "surface": "#fbf8ff",
+          "surface-bright": "#fbf8ff",
+          "surface-dim": "#dbd9e1",
+          "surface-container-lowest": "#ffffff",
+          "surface-container-low": "#f5f2fa",
+          "surface-container": "#efedf4",
+          "surface-container-high": "#e9e7ef",
+          "surface-container-highest": "#e3e1e8",
+          "on-surface": "#1b1b21",
+          "on-surface-variant": "#454651",
+          "outline": "#767682",
+          "outline-variant": "#c6c5d0"
+        },
+        fontFamily: {
+          "serif": ["Source Serif 4", "Georgia", "serif"],
+          "sans": ["Inter", "system-ui", "sans-serif"]
+        },
+        spacing: { "xs": "4px", "sm": "8px", "md": "16px", "lg": "24px", "xl": "32px", "xxl": "48px", "grid-gutter": "24px" },
+        borderRadius: { "xxl": "28px" }
+      }
+    }
+  };
+</script>
+<style>
+  body { font-family: "Inter", system-ui, sans-serif; background: #fbf8ff; color: #1b1b21; }
+  .font-display, h1, h2 { font-family: "Source Serif 4", Georgia, serif; }
+  /* Live pill: only the background color pulses; text and dot stay crisp. */
+  @keyframes livePillBgPulse {
+    0%, 100% { background-color: rgb(186 26 26); }     /* M3 error #ba1a1a, full */
+    50%      { background-color: rgb(186 26 26 / 0.55); } /* same red, dimmed */
+  }
+  .live-pill-pulse { animation: livePillBgPulse 1.8s ease-in-out infinite; }
+  /* Legacy class kept for the comparison-variant section below (variant A/B/C originals) */
+  .pulse-dot { animation: legacyPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+  @keyframes legacyPulse { 50% { opacity: 0.5; } }
+</style>
+</head>
+<body class="p-xl">
+
+<div class="max-w-[1200px] mx-auto">
+
+<header class="mb-xl">
+  <p class="text-xs font-bold uppercase tracking-widest text-primary mb-xs">Phase 6.5 · Visual decisions</p>
+  <h1 class="text-4xl font-bold text-on-surface">Locked picks + variant comparison</h1>
+  <p class="text-base text-on-surface-variant mt-sm">The "Locked picks" band below shows the chosen design. The full variant comparison sections beneath are kept for reference.</p>
+</header>
+
+<!-- ============================================================ -->
+<!-- LOCKED PICKS                                                 -->
+<!-- ============================================================ -->
+<section class="mb-xxl bg-primary-container/10 border-2 border-primary rounded-xxl p-lg">
+  <p class="text-xs font-bold uppercase tracking-widest text-primary mb-md">✅ Locked picks</p>
+
+  <!-- All 6 pills with locked styles -->
+  <div class="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg mb-md">
+    <p class="text-xs uppercase tracking-wider text-on-surface-variant mb-sm">Status pill set — all 6</p>
+    <div class="flex gap-md items-center flex-wrap mb-sm">
+      <span class="bg-surface-container-high text-on-surface-variant border border-outline-variant text-xs font-semibold px-sm py-xs rounded-full uppercase">Drafted</span>
+      <span class="bg-primary-container/10 text-primary border border-primary-container/20 text-xs font-semibold px-sm py-xs rounded-full uppercase">Registering</span>
+      <span class="bg-primary-fixed text-primary border border-primary-container/30 text-xs font-semibold px-sm py-xs rounded-full uppercase">Upcoming</span>
+      <span class="live-pill-pulse text-on-error border border-error text-xs font-semibold px-sm py-xs rounded-full uppercase inline-flex items-center gap-sm"><span class="w-1.5 h-1.5 rounded-full bg-on-error shrink-0"></span>Live</span>
+      <span class="bg-secondary-fixed text-on-secondary-fixed border border-transparent text-xs font-semibold px-sm py-xs rounded-full uppercase">Completed</span>
+      <span class="bg-error-container/30 text-on-error-container border border-error-container text-xs font-semibold px-sm py-xs rounded-full uppercase">Cancelled</span>
+    </div>
+    <p class="text-[11px] text-on-surface-variant">Live: background color pulses red ↔ red @ 55% over 1.8s (custom keyframe — text + dot stay crisp). Cancelled: static. Same error-palette family, different intensity.</p>
+  </div>
+
+  <!-- Events by Status tile — variant C inside the 4-tile band -->
+  <p class="text-xs uppercase tracking-wider text-on-surface-variant mb-sm mt-md">General Category band — final layout</p>
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-grid-gutter">
+    <!-- Days Until -->
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm" style="min-height: 160px;">
+      <div class="flex justify-between items-start mb-md">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Days Until Next</h3>
+        <span class="material-symbols-outlined text-primary bg-primary-container/10 p-xs rounded-md text-base" aria-hidden>event_upcoming</span>
+      </div>
+      <p class="text-5xl font-display font-bold text-on-surface mb-xs">12</p>
+      <p class="text-xs text-on-surface-variant">to Demo Day</p>
+    </div>
+    <!-- Events by Status — variant C LOCKED -->
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm" style="min-height: 160px;">
+      <div class="flex justify-between items-start mb-md">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">By Status</h3>
+        <span class="material-symbols-outlined text-primary bg-primary-container/10 p-xs rounded-md text-base" aria-hidden>dashboard</span>
+      </div>
+      <p class="text-4xl font-display font-bold text-on-surface mb-xs">20</p>
+      <div class="w-full h-2 rounded-full overflow-hidden flex mb-sm border border-outline-variant" style="background: #e9e7ef">
+        <div class="bg-surface-container-high" style="width: 10%" title="Drafted 2"></div>
+        <div class="bg-primary-container" style="width: 25%" title="Registering 5"></div>
+        <div class="bg-primary-fixed" style="width: 5%" title="Upcoming 1"></div>
+        <div class="bg-error" style="width: 0%" title="Live 0"></div>
+        <div class="bg-secondary-fixed" style="width: 60%" title="Completed 12"></div>
+      </div>
+      <div class="flex flex-wrap gap-x-md gap-y-xs text-[10px] font-semibold text-on-surface-variant">
+        <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-surface-container-high border border-outline-variant"></span>D 2</span>
+        <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-primary-container"></span>R 5</span>
+        <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-primary-fixed"></span>U 1</span>
+        <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-error"></span>L 0</span>
+        <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-secondary-fixed"></span>C 12</span>
+      </div>
+    </div>
+    <!-- Aggregate Registration -->
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm" style="min-height: 160px;">
+      <div class="flex justify-between items-start mb-md">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Registration</h3>
+        <span class="material-symbols-outlined text-primary bg-primary-container/10 p-xs rounded-md text-base" aria-hidden>groups</span>
+      </div>
+      <p class="text-5xl font-display font-bold text-on-surface mb-xs">147</p>
+      <p class="text-xs text-on-surface-variant">across upcoming events</p>
+    </div>
+    <!-- Team Task Completion -->
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm" style="min-height: 160px;">
+      <div class="flex justify-between items-start mb-md">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Your Events</h3>
+        <span class="material-symbols-outlined text-primary bg-primary-container/10 p-xs rounded-md text-base" aria-hidden>task_alt</span>
+      </div>
+      <p class="text-5xl font-display font-bold text-on-surface mb-xs">80%</p>
+      <div class="w-full bg-surface-container-highest h-2 rounded-full overflow-hidden mb-xs">
+        <div class="bg-primary h-full" style="width: 80%"></div>
+      </div>
+      <p class="text-xs text-on-surface-variant">8 of 10 completed</p>
+    </div>
+  </div>
+
+  <!-- Sample event slice showing Live pulsing -->
+  <p class="text-xs uppercase tracking-wider text-on-surface-variant mb-sm mt-md">Sample event slice (Live section)</p>
+  <div class="bg-surface-container-lowest border border-outline-variant rounded-[20px] overflow-hidden">
+    <div class="p-md border-b border-outline-variant">
+      <span class="live-pill-pulse text-on-error border border-error text-xs font-semibold px-sm py-xs rounded-full uppercase inline-flex items-center gap-sm"><span class="w-1.5 h-1.5 rounded-full bg-on-error shrink-0"></span>Live · 1</span>
+    </div>
+    <div class="flex items-start gap-md p-md hover:bg-surface-container-low transition-colors cursor-pointer">
+      <div class="w-28 flex flex-col gap-xs shrink-0">
+        <span class="text-sm font-semibold text-on-surface">May 31 14:00</span>
+        <span class="text-xs text-on-surface-variant">Asia/Hong_Kong</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <h3 class="text-lg font-semibold text-on-surface truncate">Stripe Demo Day · APAC</h3>
+        <p class="text-sm text-on-surface-variant mt-xs">Cyberport Auditorium</p>
+        <div class="flex items-center gap-sm mt-sm flex-wrap">
+          <span class="live-pill-pulse text-on-error border border-error text-xs font-semibold px-sm py-xs rounded-full uppercase inline-flex items-center gap-sm"><span class="w-1.5 h-1.5 rounded-full bg-on-error shrink-0"></span>Live</span>
+          <span class="bg-surface-container-high text-on-surface-variant text-xs font-semibold px-sm py-xs rounded-full">Cap 200</span>
+        </div>
+      </div>
+      <div class="text-right">
+        <p class="text-lg font-display font-bold text-on-surface">183/200</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="my-xxl border-outline-variant"/>
+
+<p class="text-xs uppercase tracking-widest text-on-surface-variant mb-md">Reference — original variant comparison ↓</p>
+
+<!-- ============================================================ -->
+<!-- DECISION 1: Status pills                                     -->
+<!-- ============================================================ -->
+<section class="mb-xxl">
+  <h2 class="text-2xl font-bold text-on-surface mb-md">Decision 1 — Status pills (3 new, 3 existing for comparison)</h2>
+
+  <div class="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg mb-md">
+    <p class="text-xs uppercase tracking-wider text-on-surface-variant mb-sm">Existing — unchanged</p>
+    <div class="flex gap-md items-center flex-wrap">
+      <span class="bg-surface-container-high text-on-surface-variant border border-outline-variant text-xs font-semibold px-sm py-xs rounded-full uppercase">Drafted</span>
+      <span class="bg-primary-container/10 text-primary border border-primary-container/20 text-xs font-semibold px-sm py-xs rounded-full uppercase">Registering</span>
+      <span class="bg-secondary-fixed text-on-secondary-fixed border border-transparent text-xs font-semibold px-sm py-xs rounded-full uppercase">Completed</span>
+    </div>
+    <p class="text-xs text-on-surface-variant mt-sm">(Same as today. "Registering" relabels the existing "Published" — no style change.)</p>
+  </div>
+
+  <!-- Live pill — 3 variants -->
+  <div class="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg mb-md">
+    <p class="text-xs uppercase tracking-wider text-on-surface-variant mb-md">⚖️ Choose one — <span class="text-primary font-bold">LIVE</span> pill</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-lg">
+      <!-- Variant A -->
+      <div class="border border-outline-variant rounded-lg p-md">
+        <p class="text-xs font-bold text-on-surface mb-sm">A · Solid primary + white dot</p>
+        <div class="mb-sm">
+          <span class="inline-flex items-center gap-sm bg-primary text-on-primary border border-primary text-xs font-semibold px-sm py-xs rounded-full uppercase">
+            <span class="w-1.5 h-1.5 rounded-full bg-on-primary pulse-dot"></span>
+            Live
+          </span>
+        </div>
+        <p class="text-[11px] text-on-surface-variant">Loud, hard attention pull. Pulses against the indigo. Distinct from Registering. <strong>Risk:</strong> in a Live-heavy section the row of solid indigo pills could overwhelm.</p>
+      </div>
+
+      <!-- Variant B -->
+      <div class="border border-outline-variant rounded-lg p-md">
+        <p class="text-xs font-bold text-on-surface mb-sm">B · Container + pulse dot</p>
+        <div class="mb-sm">
+          <span class="inline-flex items-center gap-sm bg-primary-container/10 text-primary border border-primary-container/20 text-xs font-semibold px-sm py-xs rounded-full uppercase">
+            <span class="w-1.5 h-1.5 rounded-full bg-primary pulse-dot"></span>
+            Live
+          </span>
+        </div>
+        <p class="text-[11px] text-on-surface-variant">Quieter. Same fill as Registering, the dot does the work. <strong>Risk:</strong> at a glance Registering and Live look similar — pulse motion the only differentiator.</p>
+      </div>
+
+      <!-- Variant C -->
+      <div class="border border-outline-variant rounded-lg p-md">
+        <p class="text-xs font-bold text-on-surface mb-sm">C · Tertiary-fixed-dim + dot</p>
+        <div class="mb-sm">
+          <span class="inline-flex items-center gap-sm bg-tertiary-fixed-dim text-on-tertiary-fixed border border-transparent text-xs font-semibold px-sm py-xs rounded-full uppercase">
+            <span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-fixed pulse-dot"></span>
+            Live
+          </span>
+        </div>
+        <p class="text-[11px] text-on-surface-variant">Warm-orange (tertiary palette) — distinct from all other pills, "happening right now" energy. <strong>Risk:</strong> orange may read as warning/error in a serious internal tool.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upcoming pill — 3 variants -->
+  <div class="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg mb-md">
+    <p class="text-xs uppercase tracking-wider text-on-surface-variant mb-md">⚖️ Choose one — <span class="text-primary font-bold">UPCOMING</span> pill (registration closed, awaiting start)</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-lg">
+      <!-- Variant A -->
+      <div class="border border-outline-variant rounded-lg p-md">
+        <p class="text-xs font-bold text-on-surface mb-sm">A · Surface-container-highest (frozen)</p>
+        <div class="mb-sm">
+          <span class="bg-surface-container-highest text-on-surface border border-outline text-xs font-semibold px-sm py-xs rounded-full uppercase">Upcoming</span>
+        </div>
+        <p class="text-[11px] text-on-surface-variant">Muted grey — "locked in, waiting." Reads as inert. Distinct from Drafted (lighter grey) and Registering (indigo). Conservative.</p>
+      </div>
+
+      <!-- Variant B -->
+      <div class="border border-outline-variant rounded-lg p-md">
+        <p class="text-xs font-bold text-on-surface mb-sm">B · Primary-fixed (cool-blue waiting)</p>
+        <div class="mb-sm">
+          <span class="bg-primary-fixed text-primary border border-primary-container/30 text-xs font-semibold px-sm py-xs rounded-full uppercase">Upcoming</span>
+        </div>
+        <p class="text-[11px] text-on-surface-variant">Pale-indigo — within the brand palette, signals "primary-adjacent." Visually quieter than Registering, same family. Risk: too close to Registering at a glance.</p>
+      </div>
+
+      <!-- Variant C -->
+      <div class="border border-outline-variant rounded-lg p-md">
+        <p class="text-xs font-bold text-on-surface mb-sm">C · Tertiary-container/10 (warm waiting)</p>
+        <div class="mb-sm">
+          <span class="bg-tertiary-container/10 text-tertiary-container border border-tertiary-container/20 text-xs font-semibold px-sm py-xs rounded-full uppercase">Upcoming</span>
+        </div>
+        <p class="text-[11px] text-on-surface-variant">Warm-brown subtle — third color register beyond primary/grey. My original proposal in the design doc. Risk: tertiary in this palette reads brown-orange, may feel out of place in an indigo-dominant UI.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cancelled pill — single proposal -->
+  <div class="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg mb-md">
+    <p class="text-xs uppercase tracking-wider text-on-surface-variant mb-sm">Single proposal — <span class="text-primary font-bold">CANCELLED</span> pill (rare; fixes a quiet fallback bug)</p>
+    <div class="flex gap-md items-center">
+      <span class="bg-error-container/30 text-on-error-container border border-error-container text-xs font-semibold px-sm py-xs rounded-full uppercase">Cancelled</span>
+      <p class="text-[11px] text-on-surface-variant">Error-container at 30% opacity. Distinct from all other pills, restrained intensity. Not part of lifecycle progression — only shown if explicitly set.</p>
+    </div>
+  </div>
+
+  <!-- Composite view -->
+  <div class="bg-surface-container border border-outline-variant rounded-[20px] p-lg">
+    <p class="text-xs uppercase tracking-wider text-on-surface-variant mb-md">All 6 pills side-by-side (your picks for Live + Upcoming will replace below)</p>
+    <div class="flex gap-md items-center flex-wrap">
+      <span class="bg-surface-container-high text-on-surface-variant border border-outline-variant text-xs font-semibold px-sm py-xs rounded-full uppercase">Drafted</span>
+      <span class="bg-primary-container/10 text-primary border border-primary-container/20 text-xs font-semibold px-sm py-xs rounded-full uppercase">Registering</span>
+      <span class="bg-surface-container-highest text-on-surface border border-outline text-xs font-semibold px-sm py-xs rounded-full uppercase">Upcoming · A</span>
+      <span class="inline-flex items-center gap-sm bg-primary text-on-primary border border-primary text-xs font-semibold px-sm py-xs rounded-full uppercase"><span class="w-1.5 h-1.5 rounded-full bg-on-primary pulse-dot"></span>Live · A</span>
+      <span class="bg-secondary-fixed text-on-secondary-fixed border border-transparent text-xs font-semibold px-sm py-xs rounded-full uppercase">Completed</span>
+      <span class="bg-error-container/30 text-on-error-container border border-error-container text-xs font-semibold px-sm py-xs rounded-full uppercase">Cancelled</span>
+    </div>
+    <p class="text-[11px] text-on-surface-variant mt-sm">Top row: Live=A (solid) · Upcoming=A (grey-frozen). Lighter pills (Drafted, Upcoming, Completed) cluster as past/locked. Indigo pills (Registering, Live) cluster as active.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- DECISION 2: "Events by Status" tile layout                   -->
+<!-- ============================================================ -->
+<section class="mb-xxl">
+  <h2 class="text-2xl font-bold text-on-surface mb-md">Decision 2 — "Events by Status" tile layout (3 variants)</h2>
+  <p class="text-sm text-on-surface-variant mb-md">This tile sits in the top General Category band alongside Days Until Next Event, Aggregate Registration, and Team Task Completion (all of which have a single big-number stat). The challenge: 5 counts in one tile.</p>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-md">
+
+    <!-- Variant A: single line of mini-counts -->
+    <div>
+      <p class="text-xs uppercase tracking-wider text-on-surface-variant mb-sm">A · Single line of mini-counts</p>
+      <div class="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm" style="min-height: 160px;">
+        <div class="flex justify-between items-start mb-md">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">By Status</h3>
+          <span class="material-symbols-outlined text-primary bg-primary-container/10 p-xs rounded-md text-base" aria-hidden>dashboard</span>
+        </div>
+        <p class="text-4xl font-display font-bold text-on-surface mb-xs">20</p>
+        <p class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+          D 2 · R 5 · U 1 · L 0 · C 12
+        </p>
+      </div>
+      <p class="text-[11px] text-on-surface-variant mt-sm">Total-events big-number on top, abbreviated breakdown below. <strong>Cons:</strong> abbreviation legibility ("D"/"R"/"U"/"L"/"C") requires legend or onboarding.</p>
+    </div>
+
+    <!-- Variant B: 5 mini-pills row -->
+    <div>
+      <p class="text-xs uppercase tracking-wider text-on-surface-variant mb-sm">B · 5 mini-pills with counts</p>
+      <div class="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm" style="min-height: 160px;">
+        <div class="flex justify-between items-start mb-md">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">By Status</h3>
+          <span class="material-symbols-outlined text-primary bg-primary-container/10 p-xs rounded-md text-base" aria-hidden>dashboard</span>
+        </div>
+        <div class="flex flex-col gap-xs">
+          <div class="flex items-center justify-between gap-sm">
+            <span class="bg-surface-container-high text-on-surface-variant border border-outline-variant text-[10px] font-semibold px-sm py-xs rounded-full uppercase">Drafted</span>
+            <span class="text-xl font-display font-bold text-on-surface tabular-nums">2</span>
+          </div>
+          <div class="flex items-center justify-between gap-sm">
+            <span class="bg-primary-container/10 text-primary border border-primary-container/20 text-[10px] font-semibold px-sm py-xs rounded-full uppercase">Registering</span>
+            <span class="text-xl font-display font-bold text-on-surface tabular-nums">5</span>
+          </div>
+          <div class="flex items-center justify-between gap-sm">
+            <span class="bg-surface-container-highest text-on-surface border border-outline text-[10px] font-semibold px-sm py-xs rounded-full uppercase">Upcoming</span>
+            <span class="text-xl font-display font-bold text-on-surface tabular-nums">1</span>
+          </div>
+          <div class="flex items-center justify-between gap-sm">
+            <span class="inline-flex items-center gap-1 bg-primary text-on-primary border border-primary text-[10px] font-semibold px-sm py-xs rounded-full uppercase"><span class="w-1 h-1 rounded-full bg-on-primary pulse-dot"></span>Live</span>
+            <span class="text-xl font-display font-bold text-on-surface tabular-nums">0</span>
+          </div>
+          <div class="flex items-center justify-between gap-sm">
+            <span class="bg-secondary-fixed text-on-secondary-fixed border border-transparent text-[10px] font-semibold px-sm py-xs rounded-full uppercase">Completed</span>
+            <span class="text-xl font-display font-bold text-on-surface tabular-nums">12</span>
+          </div>
+        </div>
+      </div>
+      <p class="text-[11px] text-on-surface-variant mt-sm">Tight stack — pill + count per row. Self-documenting (pill colors are the legend). <strong>Cons:</strong> tile is denser, no headline number, needs more vertical space than the other 3 tiles in the band.</p>
+    </div>
+
+    <!-- Variant C: 5-segment horizontal bar -->
+    <div>
+      <p class="text-xs uppercase tracking-wider text-on-surface-variant mb-sm">C · Segmented stacked bar + legend</p>
+      <div class="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm" style="min-height: 160px;">
+        <div class="flex justify-between items-start mb-md">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">By Status</h3>
+          <span class="material-symbols-outlined text-primary bg-primary-container/10 p-xs rounded-md text-base" aria-hidden>dashboard</span>
+        </div>
+        <p class="text-4xl font-display font-bold text-on-surface mb-xs">20</p>
+        <div class="w-full h-2 rounded-full overflow-hidden flex mb-sm border border-outline-variant" style="background: #e9e7ef">
+          <div class="bg-surface-container-high" style="width: 10%"></div>
+          <div class="bg-primary-container" style="width: 25%"></div>
+          <div class="bg-surface-container-highest" style="width: 5%"></div>
+          <div class="bg-primary" style="width: 0%"></div>
+          <div class="bg-secondary-fixed" style="width: 60%"></div>
+        </div>
+        <div class="flex flex-wrap gap-x-md gap-y-xs text-[10px] font-semibold text-on-surface-variant">
+          <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-surface-container-high border border-outline-variant"></span>D 2</span>
+          <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-primary-container"></span>R 5</span>
+          <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-surface-container-highest border border-outline"></span>U 1</span>
+          <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-primary"></span>L 0</span>
+          <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-secondary-fixed"></span>C 12</span>
+        </div>
+      </div>
+      <p class="text-[11px] text-on-surface-variant mt-sm">Headline total + segmented bar showing distribution + legend. Matches Phase-6 Q4 segmented-bar pattern. <strong>Cons:</strong> bar reads like a "progress" metaphor which doesn't fit (status isn't progress toward a goal).</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Context: 4-tile General Category band                        -->
+<!-- ============================================================ -->
+<section class="mb-xxl">
+  <h2 class="text-2xl font-bold text-on-surface mb-md">Context — what the full General Category band looks like</h2>
+  <p class="text-sm text-on-surface-variant mb-md">For visual reference: this is where the "By Status" tile sits, alongside the other three. Showing variant <strong>A</strong> here as the default; whichever you pick for Decision 2 slots into the 2nd tile from the left.</p>
+
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-grid-gutter">
+    <!-- Days Until -->
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm" style="min-height: 160px;">
+      <div class="flex justify-between items-start mb-md">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Days Until Next</h3>
+        <span class="material-symbols-outlined text-primary bg-primary-container/10 p-xs rounded-md text-base" aria-hidden>event_upcoming</span>
+      </div>
+      <p class="text-5xl font-display font-bold text-on-surface mb-xs">12</p>
+      <p class="text-xs text-on-surface-variant">to Demo Day</p>
+    </div>
+    <!-- Events by Status — variant A inline -->
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm" style="min-height: 160px;">
+      <div class="flex justify-between items-start mb-md">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">By Status</h3>
+        <span class="material-symbols-outlined text-primary bg-primary-container/10 p-xs rounded-md text-base" aria-hidden>dashboard</span>
+      </div>
+      <p class="text-4xl font-display font-bold text-on-surface mb-xs">20</p>
+      <p class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">D 2 · R 5 · U 1 · L 0 · C 12</p>
+    </div>
+    <!-- Aggregate Registration -->
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm" style="min-height: 160px;">
+      <div class="flex justify-between items-start mb-md">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Registration</h3>
+        <span class="material-symbols-outlined text-primary bg-primary-container/10 p-xs rounded-md text-base" aria-hidden>groups</span>
+      </div>
+      <p class="text-5xl font-display font-bold text-on-surface mb-xs">147</p>
+      <p class="text-xs text-on-surface-variant">across upcoming events</p>
+    </div>
+    <!-- Team Task Completion -->
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm" style="min-height: 160px;">
+      <div class="flex justify-between items-start mb-md">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Your Events</h3>
+        <span class="material-symbols-outlined text-primary bg-primary-container/10 p-xs rounded-md text-base" aria-hidden>task_alt</span>
+      </div>
+      <p class="text-5xl font-display font-bold text-on-surface mb-xs">80%</p>
+      <div class="w-full bg-surface-container-highest h-2 rounded-full overflow-hidden mb-xs">
+        <div class="bg-primary h-full" style="width: 80%"></div>
+      </div>
+      <p class="text-xs text-on-surface-variant">8 of 10 completed</p>
+    </div>
+  </div>
+</section>
+
+<footer class="text-xs text-on-surface-variant border-t border-outline-variant pt-md">
+  <p>Mockup at <code>docs/plans/phase-6.5-mockup.html</code> · Open in browser for live rendering · Pulse animation runs on Live pill dots</p>
+</footer>
+
+</div>
+</body>
+</html>
