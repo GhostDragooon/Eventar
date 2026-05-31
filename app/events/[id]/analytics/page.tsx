@@ -103,10 +103,10 @@ export default async function EventAnalyticsPage({
       <header className="mb-lg flex flex-col md:flex-row justify-between items-end gap-md">
         <div className="max-w-3xl">
           <Link
-            href={`/events/${event.id}/edit`}
+            href="/dashboard"
             className="text-label-md font-label-md text-primary tracking-widest uppercase mb-xs block hover:underline"
           >
-            ← Organizer Portal
+            ← Dashboard
           </Link>
           <h1 className="font-headline-lg text-headline-lg text-primary mb-xs leading-tight">
             Post-Event Survey Analytics: {event.title}
