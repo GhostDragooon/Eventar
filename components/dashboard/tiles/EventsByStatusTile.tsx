@@ -9,7 +9,13 @@ const SEGMENT_COLORS: Record<keyof Counts, string> = {
   live: 'bg-error',
   completed: 'bg-secondary-fixed',
 };
-const ABBR: Record<keyof Counts, string> = { drafted: 'D', registering: 'R', upcoming: 'U', live: 'L', completed: 'C' };
+const LABEL: Record<keyof Counts, string> = {
+  drafted: 'Draft',
+  registering: 'Reg',
+  upcoming: 'Soon',
+  live: 'Live',
+  completed: 'Done',
+};
 
 export function EventsByStatusTile({ counts }: { counts: Counts }) {
   const total = Object.values(counts).reduce((s, n) => s + n, 0);
@@ -25,11 +31,11 @@ export function EventsByStatusTile({ counts }: { counts: Counts }) {
           return <div key={k} className={SEGMENT_COLORS[k]} style={{ width: `${pct}%` }} aria-label={`${k} ${counts[k]}`} />;
         })}
       </div>
-      <div className="flex flex-wrap gap-x-md gap-y-xs text-[10px] font-label-md font-semibold text-on-surface-variant">
+      <div className="flex flex-wrap gap-x-md gap-y-xs text-xs font-label-md font-semibold text-on-surface-variant">
         {keys.map((k) => (
-          <span key={k} className="inline-flex items-center gap-1">
+          <span key={k} className="inline-flex items-center gap-1" title={`${k}: ${counts[k]}`}>
             <span className={`w-2 h-2 rounded-sm ${SEGMENT_COLORS[k]} ${k === 'upcoming' ? 'border border-outline' : ''}`} />
-            {ABBR[k]} {counts[k]}
+            {LABEL[k]} {counts[k]}
           </span>
         ))}
       </div>

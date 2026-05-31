@@ -18,15 +18,15 @@ describe('EventsByStatusTile', () => {
     expect(getByText('0')).toBeInTheDocument();
   });
 
-  it('renders 5 legend entries with abbreviated labels and counts', () => {
+  it('renders 5 legend entries with short labels and counts', () => {
     const { container } = render(
       <EventsByStatusTile counts={{ drafted: 2, registering: 5, upcoming: 1, live: 0, completed: 12 }} />,
     );
     const legend = container.textContent ?? '';
-    expect(legend).toContain('D 2');
-    expect(legend).toContain('R 5');
-    expect(legend).toContain('U 1');
-    expect(legend).toContain('L 0');
-    expect(legend).toContain('C 12');
+    expect(legend).toContain('Draft 2');
+    expect(legend).toContain('Reg 5');
+    expect(legend).toContain('Soon 1');
+    expect(legend).toContain('Live 0');
+    expect(legend).toContain('Done 12');
   });
 });
