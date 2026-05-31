@@ -190,7 +190,7 @@ export default async function DashboardPage() {
                 }
               >
                 <Link
-                  href={`/events/${e.id}/analytics`}
+                  href={e.status === 'draft' ? `/events/${e.id}/edit` : `/events/${e.id}/analytics`}
                   className="flex items-start gap-md p-md hover:bg-surface-container-low transition-colors group"
                 >
                   <div className="w-28 flex flex-col gap-xs shrink-0">
