@@ -6,6 +6,14 @@ vi.mock('@/lib/auth', () => ({
   requireStaff: vi.fn(async () => ({ id: 's-1', email: 'a@b.com', role: 'organizer' })),
 }));
 
+// next/cache's revalidatePath must be mocked: it's a no-op in the test runner
+// but we want to assert it's called with the right paths so the page + dashboard
+// re-render with the updated registration_close_at value.
+const revalidatePathMock = vi.fn();
+vi.mock('next/cache', () => ({
+  revalidatePath: (path: string) => revalidatePathMock(path),
+}));
+
 // Per the auth.test.ts pattern: fabricate a minimal supabase client shape
 // that updateRegistrationClose depends on. The action calls
 // supabase.from('events').select('id, start_time').eq().maybeSingle() then,
@@ -55,6 +63,7 @@ beforeEach(() => {
   mockReadError = null;
   mockUpdateError = null;
   mockUpdatedRow = { id: eventId };
+  revalidatePathMock.mockClear();
 });
 
 describe('updateRegistrationClose', () => {
@@ -103,6 +112,25 @@ describe('updateRegistrationClose', () => {
     expect(result.error).toBeDefined();
     expect(result.error).toMatch(/not found/i);
     expect(lastUpdate).toBeNull();
+  });
+
+  it('revalidates /events/[id]/details and /dashboard after a successful save', async () => {
+    // Without revalidation the Server Component keeps the stale `current`
+    // prop, which breaks the RegistrationCloseEditor's `dirty` flag (Saved.
+    // never renders) AND leaves the page's lifecycle pill / action toolbar
+    // showing the wrong state until a full reload.
+    const result = await updateRegistrationClose(eventId, '2026-06-15T08:00:00.000Z');
+    expect(result).toEqual({});
+    expect(revalidatePathMock).toHaveBeenCalledWith(`/events/${eventId}/details`);
+    expect(revalidatePathMock).toHaveBeenCalledWith('/dashboard');
+    expect(revalidatePathMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('does NOT revalidate when the update fails (error path)', async () => {
+    mockUpdatedRow = null;
+    const result = await updateRegistrationClose(eventId, '2026-06-15T08:00:00.000Z');
+    expect(result.error).toBeDefined();
+    expect(revalidatePathMock).not.toHaveBeenCalled();
   });
 
   it('returns error when update is silently blocked by RLS (0 rows affected)', async () => {

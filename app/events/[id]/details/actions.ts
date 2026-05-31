@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { requireStaff } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
@@ -66,5 +67,13 @@ export async function updateRegistrationClose(
 
   if (updateError) return { error: updateError.message };
   if (!updated) return { error: 'Update failed — event not found or not owned by you.' };
+
+  // Without revalidatePath the Server Component keeps the stale event prop on
+  // the next render, so the page's lifecycle pill, action toolbar, and the
+  // RegistrationCloseEditor's `dirty`/Saved indicator all stay wrong until a
+  // full reload. Dashboard also groups events by lifecycle so invalidate it
+  // too. Mirrors publishEvent's pattern in /events/[id]/edit/actions.ts.
+  revalidatePath(`/events/${eventId}/details`);
+  revalidatePath('/dashboard');
   return {};
 }
