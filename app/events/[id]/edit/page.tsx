@@ -191,6 +191,20 @@ export default async function StaffEventEditPage({
               </ActionCard>
 
               <ActionCard
+                icon="dashboard"
+                title="Operations"
+                body="Registration progress, attendance, and live event status."
+              >
+                <Link
+                  href={`/events/${event.id}/details`}
+                  className="inline-flex items-center gap-xs font-label-md text-label-md text-primary hover:underline"
+                >
+                  View details
+                  <span className="material-symbols-outlined text-[16px]" aria-hidden>arrow_forward</span>
+                </Link>
+              </ActionCard>
+
+              <ActionCard
                 icon="analytics"
                 title="Analytics"
                 body="Registrations, attendance, and post-event survey results."
