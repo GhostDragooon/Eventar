@@ -313,3 +313,21 @@
     font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Phase 6.5 — Live status pill background-only pulse
+ *
+ * Built-in Tailwind animate-pulse animates opacity on the whole element,
+ * fading the text + dot. We only want the background to pulse. This custom
+ * keyframe + class preserves text/dot crispness while signaling "happening
+ * now" via background-color cycling.
+ * ------------------------------------------------------------------------- */
+
+@keyframes livePillBgPulse {
+  0%, 100% { background-color: rgb(from var(--error) r g b); }
+  50%      { background-color: rgb(from var(--error) r g b / 0.55); }
+}
+
+.live-pill-pulse {
+  animation: livePillBgPulse 1.8s ease-in-out infinite;
+}
