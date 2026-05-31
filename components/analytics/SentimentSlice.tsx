@@ -43,24 +43,32 @@ export function SentimentSlice({
           Expectations
         </div>
       </div>
-      <div className="flex-grow flex items-center gap-sm">
-        <div className="h-6 flex-grow bg-surface-container-high rounded-full overflow-hidden relative">
-          <div
-            className="h-full bg-primary rounded-full"
-            style={{ width: `${happyRate == null ? 0 : Math.round(happyRate * 100)}%` }}
-          />
+      {happyRate == null ? (
+        <div className="flex-grow flex items-center">
+          <p className="text-body-md text-on-surface-variant italic">
+            No sentiment data yet — Q4 hasn&apos;t been answered.
+          </p>
         </div>
-        <div className="flex justify-between gap-md flex-shrink-0">
-          {(['exceeded', 'met', 'partially', 'not_met'] as Q4Slug[]).map((slug) => (
-            <div key={slug} className="text-[10px] flex items-center gap-1">
-              <div className={`w-1.5 h-1.5 rounded-full ${SLUG_COLOR[slug]}`} />
-              <span className="text-on-surface-variant">
-                {SLUG_LABEL[slug]} ({findPct(slug)}%)
-              </span>
-            </div>
-          ))}
+      ) : (
+        <div className="flex-grow flex items-center gap-sm">
+          <div className="h-6 flex-grow bg-surface-container-high rounded-full overflow-hidden relative">
+            <div
+              className="h-full bg-primary rounded-full"
+              style={{ width: `${Math.round(happyRate * 100)}%` }}
+            />
+          </div>
+          <div className="flex justify-between gap-md flex-wrap">
+            {(['exceeded', 'met', 'partially', 'not_met'] as Q4Slug[]).map((slug) => (
+              <div key={slug} className="text-[10px] flex items-center gap-1">
+                <div className={`w-1.5 h-1.5 rounded-full ${SLUG_COLOR[slug]}`} />
+                <span className="text-on-surface-variant">
+                  {SLUG_LABEL[slug]} ({findPct(slug)}%)
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </Slice>
   );
 }

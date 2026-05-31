@@ -27,6 +27,28 @@ describe('operationalInsightText', () => {
     expect(out.toLowerCase()).toContain('mixed signals');
     expect(out).toContain('—');
   });
+
+  it('returns zero-attendance message when showUpRate is 0', () => {
+    const out = operationalInsightText({ showUpRate: 0, happyRate: null, responseRate: 0 });
+    expect(out.toLowerCase()).toContain('no check-ins');
+  });
+
+  it('distinguishes zero-survey-response from low-response-rate', () => {
+    const out = operationalInsightText({ showUpRate: 0.8, happyRate: null, responseRate: 0 });
+    expect(out.toLowerCase()).toContain('no survey responses');
+    expect(out.toLowerCase()).not.toContain('low response rate');
+  });
+
+  it('does NOT misattribute null happyRate as expectation gap', () => {
+    const out = operationalInsightText({ showUpRate: 0.85, happyRate: null, responseRate: 0.6 });
+    expect(out.toLowerCase()).not.toContain('expectation gap');
+    expect(out.toLowerCase()).not.toContain('neutral/negative');
+  });
+
+  it('does NOT claim "healthy" when Q4 data is missing', () => {
+    const out = operationalInsightText({ showUpRate: 0.85, happyRate: null, responseRate: 0.6 });
+    expect(out.toLowerCase()).not.toMatch(/healthy|on track/);
+  });
 });
 
 describe('keyMetricAnalysisText', () => {
