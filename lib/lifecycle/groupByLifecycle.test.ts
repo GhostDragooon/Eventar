@@ -44,4 +44,19 @@ describe('groupByLifecycle', () => {
     expect(grouped.live.map((e) => e.id)).toEqual(['c']);
     expect(grouped.completed.map((e) => e.id)).toEqual(['d']);
   });
+
+  it('groups by a key extractor when caller has already derived lifecycle', () => {
+    type Decorated = { id: string; lifecycle: 'drafted' | 'live' | 'completed' };
+    const items: Decorated[] = [
+      { id: 'a', lifecycle: 'drafted' },
+      { id: 'b', lifecycle: 'live' },
+      { id: 'c', lifecycle: 'completed' },
+      { id: 'd', lifecycle: 'live' },
+    ];
+    const grouped = groupByLifecycle(items, (i) => i.lifecycle);
+    expect(grouped.drafted.map((i) => i.id)).toEqual(['a']);
+    expect(grouped.live.map((i) => i.id)).toEqual(['b', 'd']);
+    expect(grouped.completed.map((i) => i.id)).toEqual(['c']);
+    expect(grouped.registering).toEqual([]);
+  });
 });

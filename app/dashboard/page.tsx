@@ -6,6 +6,7 @@ import { StaffShell } from '@/components/shell/StaffShell';
 import { GeneralCategoryBand } from '@/components/dashboard/GeneralCategoryBand';
 import { EventLifecycleSection } from '@/components/dashboard/EventLifecycleSection';
 import { computeLifecycle, type Lifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
+import { groupByLifecycle } from '@/lib/lifecycle/groupByLifecycle';
 
 const LIFECYCLE_ORDER: Lifecycle[] = ['drafted', 'registering', 'upcoming', 'live', 'completed'];
 
@@ -99,16 +100,9 @@ export default async function DashboardPage() {
   const myDecorated = decorated.filter((d) => d.created_by === staff.id);
   const yourCompleted = myDecorated.filter((d) => d.lifecycle === 'completed').length;
 
-  // Group decorated events by lifecycle for rendering
-  const decoratedByLifecycle: Record<Lifecycle, typeof decorated> = {
-    drafted: [],
-    registering: [],
-    upcoming: [],
-    live: [],
-    completed: [],
-    cancelled: [],
-  };
-  for (const d of decorated) decoratedByLifecycle[d.lifecycle].push(d);
+  // Group decorated events by lifecycle for rendering. Uses the pre-computed
+  // lifecycle on each decorated item to avoid a second computeLifecycle pass.
+  const decoratedByLifecycle = groupByLifecycle(decorated, (d) => d.lifecycle);
 
   // Sort within each lifecycle section per design doc:
   //   Completed → start_time DESC (most recent first)
