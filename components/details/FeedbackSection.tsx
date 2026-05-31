@@ -56,6 +56,14 @@ export function FeedbackSection({
 
           {latestSurvey?.key_highlights && latestSurvey.key_highlights.trim() !== '' && (
             <blockquote className="border-l-4 border-primary pl-md py-xs">
+              <p className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-xs">
+                Latest comment
+                {responseCount > 1 && (
+                  <span className="normal-case tracking-normal ml-xs text-on-surface-variant/70">
+                    · {responseCount - 1} more in analytics
+                  </span>
+                )}
+              </p>
               <p className="font-headline-sm text-headline-sm text-on-surface italic">
                 &ldquo;{latestSurvey.key_highlights.trim()}&rdquo;
               </p>
