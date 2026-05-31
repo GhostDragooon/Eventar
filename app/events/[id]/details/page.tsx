@@ -30,7 +30,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
       .eq('event_id', id),
     supabase
       .from('survey_responses')
-      .select('id, key_highlights, submitted_at')
+      .select('id, key_highlights, submitted_at', { count: 'exact' })
       .eq('event_id', id)
       .order('submitted_at', { ascending: false })
       .limit(1),
@@ -44,7 +44,9 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
   const event = eventRes.data;
   const regs = regsRes.data ?? [];
   const latestSurvey = surveysRes.data?.[0] ?? null;
-  const responseCount = surveysRes.data?.length ?? 0;
+  // `count: 'exact'` on the surveys query returns the total ignoring limit/offset,
+  // so Section C's response rate + "+ N more" affordance reflect the full set.
+  const responseCount = surveysRes.count ?? 0;
   const attended = regs.filter((r) => r.status === 'attended').length;
 
   // eslint-disable-next-line react-hooks/purity
@@ -75,6 +77,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
       </header>
 
       <RegistrationSection
+        eventId={event.id}
         registered={regs.length}
         maxAttendees={event.max_attendees}
         registrationCloseAt={event.registration_close_at}
@@ -121,7 +124,11 @@ function ActionToolbar({ eventId, lifecycle }: { eventId: string; lifecycle: Lif
       {showRoster && (
         <Link
           href={`/events/${eventId}/checkin`}
-          className="flex items-center gap-xs bg-surface-container-high text-on-surface px-md py-sm rounded-lg font-label-md text-label-md hover:bg-surface-container-highest transition-colors"
+          className={
+            lifecycle === 'live'
+              ? 'flex items-center gap-xs bg-primary text-on-primary px-md py-sm rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity'
+              : 'flex items-center gap-xs bg-surface-container-high text-on-surface px-md py-sm rounded-lg font-label-md text-label-md hover:bg-surface-container-highest transition-colors'
+          }
         >
           <span className="material-symbols-outlined text-[16px]" aria-hidden>group</span>
           Open roster

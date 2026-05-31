@@ -1,6 +1,8 @@
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
+import { RegistrationCloseEditor } from './RegistrationCloseEditor';
 
 type Props = {
+  eventId: string;
   registered: number;
   maxAttendees: number | null;
   registrationCloseAt: string | null;
@@ -10,6 +12,7 @@ type Props = {
 };
 
 export function RegistrationSection({
+  eventId,
   registered,
   maxAttendees,
   registrationCloseAt,
@@ -81,6 +84,12 @@ export function RegistrationSection({
           <Stat label="Last sign-up" value={lastSignUpAgo ?? 'Awaiting first registration'} />
         </div>
       </div>
+
+      {(lifecycle === 'registering' || lifecycle === 'upcoming') && (
+        <div className="mt-lg pt-lg border-t border-outline-variant">
+          <RegistrationCloseEditor eventId={eventId} current={registrationCloseAt} />
+        </div>
+      )}
     </SectionCard>
   );
 }
