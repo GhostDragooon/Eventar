@@ -120,6 +120,7 @@ export default async function EventAnalyticsPage({
           disabled
           className="flex items-center gap-sm bg-surface-container-high text-on-surface px-lg py-sm rounded-lg font-bold border border-outline-variant opacity-60 cursor-not-allowed text-sm"
           aria-label="Export PDF (not yet available)"
+          title="Export PDF — coming soon"
         >
           <span className="material-symbols-outlined text-sm" aria-hidden>
             download
@@ -161,6 +162,7 @@ export default async function EventAnalyticsPage({
           layout="stack"
           sliceBgClass="bg-primary/5"
           borderBottom={false}
+          caption="Multi-select — percentages are % of respondents who picked each, may sum above 100%."
         />
       </div>
 

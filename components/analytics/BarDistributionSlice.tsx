@@ -11,6 +11,7 @@ export function BarDistributionSlice({
   priorityPill,
   sliceBgClass,
   borderBottom = true,
+  caption,
 }: {
   icon: string;
   iconBg: 'fixed' | 'tertiary-fixed' | 'primary';
@@ -21,6 +22,7 @@ export function BarDistributionSlice({
   priorityPill?: string; // e.g. "Priority Expansion"
   sliceBgClass?: string;
   borderBottom?: boolean;
+  caption?: string;
 }) {
   const topSlug = distribution[0]?.slug;
 
@@ -46,6 +48,9 @@ export function BarDistributionSlice({
     <Slice icon={icon} iconBg={iconBg} title={title} prompt={prompt} bgClass={sliceBgClass} borderBottom={borderBottom}>
       <div className={layout === 'grid' ? 'grid grid-cols-2 gap-x-xl gap-y-md flex-grow' : 'flex-grow space-y-sm'}>
         {bars}
+        {caption && (
+          <p className="text-[11px] italic text-on-surface-variant mt-xs">{caption}</p>
+        )}
       </div>
       {priorityPill && (
         <span className="hidden lg:block bg-secondary-container text-on-secondary-container px-md py-xs rounded-full text-label-md font-label-md flex-shrink-0 whitespace-nowrap">
