@@ -5,7 +5,7 @@
 
 ---
 
-# Coding Behavior Contract (12 Rules)
+# Coding Behavior Contract (13 Rules)
 
 ## Core
 1. Think before coding. State your assumptions. Surface tradeoffs.
@@ -34,6 +34,13 @@
 12. Fail visibly, not silently. Surface every skipped record,
     every rolled-back transaction, every constraint violation.
     Never report success when something was bypassed.
+13. Default to expanding the mental model, not redirecting the
+    action. When the user mentions work outside the active phase,
+    treat it as a forward-looking constraint to hold in mind on
+    the current build — NOT as consent to switch what you are
+    building. Confirm explicitly before changing the active task.
+    Active phase + carried-forward considerations live in
+    `docs/plans/PROJECT_STATE.md`. Read it first.
 
 ## Project-specific rules below this line
 
@@ -95,7 +102,7 @@ These are mirrored from the vault but worth restating because breaking any of th
 3. **`requireStaff()` at the top of every staff Server Action.** No exceptions. See `10 — Architecture/Auth Flow.md`.
    - **Next 16 rename:** the staff-route gate file is `proxy.ts` at repo root (NOT `middleware.ts` — that name is deprecated). Exported function is `proxy`. Matcher syntax unchanged.
 4. **Service-role key only in `lib/supabase/admin.ts`** with `'server-only'` import. Never expose to browser.
-5. **RLS enabled on every table.** Public writes go through `/api/*` with service-role; RLS still on as defense in depth.
+5. **RLS enabled on every table.** Public writes use **Server Actions** with the service-role client *inside* the action; `/api/*` reserved for Phase 9 cron callbacks + external integration. Anon RLS policies remain enabled as defense in depth. See `02 — Decisions Log#Q11`.
 6. **Single `main` branch.** "Min number of branches" per user direction. Atomic commits per logical unit.
 7. **Don't add external services prematurely.** Resend wired in phase 7; Vercel in phase 8; pg_cron in phase 9. All emails stubbed (console.log) until phase 7. See `20 — Roadmap/Phased Roadmap.md`.
 8. **Three-layer validation** (form → Zod → DB constraint) for every mutation. See `10 — Architecture/Security + Robustness.md` §1.
