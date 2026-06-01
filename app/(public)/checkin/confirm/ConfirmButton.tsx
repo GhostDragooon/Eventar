@@ -11,10 +11,8 @@ type State =
 
 export default function ConfirmButton({
   code,
-  fullName,
 }: {
   code: string;
-  fullName: string;
 }) {
   const [state, setState] = useState<State>({ kind: 'idle' });
   const [, startTransition] = useTransition();
@@ -51,7 +49,7 @@ export default function ConfirmButton({
   return (
     <div className="space-y-sm">
       <p className="font-body-md text-body-md text-on-surface-variant text-center">
-        Ready to check in, <strong className="text-on-surface">{fullName}</strong>?
+        Ready to check in for this event?
       </p>
       <button
         type="button"

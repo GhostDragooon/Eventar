@@ -46,7 +46,6 @@ export default async function SelfCheckinPage({
   // shape we actually request — small and contained.
   type RegRow = {
     id: string;
-    full_name: string;
     status: string;
     check_in_at: string | null;
     events:
@@ -73,7 +72,7 @@ export default async function SelfCheckinPage({
   const { data: reg } = (await admin
     .from('registrations')
     .select(
-      'id, full_name, status, check_in_at, ' +
+      'id, status, check_in_at, ' +
         'events!inner(id, title, start_time, end_time, timezone, venue_name, status)',
     )
     .eq('registration_code', code)
@@ -119,7 +118,7 @@ export default async function SelfCheckinPage({
     return (
       <PublicShell>
         <PageWrap>
-          <AttendedView event={event} fullName={reg.full_name} checkInAt={reg.check_in_at} />
+          <AttendedView event={event} checkInAt={reg.check_in_at} />
         </PageWrap>
       </PublicShell>
     );
@@ -128,7 +127,7 @@ export default async function SelfCheckinPage({
   return (
     <PublicShell>
       <PageWrap>
-        <RegisteredView event={event} fullName={reg.full_name} code={code} />
+        <RegisteredView event={event} code={code} />
       </PageWrap>
     </PublicShell>
   );
@@ -152,7 +151,6 @@ function PageWrap({ children }: { children: React.ReactNode }) {
 
 function RegisteredView({
   event,
-  fullName,
   code,
 }: {
   event: {
@@ -162,7 +160,6 @@ function RegisteredView({
     timezone: string;
     venue_name: string;
   };
-  fullName: string;
   code: string;
 }) {
   return (
@@ -175,20 +172,19 @@ function RegisteredView({
           Check-in ready
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant">
-          Welcome, {fullName}.
+          Confirm your check-in for this event below.
         </p>
       </header>
 
       <EventCard event={event} code={code} />
 
-      <ConfirmButton code={code} fullName={fullName} />
+      <ConfirmButton code={code} />
     </>
   );
 }
 
 function AttendedView({
   event,
-  fullName,
   checkInAt,
 }: {
   event: {
@@ -198,7 +194,6 @@ function AttendedView({
     timezone: string;
     venue_name: string;
   };
-  fullName: string;
   checkInAt: string | null;
 }) {
   return (
@@ -211,7 +206,7 @@ function AttendedView({
           You&apos;re checked in
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant">
-          Welcome, {fullName}.
+          See you at the event.
         </p>
       </header>
 
