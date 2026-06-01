@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { generateRegistrationCode, isValidRegistrationCode } from './registrationCode';
 
 const ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
-const FORMAT_RE = /^WK-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{4}$/;
+// New generations produce 6-char codes; validator also grandfathers
+// the legacy 4-char rows. See registrationCode.ts for rationale.
+const FORMAT_RE = /^WK-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6}$/;
 
 describe('generateRegistrationCode', () => {
   it('always returns the WK-XXXX format', () => {
@@ -61,5 +63,13 @@ describe('isValidRegistrationCode', () => {
 
   it('rejects empty string', () => {
     expect(isValidRegistrationCode('')).toBe(false);
+  });
+
+  it('accepts grandfathered 4-char codes (pre-CSPRNG rows)', () => {
+    // Phase-4 init_checkin_columns backfilled existing registrations with
+    // 4-char codes. After the CSPRNG + length-6 swap, the validator must
+    // keep accepting them for the lifetime of those events.
+    expect(isValidRegistrationCode('WK-2345')).toBe(true);
+    expect(isValidRegistrationCode('WK-WXYZ')).toBe(true);
   });
 });
