@@ -81,7 +81,7 @@ export function RegistrationSection({
             <Stat label="Closes in" value={daysToClose === 1 ? '1 day' : `${daysToClose} days`} />
           )}
           {closeIsPast && <Stat label="Registration" value="Closed" />}
-          <Stat label="Last sign-up" value={lastSignUpAgo ?? 'Awaiting first registration'} />
+          <Stat label="Last sign-up" value={lastSignUpAgo ?? lastSignUpEmptyCopy(lifecycle)} />
         </div>
       </div>
 
@@ -126,6 +126,15 @@ function Stat({ label, value }: { label: string; value: string }) {
       <p className="font-title-lg text-title-lg text-on-surface">{value}</p>
     </div>
   );
+}
+
+// "Awaiting first registration" reads as forward-looking — wrong on a
+// completed or cancelled event where the window has closed. U-LIVE #2.
+function lastSignUpEmptyCopy(lifecycle: Lifecycle): string {
+  if (lifecycle === 'completed' || lifecycle === 'cancelled') {
+    return 'No registrations received';
+  }
+  return 'Awaiting first registration';
 }
 
 function relativeTime(diffMs: number): string {
