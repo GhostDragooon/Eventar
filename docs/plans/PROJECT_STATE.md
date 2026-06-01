@@ -1,5 +1,5 @@
 # Project State — Eventar
-_Last updated: 2026-06-01 (after Phase 6.5)_
+_Last updated: 2026-06-01 (after Phase 6.5 + R1 security closure)_
 
 > Source of truth for "what's active vs forward-looking."
 > **Read this BEFORE writing any code.** Updated at the end of each phase.
@@ -35,16 +35,18 @@ See [[02 — Decisions Log#Q17]] + [[02 — Decisions Log#Q18]] and `docs/plans/
 
 Things to hold in mind during the ACTIVE build, **NOT to act on now**:
 
-- **Phase-8 deploy gates** (4 items open — do not regress):
-  1. PII enumeration oracle on `/checkin/confirm` (and `/survey`). See vault `Security + Robustness` §14a.
-  2. `Math.random` in `lib/registrationCode.ts` — codes are bearer tokens; swap to `crypto.randomInt` before Phase 8.
-  3. Host-header spoofing in `lib/qr.ts` callers (3 sites: `events/[id]/edit/actions.ts:61`, `(public)/events/[id]/page.tsx:46`, `(public)/events/[id]/poster/page.tsx:45`) — add `NEXT_PUBLIC_SITE_URL`.
-  4. Supabase migration history drift (4 local-only vs 4 remote-only). Blocks `supabase db push`.
+- **Phase-8 deploy gates** — 3 of 4 closed in 2026-06-01 R1 batch (`c3301d8` · `561d2cb` · `7c5bcbd` · `659eee0` · `20ac68f`):
+  1. ✅ **CLOSED** — PII enumeration oracle on `/checkin/confirm`: name dropped from page + ConfirmButton; full_name removed from SELECT (commit `7c5bcbd`). Velocity side closed by rate limits (commit `20ac68f`).
+  2. ✅ **CLOSED** — `Math.random` → `crypto.randomInt`; codes widened 4→6 chars; old 4-char codes grandfathered (commit `659eee0`).
+  3. ✅ **CLOSED** — Host-header spoofing: `lib/origin.ts::getRequestOrigin` reads `NEXT_PUBLIC_SITE_URL` first, throws in prod if unset (commit `561d2cb`).
+  4. ⏳ **OPEN (ops)** — Supabase migration history drift: now **5 local-only vs 4 remote-only** (R1 batch added one local-only via `execute_sql` MCP rather than `apply_migration` to avoid worsening the remote side). Blocks `supabase db push`. Reconcile via Supabase dashboard before Phase 8 deploy.
 - **Phase 9 (pg_cron)** will read `email_log` — do NOT rename the `purpose` enum values during Phase 7 (`confirmation`, `reminder`, `survey`).
 - **`registration_close_at` editor** lives ONLY on `/details`. Do not add a duplicate surface in `/edit` during Phase 7.
 - **Three-layer validation** (form → Zod → DB constraint) for every new mutation (vault `Security + Robustness` §1).
 - **`requireStaff()` at top of every staff Server Action** — hard rule.
 - **Q18 patterns** (RLS-silent-fail + revalidatePath) — required for every mutation Server Action.
+- **Rate-limit any new public Server Action / GET endpoint**. The infrastructure (`lib/rateLimit.ts::rateLimitByIp`) is live; new surfaces should opt in. Existing limits: selfCheckIn/submitSurvey 10/min/IP · registerForEvent 30/min/IP · GET /checkin/confirm + /survey 60/min/IP.
+- **`NEXT_PUBLIC_SITE_URL`** must be set in Vercel env before Phase 8 deploy. `lib/origin.ts` throws in production if missing.
 
 ---
 
