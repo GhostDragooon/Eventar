@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { formatInTz } from '@/lib/tz';
 import { isValidRegistrationCode } from '@/lib/registrationCode';
+import { rateLimitByIp } from '@/lib/rateLimit';
 import { PublicShell } from '@/components/shell/PublicShell';
 import ConfirmButton from './ConfirmButton';
 
@@ -34,6 +35,24 @@ export default async function SelfCheckinPage({
             icon="error"
             title="Code not recognised"
             body="Please show this code (or your QR) to the event organiser. They can check you in manually."
+          />
+        </PageWrap>
+      </PublicShell>
+    );
+  }
+
+  // Enumeration defense: cap per-IP page loads before the admin lookup runs.
+  // 60/min easily covers legit re-renders; an attacker iterating codes
+  // saturates quickly.
+  const limit = await rateLimitByIp('confirmGet', { windowMs: 60_000, max: 60 });
+  if (!limit.allowed) {
+    return (
+      <PublicShell>
+        <PageWrap>
+          <EmptyState
+            icon="hourglass_empty"
+            title="Too many requests"
+            body="Please slow down and try again in a moment."
           />
         </PageWrap>
       </PublicShell>

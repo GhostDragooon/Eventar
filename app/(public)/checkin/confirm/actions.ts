@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { isValidRegistrationCode } from '@/lib/registrationCode';
+import { rateLimitByIp } from '@/lib/rateLimit';
 
 /**
  * Public self-checkin via the personal QR URL /checkin/confirm?code=WK-XXXX.
@@ -19,6 +20,12 @@ export async function selfCheckIn(
   code: string,
 ): Promise<{ ok: true; eventId: string } | { error: string }> {
   if (!isValidRegistrationCode(code)) return { error: 'Invalid code format.' };
+
+  // Brute-force defense: cap per-IP attempts before doing any DB work.
+  // 10/min is generous for one attendee re-clicking after errors; way below
+  // what an attacker iterating codes would need.
+  const limit = await rateLimitByIp('selfCheckIn', { windowMs: 60_000, max: 10 });
+  if (!limit.allowed) return { error: 'Too many attempts. Please try again in a moment.' };
 
   const admin = supabaseAdmin();
   const { data: updated, error } = await admin

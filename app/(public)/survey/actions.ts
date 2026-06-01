@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { isValidRegistrationCode } from '@/lib/registrationCode';
+import { rateLimitByIp } from '@/lib/rateLimit';
 import { surveyInputSchema, type SubmitSurveyResult } from './schema';
 
 /**
@@ -18,6 +19,10 @@ export async function submitSurvey(
   rawAnswers: unknown,
 ): Promise<SubmitSurveyResult> {
   if (!isValidRegistrationCode(code)) return { error: 'Invalid code format.' };
+
+  // Brute-force defense: cap per-IP submissions before any DB work.
+  const limit = await rateLimitByIp('submitSurvey', { windowMs: 60_000, max: 10 });
+  if (!limit.allowed) return { error: 'Too many attempts. Please try again in a moment.' };
 
   const parsed = surveyInputSchema.safeParse(rawAnswers);
   if (!parsed.success) return { error: 'Some answers were invalid. Please review and resubmit.' };

@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { isValidRegistrationCode } from '@/lib/registrationCode';
+import { rateLimitByIp } from '@/lib/rateLimit';
 import { PublicShell } from '@/components/shell/PublicShell';
 import SurveyForm from './SurveyForm';
 
@@ -33,6 +34,22 @@ export default async function SurveyPage({
             icon="error"
             title="Code not recognised"
             body="Please use the survey link we emailed you, or ask the event organiser for help."
+          />
+        </PageWrap>
+      </PublicShell>
+    );
+  }
+
+  // Enumeration defense: cap per-IP page loads before the admin lookup runs.
+  const limit = await rateLimitByIp('surveyGet', { windowMs: 60_000, max: 60 });
+  if (!limit.allowed) {
+    return (
+      <PublicShell>
+        <PageWrap>
+          <EmptyState
+            icon="hourglass_empty"
+            title="Too many requests"
+            body="Please slow down and try again in a moment."
           />
         </PageWrap>
       </PublicShell>

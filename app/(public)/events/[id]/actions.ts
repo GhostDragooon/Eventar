@@ -6,6 +6,7 @@
 import { revalidatePath } from 'next/cache';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { rateLimitByIp } from '@/lib/rateLimit';
 import { registrationInputSchema, type RegisterResult } from './schema';
 import { generateRegistrationCode } from '@/lib/registrationCode';
 
@@ -34,6 +35,12 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
     return { error: parse.error.issues.map(i => i.message).join('; ') };
   }
   const { event_id, full_name, email } = parse.data;
+
+  // Spam-registration defense: 30/min/IP. Generous for shared-WiFi bursts
+  // (a workshop's worth of people registering from one office is 1-2 per
+  // minute, well under the cap), restrictive against scripted spam.
+  const limit = await rateLimitByIp('registerForEvent', { windowMs: 60_000, max: 30 });
+  if (!limit.allowed) return { error: 'Too many attempts. Please try again in a moment.' };
 
   const anon  = await supabaseServer();
   const admin = supabaseAdmin();
