@@ -39,7 +39,9 @@ export async function submitSurvey(
   if (lookupErr) {
     // Fail visibly (Rule 12) — log server-side, return friendly copy so the form's
     // error-state branch renders instead of Next's default error UI.
-    console.error('[submitSurvey] registration lookup failed', lookupErr);
+    // Log only code + message: PG/PostgREST `details` can echo row data (PII), Rule 10.
+    const e = lookupErr as { code?: string; message?: string };
+    console.error('[submitSurvey] registration lookup failed', { code: e.code, message: e.message });
     return { error: "We couldn't save your feedback. Please check your connection and try again." };
   }
   if (!reg || !reg.events) return { error: 'This code is not recognised.' };
@@ -62,7 +64,9 @@ export async function submitSurvey(
     if ((insertErr as { code?: string }).code === '23505') {
       return { error: "You've already submitted this survey." };
     }
-    console.error('[submitSurvey] insert failed', insertErr);
+    // Log only code + message (Rule 10) — PG error `details` can echo row data.
+    const e = insertErr as { code?: string; message?: string };
+    console.error('[submitSurvey] insert failed', { code: e.code, message: e.message });
     return { error: "We couldn't save your feedback. Please check your connection and try again." };
   }
 
