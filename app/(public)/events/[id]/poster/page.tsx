@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
-import { headers } from 'next/headers';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { formatInTz } from '@/lib/tz';
 import { buildEventQrPng } from '@/lib/qr';
+import { getRequestOrigin } from '@/lib/origin';
 import type { AgendaTopic } from '@/lib/agenda';
 import RegisterCard from '@/components/RegisterCard';
 import PrintPosterButton from '@/components/PrintPosterButton';
@@ -42,10 +42,9 @@ export default async function EventPosterPage({
     .select('id', { count: 'exact', head: true })
     .eq('event_id', id);
 
-  const h = await headers();
-  const proto = h.get('x-forwarded-proto') ?? 'http';
-  const host = h.get('host') ?? 'localhost:3000';
-  const origin = `${proto}://${host}`;
+  // Origin via NEXT_PUBLIC_SITE_URL (with header fallback in dev) — prevents
+  // host-header spoofing from poisoning the QR URL. See lib/origin.ts.
+  const origin = await getRequestOrigin();
 
   const { pngBase64 } = await buildEventQrPng(
     { id: event.id, title: event.title },

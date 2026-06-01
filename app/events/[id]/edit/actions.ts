@@ -1,10 +1,10 @@
 'use server';
-import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { requireStaff } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { buildEventQrPng } from '@/lib/qr';
+import { getRequestOrigin } from '@/lib/origin';
 import { buildCsv } from '@/lib/csv';
 import { slugifyTitle } from '@/lib/slugify';
 
@@ -56,12 +56,9 @@ export async function getEventQrPng(
     return { error: 'QR is available after publishing.' };
   }
 
-  // Origin from request headers so this works on localhost, Vercel preview,
-  // and prod (same pattern as sendMagicLink).
-  const h = await headers();
-  const proto = h.get('x-forwarded-proto') ?? 'http';
-  const host = h.get('host') ?? 'localhost:3000';
-  const origin = `${proto}://${host}`;
+  // Origin via NEXT_PUBLIC_SITE_URL (with header fallback in dev) — prevents
+  // host-header spoofing from poisoning the QR URL. See lib/origin.ts.
+  const origin = await getRequestOrigin();
 
   return buildEventQrPng({ id: event.id, title: event.title }, origin);
 }
