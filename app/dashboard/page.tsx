@@ -90,9 +90,11 @@ export default async function DashboardPage() {
     : null;
 
   // Aggregate registration across Registering + Upcoming
-  const aggregateRegistration = decorated
-    .filter((d) => d.lifecycle === 'registering' || d.lifecycle === 'upcoming')
-    .reduce((sum, d) => sum + d.registered, 0);
+  const aggregatePool = decorated.filter(
+    (d) => d.lifecycle === 'registering' || d.lifecycle === 'upcoming',
+  );
+  const aggregateRegistration = aggregatePool.reduce((sum, d) => sum + d.registered, 0);
+  const aggregateUpcomingCount = aggregatePool.length;
 
   // Team Task Completion — this user's events only.
   // staff.id is the staff row id; events.created_by references staff.id.
@@ -136,6 +138,7 @@ export default async function DashboardPage() {
         nextIsLive={nextEvent?.lifecycle === 'live'}
         counts={counts}
         aggregateRegistration={aggregateRegistration}
+        upcomingCount={aggregateUpcomingCount}
         yourCompleted={yourCompleted}
         yourTotal={myDecorated.length}
       />
