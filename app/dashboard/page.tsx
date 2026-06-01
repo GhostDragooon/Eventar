@@ -119,6 +119,16 @@ export default async function DashboardPage() {
 
   const totalEvents = events?.length ?? 0;
 
+  // F#12 (user-lens): when Completed is the only populated lifecycle, the
+  // dashboard otherwise reads as "broken" — a single tiny collapsed band
+  // below an empty general band. Auto-expand in that case so the user sees
+  // their event history immediately.
+  const populatedLifecycles = LIFECYCLE_ORDER.filter(
+    (l) => decoratedByLifecycle[l].length > 0,
+  );
+  const onlyCompletedPopulated =
+    populatedLifecycles.length === 1 && populatedLifecycles[0] === 'completed';
+
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role }}>
       <header className="flex flex-col md:flex-row md:justify-between md:items-end mb-xl border-b border-outline-variant pb-md gap-md">
@@ -160,7 +170,7 @@ export default async function DashboardPage() {
             key={lifecycle}
             lifecycle={lifecycle}
             events={decoratedByLifecycle[lifecycle]}
-            defaultCollapsed={lifecycle === 'completed'}
+            defaultCollapsed={lifecycle === 'completed' && !onlyCompletedPopulated}
           />
         ))
       )}
