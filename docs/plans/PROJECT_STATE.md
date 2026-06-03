@@ -1,5 +1,5 @@
 # Project State — Eventar
-_Last updated: 2026-06-02 (after Phase 6.5 + R1 security closure + M1 drift reconcile)_
+_Last updated: 2026-06-02 (post-R1 + M1 + Q19 access policy refinement)_
 
 > Source of truth for "what's active vs forward-looking."
 > **Read this BEFORE writing any code.** Updated at the end of each phase.
@@ -47,6 +47,7 @@ Things to hold in mind during the ACTIVE build, **NOT to act on now**:
 - **Q18 patterns** (RLS-silent-fail + revalidatePath) — required for every mutation Server Action.
 - **Rate-limit any new public Server Action / GET endpoint**. The infrastructure (`lib/rateLimit.ts::rateLimitByIp`) is live; new surfaces should opt in. Existing limits: selfCheckIn/submitSurvey 10/min/IP · registerForEvent 30/min/IP · GET /checkin/confirm + /survey 60/min/IP.
 - **`NEXT_PUBLIC_SITE_URL`** must be set in Vercel env before Phase 8 deploy. `lib/origin.ts` throws in production if missing.
+- **Owner-only by default for mutation surfaces** (Q19, 2026-06-02). New staff mutation pages (`/events/[id]/X` where X edits or controls something) should gate at page entry: read `event.created_by`, redirect non-owners to `/details`. New mutation actions use `supabaseServer()` so RLS enforces ownership. `supabaseAdmin()` is reserved for documented exceptions (public anon flows like `registerForEvent`). Managers retain READ access via existing RLS to all events/registrations/surveys — `/dashboard`, `/details`, `/analytics` remain manager-visible.
 
 ---
 
@@ -62,9 +63,9 @@ Intentionally NOT in Phase 7 — surface as "for later" if they come up in conve
 
 ---
 
-## Open decision — requires user input
+## Open decisions
 
-- **F#5 — Drafted slice → /edit destination.** Path A (relabel CTA + verify Publish stays on `/edit` so routing remains coherent) vs Path B (build real edit form). Path A is ~30 min; Path B is multi-day. See `docs/plans/handoff_01062026.md` §"Open items".
+_(none — F#5 resolved by Q19's access policy refinement. The Drafted slice routing question is now moot: non-owners can't reach `/edit` at all; owners see the Publish action prominently on Draft state with no misleading copy.)_
 
 ---
 
