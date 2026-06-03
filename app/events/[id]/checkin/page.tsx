@@ -23,10 +23,18 @@ export default async function StaffCheckinPage({
   const supabase = await supabaseServer();
   const { data: event } = await supabase
     .from('events')
-    .select('id, title, start_time, end_time, timezone, venue_name, status, max_attendees')
+    .select('id, title, start_time, end_time, timezone, venue_name, status, max_attendees, created_by')
     .eq('id', id)
     .maybeSingle();
   if (!event) notFound();
+
+  // Owner-only gate: /checkin mutates registrations (status → attended).
+  // Per the 2026-06-02 access policy refinement, check-in is owner-exclusive
+  // (reverses Q4's prior "manager running multi-event check-in" use case).
+  // Non-owners bounce to /details for the read-only ops lens.
+  if (event.created_by !== staff.id) {
+    redirect(`/events/${id}/details`);
+  }
 
   // Initial roster paint: organiser/manager RLS already gates this read.
   // The client subscribes to Realtime postgres_changes for live updates.

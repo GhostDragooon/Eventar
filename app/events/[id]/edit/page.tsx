@@ -27,10 +27,20 @@ export default async function StaffEventEditPage({
   const supabase = await supabaseServer();
   const { data: event } = await supabase
     .from('events')
-    .select('id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status, max_attendees')
+    .select('id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status, max_attendees, created_by')
     .eq('id', id)
     .maybeSingle();
   if (!event) notFound();
+
+  // Owner-only gate: /edit is the mutation surface (Publish, future field
+  // edits). Per the 2026-06-02 access policy refinement, only the event
+  // owner reaches this page; non-owners (other organisers via direct URL,
+  // managers viewing on the dashboard) get bounced to /details which is
+  // the read-only ops view. RLS would deny their UPDATEs anyway — this
+  // just stops them from seeing a page their writes would silently fail.
+  if (event.created_by !== staff.id) {
+    redirect(`/events/${id}/details`);
+  }
 
   const { data: blocks } = await supabase
     .from('agenda_blocks')
@@ -142,10 +152,12 @@ export default async function StaffEventEditPage({
             </Section>
           )}
 
-          <p className="font-body-md text-[12px] text-on-surface-variant italic">
-            Editing event details isn&apos;t available yet — this view is read-only.
-            Need a change? Ask an admin.
-          </p>
+          {event.status !== 'draft' && (
+            <p className="font-body-md text-[12px] text-on-surface-variant italic">
+              Editing event details isn&apos;t available yet — this view is read-only.
+              Need a change? Ask an admin.
+            </p>
+          )}
         </div>
 
         {/* Right (4 cols): sticky action panel */}
