@@ -1,5 +1,5 @@
 # Project State — Eventar
-_Last updated: 2026-06-01 (after Phase 6.5 + R1 security closure)_
+_Last updated: 2026-06-02 (after Phase 6.5 + R1 security closure + M1 drift reconcile)_
 
 > Source of truth for "what's active vs forward-looking."
 > **Read this BEFORE writing any code.** Updated at the end of each phase.
@@ -35,11 +35,11 @@ See [[02 — Decisions Log#Q17]] + [[02 — Decisions Log#Q18]] and `docs/plans/
 
 Things to hold in mind during the ACTIVE build, **NOT to act on now**:
 
-- **Phase-8 deploy gates** — 3 of 4 closed in 2026-06-01 R1 batch (`c3301d8` · `561d2cb` · `7c5bcbd` · `659eee0` · `20ac68f`):
+- **Phase-8 deploy gates** — **all 4 closed** (R1 security batch + M1 drift reconcile):
   1. ✅ **CLOSED** — PII enumeration oracle on `/checkin/confirm`: name dropped from page + ConfirmButton; full_name removed from SELECT (commit `7c5bcbd`). Velocity side closed by rate limits (commit `20ac68f`).
   2. ✅ **CLOSED** — `Math.random` → `crypto.randomInt`; codes widened 4→6 chars; old 4-char codes grandfathered (commit `659eee0`).
   3. ✅ **CLOSED** — Host-header spoofing: `lib/origin.ts::getRequestOrigin` reads `NEXT_PUBLIC_SITE_URL` first, throws in prod if unset (commit `561d2cb`).
-  4. ⏳ **OPEN (ops)** — Supabase migration history drift: now **5 local-only vs 4 remote-only** (R1 batch added one local-only via `execute_sql` MCP rather than `apply_migration` to avoid worsening the remote side). Blocks `supabase db push`. Reconcile via Supabase dashboard before Phase 8 deploy.
+  4. ✅ **CLOSED** — Migration history drift reconciled 2026-06-02: remote `supabase_migrations.schema_migrations` realigned to local file versions (DELETE 5 stale remote rows + INSERT 5 local-only). `supabase db push` no longer blocks. `list_migrations` ↔ `ls supabase/migrations/` diff exits 0.
 - **Phase 9 (pg_cron)** will read `email_log` — do NOT rename the `purpose` enum values during Phase 7 (`confirmation`, `reminder`, `survey`).
 - **`registration_close_at` editor** lives ONLY on `/details`. Do not add a duplicate surface in `/edit` during Phase 7.
 - **Three-layer validation** (form → Zod → DB constraint) for every new mutation (vault `Security + Robustness` §1).
