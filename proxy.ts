@@ -60,14 +60,18 @@ export async function proxy(req: NextRequest) {
   return res;
 }
 
-// Gate staff-only routes. The public /events/[id] page lives under app/(public)
-// and is NOT in this matcher; only /events/new and /events/[id]/{edit,checkin}
-// are staff-gated.
+// Gate staff-only routes. The public /events/[id] page and /events/[id]/poster
+// live under app/(public) and are NOT in this matcher. Staff routes are
+// /dashboard, /events/new, and /events/[id]/{edit,checkin,details,analytics}.
+// Defense-in-depth: each staff page also gates via requireStaff() (Layer 2);
+// this matcher is Layer 1.
 export const config = {
   matcher: [
     '/dashboard/:path*',
     '/events/new',
     '/events/:id/edit',
     '/events/:id/checkin',
+    '/events/:id/details',
+    '/events/:id/analytics',
   ],
 };
