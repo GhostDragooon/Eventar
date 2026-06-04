@@ -17,7 +17,9 @@ import { headers } from 'next/headers';
  * considerations.
  *
  * Used by:
+ *   - app/login/actions.ts::sendMagicLink                   (magic-link redirect)
  *   - app/events/[id]/edit/actions.ts::getEventQrPng        (staff)
+ *   - app/(public)/events/[id]/actions.ts::registerForEvent (confirmation email URL)
  *   - app/(public)/events/[id]/page.tsx                     (public info page)
  *   - app/(public)/events/[id]/poster/page.tsx              (public poster)
  */

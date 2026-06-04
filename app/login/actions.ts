@@ -1,6 +1,6 @@
 'use server';
-import { headers } from 'next/headers';
 import { supabaseServer } from '@/lib/supabase/server';
+import { getRequestOrigin } from '@/lib/origin';
 
 export async function sendMagicLink(
   formData: FormData,
@@ -10,11 +10,8 @@ export async function sendMagicLink(
     return { error: 'Please enter a valid email address.' };
   }
 
-  // Origin from request headers so this works on localhost, Vercel preview, and prod.
-  const h = await headers();
-  const proto = h.get('x-forwarded-proto') ?? 'http';
-  const host = h.get('host') ?? 'localhost:3000';
-  const origin = `${proto}://${host}`;
+  // NEXT_PUBLIC_SITE_URL in prod (Phase-8 gate 3); request headers in dev.
+  const origin = await getRequestOrigin();
 
   const supabase = await supabaseServer();
   const { error } = await supabase.auth.signInWithOtp({
