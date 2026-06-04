@@ -5,9 +5,19 @@ vi.mock('server-only', () => ({}));
 import { sendEmail } from './devEmailStub';
 
 describe('devEmailStub.sendEmail', () => {
-  it('returns { skipped: true } without performing a real send', async () => {
+  it('returns { skipped: true } and does not log recipient PII on any channel', async () => {
+    // Rule 10: no PII in logs. Spy on every console channel — log AND error AND
+    // warn AND info — so a future "improvement" that switches channels doesn't
+    // silently leak. (process.stdout.write would also catch direct stream
+    // writes; not adding it now because the project's convention is console.*.)
     // eslint-disable-next-line no-console
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    // eslint-disable-next-line no-console
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // eslint-disable-next-line no-console
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // eslint-disable-next-line no-console
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
 
     const result = await sendEmail({
       to: 'alice@example.com',
@@ -17,12 +27,14 @@ describe('devEmailStub.sendEmail', () => {
 
     expect(result).toEqual({ skipped: true });
 
-    // CLAUDE.md Rule 10: no PII in logs. The recipient email must NOT appear
-    // in the console output. The stub logs that something would be sent but
-    // doesn't reveal the recipient.
-    const allLogs = logSpy.mock.calls.map(c => c.join(' ')).join('\n');
+    const allLogs = [logSpy, errorSpy, warnSpy, infoSpy]
+      .flatMap(spy => spy.mock.calls.map(c => c.join(' ')))
+      .join('\n');
     expect(allLogs).not.toContain('alice@example.com');
 
     logSpy.mockRestore();
+    errorSpy.mockRestore();
+    warnSpy.mockRestore();
+    infoSpy.mockRestore();
   });
 });

@@ -6,7 +6,13 @@
 // No grep hunt required. The removal is a localized operation:
 //   1. delete this file + its .test.ts
 //   2. drop the `sendEmailStub` import in app/(public)/events/[id]/actions.ts
-//   3. delete the env-switch line + the `{ skipped }` branch in the result handler
+//   3. in app/(public)/events/[id]/actions.ts:
+//        - delete the env-switch line `const sendEmail = process.env.RESEND_API_KEY ? ... ;`
+//        - either rename `sendEmailReal` → `sendEmail` at the import site,
+//          or change `import { sendEmail as sendEmailReal } ...` to
+//          `import { sendEmail } from '@/lib/resend';`
+//        - delete the `else if ('skipped' in sendResult)` branch
+//          (TypeScript will flag it as dead code after the type narrows)
 //   4. drop the "uses stub" test case in actions.test.ts
 
 import 'server-only';
