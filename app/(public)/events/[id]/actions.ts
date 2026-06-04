@@ -9,6 +9,14 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { rateLimitByIp } from '@/lib/rateLimit';
 import { registrationInputSchema, type RegisterResult } from './schema';
 import { generateRegistrationCode } from '@/lib/registrationCode';
+// TEMP: dual import while RESEND_API_KEY is being set up.
+// REMOVE both lines + the env-switch below once the key is in .env.local.
+// See docs/plans/2026-06-04-phase-7-resend-design.md §"Removal protocol".
+import { sendEmail as sendEmailReal } from '@/lib/resend';
+import { sendEmail as sendEmailStub } from '@/lib/devEmailStub';
+import { renderConfirmationEmail } from '@/emails/confirmation';
+import { getRequestOrigin } from '@/lib/origin';
+import { formatInTz } from '@/lib/tz';
 
 /**
  * Register an anonymous visitor for a published event.
@@ -50,7 +58,7 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
   // max_attendees + title for the capacity check + stub message.
   const { data: event } = await anon
     .from('events')
-    .select('id, title, status, max_attendees')
+    .select('id, title, status, max_attendees, start_time, timezone, venue_name, venue_address')
     .eq('id', event_id)
     .maybeSingle();
   if (!event || event.status !== 'published') {
@@ -104,14 +112,14 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
   // and it has its own handling below). Up to 5 attempts; 31^4 namespace
   // (see lib/registrationCode.ts) makes 5 collisions in a row astronomically
   // rare. The unique constraint in the DB is the source of truth.
-  let reg: { id: string } | null = null;
+  let reg: { id: string; registration_code: string } | null = null;
   let regErr: { code?: string; message: string } | null = null;
   for (let attempt = 0; attempt < 5; attempt++) {
     const candidate = generateRegistrationCode();
     const insertResult = await admin
       .from('registrations')
       .insert({ event_id, email, full_name, registration_code: candidate })
-      .select('id')
+      .select('id, registration_code')
       .single();
     if (insertResult.error) {
       const isCodeCollision =
@@ -148,21 +156,50 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
     return { error: 'Registration failed. Please try again.' };
   }
 
-  // Step 6 — Phase 7 replaces this with a real Resend call.
-  // Logs UUIDs only per CLAUDE.md rule 10 (no PII in logs). To resolve back
-  // to recipient + event title, SELECT the rows by id.
-  console.log(
-    `[email stub] would send confirmation for event ${event.id} (registration ${reg.id})`,
-  );
+  // Step 6 — render template + dispatch via the facade.
+  // TEMP: env switch picks devEmailStub when RESEND_API_KEY unset. See design doc.
+  const sendEmail = process.env.RESEND_API_KEY ? sendEmailReal : sendEmailStub;
 
-  // Step 7 — close the ledger entry. Failure here is logged but doesn't
-  // fail the registration (the row exists; we'll reconcile later).
-  const { error: closeErr } = await admin
-    .from('email_log')
-    .update({ status: 'sent', sent_at: new Date().toISOString(), registration_id: reg.id })
-    .eq('id', log.id);
+  const origin = await getRequestOrigin();
+  const eventVenue = event.venue_address ? `${event.venue_name}, ${event.venue_address}` : event.venue_name;
+
+  // Per design doc: props pre-formatted at call site; template stays pure presentation.
+  const html = await renderConfirmationEmail({
+    recipientName: full_name,
+    eventTitle: event.title,
+    eventStart: formatInTz(event.start_time, event.timezone),
+    eventVenue,
+    eventUrl: `${origin}/events/${event.id}`,
+    registrationCode: reg.registration_code,
+  });
+
+  const sendResult = await sendEmail({
+    to: email,
+    subject: `You're registered: ${event.title}`,
+    html,
+  });
+
+  // Step 7 — close the ledger per outcome; registration_id always set.
+  const logUpdate: Record<string, unknown> = { registration_id: reg.id };
+  if ('ok' in sendResult) {
+    logUpdate.status = 'sent';
+    logUpdate.sent_at = new Date().toISOString();
+  } else if ('skipped' in sendResult) {
+    // TEMP: this branch goes away when the stub is removed.
+    // email_log.status stays 'queued' (set at step 4); no Phase 9 sweep planned.
+    console.log(
+      `[email queued] confirmation for event ${event.id} registration ${reg.id} — RESEND_API_KEY unset`,
+    );
+  } else {
+    logUpdate.status = 'failed';
+    logUpdate.error = `${sendResult.error.code}: ${sendResult.error.message}`;
+  }
+  const { error: closeErr } = await admin.from('email_log').update(logUpdate).eq('id', log.id);
   if (closeErr) {
-    console.error('[registerForEvent] failed to close email_log row', { id: log.id, error: closeErr.message });
+    console.error('[registerForEvent] failed to close email_log row', {
+      id: log.id,
+      error: closeErr.message,
+    });
   }
 
   // Step 8 — the public page may show updated counts in future phases.

@@ -1,8 +1,139 @@
 import { vi } from 'vitest';
 vi.mock('server-only', () => ({}));
 
-import { describe, it, expect } from 'vitest';
+// Mocked send-side facades. The action picks one via env switch at call time
+// (`process.env.RESEND_API_KEY ? sendEmailReal : sendEmailStub`), so per-test
+// env mutation works without resetModules() — both mocks are loaded; only the
+// branch under test gets called.
+// vi.hoisted() runs before vi.mock factories (which are themselves hoisted
+// above all imports), so the fns exist when the mock factories execute.
+const { mockSendReal, mockSendStub } = vi.hoisted(() => ({
+  mockSendReal: vi.fn(),
+  mockSendStub: vi.fn(),
+}));
+vi.mock('@/lib/resend', () => ({ sendEmail: mockSendReal }));
+vi.mock('@/lib/devEmailStub', () => ({ sendEmail: mockSendStub }));
+
+// Rate limit: allow by default. Tests can override per-case if needed.
+vi.mock('@/lib/rateLimit', () => ({
+  rateLimitByIp: vi.fn(async () => ({ allowed: true, remaining: 29, resetAt: new Date() })),
+}));
+
+// next/cache revalidatePath: no-op (we don't assert on it for the email-path tests).
+vi.mock('next/cache', () => ({
+  revalidatePath: vi.fn(),
+}));
+
+// renderConfirmationEmail is a real async string-producer. Letting it run is
+// fine (pure presentation, no I/O), but mocking keeps tests fast and isolates
+// us from React Email rendering surface area.
+vi.mock('@/emails/confirmation', () => ({
+  renderConfirmationEmail: vi.fn(async () => '<html>stub</html>'),
+}));
+
+// getRequestOrigin reads next/headers in dev fallback; in the test runner
+// there's no request context, so mock it.
+vi.mock('@/lib/origin', () => ({
+  getRequestOrigin: vi.fn(async () => 'http://localhost:3000'),
+}));
+
+// formatInTz is a pure function over Intl.DateTimeFormat; safe to let run, but
+// mocking it gives the test deterministic strings without timezone-data noise.
+vi.mock('@/lib/tz', () => ({
+  formatInTz: vi.fn(() => '15 Jun 2026, 09:00'),
+}));
+
+// registrationCode generator: stub to a fixed code so the .insert assertion
+// is deterministic and the retry loop terminates on attempt 0.
+vi.mock('@/lib/registrationCode', () => ({
+  generateRegistrationCode: vi.fn(() => 'WK-ABCDEF'),
+}));
+
+// --- Supabase mocks ---
+//
+// supabaseServer is only used for the step-2 event SELECT (anon-RLS read).
+// supabaseAdmin handles step-3 capacity count (skipped here by leaving
+// max_attendees=null), step-4 email_log INSERT, step-5 registrations INSERT,
+// and step-7 email_log UPDATE.
+//
+// Mutable per-test state (reset in beforeEach):
+const eventId = '11111111-2222-4333-8444-555555555555';
+const logId = '99999999-aaaa-4bbb-8ccc-dddddddddddd';
+const regId = '77777777-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+
+type EventRow = {
+  id: string;
+  title: string;
+  status: string;
+  max_attendees: number | null;
+  start_time: string;
+  timezone: string;
+  venue_name: string;
+  venue_address: string | null;
+};
+let mockEventRow: EventRow | null = null;
+let lastEmailLogUpdate: Record<string, unknown> | null = null;
+let lastEmailLogUpdateId: string | null = null;
+
+vi.mock('@/lib/supabase/server', () => ({
+  supabaseServer: vi.fn(async () => ({
+    from: (_table: string) => ({
+      select: (_cols: string) => ({
+        eq: (_col: string, _val: string) => ({
+          maybeSingle: async () => ({ data: mockEventRow, error: null }),
+        }),
+      }),
+    }),
+  })),
+}));
+
+vi.mock('@/lib/supabase/admin', () => ({
+  supabaseAdmin: vi.fn(() => ({
+    from: (table: string) => {
+      if (table === 'email_log') {
+        return {
+          insert: (_payload: Record<string, unknown>) => ({
+            select: (_cols: string) => ({
+              single: async () => ({ data: { id: logId }, error: null }),
+            }),
+          }),
+          update: (payload: Record<string, unknown>) => {
+            lastEmailLogUpdate = payload;
+            return {
+              eq: async (_col: string, val: string) => {
+                lastEmailLogUpdateId = val;
+                return { error: null };
+              },
+            };
+          },
+        };
+      }
+      if (table === 'registrations') {
+        return {
+          // Capacity check path (.select('id', { count, head })). Not used in
+          // these tests because mockEventRow.max_attendees is null, but kept
+          // shape-compatible so a future capacity-path test slots in.
+          select: (_cols: string, _opts?: { count?: string; head?: boolean }) => ({
+            eq: async (_col: string, _val: string) => ({ count: 0, error: null }),
+          }),
+          insert: (_payload: Record<string, unknown>) => ({
+            select: (_cols: string) => ({
+              single: async () => ({
+                data: { id: regId, registration_code: 'WK-ABCDEF' },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      throw new Error(`unexpected table: ${table}`);
+    },
+  })),
+}));
+
+import { beforeEach, describe, it, expect } from 'vitest';
 import { registrationInputSchema } from './schema';
+import { registerForEvent } from './actions';
 
 // Real v4 UUID (third group starts with 4, fourth with 8|9|a|b) — Zod 4's
 // .uuid() validator is version-strict.
@@ -47,5 +178,76 @@ describe('registrationInputSchema', () => {
     const r = registrationInputSchema.safeParse({ ...valid, full_name: '  Ivan  ' });
     expect(r.success).toBe(true);
     if (r.success) expect(r.data.full_name).toBe('Ivan');
+  });
+});
+
+describe('registerForEvent — Phase 7 send-side behaviour', () => {
+  beforeEach(() => {
+    mockEventRow = {
+      id: eventId,
+      title: 'Workshop on Tuesdays',
+      status: 'published',
+      max_attendees: null, // skip capacity check
+      start_time: '2026-06-15T09:00:00.000Z',
+      timezone: 'Europe/Vilnius',
+      venue_name: 'Office HQ',
+      venue_address: 'Gedimino 1, Vilnius',
+    };
+    lastEmailLogUpdate = null;
+    lastEmailLogUpdateId = null;
+    mockSendReal.mockReset();
+    mockSendStub.mockReset();
+    delete process.env.RESEND_API_KEY;
+  });
+
+  it('uses devEmailStub when RESEND_API_KEY is unset → email_log stays queued', async () => {
+    mockSendStub.mockResolvedValueOnce({ skipped: true });
+
+    const result = await registerForEvent(valid);
+
+    expect(result).toEqual({ ok: true });
+    expect(mockSendStub).toHaveBeenCalledTimes(1);
+    expect(mockSendReal).not.toHaveBeenCalled();
+
+    // Ledger update only sets registration_id; status stays 'queued' (set at step 4).
+    expect(lastEmailLogUpdate).toEqual({ registration_id: regId });
+    expect(lastEmailLogUpdateId).toBe(logId);
+  });
+
+  it('uses real sender when RESEND_API_KEY is set; ok response → email_log sent', async () => {
+    process.env.RESEND_API_KEY = 'test_key';
+    mockSendReal.mockResolvedValueOnce({ ok: true, id: 're_test_xyz' });
+
+    const result = await registerForEvent(valid);
+
+    expect(result).toEqual({ ok: true });
+    expect(mockSendReal).toHaveBeenCalledTimes(1);
+    expect(mockSendStub).not.toHaveBeenCalled();
+
+    expect(lastEmailLogUpdate).toMatchObject({
+      registration_id: regId,
+      status: 'sent',
+    });
+    expect(typeof lastEmailLogUpdate?.sent_at).toBe('string');
+    expect(lastEmailLogUpdateId).toBe(logId);
+  });
+
+  it('uses real sender; error response → email_log failed with code+message', async () => {
+    process.env.RESEND_API_KEY = 'test_key';
+    mockSendReal.mockResolvedValueOnce({
+      error: { code: 'rate_limit_exceeded', message: 'Too many requests' },
+    });
+
+    const result = await registerForEvent(valid);
+
+    expect(result).toEqual({ ok: true });
+    expect(mockSendReal).toHaveBeenCalledTimes(1);
+
+    expect(lastEmailLogUpdate).toEqual({
+      registration_id: regId,
+      status: 'failed',
+      error: 'rate_limit_exceeded: Too many requests',
+    });
+    expect(lastEmailLogUpdateId).toBe(logId);
   });
 });
