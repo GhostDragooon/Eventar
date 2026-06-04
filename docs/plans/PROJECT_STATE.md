@@ -1,5 +1,5 @@
 # Project State — Eventar
-_Last updated: 2026-06-02 (post-R1 + M1 + Q19 access policy refinement)_
+_Last updated: 2026-06-04 (Phase 7 Resend integration shipped — credentials pending)_
 
 > Source of truth for "what's active vs forward-looking."
 > **Read this BEFORE writing any code.** Updated at the end of each phase.
@@ -7,27 +7,45 @@ _Last updated: 2026-06-02 (post-R1 + M1 + Q19 access policy refinement)_
 
 ---
 
-## ACTIVE PHASE — Phase 7 (next)
+## ACTIVE PHASE — Phase 8 (next) — Vercel deploy
 
-**Goal.** Replace stubbed `console.log` email sends with real Resend calls + React Email templates. **Email #1 only** (registration confirmation) — #2 (60-min reminder) and #3 (10-min-after survey invite) wait for Phase 9 (pg_cron).
+**Goal.** Deploy Eventar to Vercel against the production Supabase project. First public URL; first real email infrastructure exercised end-to-end. Operational work primarily, not code.
 
-**Active files to touch:**
-- `app/(public)/events/[id]/actions.ts::registerForEvent` — replace the `console.log` at step 6 with `resend.emails.send`
-- NEW: `emails/confirmation.tsx` — React Email template
-- NEW: `lib/resend.ts` — single Resend client (`'server-only'`)
+**Active surface (operational + minimal code):**
+- Vercel project creation; link to GitHub repo `GhostDragooon/Eventar`.
+- Env vars in Vercel: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL` (set to canonical Vercel URL or custom domain), `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `NEXT_PUBLIC_MAPBOX_TOKEN`.
+- Domain verification on Resend before first prod registration (otherwise sandbox sender `onboarding@resend.dev` is fine but recipient sees it).
+- Remove `lib/devEmailStub.ts` per `docs/plans/2026-06-04-phase-7-resend-design.md` §"Removal protocol" once `RESEND_API_KEY` is in `.env.local` AND a local smoke registration confirms the real Resend path works.
 
 **Active discipline:**
-- CLAUDE.md hard rule 2: `email_log` row inserted FIRST, send SECOND. The `registerForEvent` action already does this; do not reorder.
-- CLAUDE.md rule 10: UUIDs only in logs; never recipient email or name.
-- Q18A/B (RLS-silent-fail guard + revalidatePath) still required for any new mutation.
+- CLAUDE.md hard rule 7 (no premature externals) — Vercel is now the canonical deploy, but pg_cron still waits for Phase 9.
+- All Phase-8 deploy gates are CLOSED (see CARRIED-FORWARD below).
 
 ---
 
-## JUST SHIPPED — Phase 6.5 (dashboard + per-event details)
+## JUST SHIPPED — Phase 7 (Resend integration — code only; credentials pending)
 
-5-state lifecycle DERIVED from existing schema + 1 new column (`registration_close_at`). New surfaces: `/dashboard` General Category band + lifecycle-grouped event sections; new `/events/[id]/details` route with Registration / Attendance / Feedback sections. New patterns codified: RLS-silent-fail guard, revalidatePath discipline, single-clock-per-request.
+Real production email infrastructure landed in 7 commits (2026-06-04). The code is production-grade; only the `RESEND_API_KEY` is missing. Until it's added in `.env.local`, registrations route through the parallel `lib/devEmailStub.ts` (returns `{ skipped: true }`, leaves `email_log.status='queued'`) — exactly the design's "build temp in parallel for testing; remove without fuss" goal.
 
-See [[02 — Decisions Log#Q17]] + [[02 — Decisions Log#Q18]] and `docs/plans/handoff_01062026.md`.
+**Commits:**
+- `2a0a73c` chore(deps): resend + @react-email/components + @react-email/render
+- `089242f` + `d579900` feat(email): lib/devEmailStub.ts (+ PII test broadening fix)
+- `a9f8eff` feat(email): lib/resend.ts production facade
+- `5762f82` feat(email): emails/confirmation.tsx React Email template
+- `7d7a2c4` feat(email): wire facade into registerForEvent step 6+7
+- `ec388b2` docs(env): document RESEND_API_KEY + RESEND_FROM_EMAIL
+
+**Test count:** 169 → 180 (+11 tests across 4 new test files).
+
+**Design + plan + smoke notes:** `docs/plans/2026-06-04-phase-7-resend-design.md` (fc938e5) + `docs/plans/2026-06-04-phase-7-resend.md` (a3520e5).
+
+**Architectural patterns codified:**
+- Two-file separation (`lib/resend.ts` production / `lib/devEmailStub.ts` removable) over a single facade-with-branches, because removal cost is the design metric.
+- Env switch INSIDE registerForEvent (not at module top) so per-test env mutations work without `vi.resetModules()`.
+- Production code throws on missing `RESEND_API_KEY` (Rule 12 — misconfig must surface); dev stub returns `{ skipped }` instead.
+- React Email template renders to inline-styled HTML; props pre-formatted at the call site so the template imports no request-context helpers.
+
+**One known upstream finding:** `@react-email/components@1.0.12` is marked deprecated. Resend's docs now point to `@react-email/ui` as the successor. Decision was to ship with the deprecated package (it's the latest version, Resend maintains it, only one template uses it) and migrate as a small follow-up. See commit `2a0a73c` body for the full rationale.
 
 ---
 
@@ -36,36 +54,38 @@ See [[02 — Decisions Log#Q17]] + [[02 — Decisions Log#Q18]] and `docs/plans/
 Things to hold in mind during the ACTIVE build, **NOT to act on now**:
 
 - **Phase-8 deploy gates** — **all 4 closed** (R1 security batch + M1 drift reconcile):
-  1. ✅ **CLOSED** — PII enumeration oracle on `/checkin/confirm`: name dropped from page + ConfirmButton; full_name removed from SELECT (commit `7c5bcbd`). Velocity side closed by rate limits (commit `20ac68f`).
-  2. ✅ **CLOSED** — `Math.random` → `crypto.randomInt`; codes widened 4→6 chars; old 4-char codes grandfathered (commit `659eee0`).
-  3. ✅ **CLOSED** — Host-header spoofing: `lib/origin.ts::getRequestOrigin` reads `NEXT_PUBLIC_SITE_URL` first, throws in prod if unset (commit `561d2cb`).
-  4. ✅ **CLOSED** — Migration history drift reconciled 2026-06-02: remote `supabase_migrations.schema_migrations` realigned to local file versions (DELETE 5 stale remote rows + INSERT 5 local-only). `supabase db push` no longer blocks. `list_migrations` ↔ `ls supabase/migrations/` diff exits 0.
-- **Phase 9 (pg_cron)** will read `email_log` — do NOT rename the `purpose` enum values during Phase 7 (`confirmation`, `reminder`, `survey`).
-- **`registration_close_at` editor** lives ONLY on `/details`. Do not add a duplicate surface in `/edit` during Phase 7.
-- **Three-layer validation** (form → Zod → DB constraint) for every new mutation (vault `Security + Robustness` §1).
+  1. ✅ **CLOSED** — PII enumeration oracle on `/checkin/confirm`: name dropped + rate-limited (commits `7c5bcbd` + `20ac68f`).
+  2. ✅ **CLOSED** — `Math.random` → `crypto.randomInt`; codes widened 4→6 chars (commit `659eee0`).
+  3. ✅ **CLOSED** — Host-header spoofing: `lib/origin.ts::getRequestOrigin` reads `NEXT_PUBLIC_SITE_URL` first (commit `561d2cb`).
+  4. ✅ **CLOSED** — Migration history drift reconciled 2026-06-02 (`list_migrations` ↔ `ls supabase/migrations/` diff exits 0).
+- **devEmailStub removal protocol** — Once `RESEND_API_KEY` is set in `.env.local` AND a smoke registration confirms the real Resend path works, remove the temp per `docs/plans/2026-06-04-phase-7-resend-design.md` §"Removal protocol." ~3 minutes. Until then, ALL registrations log "[email queued]" — no real email sends.
+- **Phase 9 (pg_cron)** will read `email_log` — do NOT rename the `purpose` enum values (`confirmation`, `reminder`, `survey`).
+- **Three-layer validation** (form → Zod → DB constraint) for every new mutation.
 - **`requireStaff()` at top of every staff Server Action** — hard rule.
 - **Q18 patterns** (RLS-silent-fail + revalidatePath) — required for every mutation Server Action.
-- **Rate-limit any new public Server Action / GET endpoint**. The infrastructure (`lib/rateLimit.ts::rateLimitByIp`) is live; new surfaces should opt in. Existing limits: selfCheckIn/submitSurvey 10/min/IP · registerForEvent 30/min/IP · GET /checkin/confirm + /survey 60/min/IP.
+- **Rate-limit any new public Server Action / GET endpoint** via `lib/rateLimit.ts::rateLimitByIp`. Existing limits: selfCheckIn/submitSurvey 10/min/IP · registerForEvent 30/min/IP · GET /checkin/confirm + /survey 60/min/IP.
 - **`NEXT_PUBLIC_SITE_URL`** must be set in Vercel env before Phase 8 deploy. `lib/origin.ts` throws in production if missing.
-- **Owner-only by default for mutation surfaces** (Q19, 2026-06-02). New staff mutation pages (`/events/[id]/X` where X edits or controls something) should gate at page entry: read `event.created_by`, redirect non-owners to `/details`. New mutation actions use `supabaseServer()` so RLS enforces ownership. `supabaseAdmin()` is reserved for documented exceptions (public anon flows like `registerForEvent`). Managers retain READ access via existing RLS to all events/registrations/surveys — `/dashboard`, `/details`, `/analytics` remain manager-visible.
+- **Owner-only by default for mutation surfaces** (Q19, 2026-06-02). New mutation pages gate at page entry via `event.created_by !== staff.id` redirect; new mutation actions use `supabaseServer()` so RLS enforces. `supabaseAdmin()` only for documented exceptions (public anon flows).
+- **`@react-email/components` → `@react-email/ui` migration** — small follow-up post-Phase-8 once the `emails/confirmation.tsx` template is iterating. Single import-path change (or possibly a small JSX rewrite depending on API drift). Not blocking.
 
 ---
 
 ## EXPLICITLY OUT OF SCOPE FOR THE ACTIVE PHASE
 
-Intentionally NOT in Phase 7 — surface as "for later" if they come up in conversation:
+Intentionally NOT in Phase 8 — surface as "for later" if they come up in conversation:
 
-- **Real edit form** for events. `/edit` is currently read-only. F#5 in `docs/plans/handoff_01062026.md` is an open decision.
-- **`/api/*` routes.** Server Actions remain the in-app public-write surface. `/api/*` reserved for Phase 9.
+- **Real edit form** for events. `/edit` remains read-only + Publish for owners only (Q19).
+- **`/api/*` routes.** Server Actions remain the in-app public-write surface. `/api/*` reserved for Phase 9 cron callbacks.
 - **Manager-specific UI.** RLS scopes visibility; no role-branching per Q16 Decision B.
 - **Email #2 reminder + Email #3 survey-invite sends.** Wait for Phase 9 (pg_cron).
-- **Vercel deploy.** Phase 8.
+- **Phase 9 cron infrastructure.** That's its own phase.
+- **Queued-row backlog sweep.** Per user direction during Phase 7 brainstorm: don't worry about transient stub-era rows.
 
 ---
 
 ## Open decisions
 
-_(none — F#5 resolved by Q19's access policy refinement. The Drafted slice routing question is now moot: non-owners can't reach `/edit` at all; owners see the Publish action prominently on Draft state with no misleading copy.)_
+_(none currently. Phase 8 work is operational; ask the user before adding non-deployment scope.)_
 
 ---
 
@@ -80,8 +100,8 @@ _(none — F#5 resolved by Q19's access policy refinement. The Drafted slice rou
 | 5 | ✅ shipped | `/survey?code=` 5-question categorical template (Q15 schema) |
 | 6 | ✅ shipped | Per-event `/analytics` (categorical distributions, no avg ratings — Q16) |
 | 6.5 | ✅ shipped | Dashboard redesign + per-event `/details` with 5-state lifecycle (Q17) |
-| **7** | **next** | Real Resend sends + React Email templates for Email #1 |
-| 8 | planned | Vercel deploy |
+| 7 | ✅ shipped (code) | Real Resend infrastructure + React Email template for Email #1 — credentials pending in `.env.local` |
+| **8** | **next** | Vercel deploy; env vars + Resend domain verified; first real email out the door |
 | 9 | planned | pg_cron drives Email #2 (60-min reminder) + Email #3 (10-min survey invite) |
 
 ---
