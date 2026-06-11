@@ -7,9 +7,9 @@ type Props = {
 };
 
 export function DaysUntilTile({ days, eventTitle, nextIsLive }: Props) {
-  // Three display modes, picked by the data:
+  // Four display modes, picked by the data:
   //   1. No event coming up → "—" + "No upcoming events"
-  //   2. Next event is in progress now → "Live" + title
+  //   2. Next event is in its live ops window (check-in open → end) → "Live" + title
   //   3. Next event starts today (days===0, not live) → "Today" + title
   //   4. N days away → number + "to {title}"
   let headline: string;

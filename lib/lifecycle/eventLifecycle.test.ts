@@ -51,6 +51,43 @@ describe('computeLifecycle', () => {
     expect(computeLifecycle(baseEvent(), at('2026-06-01T10:00:00Z'))).toBe('live');
   });
 
+  // G11: check-in opens 60 min before start_time (reminder email + QR go out
+  // then), so the live ops window — and the green "Live" pill — starts there.
+  it('published, 30 min before start (check-in window open) → live', () => {
+    expect(
+      computeLifecycle(
+        baseEvent({ registration_close_at: '2026-05-29T00:00:00Z' }),
+        at('2026-06-01T09:30:00Z'),
+      ),
+    ).toBe('live');
+  });
+
+  it('published, 60 min + 1 s before start (check-in not yet open) → upcoming', () => {
+    expect(
+      computeLifecycle(
+        baseEvent({ registration_close_at: '2026-05-29T00:00:00Z' }),
+        at('2026-06-01T08:59:59Z'),
+      ),
+    ).toBe('upcoming');
+  });
+
+  it('published, exactly 60 min before start (inclusive boundary) → live', () => {
+    expect(
+      computeLifecycle(
+        baseEvent({ registration_close_at: '2026-05-29T00:00:00Z' }),
+        at('2026-06-01T09:00:00Z'),
+      ),
+    ).toBe('live');
+  });
+
+  it('published, 1s before end_time → live (unchanged)', () => {
+    expect(computeLifecycle(baseEvent(), at('2026-06-01T11:59:59Z'))).toBe('live');
+  });
+
+  it('published, 1s after end_time → completed (unchanged)', () => {
+    expect(computeLifecycle(baseEvent(), at('2026-06-01T12:00:01Z'))).toBe('completed');
+  });
+
   it('published, at end_time boundary (inclusive) → live', () => {
     expect(computeLifecycle(baseEvent(), at('2026-06-01T12:00:00Z'))).toBe('live');
   });

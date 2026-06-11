@@ -1,5 +1,9 @@
 export type Lifecycle = 'drafted' | 'registering' | 'upcoming' | 'live' | 'completed' | 'cancelled';
 
+// G11: check-in opens 60 min before start_time — the reminder email with the
+// personal QR goes out then, so the live ops window starts pre-start.
+export const CHECKIN_OPEN_MINUTES = 60;
+
 // Intentional minimal coupling — the DB row carries far more columns,
 // but the lifecycle derivation only needs these four.
 export type EventLifecycleRow = {
@@ -24,7 +28,7 @@ export function computeLifecycle(event: EventLifecycleRow, nowMs: number): Lifec
     : null;
 
   if (nowMs > endMs) return 'completed';
-  if (nowMs >= startMs) return 'live';
+  if (nowMs >= startMs - CHECKIN_OPEN_MINUTES * 60_000) return 'live';
   if (closeMs != null && nowMs >= closeMs) return 'upcoming';
   return 'registering';
 }
