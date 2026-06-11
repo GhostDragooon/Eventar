@@ -9,6 +9,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { rateLimitByIp } from '@/lib/rateLimit';
 import { registrationInputSchema, type RegisterResult } from './schema';
 import { generateRegistrationCode } from '@/lib/registrationCode';
+import { CHECKIN_OPEN_MINUTES } from '@/lib/lifecycle/eventLifecycle';
 // TEMP: dual import while RESEND_API_KEY is being set up.
 // REMOVE both lines + the env-switch below once the key is in .env.local.
 // See docs/plans/2026-06-04-phase-7-resend-design.md §"Removal protocol".
@@ -58,11 +59,31 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
   // max_attendees + title for the capacity check + stub message.
   const { data: event } = await anon
     .from('events')
-    .select('id, title, status, max_attendees, start_time, timezone, venue_name, venue_address')
+    .select('id, title, status, max_attendees, start_time, end_time, timezone, venue_name, venue_address, registration_close_at')
     .eq('id', event_id)
     .maybeSingle();
   if (!event || event.status !== 'published') {
     return { error: 'Registrations are not open for this event.' };
+  }
+
+  // Step 2b — registration window gate. Registration closes at
+  // registration_close_at if set, and unconditionally once the check-in
+  // window opens (start − CHECKIN_OPEN_MINUTES, same boundary the
+  // lifecycle's `live` state uses — G11). Ended events get a distinct
+  // message. Display layers hide the form earlier; this is the
+  // server-side layer of the three-layer validation rule.
+  const nowMs = Date.now();
+  if (nowMs > new Date(event.end_time).getTime()) {
+    return { error: 'This event has already ended.' };
+  }
+  const checkinOpensMs =
+    new Date(event.start_time).getTime() - CHECKIN_OPEN_MINUTES * 60_000;
+  const closesMs =
+    event.registration_close_at != null
+      ? Math.min(new Date(event.registration_close_at).getTime(), checkinOpensMs)
+      : checkinOpensMs;
+  if (nowMs >= closesMs) {
+    return { error: 'Registration for this event has closed.' };
   }
 
   // Step 3 — capacity check. MUST use admin because anon has no SELECT

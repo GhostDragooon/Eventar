@@ -67,9 +67,11 @@ type EventRow = {
   status: string;
   max_attendees: number | null;
   start_time: string;
+  end_time: string;
   timezone: string;
   venue_name: string;
   venue_address: string | null;
+  registration_close_at: string | null;
 };
 let mockEventRow: EventRow | null = null;
 let lastEmailLogUpdate: Record<string, unknown> | null = null;
@@ -181,18 +183,29 @@ describe('registrationInputSchema', () => {
   });
 });
 
+// Event times are relative to "now" so the lifecycle gate (registration must
+// be open at submit time) sees a future event regardless of when the suite
+// runs. Hardcoded dates here would make the suite start failing the day the
+// fixture event "happens".
+const HOUR = 3_600_000;
+function futureEventRow(): EventRow {
+  return {
+    id: eventId,
+    title: 'Workshop on Tuesdays',
+    status: 'published',
+    max_attendees: null, // skip capacity check
+    start_time: new Date(Date.now() + 72 * HOUR).toISOString(),
+    end_time: new Date(Date.now() + 75 * HOUR).toISOString(),
+    timezone: 'Europe/Vilnius',
+    venue_name: 'Office HQ',
+    venue_address: 'Gedimino 1, Vilnius',
+    registration_close_at: null,
+  };
+}
+
 describe('registerForEvent — Phase 7 send-side behaviour', () => {
   beforeEach(() => {
-    mockEventRow = {
-      id: eventId,
-      title: 'Workshop on Tuesdays',
-      status: 'published',
-      max_attendees: null, // skip capacity check
-      start_time: '2026-06-15T09:00:00.000Z',
-      timezone: 'Europe/Vilnius',
-      venue_name: 'Office HQ',
-      venue_address: 'Gedimino 1, Vilnius',
-    };
+    mockEventRow = futureEventRow();
     lastEmailLogUpdate = null;
     lastEmailLogUpdateId = null;
     mockSendReal.mockReset();
@@ -249,5 +262,58 @@ describe('registerForEvent — Phase 7 send-side behaviour', () => {
       error: 'rate_limit_exceeded: Too many requests',
     });
     expect(lastEmailLogUpdateId).toBe(logId);
+  });
+});
+
+describe('registerForEvent — registration window gate', () => {
+  beforeEach(() => {
+    mockEventRow = futureEventRow();
+    lastEmailLogUpdate = null;
+    lastEmailLogUpdateId = null;
+    mockSendReal.mockReset();
+    mockSendStub.mockReset();
+    delete process.env.RESEND_API_KEY;
+  });
+
+  it('rejects when registration_close_at has passed', async () => {
+    mockEventRow!.registration_close_at = new Date(Date.now() - 1 * HOUR).toISOString();
+
+    const result = await registerForEvent(valid);
+
+    expect(result).toEqual({ error: 'Registration for this event has closed.' });
+    // No side effects: nothing sent, no email_log touched.
+    expect(mockSendStub).not.toHaveBeenCalled();
+    expect(mockSendReal).not.toHaveBeenCalled();
+    expect(lastEmailLogUpdate).toBeNull();
+  });
+
+  it('rejects once the check-in window opens (60 min before start), even with no close date', async () => {
+    mockEventRow!.start_time = new Date(Date.now() + 0.5 * HOUR).toISOString();
+    mockEventRow!.end_time = new Date(Date.now() + 3 * HOUR).toISOString();
+
+    const result = await registerForEvent(valid);
+
+    expect(result).toEqual({ error: 'Registration for this event has closed.' });
+    expect(mockSendStub).not.toHaveBeenCalled();
+  });
+
+  it('rejects when the event has already ended', async () => {
+    mockEventRow!.start_time = new Date(Date.now() - 5 * HOUR).toISOString();
+    mockEventRow!.end_time = new Date(Date.now() - 2 * HOUR).toISOString();
+
+    const result = await registerForEvent(valid);
+
+    expect(result).toEqual({ error: 'This event has already ended.' });
+    expect(mockSendStub).not.toHaveBeenCalled();
+  });
+
+  it('accepts when registration_close_at is still in the future', async () => {
+    mockEventRow!.registration_close_at = new Date(Date.now() + 1 * HOUR).toISOString();
+    mockSendStub.mockResolvedValueOnce({ skipped: true });
+
+    const result = await registerForEvent(valid);
+
+    expect(result).toEqual({ ok: true });
+    expect(mockSendStub).toHaveBeenCalledTimes(1);
   });
 });
