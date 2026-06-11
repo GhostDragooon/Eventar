@@ -2,20 +2,15 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-/* Redesign (2026-06-11): single Geist family everywhere. The two sans
-   instances alias the legacy var names (--font-inter, --font-source-serif)
-   so every existing Tailwind font utility in globals.css keeps working
-   with zero downstream edits. Geist is a variable font — omitting
-   `weight` loads the full 100–900 axis (the redesign uses 400–800). */
+/* Redesign (2026-06-11): single Geist family everywhere. The one sans
+   instance aliases the legacy var name --font-inter; globals.css defines
+   --font-source-serif: var(--font-inter) so every existing Tailwind font
+   utility keeps working with zero downstream edits. Geist is a variable
+   font — omitting `weight` loads the full 100–900 axis (the redesign
+   uses 400–800). */
 const geistSans = Geist({
   subsets: ["latin"],
   variable: "--font-inter",
-  display: "swap",
-});
-
-const geistHeadline = Geist({
-  subsets: ["latin"],
-  variable: "--font-source-serif",
   display: "swap",
 });
 
@@ -38,7 +33,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistHeadline.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
         {/* Material Symbols Outlined — mockups use it inline throughout.

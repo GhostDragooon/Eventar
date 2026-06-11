@@ -2,23 +2,26 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+/* A.2: dark: utilities follow prefers-color-scheme (Tailwind v4 default).
+   No .dark class/toggle exists. */
 
 /* ---------------------------------------------------------------------------
- * Phase 4.6 — Material 3 indigo design system
+ * Redesign (2026-06-11) — Vercel-canonical palette on the M3 token grid
  *
- * Tokens lifted verbatim from the eight HTML mockups the user supplied
- * (deep indigo primary #142175, Source Serif 4 headlines + Inter body,
- * surface-container palette). All eight mockups share the same `colors`
- * map; this file is the single source of truth.
+ * Token NAMES are unchanged from the Phase 4.6 M3 system (every component
+ * classname keeps working); only the VALUES are remapped to the Vercel
+ * design language: neutral near-black primary, one accent blue (#0070F3
+ * light / #3291FF dark), neutral gray surfaces, and exactly four chromatic
+ * hues system-wide (accent blue, success green, warning amber, danger red).
+ * Source of truth: docs/plans/eventar-design-patterns.md §"Source-of-truth
+ * tokens" + §7a (one color per concept).
  *
  * shadcn-ui CSS variables (--background, --primary, --card, …) are
  * retargeted at the bottom of :root to point at the M3 tokens so existing
  * components/ui/* primitives inherit the new look with zero API changes.
  *
- * Dark mode: deferred. The .dark block below is the original shadcn dark
- * palette and only activates if the `dark` class is explicitly added to
- * <html> (it isn't anywhere in the app today). Revisit in Phase 7+.
+ * Dark mode: system-default only (prefers-color-scheme media query at the
+ * bottom of this file). No toggle, no .dark class.
  * ------------------------------------------------------------------------- */
 
 @theme inline {
@@ -75,6 +78,12 @@
   --color-error-container: var(--error-container);
   --color-on-error-container: var(--on-error-container);
 
+  /* Status hues (redesign §7a — one color per concept). New token names;
+     consumed by status pills / live indicators from Task A.3 onward. */
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
   --color-inverse-surface: var(--inverse-surface);
   --color-inverse-on-surface: var(--inverse-on-surface);
   --color-inverse-primary: var(--inverse-primary);
@@ -104,14 +113,16 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Fonts — Source Serif 4 for display/headlines, Inter for body/labels */
+  /* Fonts — single Geist family everywhere (redesign 2026-06-11).
+     Legacy var names kept so every existing font utility keeps working;
+     --font-source-serif is aliased to Geist in :root below. */
   --font-sans: var(--font-inter), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-source-serif), Georgia, serif;
-  --font-display: var(--font-source-serif), Georgia, serif;
-  --font-headline-lg: var(--font-source-serif), Georgia, serif;
-  --font-headline-md: var(--font-source-serif), Georgia, serif;
-  --font-headline-sm: var(--font-source-serif), Georgia, serif;
+  --font-heading: var(--font-source-serif), system-ui, sans-serif;
+  --font-display: var(--font-source-serif), system-ui, sans-serif;
+  --font-headline-lg: var(--font-source-serif), system-ui, sans-serif;
+  --font-headline-md: var(--font-source-serif), system-ui, sans-serif;
+  --font-headline-sm: var(--font-source-serif), system-ui, sans-serif;
   --font-title-lg: var(--font-inter), system-ui, sans-serif;
   --font-body-lg: var(--font-inter), system-ui, sans-serif;
   --font-body-md: var(--font-inter), system-ui, sans-serif;
@@ -174,61 +185,82 @@
 }
 
 :root {
-  /* --- Material 3 light palette (mockup source of truth) --- */
-  --primary: #142175;
+  /* --- Vercel-canonical light palette (M3 token names retained) --- */
+
+  /* A.2: theme native UI (date pickers, selects, scrollbars, autofill) */
+  color-scheme: light;
+
+  /* Single Geist family: legacy headline var aliases the sans var so the
+     headline/display font utilities resolve to Geist with one next/font
+     instance in app/layout.tsx. */
+  --font-source-serif: var(--font-inter);
+
+  /* Primary = neutral near-black (Vercel inverted-polarity primary).
+     A.2: primary-container/-fixed mapped to the accent tint #E8F1FE — the
+     chromatic role of old indigo moves to the single accent blue. */
+  --primary: #0a0a0a;
   --on-primary: #ffffff;
-  --primary-container: #2e3a8c;
-  --on-primary-container: #9ea9ff;
-  --primary-fixed: #dfe0ff;
-  --primary-fixed-dim: #bcc3ff;
-  --on-primary-fixed: #000d60;
-  --on-primary-fixed-variant: #333f91;
+  --primary-container: #e8f1fe;
+  --on-primary-container: #0070f3;
+  --primary-fixed: #e8f1fe;
+  --primary-fixed-dim: #c8dffc; /* A.2: one-step-stronger accent tint */
+  --on-primary-fixed: #0a0a0a;
+  --on-primary-fixed-variant: #0070f3;
 
-  --secondary: #565e74;
+  /* Secondary collapses to neutrals (§7a: "off/done/context" = gray). */
+  --secondary: #525252;
   --on-secondary: #ffffff;
-  --secondary-container: #dae2fd;
-  --on-secondary-container: #5c647a;
-  --secondary-fixed: #dae2fd;
-  --secondary-fixed-dim: #bec6e0;
-  --on-secondary-fixed: #131b2e;
-  --on-secondary-fixed-variant: #3f465c;
+  --secondary-container: #f4f4f5;
+  --on-secondary-container: #0a0a0a;
+  --secondary-fixed: #f4f4f5;
+  --secondary-fixed-dim: #eaeaea;
+  --on-secondary-fixed: #0a0a0a;
+  --on-secondary-fixed-variant: #525252;
 
-  --tertiary: #4b2000;
+  /* Tertiary IS the accent blue (was burnt orange). */
+  --tertiary: #0070f3;
   --on-tertiary: #ffffff;
-  --tertiary-container: #6d3200;
-  --on-tertiary-container: #f09b63;
-  --tertiary-fixed: #ffdbc7;
-  --tertiary-fixed-dim: #ffb689;
-  --on-tertiary-fixed: #311300;
-  --on-tertiary-fixed-variant: #723603;
+  --tertiary-container: #e8f1fe;
+  --on-tertiary-container: #0070f3;
+  --tertiary-fixed: #e8f1fe;
+  --tertiary-fixed-dim: #c8dffc;
+  --on-tertiary-fixed: #0a0a0a;
+  --on-tertiary-fixed-variant: #0070f3;
 
-  --surface: #fbf8ff;
-  --surface-bright: #fbf8ff;
-  --surface-dim: #dbd9e1;
-  --surface-container-lowest: #ffffff;
-  --surface-container-low: #f5f2fa;
-  --surface-container: #efedf4;
-  --surface-container-high: #e9e7ef;
-  --surface-container-highest: #e4e1e9;
-  --surface-variant: #e4e1e9;
-  --surface-tint: #4b57aa;
+  --surface: #ffffff;
+  --surface-bright: #ffffff;
+  --surface-dim: #f4f4f5;
+  --surface-container-lowest: #fafafa;
+  --surface-container-low: #fafafa;
+  --surface-container: #fafafa;
+  --surface-container-high: #f4f4f5;
+  --surface-container-highest: #f4f4f5;
+  --surface-variant: #f4f4f5;
+  --surface-tint: #0070f3;
 
-  --background: #fbf8ff;
-  --on-background: #1b1b21;
-  --on-surface: #1b1b21;
-  --on-surface-variant: #454651;
+  --background: #ffffff;
+  --on-background: #0a0a0a;
+  --on-surface: #0a0a0a;
+  --on-surface-variant: #525252;
 
-  --outline: #767682;
-  --outline-variant: #c6c5d3;
+  --outline: #8f8f8f;
+  --outline-variant: #eaeaea;
 
-  --error: #ba1a1a;
+  --error: #dc2626;
   --on-error: #ffffff;
-  --error-container: #ffdad6;
-  --on-error-container: #93000a;
+  --error-container: #fee2e2; /* A.2: red tint, mirrors accent-tint pattern */
+  --on-error-container: #dc2626;
 
-  --inverse-surface: #303036;
-  --inverse-on-surface: #f2eff7;
-  --inverse-primary: #bcc3ff;
+  /* Status hues (redesign §7a). Danger aliases error by design. */
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger: #dc2626;
+
+  /* A.2: inverse-* = the dark-scheme equivalents (dark surface, light text,
+     dark-mode accent) — unused by components today, kept coherent. */
+  --inverse-surface: #171717;
+  --inverse-on-surface: #fafafa;
+  --inverse-primary: #3291ff;
 
   /* --- shadcn-ui var retarget (bridge to M3 palette) ---
      Existing components/ui/* primitives consume these. Retargeting here
@@ -262,35 +294,73 @@
   --sidebar-ring: var(--primary);
 }
 
-/* Dark mode: deferred. Original shadcn dark palette preserved — only
-   activates if `dark` class is added to <html> (it isn't, anywhere). */
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+/* Dark mode: system-default only (no toggle, no .dark class). Only the M3
+   base tokens flip — the shadcn bridge vars above are var() chains into
+   these tokens, so they follow automatically. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* A.2: theme native UI (date pickers, selects, scrollbars, autofill) */
+    color-scheme: dark;
+
+    --primary: #ffffff;
+    --on-primary: #0a0a0a;
+    --primary-container: rgba(50, 145, 255, 0.15);
+    --on-primary-container: #3291ff;
+    --primary-fixed: rgba(50, 145, 255, 0.15);
+    --primary-fixed-dim: rgba(50, 145, 255, 0.25);
+    --on-primary-fixed: #fafafa;
+    --on-primary-fixed-variant: #3291ff;
+
+    --secondary: #a1a1aa;
+    --on-secondary: #0a0a0a;
+    --secondary-container: #262626;
+    --on-secondary-container: #fafafa;
+    --secondary-fixed: #262626;
+    --secondary-fixed-dim: #333333;
+    --on-secondary-fixed: #fafafa;
+    --on-secondary-fixed-variant: #a1a1aa;
+
+    --tertiary: #3291ff;
+    --on-tertiary: #0a0a0a;
+    --tertiary-container: rgba(50, 145, 255, 0.15);
+    --on-tertiary-container: #3291ff;
+    --tertiary-fixed: rgba(50, 145, 255, 0.15);
+    --tertiary-fixed-dim: rgba(50, 145, 255, 0.25);
+    --on-tertiary-fixed: #fafafa;
+    --on-tertiary-fixed-variant: #3291ff;
+
+    --surface: #0a0a0a;
+    --surface-bright: #171717;
+    --surface-dim: #000000;
+    --surface-container-lowest: #171717;
+    --surface-container-low: #171717;
+    --surface-container: #171717;
+    --surface-container-high: #262626;
+    --surface-container-highest: #262626;
+    --surface-variant: #262626;
+    --surface-tint: #3291ff;
+
+    --background: #000000; /* pure black — Vercel canonical */
+    --on-background: #fafafa;
+    --on-surface: #fafafa;
+    --on-surface-variant: #a1a1aa;
+
+    --outline: #525252;
+    --outline-variant: #262626;
+
+    --error: #f87171;
+    --on-error: #0a0a0a;
+    --error-container: rgba(248, 113, 113, 0.15);
+    --on-error-container: #f87171;
+
+    --success: #4ade80;
+    --warning: #fcd34d;
+    --danger: #f87171;
+
+    --inverse-surface: #fafafa;
+    --inverse-on-surface: #0a0a0a;
+    --inverse-primary: #0070f3;
+  }
 }
 
 @layer base {
