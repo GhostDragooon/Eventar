@@ -22,6 +22,14 @@ describe('surveyInputSchema', () => {
     if (r.success) expect(r.data.future_preferences).toEqual([]);
   });
 
+  it('accepts the event_format value_proposition slug (4th option)', () => {
+    expect(surveyInputSchema.safeParse({ value_proposition: 'event_format' }).success).toBe(true);
+  });
+
+  it('rejects an unknown value_proposition slug', () => {
+    expect(surveyInputSchema.safeParse({ value_proposition: 'banana' }).success).toBe(false);
+  });
+
   it('rejects an unknown session_format slug', () => {
     expect(surveyInputSchema.safeParse({ session_format: 'banana' }).success).toBe(false);
   });

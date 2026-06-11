@@ -9,7 +9,7 @@ export const SESSION_FORMAT_VALUES = [
   'scientific_presentations', 'clinical_panels', 'interactive_qa', 'peer_networking',
 ] as const;
 export const VALUE_PROPOSITION_VALUES = [
-  'clinical_application', 'faculty_caliber', 'peer_collaboration',
+  'clinical_application', 'faculty_caliber', 'peer_collaboration', 'event_format',
 ] as const;
 export const EXPECTATIONS_VALUES = [
   'exceeded', 'met', 'partially', 'not_met',
@@ -35,6 +35,7 @@ export const VALUE_PROPOSITION_OPTIONS: Option<ValueProposition>[] = [
   { value: 'clinical_application', label: 'Practical insights for clinical application' },
   { value: 'faculty_caliber',      label: 'Scientific caliber of faculty' },
   { value: 'peer_collaboration',   label: 'Peer-to-peer collaboration opportunities' },
+  { value: 'event_format',         label: 'Event format and organisation' },
 ];
 export const EXPECTATIONS_OPTIONS: Option<Expectation>[] = [
   { value: 'exceeded',  label: 'Exceeded' },
