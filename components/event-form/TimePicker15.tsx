@@ -115,11 +115,11 @@ export function TimePicker15({
         onClick={() => !disabled && (open ? setOpen(false) : openPicker())}
         onKeyDown={onTriggerKey}
         className={
-          'w-full flex items-center justify-between rounded-lg border bg-surface-container-lowest px-md py-sm transition-colors text-left ' +
+          'w-full flex items-center justify-between rounded-lg border px-md py-sm transition-colors text-left ' +
           'focus:outline-none focus:ring-1 ' +
           (invalid
-            ? 'border-error bg-error-container/10 focus:border-error focus:ring-error/40'
-            : 'border-outline-variant focus:border-primary focus:ring-primary') +
+            ? 'border-error bg-error-container focus:border-error focus:ring-error/40'
+            : 'border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-primary') +
           (disabled ? ' opacity-50 cursor-not-allowed' : ' cursor-pointer')
         }
       >

@@ -121,7 +121,7 @@ export default function RegisterCard({ eventId, maxAttendees, currentCount }: Pr
         {errorMessage && (
           <p
             role="alert"
-            className="font-body-md text-body-md text-error bg-error-container/20 border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
+            className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
           >
             <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden>
               warning

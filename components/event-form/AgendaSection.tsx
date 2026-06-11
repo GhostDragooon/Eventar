@@ -32,10 +32,10 @@ const RICH_KINDS = ['workshop','seminar','webinar','scientific_program','panel',
 const FILLER_KINDS: readonly BlockKind[] = ['break','transition'];
 
 // Base input styling; appended with error variant when touched && invalid.
-const inputBase = "w-full border rounded-lg px-md py-sm bg-surface-container-lowest text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 transition-colors";
-const inputOk   = "border-outline-variant focus:border-primary focus:ring-primary";
+const inputBase = "w-full border rounded-lg px-md py-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 transition-colors";
+const inputOk   = "bg-surface-container-lowest border-outline-variant focus:border-primary focus:ring-primary";
 // Signal Red — applied per the user's instruction for missing essential entries.
-const inputErr  = "border-error focus:border-error focus:ring-error/40 bg-error-container/10";
+const inputErr  = "border-error focus:border-error focus:ring-error/40 bg-error-container";
 
 function emptyTopic(): TopicDraft {
   return { title: '', speaker_name: '', speaker_credential: '', speaker_affiliation: '' };
@@ -374,7 +374,7 @@ function BlockErrorBanner({
   return (
     <p
       role="alert"
-      className="font-body-md text-body-md text-error bg-error-container/20 border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
+      className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
     >
       <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden>warning</span>
       <span>
@@ -485,7 +485,7 @@ function BlockEditor({ block, parallel, touched, errors, onTouch, onChange, onRe
               key={i}
               className={
                 'rounded-lg p-md mb-sm space-y-sm border ' +
-                (showTopicRed ? 'border-error bg-error-container/5' : 'border-outline-variant')
+                (showTopicRed ? 'border-error' : 'border-outline-variant')
               }
             >
               <div className="flex items-center justify-between">

@@ -81,7 +81,12 @@
   /* Status hues (redesign §7a — one color per concept). New token names;
      consumed by status pills / live indicators from Task A.3 onward. */
   --color-success: var(--success);
+  --color-on-success: var(--on-success);
+  --color-success-container: var(--success-container);
+  --color-on-success-container: var(--on-success-container);
   --color-warning: var(--warning);
+  --color-warning-container: var(--warning-container);
+  --color-on-warning-container: var(--on-warning-container);
   --color-danger: var(--danger);
 
   --color-inverse-surface: var(--inverse-surface);
@@ -251,9 +256,15 @@
   --error-container: #fee2e2; /* A.2: red tint, mirrors accent-tint pattern */
   --on-error-container: #dc2626;
 
-  /* Status hues (redesign §7a). Danger aliases error by design. */
+  /* Status hues (redesign §7a). Danger aliases error by design.
+     Containers follow the error-container pattern: light = solid tints. */
   --success: #16a34a;
+  --on-success: #052e16; /* dark green — readable on --success in both modes */
+  --success-container: #dcfce7;
+  --on-success-container: #166534;
   --warning: #d97706;
+  --warning-container: #fef3c7;
+  --on-warning-container: #92400e;
   --danger: #dc2626;
 
   /* A.2: inverse-* = the dark-scheme equivalents (dark surface, light text,
@@ -353,8 +364,14 @@
     --error-container: rgba(248, 113, 113, 0.15);
     --on-error-container: #f87171;
 
+    /* Dark containers = translucent (spec pill table, glassmorphic). */
     --success: #4ade80;
+    --on-success: #052e16;
+    --success-container: rgba(74, 222, 128, 0.15);
+    --on-success-container: #4ade80;
     --warning: #fcd34d;
+    --warning-container: rgba(252, 211, 77, 0.15);
+    --on-warning-container: #fcd34d;
     --danger: #f87171;
 
     --inverse-surface: #fafafa;
@@ -394,10 +411,16 @@
  * ------------------------------------------------------------------------- */
 
 @keyframes livePillBgPulse {
-  0%, 100% { background-color: rgb(from var(--error) r g b); }
-  50%      { background-color: rgb(from var(--error) r g b / 0.55); }
+  0%, 100% { background-color: rgb(from var(--success) r g b); }
+  50%      { background-color: rgb(from var(--success) r g b / 0.55); }
 }
 
 .live-pill-pulse {
   animation: livePillBgPulse 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-pill-pulse {
+    animation: none; /* static bg-success fallback on the pill stands in */
+  }
 }

@@ -14,7 +14,7 @@ export function TileShell({
           {label}
         </h3>
         <span
-          className="material-symbols-outlined text-primary bg-primary-container/10 p-xs rounded-md"
+          className="material-symbols-outlined text-primary bg-primary-container p-xs rounded-md"
           aria-hidden
         >
           {icon}

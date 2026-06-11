@@ -94,7 +94,7 @@ function LoginForm() {
         </button>
 
         {msg && (
-          <p className="font-body-md text-body-md text-on-surface bg-secondary-container/40 border border-secondary-container rounded-lg px-md py-sm flex items-start gap-sm">
+          <p className="font-body-md text-body-md text-on-surface bg-secondary-container border border-secondary-container rounded-lg px-md py-sm flex items-start gap-sm">
             <span className="material-symbols-outlined text-primary text-[18px] mt-[2px]" aria-hidden>
               mark_email_read
             </span>
@@ -104,7 +104,7 @@ function LoginForm() {
         {err && (
           <p
             role="alert"
-            className="font-body-md text-body-md text-error bg-error-container/20 border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
+            className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
           >
             <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden>warning</span>
             <span>{err}</span>

@@ -24,11 +24,11 @@ describe('StatusPill', () => {
     expect(pill.className).toContain('live-pill-pulse');
   });
 
-  it('Live pill has a leading 6px white dot for the broadcast-convention indicator', () => {
+  it('Live pill has a leading 6px dot for the broadcast-convention indicator', () => {
     const { container } = render(<StatusPill lifecycle="live" />);
     const dot = container.querySelector('span > span');
     expect(dot).toBeInTheDocument();
     expect(dot?.className).toContain('rounded-full');
-    expect(dot?.className).toContain('bg-on-error');
+    expect(dot?.className).toContain('bg-on-success');
   });
 });

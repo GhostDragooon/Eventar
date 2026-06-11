@@ -23,7 +23,7 @@ export function AttendanceSection({
     <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm mb-lg">
       <div className="flex items-center gap-sm mb-md">
         <span
-          className="material-symbols-outlined text-primary bg-primary-container/10 p-xs rounded-md"
+          className="material-symbols-outlined text-primary bg-primary-container p-xs rounded-md"
           aria-hidden
         >
           how_to_reg
