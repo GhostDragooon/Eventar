@@ -1,18 +1,27 @@
 import type { Metadata } from "next";
-import { Inter, Source_Serif_4 } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
+/* Redesign (2026-06-11): single Geist family everywhere. The two sans
+   instances alias the legacy var names (--font-inter, --font-source-serif)
+   so every existing Tailwind font utility in globals.css keeps working
+   with zero downstream edits. Geist is a variable font — omitting
+   `weight` loads the full 100–900 axis (the redesign uses 400–800). */
+const geistSans = Geist({
   subsets: ["latin"],
-  weight: ["400", "600", "700"],
   variable: "--font-inter",
   display: "swap",
 });
 
-const sourceSerif = Source_Serif_4({
+const geistHeadline = Geist({
   subsets: ["latin"],
-  weight: ["600", "700"],
   variable: "--font-source-serif",
+  display: "swap",
+});
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-geist-mono",
   display: "swap",
 });
 
@@ -29,7 +38,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${sourceSerif.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistHeadline.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
         {/* Material Symbols Outlined — mockups use it inline throughout.
