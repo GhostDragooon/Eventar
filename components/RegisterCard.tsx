@@ -4,11 +4,13 @@ import { useState, useTransition } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { registerForEvent } from '@/app/(public)/events/[id]/actions';
+import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
 
 type Props = {
   eventId: string;
   maxAttendees: number | null;
   currentCount: number;       // count of existing registrations
+  lifecycle: Lifecycle;       // form shows only while 'registering'
 };
 
 type FormState =
@@ -17,13 +19,42 @@ type FormState =
   | { kind: 'success'; email: string }
   | { kind: 'error'; message: string };
 
-export default function RegisterCard({ eventId, maxAttendees, currentCount }: Props) {
+export default function RegisterCard({ eventId, maxAttendees, currentCount, lifecycle }: Props) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [state, setState] = useState<FormState>({ kind: 'idle' });
   const [, startTransition] = useTransition();
 
   const atCapacity = maxAttendees !== null && currentCount >= maxAttendees;
+
+  // ─── State 6: Registration window closed (form layer of the 3-layer
+  // rule — the Server Action enforces the same boundary authoritatively).
+  // Checked before capacity: "ended/closed" is the truer reason than "full".
+  // `live` gets its own copy: walk-ups scanning the venue poster in the
+  // 60-min check-in window are the most common visitors of this state, and
+  // "closed" alone is a dead end for them — point them to staff instead.
+  if (lifecycle !== 'registering') {
+    const { title, body } =
+      lifecycle === 'completed'
+        ? { title: 'Event ended', body: 'This event has already ended.' }
+        : lifecycle === 'live'
+          ? {
+              title: 'Event in progress',
+              body: 'Registration has closed. If you’re at the venue, please see the event staff at check-in.',
+            }
+          : { title: 'Registration closed', body: 'Registration for this event has closed.' };
+    return (
+      <Card>
+        <div className="flex items-center gap-md mb-sm">
+          <div className="w-10 h-10 rounded-full bg-error-container text-on-error-container flex items-center justify-center" aria-hidden>
+            <span className="material-symbols-outlined text-[20px]">event_busy</span>
+          </div>
+          <h2 className="font-headline-sm text-[20px] text-on-surface">{title}</h2>
+        </div>
+        <p className="font-body-md text-body-md text-on-surface-variant">{body}</p>
+      </Card>
+    );
+  }
 
   // ─── State 5: At-capacity (form disabled, message replaces it) ────────
   if (atCapacity) {

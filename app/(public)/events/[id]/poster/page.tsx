@@ -7,6 +7,7 @@ import { getRequestOrigin } from '@/lib/origin';
 import type { AgendaTopic } from '@/lib/agenda';
 import RegisterCard from '@/components/RegisterCard';
 import PrintPosterButton from '@/components/PrintPosterButton';
+import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +21,7 @@ export default async function EventPosterPage({
   const { data: event } = await supabase
     .from('events')
     .select(
-      'id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status, max_attendees',
+      'id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status, max_attendees, registration_close_at',
     )
     .eq('id', id)
     .maybeSingle();
@@ -28,6 +29,10 @@ export default async function EventPosterPage({
   // RLS filters to status='published' for anon; this 404s drafts + non-existent.
   // Defense-in-depth status check matches the existing /events/[id] page.
   if (!event || event.status !== 'published') notFound();
+
+  // Same form-layer registration-window gate as the public event page.
+  // eslint-disable-next-line react-hooks/purity
+  const lifecycle = computeLifecycle(event as EventLifecycleRow, Date.now());
 
   const { data: blocks } = await supabase
     .from('agenda_blocks')
@@ -81,8 +86,11 @@ export default async function EventPosterPage({
             className="w-64 h-64 print:w-80 print:h-80"
           />
         </div>
+        {/* Lifecycle-aware: the closed-state RegisterCard below is print:hidden,
+            so a poster printed after close would otherwise carry "Scan to
+            register" as its only (and false) CTA. */}
         <p className="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant mt-sm">
-          Scan to register
+          {lifecycle === 'registering' ? 'Scan to register' : 'Scan for event details'}
         </p>
       </section>
 
@@ -132,6 +140,7 @@ export default async function EventPosterPage({
           eventId={event.id}
           maxAttendees={event.max_attendees}
           currentCount={registrationCount ?? 0}
+          lifecycle={lifecycle}
         />
       </div>
 

@@ -7,6 +7,7 @@ import { buildEventQrPng } from '@/lib/qr';
 import { getRequestOrigin } from '@/lib/origin';
 import RegisterCard from '@/components/RegisterCard';
 import { PublicShell } from '@/components/shell/PublicShell';
+import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,13 +21,19 @@ export default async function PublicEventPage({
   const { data: event } = await supabase
     .from('events')
     .select(
-      'id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status, max_attendees',
+      'id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status, max_attendees, registration_close_at',
     )
     .eq('id', id)
     .maybeSingle();
 
   // RLS filters to status='published' for anon; this 404s drafts + non-existent.
   if (!event || event.status !== 'published') notFound();
+
+  // Form layer of the registration-window gate: RegisterCard swaps the form
+  // for a closed/ended notice outside the 'registering' state. The Server
+  // Action enforces the same boundary, so a stale page can't re-open it.
+  // eslint-disable-next-line react-hooks/purity
+  const lifecycle = computeLifecycle(event as EventLifecycleRow, Date.now());
 
   const { data: blocks } = await supabase
     .from('agenda_blocks')
@@ -104,6 +111,7 @@ export default async function PublicEventPage({
               eventId={event.id}
               maxAttendees={event.max_attendees}
               currentCount={registrationCount ?? 0}
+              lifecycle={lifecycle}
             />
 
             {event.description && (

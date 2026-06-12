@@ -71,7 +71,11 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
   // window opens (start − CHECKIN_OPEN_MINUTES, same boundary the
   // lifecycle's `live` state uses — G11). Ended events get a distinct
   // message. Display layers hide the form earlier; this is the
-  // server-side layer of the three-layer validation rule.
+  // server-side layer of the three-layer validation rule. There is
+  // deliberately no DB layer for this rule: a CHECK can't reference
+  // now(), and this action is the only writer of registrations — same
+  // single-writer rationale as updateRegistrationClose (vault,
+  // Security + Robustness §1 per-mutation matrix).
   const nowMs = Date.now();
   if (nowMs > new Date(event.end_time).getTime()) {
     return { error: 'This event has already ended.' };
