@@ -24,6 +24,50 @@ export function isSessionBlockKind(kind: string): boolean {
   return kind !== 'break' && kind !== 'transition';
 }
 
+// Minimal block shape needed to derive the speaker list. `kind` is accepted
+// (so callers can pass full block rows) but deliberately ignored — see
+// deriveSpeakerNames.
+export type SpeakerSourceBlock = {
+  kind?: string;
+  host: string | null;
+  topics: unknown;
+};
+
+/**
+ * G3 speaker check-in: derive the event's speaker list from its agenda blocks
+ * — block `host` + each topic's `speaker_name`, trimmed, deduped on the exact
+ * trimmed string, first-seen order. NO kind filter (unlike isSessionBlockKind):
+ * per the redesign plan a break/transition hosted by a person still puts them
+ * on stage, so their host counts as a speaker. Single derivation point shared
+ * by the toggle action (server-side recompute) and the Team-Checkin page so
+ * the two lists can't drift.
+ */
+export function deriveSpeakerNames(blocks: SpeakerSourceBlock[]): string[] {
+  const seen = new Set<string>();
+  const names: string[] = [];
+  const add = (raw: unknown) => {
+    if (typeof raw !== 'string') return;
+    const name = raw.trim();
+    if (name === '' || seen.has(name)) return;
+    seen.add(name);
+    names.push(name);
+  };
+  for (const block of blocks) {
+    add(block.host);
+    // topics is untyped jsonb: entries may be primitives/null, so narrow each
+    // one instead of asserting AgendaTopic[] — add() ignores non-strings.
+    const topics: unknown[] = Array.isArray(block.topics) ? block.topics : [];
+    for (const topic of topics) {
+      add(
+        typeof topic === 'object' && topic !== null
+          ? (topic as { speaker_name?: unknown }).speaker_name
+          : undefined,
+      );
+    }
+  }
+  return names;
+}
+
 /**
  * Returns the set of block IDs that overlap with at least one other block.
  * Adjacent blocks (one ends exactly when the next starts) are NOT considered parallel.

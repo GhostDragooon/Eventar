@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { findParallelBlockIds, type BlockTime } from './agenda';
+import {
+  deriveSpeakerNames,
+  findParallelBlockIds,
+  type BlockTime,
+  type SpeakerSourceBlock,
+} from './agenda';
 
 describe('findParallelBlockIds', () => {
   const b = (id: string, start: string, end: string): BlockTime => ({
@@ -32,5 +37,56 @@ describe('findParallelBlockIds', () => {
     ];
     const par = findParallelBlockIds(blocks);
     expect(par.size).toBe(3);
+  });
+});
+
+describe('deriveSpeakerNames', () => {
+  const blk = (host: string | null, topics: unknown): SpeakerSourceBlock => ({
+    kind: 'talk',
+    host,
+    topics,
+  });
+
+  it('collects block hosts and topic speaker names in first-seen order', () => {
+    const blocks = [
+      blk('Ada Lovelace', [
+        { title: 'T1', speaker_name: 'Grace Hopper' },
+        { title: 'T2', speaker_name: 'Alan Turing' },
+      ]),
+      blk('Edsger Dijkstra', []),
+    ];
+    expect(deriveSpeakerNames(blocks)).toEqual([
+      'Ada Lovelace',
+      'Grace Hopper',
+      'Alan Turing',
+      'Edsger Dijkstra',
+    ]);
+  });
+
+  it('dedupes on the exact trimmed name string', () => {
+    const blocks = [
+      blk(' Ada Lovelace ', [{ title: 'T', speaker_name: 'Ada Lovelace' }]),
+      blk('Ada Lovelace', [{ title: 'T2', speaker_name: '  Grace Hopper' }]),
+    ];
+    expect(deriveSpeakerNames(blocks)).toEqual(['Ada Lovelace', 'Grace Hopper']);
+  });
+
+  it('skips null hosts, blank names, and malformed topics jsonb', () => {
+    const blocks = [
+      blk(null, [{ title: 'T', speaker_name: '   ' }]),
+      blk('  ', 'not-an-array'),
+      blk(null, [{ title: 'no speaker field' }, null]),
+    ];
+    expect(deriveSpeakerNames(blocks)).toEqual([]);
+  });
+
+  it('includes hosts of break/transition blocks (no kind filter)', () => {
+    // G3 derivation per the redesign plan: "host + topic speakers, dedupe" —
+    // no kind filter. A break hosted by a person still puts them on stage.
+    const blocks: SpeakerSourceBlock[] = [
+      { kind: 'break', host: 'MC Coffee', topics: [] },
+      { kind: 'transition', host: 'Stage Manager', topics: [] },
+    ];
+    expect(deriveSpeakerNames(blocks)).toEqual(['MC Coffee', 'Stage Manager']);
   });
 });
