@@ -54,11 +54,36 @@ export async function submitSurvey(
   if (!event || event.status !== 'published') return { error: 'This code is not recognised.' };
   if (reg.status !== 'attended') return { error: 'The survey opens once you have been checked in.' };
 
+  // Q2 (G1): a uuid answer must be an agenda block of THIS event — never trust
+  // the client's option list. 'general' / omitted need no lookup.
+  let valuableBlockId: string | null = null;
+  let valuableOverall = false;
+  if (answers.valuable_session === 'general') {
+    valuableOverall = true;
+  } else if (answers.valuable_session) {
+    const { data: block, error: blockErr } = await admin
+      .from('agenda_blocks')
+      .select('id, event_id')
+      .eq('id', answers.valuable_session)
+      .maybeSingle();
+    if (blockErr) {
+      // Log only code + message (Rule 10) — PG error `details` can echo row data.
+      const e = blockErr as { code?: string; message?: string };
+      console.error('[submitSurvey] block lookup failed', { code: e.code, message: e.message });
+      return { error: "We couldn't save your feedback. Please check your connection and try again." };
+    }
+    if (!block || block.event_id !== event.id) {
+      return { error: 'That session is not part of this event. Please review and resubmit.' };
+    }
+    valuableBlockId = block.id;
+  }
+
   const { error: insertErr } = await admin.from('survey_responses').insert({
     registration_id: reg.id,
     event_id: event.id,
     session_format: answers.session_format ?? null,
-    key_highlights: answers.key_highlights ?? null,
+    valuable_block_id: valuableBlockId,
+    valuable_overall: valuableOverall,
     value_proposition: answers.value_proposition ?? null,
     expectations: answers.expectations ?? null,
     future_preferences: answers.future_preferences,

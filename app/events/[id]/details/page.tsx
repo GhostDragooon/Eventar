@@ -28,12 +28,13 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
       .from('registrations')
       .select('id, status, check_in_at, registered_at')
       .eq('event_id', id),
+    // key_highlights dropped with G1 (Q2 is now session multiple-choice).
+    // E.3 rework: the redesign replaces the latest-comment quote with a
+    // leading-session readout — only the response count is needed until then.
     supabase
       .from('survey_responses')
-      .select('id, key_highlights, submitted_at', { count: 'exact' })
-      .eq('event_id', id)
-      .order('submitted_at', { ascending: false })
-      .limit(1),
+      .select('id', { count: 'exact', head: true })
+      .eq('event_id', id),
   ]);
 
   if (eventRes.error) throw eventRes.error;
@@ -43,9 +44,6 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
 
   const event = eventRes.data;
   const regs = regsRes.data ?? [];
-  const latestSurvey = surveysRes.data?.[0] ?? null;
-  // `count: 'exact'` on the surveys query returns the total ignoring limit/offset,
-  // so Section C's response rate + "+ N more" affordance reflect the full set.
   const responseCount = surveysRes.count ?? 0;
   const attended = regs.filter((r) => r.status === 'attended').length;
 
@@ -100,8 +98,6 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
         eventId={event.id}
         responseCount={responseCount}
         attended={attended}
-        latestSurvey={latestSurvey}
-        nowMs={nowMs}
       />
     </StaffShell>
   );

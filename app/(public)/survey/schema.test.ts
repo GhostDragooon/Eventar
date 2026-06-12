@@ -8,7 +8,7 @@ describe('surveyInputSchema', () => {
   it('accepts a fully-filled valid response', () => {
     const r = surveyInputSchema.safeParse({
       session_format: 'scientific_presentations',
-      key_highlights: 'Dr. Lee on biomarkers',
+      valuable_session: '11111111-2222-4333-8444-555555555555',
       value_proposition: 'clinical_application',
       expectations: 'exceeded',
       future_preferences: ['expanded_qa', 'subspecialty_topics'],
@@ -42,19 +42,27 @@ describe('surveyInputSchema', () => {
     expect(surveyInputSchema.safeParse({ future_preferences: ['expanded_qa', 'nope'] }).success).toBe(false);
   });
 
-  it('rejects key_highlights longer than 2000 chars', () => {
-    expect(surveyInputSchema.safeParse({ key_highlights: 'x'.repeat(2001) }).success).toBe(false);
+  it('accepts a uuid valuable_session (agenda block id)', () => {
+    const r = surveyInputSchema.safeParse({ valuable_session: '11111111-2222-4333-8444-555555555555' });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.valuable_session).toBe('11111111-2222-4333-8444-555555555555');
   });
 
-  it('trims key_highlights', () => {
-    const r = surveyInputSchema.safeParse({ key_highlights: '  hi  ' });
+  it("accepts the 'general' valuable_session sentinel (General sessions / overall)", () => {
+    const r = surveyInputSchema.safeParse({ valuable_session: 'general' });
     expect(r.success).toBe(true);
-    if (r.success) expect(r.data.key_highlights).toBe('hi');
+    if (r.success) expect(r.data.valuable_session).toBe('general');
   });
 
-  it('coerces empty key_highlights to undefined', () => {
-    const r = surveyInputSchema.safeParse({ key_highlights: '' });
+  it('accepts an omitted valuable_session (question optional)', () => {
+    const r = surveyInputSchema.safeParse({});
     expect(r.success).toBe(true);
-    if (r.success) expect(r.data.key_highlights).toBeUndefined();
+    if (r.success) expect(r.data.valuable_session).toBeUndefined();
+  });
+
+  it('rejects a valuable_session that is neither a uuid nor general', () => {
+    expect(surveyInputSchema.safeParse({ valuable_session: 'banana' }).success).toBe(false);
+    expect(surveyInputSchema.safeParse({ valuable_session: 'Dr. Lee on biomarkers' }).success).toBe(false);
+    expect(surveyInputSchema.safeParse({ valuable_session: '' }).success).toBe(false);
   });
 });

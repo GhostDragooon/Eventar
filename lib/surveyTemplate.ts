@@ -49,5 +49,3 @@ export const FUTURE_PREFERENCE_OPTIONS: Option<FuturePreference>[] = [
   { value: 'structured_networking',    label: 'Structured Networking' },
   { value: 'subspecialty_topics',      label: 'Diverse Sub-specialty Topics' },
 ];
-
-export const KEY_HIGHLIGHTS_MAX = 2000;

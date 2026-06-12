@@ -7,7 +7,6 @@ import {
   VALUE_PROPOSITION_OPTIONS,
   EXPECTATIONS_OPTIONS,
   FUTURE_PREFERENCE_OPTIONS,
-  KEY_HIGHLIGHTS_MAX,
   type SessionFormat,
   type ValueProposition,
   type Expectation,
@@ -27,21 +26,34 @@ const CHOICE_BASE =
 const CHOICE_SELECTED = 'border-green-600 bg-green-50';
 const CHOICE_UNSELECTED = 'border-outline-variant hover:bg-green-50';
 
+// Q2 (G1) option: an agenda block (value = block uuid). The form appends the
+// 'general' fallback itself, so callers pass schedule blocks only.
+export type SessionOption = { value: string; label: string };
+
+const GENERAL_SESSION_OPTION: SessionOption = {
+  value: 'general',
+  label: 'General sessions / overall',
+};
+
 export default function SurveyForm({
   code,
   eventTitle,
   eventStartTime,
   eventTimezone,
   eventVenueName,
+  firstName,
+  sessionOptions,
 }: {
   code: string;
   eventTitle: string;
   eventStartTime: string;
   eventTimezone: string;
   eventVenueName: string;
+  firstName: string;
+  sessionOptions: SessionOption[];
 }) {
   const [sessionFormat, setSessionFormat] = useState<SessionFormat>();
-  const [keyHighlights, setKeyHighlights] = useState('');
+  const [valuableSession, setValuableSession] = useState<string>();
   const [valueProposition, setValueProposition] = useState<ValueProposition>();
   const [expectations, setExpectations] = useState<Expectation>();
   const [futurePreferences, setFuturePreferences] = useState<FuturePreference[]>([]);
@@ -59,10 +71,9 @@ export default function SurveyForm({
     e.preventDefault();
     setState({ kind: 'submitting' });
 
-    const trimmed = keyHighlights.trim();
     const answers: SurveyInput = {
       session_format: sessionFormat,
-      key_highlights: trimmed === '' ? undefined : trimmed,
+      valuable_session: valuableSession,
       value_proposition: valueProposition,
       expectations,
       future_preferences: futurePreferences,
@@ -98,9 +109,10 @@ export default function SurveyForm({
               <span>{eventVenueName}</span>
             </p>
           </div>
+          {/* Locked one-line intro copy (patterns §12) — em-dash, "five", "(under 3 minutes)". */}
           <p className="font-body-md text-body-md text-on-surface-variant mb-lg leading-relaxed">
-            Thank you for contributing your professional expertise. Please complete this brief
-            assessment to help us enhance future events.
+            Thank you for attending, {firstName}&mdash;please complete five quick questions (under 3
+            minutes).
           </p>
           <div className="bg-primary/5 border border-primary/10 p-md rounded-lg">
             <div className="flex items-center gap-sm text-primary mb-1">
@@ -170,23 +182,38 @@ export default function SurveyForm({
                   </div>
                 </fieldset>
 
-                {/* Q2 Key Highlights (text) */}
+                {/* Q2 Most Valuable Session (single; options from the event schedule + 'general' fallback — G1).
+                    Full-width chip-stack (patterns §11): option count varies with the schedule. */}
                 <fieldset className="space-y-sm">
                   <legend className="contents">
                     <span className="block font-label-md text-label-md text-outline uppercase tracking-wider">
-                      02. Key Highlights
+                      02. Most Valuable Session
                     </span>
                     <span className="block font-title-lg text-body-lg font-semibold text-on-surface">
                       Which speaker or session provided the most clinical utility?
                     </span>
                   </legend>
-                  <textarea
-                    className="w-full h-24 p-3 border border-outline-variant rounded focus:ring-1 focus:ring-primary focus:border-primary outline-none font-body-md transition-all resize-none"
-                    placeholder="Enter session name or specific clinical takeaway..."
-                    maxLength={KEY_HIGHLIGHTS_MAX}
-                    value={keyHighlights}
-                    onChange={(e) => setKeyHighlights(e.target.value)}
-                  />
+                  <div className="grid grid-cols-1 gap-2 pt-1">
+                    {[...sessionOptions, GENERAL_SESSION_OPTION].map((opt) => {
+                      const selected = valuableSession === opt.value;
+                      return (
+                        <label
+                          key={opt.value}
+                          className={`${CHOICE_BASE} ${selected ? CHOICE_SELECTED : CHOICE_UNSELECTED}`}
+                        >
+                          <input
+                            className="w-4 h-4 text-primary focus:ring-primary border-outline-variant"
+                            name="valuable_session"
+                            type="radio"
+                            value={opt.value}
+                            checked={selected}
+                            onChange={() => setValuableSession(opt.value)}
+                          />
+                          <span className="ml-3 font-body-md text-on-surface">{opt.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </fieldset>
 
                 {/* Q3 Value Proposition (single; 3rd option spans 2 cols) */}

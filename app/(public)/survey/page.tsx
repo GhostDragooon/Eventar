@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { isValidRegistrationCode } from '@/lib/registrationCode';
 import { rateLimitByIp } from '@/lib/rateLimit';
+import type { AgendaTopic } from '@/lib/agenda';
 import { PublicShell } from '@/components/shell/PublicShell';
 import SurveyForm from './SurveyForm';
 
@@ -72,11 +73,12 @@ export default async function SurveyPage({
   type RegRow = {
     id: string;
     status: string;
+    full_name: string;
     events: EventEmbed | Array<EventEmbed> | null;
   };
   const { data: reg } = (await admin
     .from('registrations')
-    .select('id, status, events!inner(id, title, status, start_time, timezone, venue_name)')
+    .select('id, status, full_name, events!inner(id, title, status, start_time, timezone, venue_name)')
     .eq('registration_code', code)
     .maybeSingle()) as { data: RegRow | null };
 
@@ -148,6 +150,27 @@ export default async function SurveyPage({
     );
   }
 
+  // Q2 (G1) options come from the event's schedule. Breaks/transitions are not
+  // "sessions", so they don't become options; SurveyForm appends the
+  // "General sessions / overall" fallback, which is all that renders for
+  // events with no agenda blocks.
+  type BlockRow = { id: string; kind: string; title: string; topics: AgendaTopic[] };
+  const { data: blocks } = (await admin
+    .from('agenda_blocks')
+    .select('id, kind, title, topics')
+    .eq('event_id', event.id)
+    .order('start_time', { ascending: true })) as { data: BlockRow[] | null };
+  const sessionOptions = (blocks ?? [])
+    .filter((b) => b.kind !== 'break' && b.kind !== 'transition')
+    .map((b) => {
+      const speaker = b.topics?.[0]?.speaker_name?.trim();
+      return { value: b.id, label: speaker ? `${b.title} · ${speaker}` : b.title };
+    });
+
+  // First name for the intro line; minimal inline derivation.
+  // E.2 introduces lib/name.ts firstName — consolidate then.
+  const firstName = reg.full_name.trim().split(' ')[0];
+
   return (
     <PublicShell>
       <SurveyForm
@@ -156,6 +179,8 @@ export default async function SurveyPage({
         eventStartTime={event.start_time}
         eventTimezone={event.timezone}
         eventVenueName={event.venue_name}
+        firstName={firstName}
+        sessionOptions={sessionOptions}
       />
     </PublicShell>
   );

@@ -13,7 +13,6 @@ import { countBySlug } from '@/lib/analytics/countBySlug';
 import { countBySlugMulti } from '@/lib/analytics/countBySlugMulti';
 import { happyRate } from '@/lib/analytics/happyRate';
 import { BarDistributionSlice } from '@/components/analytics/BarDistributionSlice';
-import { HighlightCommentSlice } from '@/components/analytics/HighlightCommentSlice';
 import { SentimentSlice } from '@/components/analytics/SentimentSlice';
 import { OperationalInsightCard } from '@/components/analytics/OperationalInsightCard';
 import { KeyMetricAnalysisCard } from '@/components/analytics/KeyMetricAnalysisCard';
@@ -21,7 +20,6 @@ import { KeyMetricAnalysisCard } from '@/components/analytics/KeyMetricAnalysisC
 type SurveyRow = {
   id: string;
   session_format: string | null;
-  key_highlights: string | null;
   value_proposition: string | null;
   expectations: string | null;
   future_preferences: string[];
@@ -66,7 +64,7 @@ export default async function EventAnalyticsPage({
     supabase.from('registrations').select('id, status, check_in_at').eq('event_id', id),
     supabase
       .from('survey_responses')
-      .select('id, session_format, key_highlights, value_proposition, expectations, future_preferences, submitted_at')
+      .select('id, session_format, value_proposition, expectations, future_preferences, submitted_at')
       .eq('event_id', id)
       .order('submitted_at', { ascending: false }),
   ]);
@@ -90,11 +88,6 @@ export default async function EventAnalyticsPage({
   const q4 = countBySlug(surveys, 'expectations', Q4_LABELS);
   const q5 = countBySlugMulti(surveys, 'future_preferences', Q5_LABELS);
   const hr = happyRate(surveys, 'expectations');
-
-  const commentRows = surveys.filter((s) => s.key_highlights != null && s.key_highlights.trim() !== '');
-  const latest = commentRows[0];
-  const latestQuote = latest?.key_highlights?.trim() ?? null;
-  const latestQuoteAgo = latest ? timeAgo(latest.submitted_at) : null;
 
   const metrics = { showUpRate, happyRate: hr, responseRate };
 
@@ -139,11 +132,10 @@ export default async function EventAnalyticsPage({
           layout="grid"
           priorityPill="Priority Expansion"
         />
-        <HighlightCommentSlice
-          latestQuote={latestQuote}
-          latestQuoteAgo={latestQuoteAgo}
-          totalComments={commentRows.length}
-        />
+        {/* E.5 rework: the Q2 highlight-comment slice died with key_highlights
+            (G1 — Q2 is now session multiple-choice); the redesign replaces it
+            with a valuable_block_id distribution. HighlightCommentSlice itself
+            is removed in E.5. */}
         <BarDistributionSlice
           icon="insights"
           iconBg="tertiary-fixed"
@@ -170,15 +162,4 @@ export default async function EventAnalyticsPage({
       <KeyMetricAnalysisCard metrics={metrics} />
     </StaffShell>
   );
-}
-
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes} min ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
-  const days = Math.floor(hours / 24);
-  return `${days} day${days === 1 ? '' : 's'} ago`;
 }

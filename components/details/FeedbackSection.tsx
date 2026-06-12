@@ -1,15 +1,14 @@
 import Link from 'next/link';
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
 
-type LatestSurvey = { key_highlights: string | null; submitted_at: string } | null;
-
+// E.3 rework: the latest-comment quote died with key_highlights (G1 — Q2 is
+// now session multiple-choice); the redesign replaces it with a
+// leading-session readout built from valuable_block_id.
 type Props = {
   lifecycle: Lifecycle;
   eventId: string;
   responseCount: number;
   attended: number;
-  latestSurvey: LatestSurvey;
-  nowMs: number;
 };
 
 export function FeedbackSection({
@@ -17,8 +16,6 @@ export function FeedbackSection({
   eventId,
   responseCount,
   attended,
-  latestSurvey,
-  nowMs,
 }: Props) {
   return (
     <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm mb-lg">
@@ -54,25 +51,6 @@ export function FeedbackSection({
             </p>
           </div>
 
-          {latestSurvey?.key_highlights && latestSurvey.key_highlights.trim() !== '' && (
-            <blockquote className="border-l-4 border-primary pl-md py-xs">
-              <p className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-xs">
-                Latest comment
-                {responseCount > 1 && (
-                  <span className="normal-case tracking-normal ml-xs text-on-surface-variant/70">
-                    · {responseCount - 1} more in analytics
-                  </span>
-                )}
-              </p>
-              <p className="font-headline-sm text-headline-sm text-on-surface italic">
-                &ldquo;{latestSurvey.key_highlights.trim()}&rdquo;
-              </p>
-              <p className="font-label-md text-label-md text-on-surface-variant mt-xs">
-                — submitted {timeAgo(latestSurvey.submitted_at, nowMs)}
-              </p>
-            </blockquote>
-          )}
-
           <Link
             href={`/events/${eventId}/analytics`}
             className="self-start flex items-center gap-sm bg-primary text-on-primary px-lg py-sm rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity"
@@ -86,14 +64,4 @@ export function FeedbackSection({
       )}
     </section>
   );
-}
-
-function timeAgo(iso: string, nowMs: number): string {
-  const diff = nowMs - new Date(iso).getTime();
-  const minutes = Math.floor(diff / 60_000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes} min ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
 }
