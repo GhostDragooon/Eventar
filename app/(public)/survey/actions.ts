@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { isValidRegistrationCode } from '@/lib/registrationCode';
+import { isSessionBlockKind } from '@/lib/agenda';
 import { rateLimitByIp } from '@/lib/rateLimit';
 import { surveyInputSchema, type SubmitSurveyResult } from './schema';
 
@@ -54,8 +55,9 @@ export async function submitSurvey(
   if (!event || event.status !== 'published') return { error: 'This code is not recognised.' };
   if (reg.status !== 'attended') return { error: 'The survey opens once you have been checked in.' };
 
-  // Q2 (G1): a uuid answer must be an agenda block of THIS event — never trust
-  // the client's option list. 'general' / omitted need no lookup.
+  // Q2 (G1): a uuid answer must be a SESSION agenda block of THIS event —
+  // never trust the client's option list (a crafted POST could submit a
+  // coffee-break id or another event's block). 'general' / omitted need no lookup.
   let valuableBlockId: string | null = null;
   let valuableOverall = false;
   if (answers.valuable_session === 'general') {
@@ -63,7 +65,7 @@ export async function submitSurvey(
   } else if (answers.valuable_session) {
     const { data: block, error: blockErr } = await admin
       .from('agenda_blocks')
-      .select('id, event_id')
+      .select('id, event_id, kind')
       .eq('id', answers.valuable_session)
       .maybeSingle();
     if (blockErr) {
@@ -72,7 +74,7 @@ export async function submitSurvey(
       console.error('[submitSurvey] block lookup failed', { code: e.code, message: e.message });
       return { error: "We couldn't save your feedback. Please check your connection and try again." };
     }
-    if (!block || block.event_id !== event.id) {
+    if (!block || block.event_id !== event.id || !isSessionBlockKind(block.kind)) {
       return { error: 'That session is not part of this event. Please review and resubmit.' };
     }
     valuableBlockId = block.id;

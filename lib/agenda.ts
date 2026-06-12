@@ -16,6 +16,15 @@ export type AgendaTopic = {
 };
 
 /**
+ * Breaks/transitions are schedule filler, not "sessions" — they must never be
+ * survey Q2 options (render side) nor accepted as valuable_block_id (action
+ * side). Single predicate so the two filters can't drift.
+ */
+export function isSessionBlockKind(kind: string): boolean {
+  return kind !== 'break' && kind !== 'transition';
+}
+
+/**
  * Returns the set of block IDs that overlap with at least one other block.
  * Adjacent blocks (one ends exactly when the next starts) are NOT considered parallel.
  */

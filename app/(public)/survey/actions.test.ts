@@ -33,7 +33,7 @@ type RegRow = {
   events: { id: string; status: string } | null;
 };
 let mockRegRow: RegRow | null = null;
-let mockBlockRow: { id: string; event_id: string } | null = null;
+let mockBlockRow: { id: string; event_id: string; kind: string } | null = null;
 let lastSurveyInsert: Record<string, unknown> | null = null;
 
 vi.mock('@/lib/supabase/admin', () => ({
@@ -79,7 +79,7 @@ import { submitSurvey } from './actions';
 describe('submitSurvey — Q2 valuable_session (G1)', () => {
   beforeEach(() => {
     mockRegRow = { id: regId, status: 'attended', events: { id: eventId, status: 'published' } };
-    mockBlockRow = { id: blockId, event_id: eventId };
+    mockBlockRow = { id: blockId, event_id: eventId, kind: 'workshop' };
     lastSurveyInsert = null;
   });
 
@@ -97,7 +97,19 @@ describe('submitSurvey — Q2 valuable_session (G1)', () => {
   });
 
   it('rejects a block id that belongs to a different event — no insert', async () => {
-    mockBlockRow = { id: blockId, event_id: otherEventId };
+    mockBlockRow = { id: blockId, event_id: otherEventId, kind: 'workshop' };
+
+    const res = await submitSurvey('WK-ABCDEF', { valuable_session: blockId });
+
+    expect(res).toEqual({ error: 'That session is not part of this event. Please review and resubmit.' });
+    expect(lastSurveyInsert).toBeNull();
+  });
+
+  it('rejects a break/transition block even when it belongs to this event — no insert', async () => {
+    // The page never offers breaks as options, but the action must not trust
+    // the client's option list: a crafted POST with a coffee-break id would
+    // otherwise pollute valuable_block_id (E.5 analytics reads it).
+    mockBlockRow = { id: blockId, event_id: eventId, kind: 'break' };
 
     const res = await submitSurvey('WK-ABCDEF', { valuable_session: blockId });
 

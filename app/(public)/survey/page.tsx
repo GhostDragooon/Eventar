@@ -1,7 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { isValidRegistrationCode } from '@/lib/registrationCode';
 import { rateLimitByIp } from '@/lib/rateLimit';
-import type { AgendaTopic } from '@/lib/agenda';
+import { isSessionBlockKind, type AgendaTopic } from '@/lib/agenda';
 import { PublicShell } from '@/components/shell/PublicShell';
 import SurveyForm from './SurveyForm';
 
@@ -155,13 +155,25 @@ export default async function SurveyPage({
   // "General sessions / overall" fallback, which is all that renders for
   // events with no agenda blocks.
   type BlockRow = { id: string; kind: string; title: string; topics: AgendaTopic[] };
-  const { data: blocks } = (await admin
+  const { data: blocks, error: blocksErr } = (await admin
     .from('agenda_blocks')
     .select('id, kind, title, topics')
     .eq('event_id', event.id)
-    .order('start_time', { ascending: true })) as { data: BlockRow[] | null };
+    .order('start_time', { ascending: true })) as {
+    data: BlockRow[] | null;
+    error: { code?: string; message?: string } | null;
+  };
+  if (blocksErr) {
+    // Fail visibly (Rule 12): without this log, a failed fetch renders the
+    // general-only fallback indistinguishably from a no-schedule event.
+    // Log only code + message — PG `details` can echo row data (Rule 10).
+    console.error('[survey] agenda blocks fetch failed', {
+      code: blocksErr.code,
+      message: blocksErr.message,
+    });
+  }
   const sessionOptions = (blocks ?? [])
-    .filter((b) => b.kind !== 'break' && b.kind !== 'transition')
+    .filter((b) => isSessionBlockKind(b.kind))
     .map((b) => {
       const speaker = b.topics?.[0]?.speaker_name?.trim();
       return { value: b.id, label: speaker ? `${b.title} · ${speaker}` : b.title };
