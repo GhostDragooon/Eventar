@@ -5,10 +5,17 @@ import { supabaseServer } from '@/lib/supabase/server';
 import { formatInTz } from '@/lib/tz';
 import type { AgendaTopic } from '@/lib/agenda';
 import { publishEvent } from './actions';
+import { updateEvent } from './updateAction';
 import DownloadQrButton from '@/components/DownloadQrButton';
 import ExportRegistrantsButton from '@/components/ExportRegistrantsButton';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { StaffShell } from '@/components/shell/StaffShell';
+import NewEventForm, {
+  type InitialEvent,
+  type InitialBlock,
+  type SubmitPayload,
+} from '@/app/events/new/NewEventForm';
+import type { BlockKind, TopicDraft } from '@/components/event-form/AgendaSection';
 
 export default async function StaffEventEditPage({
   params,
@@ -27,7 +34,7 @@ export default async function StaffEventEditPage({
   const supabase = await supabaseServer();
   const { data: event } = await supabase
     .from('events')
-    .select('id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status, max_attendees, created_by')
+    .select('id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, latitude, longitude, description, status, max_attendees, created_by')
     .eq('id', id)
     .maybeSingle();
   if (!event) notFound();
@@ -42,10 +49,21 @@ export default async function StaffEventEditPage({
     redirect(`/events/${id}/details`);
   }
 
+  // Read every column the form treats as full-replace input. Omitting any of
+  // them and round-tripping to updateEvent would silently wipe the persisted
+  // value (rule 12) — the RPC overwrites NULLable keys to NULL when absent.
+  // - `notes` was previously omitted: a no-edit Save wrote '' over every
+  //   organiser-authored block note.
+  // - `display_order` was previously omitted and order came from `start_time`
+  //   only: identical start times (or any future drift between persisted
+  //   `display_order` and chronological order) would have shuffled blocks on
+  //   save, since the form re-emits `display_order: i` from the in-memory
+  //   array index. Ordering by `display_order` first pins the round-trip.
   const { data: blocks } = await supabase
     .from('agenda_blocks')
-    .select('id, kind, title, host, topics, start_time, end_time')
+    .select('id, kind, title, host, topics, notes, start_time, end_time, display_order')
     .eq('event_id', id)
+    .order('display_order', { ascending: true })
     .order('start_time', { ascending: true });
 
   // Close gate for the CSV export: registration is "closed" when end_time has
@@ -88,6 +106,42 @@ export default async function StaffEventEditPage({
         </p>
       </header>
 
+      {/* Draft state: render the generalized event form pre-filled with the
+          stored values (Task D.3a). The form owns its own status/completion
+          panel and Save Changes button; lifecycle (Publish) lives on a
+          separate ActionCard in the right column so the form's "Save
+          changes" stays purely about content edits. The D.3 plan requires
+          publish to remain reachable from /edit while the event is a draft.
+          Non-draft: keep the existing read-only + ActionCards sidebar
+          layout untouched. */}
+      {event.status === 'draft' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-grid-gutter items-start">
+          <div className="lg:col-span-8 min-w-0">
+            <DraftEditFormPanel event={event} blocks={blocks ?? []} />
+          </div>
+          <aside className="lg:col-span-4 lg:sticky lg:top-grid-margin space-y-md self-start">
+            <ActionCard
+              icon="publish"
+              title="Ready to publish?"
+              body="Publishing makes the registration page live. The QR also unlocks."
+            >
+              <form
+                action={async () => {
+                  'use server';
+                  await publishEvent(event.id);
+                }}
+              >
+                <button
+                  type="submit"
+                  className="w-full bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
+                >
+                  Publish event
+                </button>
+              </form>
+            </ActionCard>
+          </aside>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-grid-gutter">
         {/* Left (8 cols): event content */}
         <div className="lg:col-span-8 space-y-md">
@@ -277,7 +331,101 @@ export default async function StaffEventEditPage({
           )}
         </aside>
       </div>
+      )}
     </StaffShell>
+  );
+}
+
+/**
+ * Draft-state edit view: pre-fills the generalized NewEventForm with the
+ * stored event row + agenda blocks, then dispatches save through the
+ * updateEvent server action (which the form receives as a `submit` prop so
+ * the form itself stays free of action-routing logic).
+ *
+ * Publish remains accessible from the read-only/non-draft side of this same
+ * page once the user clicks "Save changes" — the form deliberately does NOT
+ * send `status` (per updateAction.ts), so saving the form leaves the event
+ * in draft. Lifecycle (publish) lives on the existing ActionCard surface for
+ * non-draft views; for draft-state the user reaches publish via the dashboard
+ * publish action (a follow-up D.3b will surface a "Save & publish" button
+ * here on the form itself).
+ */
+function DraftEditFormPanel({
+  event,
+  blocks,
+}: {
+  event: {
+    id: string;
+    title: string;
+    topic: string | null;
+    description: string | null;
+    max_attendees: number | null;
+    start_time: string;
+    end_time: string;
+    venue_name: string;
+    venue_address: string | null;
+    city: string;
+    region: string | null;
+    country: string;
+    latitude: number;
+    longitude: number;
+  };
+  blocks: Array<{
+    id: string;
+    kind: string;
+    title: string;
+    host: string | null;
+    topics: unknown;
+    notes: string | null;
+    start_time: string;
+    end_time: string;
+  }>;
+}) {
+  const initialEvent: InitialEvent = {
+    title: event.title,
+    topic: event.topic,
+    description: event.description,
+    max_attendees: event.max_attendees,
+    start_time: event.start_time,
+    end_time: event.end_time,
+    venue_name: event.venue_name,
+    venue_address: event.venue_address,
+    city: event.city,
+    region: event.region,
+    country: event.country,
+    latitude: event.latitude,
+    longitude: event.longitude,
+  };
+
+  // Pass raw ISO strings + the rest of each row's fields; the form converts
+  // them to HH:MM client-side so encode and decode share the browser's tz.
+  // Doing the HH:MM derivation here would use the Vercel function's tz
+  // (UTC), causing a silent tz drift on every no-edit Save.
+  const initialBlocks: InitialBlock[] = blocks.map((b) => ({
+    id: b.id,
+    start_time: b.start_time,
+    end_time: b.end_time,
+    kind: b.kind as BlockKind,
+    title: b.title,
+    host: b.host,
+    topics: (Array.isArray(b.topics) ? b.topics : []) as Array<Partial<TopicDraft>>,
+    // Prefill from the row (nullable in the DB; the form converts to ''). A
+    // no-edit Save would otherwise wipe organiser notes via the full-replace
+    // payload — exactly the rule-12 silent-loss pattern.
+    notes: b.notes,
+  }));
+
+  return (
+    <NewEventForm
+      mode="edit"
+      eventId={event.id}
+      initialEvent={initialEvent}
+      initialBlocks={initialBlocks}
+      submit={async (payload: SubmitPayload) => {
+        'use server';
+        return updateEvent(event.id, { event: payload.event, blocks: payload.blocks });
+      }}
+    />
   );
 }
 
