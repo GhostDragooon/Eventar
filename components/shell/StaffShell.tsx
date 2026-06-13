@@ -24,7 +24,7 @@ const NAV: NavItem[] = [
   { href: '#sessions', label: 'Sessions', icon: 'calendar_today', disabled: true, disabledReason: 'Multi-session events are not yet supported' },
   { href: '#analytics', label: 'Analytics', icon: 'insights', disabled: true, disabledReason: 'Analytics dashboard ships in Phase 6' },
   { href: '/events/new', label: 'New Event', icon: 'event_available' },
-  { href: '#settings', label: 'Settings', icon: 'settings', disabled: true, disabledReason: 'Org settings ship post-Phase-6' },
+  { href: '/settings', label: 'Settings', icon: 'settings' },
 ];
 
 function isActive(pathname: string, href: string): boolean {

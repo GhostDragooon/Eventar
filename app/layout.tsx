@@ -1,6 +1,16 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
+import { THEME_STORAGE_KEY } from "@/lib/theme";
+
+// FOUC prevention: runs synchronously before paint, applies the user's saved
+// theme class on <html>. Without this, the page would render in system theme
+// for one frame and then snap to the user's pick after React hydrates. The
+// localStorage key is shared with lib/theme.ts; keep the snippet minimal so
+// it stays inline-able. Any failure (private mode, throwing storage) silently
+// falls back to system theme — the missing class is the system-default state.
+const THEME_INIT_SCRIPT = `try{var t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});if(t==='light'||t==='dark'){document.documentElement.classList.add(t)}}catch(e){}`;
 
 /* Redesign (2026-06-11): single Geist family everywhere. The one sans
    instance aliases the legacy var name --font-inter; globals.css defines
@@ -45,6 +55,12 @@ export default function RootLayout({
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         />
+        {/* Theme-class init: applies the saved .light/.dark class on <html>
+            before paint so there's no flash of system-default. Hardcoded
+            string (no user input) — safe. */}
+        <Script id="theme-init" strategy="beforeInteractive">
+          {THEME_INIT_SCRIPT}
+        </Script>
       </head>
       <body className="min-h-full flex flex-col font-body-md" suppressHydrationWarning>
         {children}

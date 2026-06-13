@@ -2,8 +2,11 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* A.2: dark: utilities follow prefers-color-scheme (Tailwind v4 default).
-   No .dark class/toggle exists. */
+/* Theme: defaults to system (prefers-color-scheme), can be overridden by an
+   explicit .light or .dark class on <html> via /settings. The class wins
+   because the :root.dark / :root.light blocks below have higher specificity
+   than the media query, and the media query is scoped to :not(.light) so an
+   explicit "light" choice survives a dark-mode OS. */
 
 /* ---------------------------------------------------------------------------
  * Redesign (2026-06-11) — Vercel-canonical palette on the M3 token grid
@@ -20,8 +23,8 @@
  * retargeted at the bottom of :root to point at the M3 tokens so existing
  * components/ui/* primitives inherit the new look with zero API changes.
  *
- * Dark mode: system-default only (prefers-color-scheme media query at the
- * bottom of this file). No toggle, no .dark class.
+ * Dark mode: system-default via prefers-color-scheme; an explicit
+ * .light/.dark class on <html> (set by /settings) overrides the media query.
  * ------------------------------------------------------------------------- */
 
 @theme inline {
@@ -305,11 +308,13 @@
   --sidebar-ring: var(--primary);
 }
 
-/* Dark mode: system-default only (no toggle, no .dark class). Only the M3
-   base tokens flip — the shadcn bridge vars above are var() chains into
-   these tokens, so they follow automatically. */
+/* Dark mode tokens. Applied in two cases:
+   1. System dark + no explicit .light override (the media query below).
+   2. Explicit .dark class on <html> (the :root.dark block after the media query).
+   Only the M3 base tokens flip — the shadcn bridge vars above are var() chains
+   into these tokens, so they follow automatically. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light) {
     /* A.2: theme native UI (date pickers, selects, scrollbars, autofill) */
     color-scheme: dark;
 
@@ -378,6 +383,79 @@
     --inverse-on-surface: #0a0a0a;
     --inverse-primary: #0070f3;
   }
+}
+
+/* Explicit "dark" override — wins over the media query above when the user
+   picked Dark in /settings, even if the OS is light. Token values mirror the
+   media-query block above; keeping them in sync is a small maintenance cost
+   (the alternative — extracting into shared vars — would refactor the whole
+   token system). */
+:root.dark {
+  color-scheme: dark;
+
+  --primary: #ffffff;
+  --on-primary: #0a0a0a;
+  --primary-container: rgba(50, 145, 255, 0.15);
+  --on-primary-container: #3291ff;
+  --primary-fixed: rgba(50, 145, 255, 0.15);
+  --primary-fixed-dim: rgba(50, 145, 255, 0.25);
+  --on-primary-fixed: #fafafa;
+  --on-primary-fixed-variant: #3291ff;
+
+  --secondary: #a1a1aa;
+  --on-secondary: #0a0a0a;
+  --secondary-container: #262626;
+  --on-secondary-container: #fafafa;
+  --secondary-fixed: #262626;
+  --secondary-fixed-dim: #333333;
+  --on-secondary-fixed: #fafafa;
+  --on-secondary-fixed-variant: #a1a1aa;
+
+  --tertiary: #3291ff;
+  --on-tertiary: #0a0a0a;
+  --tertiary-container: rgba(50, 145, 255, 0.15);
+  --on-tertiary-container: #3291ff;
+  --tertiary-fixed: rgba(50, 145, 255, 0.15);
+  --tertiary-fixed-dim: rgba(50, 145, 255, 0.25);
+  --on-tertiary-fixed: #fafafa;
+  --on-tertiary-fixed-variant: #3291ff;
+
+  --surface: #0a0a0a;
+  --surface-bright: #171717;
+  --surface-dim: #000000;
+  --surface-container-lowest: #171717;
+  --surface-container-low: #171717;
+  --surface-container: #171717;
+  --surface-container-high: #262626;
+  --surface-container-highest: #262626;
+  --surface-variant: #262626;
+  --surface-tint: #3291ff;
+
+  --background: #000000;
+  --on-background: #fafafa;
+  --on-surface: #fafafa;
+  --on-surface-variant: #a1a1aa;
+
+  --outline: #525252;
+  --outline-variant: #262626;
+
+  --error: #f87171;
+  --on-error: #0a0a0a;
+  --error-container: rgba(248, 113, 113, 0.15);
+  --on-error-container: #f87171;
+
+  --success: #4ade80;
+  --on-success: #052e16;
+  --success-container: rgba(74, 222, 128, 0.15);
+  --on-success-container: #4ade80;
+  --warning: #fcd34d;
+  --warning-container: rgba(252, 211, 77, 0.15);
+  --on-warning-container: #fcd34d;
+  --danger: #f87171;
+
+  --inverse-surface: #fafafa;
+  --inverse-on-surface: #0a0a0a;
+  --inverse-primary: #0070f3;
 }
 
 @layer base {
