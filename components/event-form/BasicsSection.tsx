@@ -54,18 +54,28 @@ export default function BasicsSection({ value, onChange }: Props) {
           placeholder="One paragraph about the workshop."
         />
       </label>
-
-      <label className="block">
-        <FieldLabel>Capacity (optional)</FieldLabel>
-        <Input
-          type="number"
-          min={1}
-          value={value.capacity}
-          onChange={(e) => onChange({ capacity: e.target.value })}
-          placeholder="e.g. 50"
-        />
-      </label>
     </div>
+  );
+}
+
+/**
+ * Capacity moved out of BasicsSection into its own section per the D.3b
+ * EE-mockup layout (Basics → Date & venue → Capacity → Agenda). Same Input
+ * binding shape as before — still a string in BasicsValue.capacity so the
+ * form's Zod-coercing payload path is unchanged.
+ */
+export function CapacityField({ value, onChange }: Props) {
+  return (
+    <label className="block max-w-[280px]">
+      <FieldLabel>Max attendees (optional)</FieldLabel>
+      <Input
+        type="number"
+        min={1}
+        value={value.capacity}
+        onChange={(e) => onChange({ capacity: e.target.value })}
+        placeholder="e.g. 50"
+      />
+    </label>
   );
 }
 

@@ -178,11 +178,14 @@ export default function AgendaSection({
 
   return (
     <div className="space-y-lg">
-      {/* Components */}
+      {/* Components — header reads "Event type" per the locked terminology
+          (patterns doc §7). The DB column stays `kind`; only the user-facing
+          label changes. The +Workshop/+Seminar/... buttons each create a
+          block of that event type. */}
       <section className="space-y-md">
         <header className="flex items-center justify-between gap-sm flex-wrap">
           <h3 className="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">
-            Components
+            Event type
           </h3>
           <div className="flex gap-xs flex-wrap">
             {RICH_KINDS.map((k) => (
@@ -402,7 +405,10 @@ function BlockHeader({
 }) {
   return (
     <header className="flex items-center gap-sm flex-wrap">
-      <span className="font-label-md text-label-md uppercase tracking-wider border border-outline-variant text-on-surface-variant px-sm py-xs rounded">
+      <span
+        aria-label={`Event type: ${labelForKind(kind)}`}
+        className="font-label-md text-label-md uppercase tracking-wider border border-outline-variant text-on-surface-variant px-sm py-xs rounded"
+      >
         {labelForKind(kind)}
       </span>
       <button

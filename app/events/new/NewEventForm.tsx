@@ -1,45 +1,30 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
-import {
-  Accordion, AccordionContent, AccordionItem, AccordionTrigger,
-} from '@/components/ui/accordion';
+import { useRef, useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 
 import BasicsSection, {
-  type BasicsValue, basicsSummary, basicsValid,
+  CapacityField,
+  type BasicsValue, basicsValid,
 } from '@/components/event-form/BasicsSection';
 import VenueSection, {
-  venueSummary, venueValid,
+  venueValid,
 } from '@/components/event-form/VenueSection';
 import DateTimeSection, {
-  type DateTimeValue, dateTimeSummary, dateTimeValid,
+  type DateTimeValue, dateTimeValid,
 } from '@/components/event-form/DateTimeSection';
 import AgendaSection, {
-  type BlockDraft, type BlockKind, type TopicDraft, agendaSummary, agendaValid,
+  type BlockDraft, type BlockKind, type TopicDraft, agendaValid,
 } from '@/components/event-form/AgendaSection';
 import type { Venue } from '@/lib/venue';
-import { findParallelBlockIds } from '@/lib/agenda';
+import { tzFromCoords } from '@/lib/tz';
 import { formatMinutes24h } from '@/components/event-form/DateTimeSection';
 
-type SectionId = 'basics' | 'venue' | 'datetime' | 'agenda';
-const NEXT_SECTION: Record<SectionId, SectionId> = {
-  basics:   'venue',
-  venue:    'datetime',
-  datetime: 'agenda',
-  agenda:   'agenda', // terminal: user clicks Save in sticky bar
-};
-
-const SECTION_META: Record<SectionId, { icon: string; iconBg: string; iconColor: string; label: string }> = {
-  basics:   { icon: 'info',           iconBg: 'bg-primary-fixed',   iconColor: 'text-primary',   label: 'Basics' },
-  venue:    { icon: 'location_on',    iconBg: 'bg-secondary-fixed', iconColor: 'text-secondary', label: 'Venue' },
-  datetime: { icon: 'calendar_month', iconBg: 'bg-tertiary-fixed',  iconColor: 'text-tertiary',  label: 'Date & Time' },
-  agenda:   { icon: 'view_agenda',    iconBg: 'bg-primary-fixed',   iconColor: 'text-primary',   label: 'Agenda' },
-};
-
-type Intent = 'draft' | 'publish';
+// `preview` is edit-mode only — same write path as `draft` (no status sent)
+// but Save & Preview opens the public page in a new tab after save resolves.
+// The status-carrying intents (`draft` | `publish`) stay create-mode-only.
+type Intent = 'draft' | 'publish' | 'preview';
 
 /**
  * Shape the form passes to `props.submit`. The form always builds the same
@@ -192,10 +177,6 @@ export default function NewEventForm(props: Props) {
   const [intent, setIntent] = useState<Intent | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
-  // Base UI Accordion is array-valued; multiple=false (default) gives
-  // single-open semantics. Wrap/unwrap to a single SectionId at the boundary.
-  const [open, setOpen] = useState<SectionId>('basics');
-
   const initialEvent = props.mode === 'edit' ? props.initialEvent : null;
 
   const [basics, setBasics] = useState<BasicsValue>(() => initialBasicsFrom(initialEvent));
@@ -210,51 +191,50 @@ export default function NewEventForm(props: Props) {
   // landed (the protocol's "did I do the right thing?" failure mode).
   const [savedAt, setSavedAt] = useState<Date | null>(null);
 
+  // Section refs for scroll-to-first-invalid. The linear layout exposes
+  // every section at once, so the old "open the failing accordion" trick
+  // becomes "smooth-scroll to the failing section". Keyed by section id
+  // (the only ids the validators surface in section order).
+  const basicsRef   = useRef<HTMLElement>(null);
+  const dateVenueRef = useRef<HTMLElement>(null);
+  const capacityRef = useRef<HTMLElement>(null);
+  const agendaRef   = useRef<HTMLElement>(null);
+
   const v1 = basicsValid(basics);
   const v2 = venueValid(venue);
   const v3 = dateTimeValid(datetime);
   const v4 = agendaValid(blocks, datetime.startMinutes, datetime.endMinutes);
-  // Completion = the three REQUIRED sections. Agenda is optional, so it does
-  // not count toward "ready to publish" (an empty agenda is valid). It gets a
-  // separate optional row in the checklist that only shows complete once the
-  // user has actually drafted at least one valid block.
-  const requiredValid = [v1, v2, v3];
-  const completionPct = Math.round((requiredValid.filter(Boolean).length / requiredValid.length) * 100);
-  const agendaDrafted = blocks.length > 0 && v4;
 
-  // For the agenda summary's parallel-block check
-  const parallelIds = (() => {
-    const items = blocks.filter(b => b.start && b.end).map(b => ({
-      id: b.localId,
-      start_time: `${datetime.date}T${b.start}`,
-      end_time:   `${datetime.date}T${b.end}`,
-    }));
-    return findParallelBlockIds(items);
-  })();
+  // Timezone hint: derived once per render from the picked venue's lat/long
+  // via tz-lookup (pure, no I/O — same package the server action uses to
+  // persist events.timezone, so this hint matches what gets stored on save).
+  // Only shown once a venue is picked — before that the hint would be
+  // meaningless and the user has no expectation of seeing one.
+  const venueTz = venue ? safeTzFromVenue(venue) : null;
 
   function onSubmit(nextIntent: Intent) {
     setErr(null);
     setSavedAt(null);
-    // Validate in section order; on the first failure, jump the user to that
-    // section and explain. Buttons stay enabled (disabled-with-no-reason reads
-    // as "broken"), so the click is what surfaces what's still needed.
+    // Validate in section order; on the first failure, scroll the user to
+    // that section and explain. Buttons stay enabled (disabled-with-no-reason
+    // reads as "broken"), so the click is what surfaces what's still needed.
     if (!v1) {
-      setOpen('basics');
+      basicsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       setErr('Add the event basics (name) to continue.');
       return;
     }
     if (!v2) {
-      setOpen('venue');
+      dateVenueRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       setErr('Pick a venue from the dropdown to continue.');
       return;
     }
     if (!v3) {
-      setOpen('datetime');
+      dateVenueRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       setErr('Set the date, start, and end time to continue.');
       return;
     }
     if (!v4) {
-      setOpen('agenda');
+      agendaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       setErr('Fix the highlighted agenda blocks (each needs a valid time inside the event window, plus a title).');
       return;
     }
@@ -290,6 +270,11 @@ export default function NewEventForm(props: Props) {
       ? { event, blocks: blocksPayload }
       : { event, blocks: blocksPayload, status: nextIntent === 'publish' ? 'published' : 'draft' };
 
+    // Capture the edit-mode preview target BEFORE awaiting submit — props is
+    // narrowed inside this closure, so we don't re-narrow after the await.
+    const previewUrl = props.mode === 'edit' ? `/events/${props.eventId}` : null;
+    const openPreview = nextIntent === 'preview';
+
     start(async () => {
       const res = await props.submit(payload);
       if (res && 'error' in res) {
@@ -303,6 +288,15 @@ export default function NewEventForm(props: Props) {
       // already revalidated /events/[id]/edit), so the form re-mounts with the
       // saved data as its initial values.
       if (props.mode === 'edit') {
+        // Save & Preview path: open the public event page in a new tab AFTER
+        // the save resolves ok. Use noopener,noreferrer so the popup can't
+        // navigate this tab back (window.opener tampering surface) and the
+        // referrer isn't leaked. Pop-up blockers may swallow this — accepted
+        // tradeoff vs. opening before the save and then orphaning a tab if
+        // the save fails.
+        if (openPreview && previewUrl) {
+          window.open(previewUrl, '_blank', 'noopener,noreferrer');
+        }
         router.refresh();
         setIntent(null);
         setSavedAt(new Date());
@@ -310,43 +304,91 @@ export default function NewEventForm(props: Props) {
     });
   }
 
+  function onCancel() {
+    if (props.mode === 'edit') {
+      router.push(`/events/${props.eventId}/details`);
+    } else {
+      router.push('/dashboard');
+    }
+  }
+
   const isEdit = props.mode === 'edit';
 
   return (
-    <div className="pb-xxl">
-      <nav aria-label="Breadcrumb" className="flex items-center gap-xs text-on-surface-variant mb-sm">
-        <Link href="/dashboard" className="font-label-md text-label-md uppercase tracking-wider hover:text-primary">
-          Dashboard
-        </Link>
-        <span className="material-symbols-outlined text-[16px]" aria-hidden>chevron_right</span>
-        <span className="font-label-md text-label-md uppercase tracking-wider text-primary">
-          {isEdit ? 'Edit event' : 'New event'}
-        </span>
-      </nav>
+    <div className="pb-xxl space-y-xl">
+      {/* 1 · Basics */}
+      <FormSection ref={basicsRef} number="1" title="Basics">
+        <BasicsSection value={basics} onChange={(p) => setBasics({ ...basics, ...p })} />
+      </FormSection>
 
-      {/* Header — title + action buttons. Create mode keeps the dual
-          Draft/Publish split (lifecycle decision belongs on the create
-          surface). Edit mode collapses to a single Save Changes button —
-          lifecycle is owned by the page's status pill + Publish ActionCard. */}
-      <header className="mb-xl flex flex-col md:flex-row md:items-end md:justify-between gap-md">
-        <div className="max-w-2xl">
-          <h1 className="font-headline-lg text-headline-lg text-on-surface">
-            {isEdit ? 'Edit event' : 'Create Event'}
-          </h1>
-          <p className="font-body-lg text-body-lg text-on-surface-variant mt-sm">
-            {isEdit
-              ? 'Edit the event details below. Save changes here, then publish from the panel on the right when you\'re ready.'
-              : 'Configure the core details. Save as a draft anytime; publish when the registration page is ready to go live.'}
-          </p>
+      {/* 2 · Date & venue — DateTimeSection + VenueSection under one heading
+          per the EE mockup. Date/time stays in its existing 2-col internal
+          grid; venue picker sits below. Timezone hint only renders once a
+          venue is picked (so the copy is grounded in a real zone string). */}
+      <FormSection ref={dateVenueRef} number="2" title="Date & venue">
+        <div className="space-y-lg">
+          <DateTimeSection value={datetime} onChange={(p) => setDatetime({ ...datetime, ...p })} />
+          <VenueSection value={venue} onChange={setVenue} />
+          {venueTz && (
+            <p
+              className="font-body-md text-body-md text-on-surface-variant"
+              data-testid="venue-tz-hint"
+            >
+              Times shown in {venueTz} — picked up from your venue.
+            </p>
+          )}
         </div>
-        <div className="flex gap-sm shrink-0">
+      </FormSection>
+
+      {/* 3 · Capacity — extracted from Basics so it gets its own numbered
+          beat in the mockup. Same BasicsValue.capacity binding, so the
+          submit payload is unchanged. */}
+      <FormSection ref={capacityRef} number="3" title="Capacity">
+        <CapacityField value={basics} onChange={(p) => setBasics({ ...basics, ...p })} />
+      </FormSection>
+
+      {/* 4 · Agenda (optional) */}
+      <FormSection ref={agendaRef} number="4" title="Agenda" optional>
+        <AgendaSection
+          date={datetime.date}
+          eventStartMinutes={datetime.startMinutes}
+          eventEndMinutes={datetime.endMinutes}
+          blocks={blocks}
+          onChange={setBlocks}
+        />
+      </FormSection>
+
+      {/* Bottom action row — Cancel · Save & Preview (edit-only) · Save.
+          Save is the primary on the right. Mobile: stacks vertically. The
+          old top button cluster is removed (the page header now owns the
+          page title; this row owns the action surface). */}
+      <div className="border-t border-outline-variant pt-lg flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-sm">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={pending}
+        >
+          Cancel
+        </Button>
+        <div className="flex flex-col-reverse sm:flex-row gap-sm sm:items-center">
+          {isEdit && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onSubmit('preview')}
+              disabled={pending}
+            >
+              {pending && intent === 'preview' ? 'Saving…' : 'Save & Preview'}
+            </Button>
+          )}
           {isEdit ? (
             <Button
               type="button"
               onClick={() => onSubmit('draft')}
               disabled={pending}
             >
-              {pending ? 'Saving…' : 'Save changes'}
+              {pending && intent === 'draft' ? 'Saving…' : 'Save changes'}
             </Button>
           ) : (
             <>
@@ -368,217 +410,78 @@ export default function NewEventForm(props: Props) {
             </>
           )}
         </div>
-      </header>
-
-      {/* 8/4 grid: form on left, status panel sticky-right on lg */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-grid-gutter items-start">
-        <div className="lg:col-span-8 space-y-md">
-          <Accordion
-            value={[open]}
-            onValueChange={(v) => v[0] && setOpen(v[0] as SectionId)}
-            className="space-y-md"
-          >
-            <SectionItem id="basics" open={open === 'basics'} done={v1}
-                         title={SECTION_META.basics.label} summary={basicsSummary(basics)}>
-              <BasicsSection value={basics} onChange={(p) => setBasics({ ...basics, ...p })} />
-              <DoneRow disabled={!v1} onDone={() => setOpen(NEXT_SECTION.basics)} />
-            </SectionItem>
-
-            <SectionItem id="venue" open={open === 'venue'} done={v2}
-                         title={SECTION_META.venue.label} summary={venueSummary(venue)}
-                         unconstrained>
-              <VenueSection value={venue} onChange={setVenue} />
-              <DoneRow disabled={!v2} onDone={() => setOpen(NEXT_SECTION.venue)} />
-            </SectionItem>
-
-            <SectionItem id="datetime" open={open === 'datetime'} done={v3}
-                         title={SECTION_META.datetime.label} summary={dateTimeSummary(datetime)}
-                         unconstrained>
-              <DateTimeSection value={datetime} onChange={(p) => setDatetime({ ...datetime, ...p })} />
-              <DoneRow disabled={!v3} onDone={() => setOpen(NEXT_SECTION.datetime)} />
-            </SectionItem>
-
-            <SectionItem id="agenda" open={open === 'agenda'} done={v4}
-                         title={SECTION_META.agenda.label} summary={agendaSummary(blocks, parallelIds)}
-                         unconstrained>
-              <AgendaSection
-                date={datetime.date}
-                eventStartMinutes={datetime.startMinutes}
-                eventEndMinutes={datetime.endMinutes}
-                blocks={blocks}
-                onChange={setBlocks}
-              />
-            </SectionItem>
-          </Accordion>
-
-          {err && (
-            <p
-              role="alert"
-              className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
-            >
-              <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden>warning</span>
-              <span className="flex-1">{err}</span>
-            </p>
-          )}
-          {savedAt && !err && (
-            <p
-              role="status"
-              aria-live="polite"
-              data-testid="save-confirmation"
-              className="font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm flex items-start gap-sm"
-            >
-              <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden data-fill="1">check_circle</span>
-              <span className="flex-1">Saved as draft. Publish from the panel on the right when ready.</span>
-            </p>
-          )}
-        </div>
-
-        {/* Right column — Status / Setup Completion (sticky on lg) */}
-        <aside className="lg:col-span-4 lg:sticky lg:top-grid-margin space-y-md self-start">
-          <StatusPanel
-            completionPct={completionPct}
-            checklist={[
-              { label: 'Basic Details Added',  done: v1 },
-              { label: 'Venue Set',            done: v2 },
-              { label: 'Date & Time Defined',  done: v3 },
-              { label: 'Agenda (optional)',    done: agendaDrafted, optional: true },
-            ]}
-          />
-        </aside>
       </div>
-    </div>
-  );
-}
 
-function SectionItem({
-  id, open, done, title, summary, children, unconstrained = false,
-}: {
-  id: SectionId; open: boolean; done: boolean; title: string; summary: string;
-  children: React.ReactNode;
-  unconstrained?: boolean;
-}) {
-  const meta = SECTION_META[id];
-  return (
-    <AccordionItem
-      value={id}
-      className="border border-outline-variant rounded-[20px] px-lg bg-surface-container-lowest shadow-sm"
-    >
-      <AccordionTrigger className="hover:no-underline py-md">
-        <div className="flex items-center gap-md text-left flex-1">
-          <div
-            aria-hidden
-            className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${meta.iconBg} ${meta.iconColor}`}
-          >
-            <span className="material-symbols-outlined text-[20px]">{meta.icon}</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-sm">
-              <span className="font-headline-sm text-[20px] text-on-surface">{title}</span>
-              {done && (
-                <span
-                  aria-label="complete"
-                  className="material-symbols-outlined text-primary text-[20px]"
-                  data-fill="1"
-                >
-                  check_circle
-                </span>
-              )}
-            </div>
-            {!open && (
-              <div className="font-body-md text-body-md text-on-surface-variant mt-xs truncate">
-                {summary}
-              </div>
-            )}
-          </div>
-        </div>
-      </AccordionTrigger>
-      <AccordionContent className="pt-sm pb-lg" unconstrained={unconstrained}>
-        {children}
-      </AccordionContent>
-    </AccordionItem>
-  );
-}
-
-function DoneRow({ disabled, onDone }: { disabled: boolean; onDone: () => void }) {
-  return (
-    <div className="flex justify-end mt-md">
-      <Button type="button" disabled={disabled} onClick={onDone}>Done</Button>
+      {err && (
+        <p
+          role="alert"
+          className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
+        >
+          <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden>warning</span>
+          <span className="flex-1">{err}</span>
+        </p>
+      )}
+      {savedAt && !err && (
+        <p
+          role="status"
+          aria-live="polite"
+          data-testid="save-confirmation"
+          className="font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm flex items-start gap-sm"
+        >
+          <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden data-fill="1">check_circle</span>
+          <span className="flex-1">Saved as draft. Publish from the panel on the right when ready.</span>
+        </p>
+      )}
     </div>
   );
 }
 
 /**
- * Right-column status panel — mirrors the "STATUS: DRAFT / Setup Completion"
- * card from the New Event Setup mockup. Surface tokens match the form
- * sections so the card sits flat with the rest of the page in both light
- * and dark modes (previously bg-primary, which inverted to near-black in
- * light mode under the A.2 Vercel-canonical palette). The Draft pill uses
- * the amber warning tokens per §7a color rule ("amber = draft").
- * Completion counts only the required sections; required-but-incomplete
- * items show a hollow ring, optional incomplete items show a muted dash
- * (never a false checkmark).
- *
- * "Status" stays Draft on this page — the form has never saved, so the
- * draft/published distinction is the user's INTENT (encoded by which
- * action button they click), not a stored value. After save the user is
- * redirected to /events/[id]/edit where the live event status pill lives.
+ * Numbered linear section per the EE mockup. The `ref` is forwarded onto
+ * the outer <section> so the form's scroll-to-first-invalid can target it
+ * by element. The heading reads `N · Title` to match `section-h2` in the
+ * mockup (visually distinct from the page H1 which the page owns).
  */
-function StatusPanel({
-  completionPct,
-  checklist,
+function FormSection({
+  ref,
+  number,
+  title,
+  optional = false,
+  children,
 }: {
-  completionPct: number;
-  checklist: { label: string; done: boolean; optional?: boolean }[];
+  ref?: React.Ref<HTMLElement>;
+  number: string;
+  title: string;
+  optional?: boolean;
+  children: React.ReactNode;
 }) {
   return (
-    <div className="bg-surface-container-lowest border border-outline-variant text-on-surface p-xl rounded-[20px] shadow-sm">
-      <div className="flex items-center justify-between mb-lg">
-        <span className="font-label-md text-label-md uppercase bg-warning-container text-on-warning-container px-md py-xs rounded-full tracking-wider">
-          Status: Draft
-        </span>
-        <span className="material-symbols-outlined text-on-surface-variant" aria-hidden>auto_awesome</span>
-      </div>
-      <p className="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant mb-xs">
-        Setup Completion
-      </p>
-      <div
-        className="w-full bg-surface-container-high h-2 rounded-full mb-xl overflow-hidden"
-        role="progressbar"
-        aria-valuenow={completionPct}
-        aria-valuemin={0}
-        aria-valuemax={100}
-      >
-        <div
-          className="bg-primary h-full transition-all duration-500"
-          style={{ width: `${completionPct}%` }}
-        />
-      </div>
-      <ul className="space-y-md">
-        {checklist.map((item) => {
-          // Optional, not-yet-done items render in a muted "—" state so the
-          // panel never claims an empty optional step is complete.
-          const icon = item.done
-            ? 'check_circle'
-            : item.optional
-              ? 'remove'
-              : 'radio_button_unchecked';
-          return (
-            <li
-              key={item.label}
-              className={`flex items-center gap-md ${item.done ? 'text-on-surface' : 'text-on-surface-variant'}`}
-            >
-              <span
-                className={`material-symbols-outlined text-[20px] ${item.done ? 'text-primary' : ''}`}
-                aria-hidden
-                data-fill={item.done ? '1' : undefined}
-              >
-                {icon}
-              </span>
-              <span className="font-label-md text-label-md">{item.label}</span>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+    <section ref={ref} className="space-y-md scroll-mt-grid-margin">
+      <h2 className="font-headline-sm text-[20px] text-on-surface flex items-baseline gap-sm">
+        <span className="text-on-surface-variant">{number} ·</span>
+        <span>{title}</span>
+        {optional && (
+          <span className="font-body-md text-body-md text-on-surface-variant font-normal">
+            (optional)
+          </span>
+        )}
+      </h2>
+      {children}
+    </section>
   );
+}
+
+/**
+ * tz-lookup throws on out-of-range coords; defend with a try/catch so a
+ * pathological venue (e.g. a manually-entered (0,0)) doesn't crash the form
+ * — just hides the hint. The persisted timezone uses the same function in
+ * the Server Action, so any failure there is the surface that owns the
+ * recovery, not this client-side hint.
+ */
+function safeTzFromVenue(v: Venue): string | null {
+  try {
+    return tzFromCoords(v.latitude, v.longitude);
+  } catch {
+    return null;
+  }
 }

@@ -9,14 +9,16 @@ vi.mock('./actions', () => ({
   createEvent: vi.fn(async () => ({ error: 'unreachable from tests' })),
 }));
 
-// next/navigation: edit-mode uses router.refresh() on success.
+// next/navigation: edit-mode uses router.refresh() on success, router.push()
+// for Cancel navigation in both modes.
 const refreshMock = vi.fn();
+const pushMock = vi.fn();
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ refresh: refreshMock, push: vi.fn() }),
+  useRouter: () => ({ refresh: refreshMock, push: pushMock }),
 }));
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import NewEventForm, { type InitialBlock } from './NewEventForm';
 import type { Venue } from '@/lib/venue';
 
@@ -76,10 +78,11 @@ const initialBlocks: InitialBlock[] = [
 
 beforeEach(() => {
   refreshMock.mockClear();
+  pushMock.mockClear();
 });
 
 describe('NewEventForm — edit mode prefill', () => {
-  it('shows the breadcrumb + title for edit mode (not create copy)', () => {
+  it('renders the event title in the basics section (now linear, always visible)', () => {
     render(
       <NewEventForm
         mode="edit"
@@ -89,29 +92,13 @@ describe('NewEventForm — edit mode prefill', () => {
         submit={vi.fn(async () => ({ ok: true as const }))}
       />,
     );
-    // Both the in-form breadcrumb and the page-title-style header show "Edit
-    // event" (the page-level outer header is owned by the server component;
-    // these two are inside the form).
-    const editLabels = screen.getAllByText(/edit event/i);
-    expect(editLabels.length).toBeGreaterThanOrEqual(2);
-    // Section summaries show the initial values in the collapsed accordion rows
-    // (only the first/active section is expanded; the others render summary).
-    expect(screen.getByText(/Menlo Park/)).toBeInTheDocument();
-  });
-
-  it('renders the event title in the basics section', () => {
-    render(
-      <NewEventForm
-        mode="edit"
-        eventId="11111111-2222-4333-8444-555555555555"
-        initialEvent={initialEvent}
-        initialBlocks={initialBlocks}
-        submit={vi.fn(async () => ({ ok: true as const }))}
-      />,
-    );
-    // Basics section is open by default; the Input shows the title value.
+    // Linear form: every section is always rendered, so the title input is
+    // present without needing to expand anything.
     const titleInput = screen.getByDisplayValue('Internal Workshop');
     expect(titleInput).toBeInTheDocument();
+    // Prefilled venue shows in the picked-venue card (no longer a summary
+    // line — the venue card is always visible in the linear layout).
+    expect(screen.getByText(/Menlo Park/)).toBeInTheDocument();
   });
 
   it('shows a single "Save changes" button in edit mode (no Draft/Publish split)', () => {
@@ -124,7 +111,7 @@ describe('NewEventForm — edit mode prefill', () => {
         submit={vi.fn(async () => ({ ok: true as const }))}
       />,
     );
-    // Single button in edit mode — lifecycle is managed elsewhere
+    // Single save button in edit mode — lifecycle is managed elsewhere
     // (publishEvent action remains on the page header).
     expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /publish event/i })).toBeNull();
@@ -324,15 +311,229 @@ describe('NewEventForm — edit mode prefill', () => {
 });
 
 describe('NewEventForm — create mode (regression: existing behavior preserved)', () => {
-  it('renders the create-mode breadcrumb + dual buttons + empty basics', () => {
+  it('renders the create-mode dual buttons + empty basics', () => {
     render(
       <NewEventForm
         mode="create"
         submit={vi.fn(async () => ({ ok: true as const }))}
       />,
     );
-    expect(screen.getByText(/new event/i)).toBeInTheDocument();
+    // The breadcrumb + page H1 ("New event"/"Create event") moved up to the
+    // page-level header in app/events/new/page.tsx; this form no longer
+    // renders them. Assert what the form DOES still own: the action buttons.
     expect(screen.getByRole('button', { name: /save draft/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /publish event/i })).toBeInTheDocument();
+  });
+});
+
+/* ====================================================================
+ * D.3b — EE form restyle (linear, numbered sections + new action row)
+ * ==================================================================== */
+
+describe('NewEventForm — D.3b linear layout', () => {
+  it('renders the four sections in mockup order with numbered headings', () => {
+    render(
+      <NewEventForm
+        mode="edit"
+        eventId="11111111-2222-4333-8444-555555555555"
+        initialEvent={initialEvent}
+        initialBlocks={initialBlocks}
+        submit={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+    const headings = screen.getAllByRole('heading', { level: 2 }).map(h => h.textContent ?? '');
+    // The four section H2s, in the mockup order: 1 · Basics → 2 · Date &
+    // venue → 3 · Capacity → 4 · Agenda.
+    const numbered = headings.filter(t => /^\s*\d\s*·/.test(t));
+    expect(numbered).toHaveLength(4);
+    expect(numbered[0]).toMatch(/1\s*·\s*Basics/);
+    expect(numbered[1]).toMatch(/2\s*·\s*Date\s*&\s*venue/);
+    expect(numbered[2]).toMatch(/3\s*·\s*Capacity/);
+    expect(numbered[3]).toMatch(/4\s*·\s*Agenda/);
+  });
+
+  it('marks the Agenda section as optional in the heading', () => {
+    render(
+      <NewEventForm
+        mode="edit"
+        eventId="11111111-2222-4333-8444-555555555555"
+        initialEvent={initialEvent}
+        initialBlocks={initialBlocks}
+        submit={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+    const agendaHeading = screen.getAllByRole('heading', { level: 2 })
+      .find(h => /agenda/i.test(h.textContent ?? ''));
+    expect(agendaHeading?.textContent ?? '').toMatch(/optional/i);
+  });
+
+  it('shows Max attendees outside the Basics section (now in section 3 · Capacity)', () => {
+    render(
+      <NewEventForm
+        mode="edit"
+        eventId="11111111-2222-4333-8444-555555555555"
+        initialEvent={initialEvent}
+        initialBlocks={initialBlocks}
+        submit={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+    // Find the Capacity section by its heading, then assert the max-attendees
+    // input lives inside it (not inside the Basics section). The Capacity
+    // input has the prefilled "80" value from the fixture's max_attendees.
+    const capacityHeading = screen.getAllByRole('heading', { level: 2 })
+      .find(h => /capacity/i.test(h.textContent ?? ''));
+    expect(capacityHeading).toBeDefined();
+    const section = capacityHeading!.closest('section');
+    expect(section).not.toBeNull();
+    const capacityInput = within(section!).getByDisplayValue('80');
+    expect(capacityInput).toBeInTheDocument();
+
+    // Conversely, the Basics section heading should NOT contain a numeric
+    // input with the capacity value any more.
+    const basicsHeading = screen.getAllByRole('heading', { level: 2 })
+      .find(h => /basics/i.test(h.textContent ?? ''));
+    const basicsSection = basicsHeading!.closest('section');
+    expect(within(basicsSection!).queryByDisplayValue('80')).toBeNull();
+  });
+
+  it('renders the timezone hint once a venue is picked (edit mode prefilled venue)', () => {
+    render(
+      <NewEventForm
+        mode="edit"
+        eventId="11111111-2222-4333-8444-555555555555"
+        initialEvent={initialEvent}
+        initialBlocks={initialBlocks}
+        submit={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+    // Menlo Park lat/lng resolves to America/Los_Angeles via tz-lookup; the
+    // hint copy includes the resolved zone string verbatim.
+    const hint = screen.getByTestId('venue-tz-hint');
+    expect(hint.textContent ?? '').toMatch(/Los_Angeles/);
+    expect(hint.textContent ?? '').toMatch(/picked up from your venue/i);
+  });
+
+  it('does NOT render the timezone hint before a venue is picked (create mode)', () => {
+    render(
+      <NewEventForm
+        mode="create"
+        submit={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+    expect(screen.queryByTestId('venue-tz-hint')).toBeNull();
+  });
+
+  it('renders the "Event type" terminology in the agenda section (not "Kind")', () => {
+    render(
+      <NewEventForm
+        mode="edit"
+        eventId="11111111-2222-4333-8444-555555555555"
+        initialEvent={initialEvent}
+        initialBlocks={initialBlocks}
+        submit={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+    // The agenda's components header reads "Event type" (locked terminology
+    // per patterns doc §7 — DB column stays `kind`).
+    expect(screen.getByText(/^Event type$/)).toBeInTheDocument();
+  });
+});
+
+describe('NewEventForm — D.3b action row (Cancel · Save & Preview · Save)', () => {
+  it('Cancel in edit mode navigates to the details page', () => {
+    render(
+      <NewEventForm
+        mode="edit"
+        eventId="11111111-2222-4333-8444-555555555555"
+        initialEvent={initialEvent}
+        initialBlocks={initialBlocks}
+        submit={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
+    expect(pushMock).toHaveBeenCalledTimes(1);
+    expect(pushMock).toHaveBeenCalledWith('/events/11111111-2222-4333-8444-555555555555/details');
+  });
+
+  it('Cancel in create mode navigates to the dashboard', () => {
+    render(
+      <NewEventForm
+        mode="create"
+        submit={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
+    expect(pushMock).toHaveBeenCalledTimes(1);
+    expect(pushMock).toHaveBeenCalledWith('/dashboard');
+  });
+
+  it('shows Save & Preview only in edit mode (create-mode redirect makes the workaround not worth it)', () => {
+    const { unmount } = render(
+      <NewEventForm
+        mode="edit"
+        eventId="11111111-2222-4333-8444-555555555555"
+        initialEvent={initialEvent}
+        initialBlocks={initialBlocks}
+        submit={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+    expect(screen.getByRole('button', { name: /save & preview/i })).toBeInTheDocument();
+    unmount();
+
+    render(
+      <NewEventForm
+        mode="create"
+        submit={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: /save & preview/i })).toBeNull();
+  });
+
+  it('Save & Preview in edit mode submits AND opens the public URL in a new tab after the save resolves', async () => {
+    const submit = vi.fn(async () => ({ ok: true as const }));
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+    render(
+      <NewEventForm
+        mode="edit"
+        eventId="11111111-2222-4333-8444-555555555555"
+        initialEvent={initialEvent}
+        initialBlocks={initialBlocks}
+        submit={submit}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /save & preview/i }));
+
+    await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(openSpy).toHaveBeenCalledTimes(1));
+    expect(openSpy).toHaveBeenCalledWith(
+      '/events/11111111-2222-4333-8444-555555555555',
+      '_blank',
+      'noopener,noreferrer',
+    );
+    openSpy.mockRestore();
+  });
+
+  it('Save & Preview does NOT open the preview tab when the save fails (no orphan tab)', async () => {
+    const submit = vi.fn(async () => ({ error: 'rpc blew up' }));
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+    render(
+      <NewEventForm
+        mode="edit"
+        eventId="11111111-2222-4333-8444-555555555555"
+        initialEvent={initialEvent}
+        initialBlocks={initialBlocks}
+        submit={submit}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /save & preview/i }));
+
+    await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByText(/rpc blew up/)).toBeInTheDocument());
+    expect(openSpy).not.toHaveBeenCalled();
+    openSpy.mockRestore();
   });
 });
