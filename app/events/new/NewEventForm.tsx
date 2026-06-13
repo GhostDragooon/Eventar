@@ -204,6 +204,11 @@ export default function NewEventForm(props: Props) {
   const [blocks, setBlocks] = useState<BlockDraft[]>(
     () => (props.mode === 'edit' ? initialBlocksFrom(props.initialBlocks) : []),
   );
+  // Edit-mode success confirmation. Set after a successful Save; cleared on
+  // the next submit attempt. Without this, router.refresh() repaints the
+  // form to the same values and the user has no way to tell their click
+  // landed (the protocol's "did I do the right thing?" failure mode).
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
 
   const v1 = basicsValid(basics);
   const v2 = venueValid(venue);
@@ -229,6 +234,7 @@ export default function NewEventForm(props: Props) {
 
   function onSubmit(nextIntent: Intent) {
     setErr(null);
+    setSavedAt(null);
     // Validate in section order; on the first failure, jump the user to that
     // section and explain. Buttons stay enabled (disabled-with-no-reason reads
     // as "broken"), so the click is what surfaces what's still needed.
@@ -299,6 +305,7 @@ export default function NewEventForm(props: Props) {
       if (props.mode === 'edit') {
         router.refresh();
         setIntent(null);
+        setSavedAt(new Date());
       }
     });
   }
@@ -328,7 +335,7 @@ export default function NewEventForm(props: Props) {
           </h1>
           <p className="font-body-lg text-body-lg text-on-surface-variant mt-sm">
             {isEdit
-              ? 'Edit the event details below. Publishing is managed from the action panel on the right of the previous screen.'
+              ? 'Edit the event details below. Save changes here, then publish from the panel on the right when you\'re ready.'
               : 'Configure the core details. Save as a draft anytime; publish when the registration page is ready to go live.'}
           </p>
         </div>
@@ -411,6 +418,17 @@ export default function NewEventForm(props: Props) {
             >
               <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden>warning</span>
               <span className="flex-1">{err}</span>
+            </p>
+          )}
+          {savedAt && !err && (
+            <p
+              role="status"
+              aria-live="polite"
+              data-testid="save-confirmation"
+              className="font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm flex items-start gap-sm"
+            >
+              <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden data-fill="1">check_circle</span>
+              <span className="flex-1">Saved as draft. Publish from the panel on the right when ready.</span>
             </p>
           )}
         </div>

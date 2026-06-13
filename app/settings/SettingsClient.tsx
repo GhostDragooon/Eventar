@@ -26,7 +26,7 @@ const THEME_OPTIONS: ThemeOpt[] = [
 
 const TEXT_OPTIONS: TextOpt[] = [
   { value: 'small',   label: 'Small',   description: 'Tighter type for fitting more on screen.',     icon: 'text_decrease' },
-  { value: 'default', label: 'Default', description: 'The mockup-tuned baseline (16 px body).',      icon: 'text_format'   },
+  { value: 'default', label: 'Default', description: 'Standard size — 16 px body text.',            icon: 'text_format'   },
   { value: 'large',   label: 'Large',   description: 'Roomier type — easier reading from a tablet.', icon: 'text_increase' },
 ];
 
@@ -76,9 +76,7 @@ export default function SettingsClient({
           onPick={pickTextSize}
         />
         <p className="font-body-md text-body-md text-on-surface-variant mt-md">
-          Scales the typography tokens. A handful of legacy explicit-pixel
-          components don&apos;t scale yet — they&apos;ll catch up during the
-          redesign restyle pass.
+          Some icons and badges keep a fixed size for layout consistency.
         </p>
       </SettingsSection>
 

@@ -25,8 +25,13 @@ export function isTextSize(value: unknown): value is TextSize {
 
 export function readTextSize(): TextSize {
   if (typeof window === 'undefined') return 'default';
-  const stored = window.localStorage.getItem(TEXT_SIZE_STORAGE_KEY);
-  return isTextSize(stored) ? stored : 'default';
+  // Safari "Block all cookies" and iOS private mode throw on storage access.
+  try {
+    const stored = window.localStorage.getItem(TEXT_SIZE_STORAGE_KEY);
+    return isTextSize(stored) ? stored : 'default';
+  } catch {
+    return 'default';
+  }
 }
 
 export function applyTextSize(size: TextSize): void {
@@ -39,6 +44,14 @@ export function applyTextSize(size: TextSize): void {
 
 export function writeTextSize(size: TextSize): void {
   if (typeof window === 'undefined') return;
-  window.localStorage.setItem(TEXT_SIZE_STORAGE_KEY, size);
+  // Apply the class FIRST so the in-tab UI flips even when persistence fails
+  // (private mode / locked browser). The pick will revert to default on the
+  // next visit, which is the correct user-visible behavior for a UI
+  // preference that can't be stored.
   applyTextSize(size);
+  try {
+    window.localStorage.setItem(TEXT_SIZE_STORAGE_KEY, size);
+  } catch {
+    // Best-effort persistence; in-tab UI already reflects the pick.
+  }
 }

@@ -236,6 +236,73 @@ describe('NewEventForm — edit mode prefill', () => {
     await waitFor(() => expect(refreshMock).toHaveBeenCalledTimes(1));
   });
 
+  it('shows a "Saved as draft" confirmation banner after a successful save', async () => {
+    // Regression: without this, the user clicks Save and sees nothing — the
+    // page refreshes to the same values with no signal the action landed.
+    const submit = vi.fn(async () => ({ ok: true as const }));
+    render(
+      <NewEventForm
+        mode="edit"
+        eventId="11111111-2222-4333-8444-555555555555"
+        initialEvent={initialEvent}
+        initialBlocks={initialBlocks}
+        submit={submit}
+      />,
+    );
+
+    // Before save: no banner.
+    expect(screen.queryByTestId('save-confirmation')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+
+    await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
+    const banner = await screen.findByTestId('save-confirmation');
+    expect(banner).toHaveAttribute('role', 'status');
+    expect(banner).toHaveAttribute('aria-live', 'polite');
+    expect(banner.textContent).toMatch(/saved as draft/i);
+  });
+
+  it('does NOT show the save confirmation when the submit fails', async () => {
+    const submit = vi.fn(async () => ({ error: 'rpc blew up' }));
+    render(
+      <NewEventForm
+        mode="edit"
+        eventId="11111111-2222-4333-8444-555555555555"
+        initialEvent={initialEvent}
+        initialBlocks={initialBlocks}
+        submit={submit}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+
+    await waitFor(() => expect(screen.getByText(/rpc blew up/)).toBeInTheDocument());
+    expect(screen.queryByTestId('save-confirmation')).toBeNull();
+  });
+
+  it('clears the save confirmation on the next submit attempt', async () => {
+    const submit = vi.fn(async () => ({ ok: true as const }));
+    render(
+      <NewEventForm
+        mode="edit"
+        eventId="11111111-2222-4333-8444-555555555555"
+        initialEvent={initialEvent}
+        initialBlocks={initialBlocks}
+        submit={submit}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+    await screen.findByTestId('save-confirmation');
+
+    // Second click: confirmation should vanish at the start of the next
+    // onSubmit (so the user sees the click registered). Wait for the button
+    // to re-enable after the first transition completes before clicking again.
+    const button = await screen.findByRole('button', { name: /save changes/i });
+    fireEvent.click(button);
+    expect(screen.queryByTestId('save-confirmation')).toBeNull();
+  });
+
   it('surfaces the submit error and does not refresh on failure', async () => {
     const submit = vi.fn(async () => ({ error: 'rpc blew up' }));
     render(
