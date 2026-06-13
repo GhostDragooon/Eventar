@@ -92,7 +92,7 @@ export default async function EventAnalyticsPage({
   const metrics = { showUpRate, happyRate: hr, responseRate };
 
   return (
-    <StaffShell staff={{ email: staff.email, role: staff.role }}>
+    <StaffShell staff={{ email: staff.email, role: staff.role }} backHref={`/events/${id}/details`} backLabel="Event">
       <header className="mb-lg flex flex-col md:flex-row justify-between items-end gap-md">
         <div className="max-w-3xl">
           <Link

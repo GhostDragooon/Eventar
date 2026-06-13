@@ -13,7 +13,7 @@ export default async function SettingsPage() {
   }
 
   return (
-    <StaffShell staff={{ email: staff.email, role: staff.role }}>
+    <StaffShell staff={{ email: staff.email, role: staff.role }} backHref="/dashboard" backLabel="Dashboard">
       <header className="mb-lg">
         <h1 className="font-headline-lg text-headline-lg text-on-surface">Settings</h1>
         <p className="font-body-lg text-body-lg text-on-surface-variant mt-sm">

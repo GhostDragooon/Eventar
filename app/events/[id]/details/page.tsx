@@ -52,7 +52,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
   const lifecycle = computeLifecycle(event as EventLifecycleRow, nowMs);
 
   return (
-    <StaffShell staff={{ email: staff.email, role: staff.role }}>
+    <StaffShell staff={{ email: staff.email, role: staff.role }} backHref="/dashboard" backLabel="Dashboard">
       <header className="mb-xl">
         <Link
           href="/dashboard"

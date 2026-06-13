@@ -82,15 +82,10 @@ export default async function StaffEventEditPage({
   const registrationClosed = ended || atCapacity;
 
   return (
-    <StaffShell staff={{ email: staff.email, role: staff.role }}>
-      <nav aria-label="Breadcrumb" className="flex items-center gap-xs text-on-surface-variant mb-sm">
-        <Link href="/dashboard" className="font-label-md text-label-md uppercase tracking-wider hover:text-primary">
-          Dashboard
-        </Link>
-        <span className="material-symbols-outlined text-[16px]" aria-hidden>chevron_right</span>
-        <span className="font-label-md text-label-md uppercase tracking-wider text-primary">Edit event</span>
-      </nav>
-
+    <StaffShell staff={{ email: staff.email, role: staff.role }} backHref="/dashboard" backLabel="Dashboard">
+      {/* Per patterns §8 the StaffShell's NAV owns all back-navigation; this
+          header only carries the page title (no breadcrumb — that would
+          duplicate the top NAV's "Back to Dashboard" link). */}
       <header className="mb-lg">
         <div className="flex items-center gap-md mb-sm flex-wrap">
           <StatusPill status={event.status} />
