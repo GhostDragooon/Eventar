@@ -2,104 +2,205 @@
 
 import { useSyncExternalStore } from 'react';
 import { readTheme, writeTheme, type Theme } from '@/lib/theme';
+import { readTextSize, writeTextSize, type TextSize } from '@/lib/textSize';
+import { SignOutButton } from '@/components/shell/SignOutButton';
 
 // SSR snapshot: localStorage doesn't exist on the server, so the initial
-// render says "system". The FOUC script in app/layout.tsx has already
-// applied the right .dark/.light class to <html> by the time hydration runs;
-// the radio state catches up on first client snapshot. Bonus over useState
-// + useEffect: 'storage' subscription syncs the pick across browser tabs.
-function subscribe(onChange: () => void): () => void {
+// render uses the defaults. The FOUC script in app/layout.tsx has already
+// applied the right classes to <html> by the time hydration runs; the
+// radio state catches up on the first client snapshot. Bonus over
+// useState + useEffect: 'storage' subscription syncs picks across tabs.
+function subscribeStorage(onChange: () => void): () => void {
   window.addEventListener('storage', onChange);
   return () => window.removeEventListener('storage', onChange);
 }
 
-const OPTIONS: Array<{ value: Theme; label: string; description: string; icon: string }> = [
+type ThemeOpt   = { value: Theme;    label: string; description: string; icon: string };
+type TextOpt    = { value: TextSize; label: string; description: string; icon: string };
+
+const THEME_OPTIONS: ThemeOpt[] = [
   { value: 'light',  label: 'Light',  description: 'Always use the light palette, regardless of OS.', icon: 'light_mode' },
   { value: 'dark',   label: 'Dark',   description: 'Always use the dark palette, regardless of OS.',  icon: 'dark_mode'  },
   { value: 'system', label: 'System', description: 'Follow your operating-system preference.',         icon: 'computer'   },
 ];
 
-export default function SettingsClient() {
+const TEXT_OPTIONS: TextOpt[] = [
+  { value: 'small',   label: 'Small',   description: 'Tighter type for fitting more on screen.',     icon: 'text_decrease' },
+  { value: 'default', label: 'Default', description: 'The mockup-tuned baseline (16 px body).',      icon: 'text_format'   },
+  { value: 'large',   label: 'Large',   description: 'Roomier type — easier reading from a tablet.', icon: 'text_increase' },
+];
+
+export default function SettingsClient({
+  staff,
+}: {
+  staff: { email: string; role: 'organizer' | 'manager' };
+}) {
   const theme = useSyncExternalStore<Theme>(
-    subscribe,
+    subscribeStorage,
     readTheme,
     () => 'system',
   );
+  const textSize = useSyncExternalStore<TextSize>(
+    subscribeStorage,
+    readTextSize,
+    () => 'default',
+  );
 
-  function pick(next: Theme) {
+  function pickTheme(next: Theme) {
     writeTheme(next);
-    // writeTheme doesn't fire a 'storage' event in the same tab; dispatch one
-    // manually so useSyncExternalStore re-snapshots and the radio updates.
-    window.dispatchEvent(new StorageEvent('storage', { key: 'eventar-theme' }));
+    notifyStorage();
+  }
+  function pickTextSize(next: TextSize) {
+    writeTextSize(next);
+    notifyStorage();
   }
 
   return (
-    <section
-      aria-labelledby="appearance-heading"
-      className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm max-w-2xl"
-    >
+    <div className="space-y-md max-w-2xl">
+      <SettingsSection icon="palette" title="Appearance">
+        <RadioCardGroup
+          name="theme"
+          ariaLabel="Appearance"
+          options={THEME_OPTIONS}
+          selected={theme}
+          onPick={pickTheme}
+        />
+      </SettingsSection>
+
+      <SettingsSection icon="format_size" title="Text size">
+        <RadioCardGroup
+          name="text-size"
+          ariaLabel="Text size"
+          options={TEXT_OPTIONS}
+          selected={textSize}
+          onPick={pickTextSize}
+        />
+        <p className="font-body-md text-body-md text-on-surface-variant mt-md">
+          Scales the typography tokens. A handful of legacy explicit-pixel
+          components don&apos;t scale yet — they&apos;ll catch up during the
+          redesign restyle pass.
+        </p>
+      </SettingsSection>
+
+      <SettingsSection icon="person" title="Account">
+        <dl className="space-y-md">
+          <Field label="Email" value={staff.email} />
+          <Field label="Role" value={staff.role === 'manager' ? 'Manager' : 'Organizer'} />
+        </dl>
+        <div className="mt-lg pt-md border-t border-outline-variant">
+          <SignOutButton className="inline-flex items-center gap-sm bg-surface-container-high text-on-surface font-label-md text-label-md rounded-lg py-sm px-lg hover:bg-surface-container-highest transition-colors" />
+        </div>
+      </SettingsSection>
+    </div>
+  );
+}
+
+function notifyStorage() {
+  // writeTheme / writeTextSize don't fire 'storage' in the same tab — dispatch
+  // a synthetic one so our useSyncExternalStore re-snapshots and the radio
+  // updates. Cross-tab still works via the real browser-fired event.
+  window.dispatchEvent(new StorageEvent('storage'));
+}
+
+function SettingsSection({
+  icon,
+  title,
+  children,
+}: {
+  icon: string;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm">
       <div className="flex items-center gap-md mb-md">
         <div
           aria-hidden
           className="w-10 h-10 rounded-full bg-primary-fixed text-primary flex items-center justify-center"
         >
-          <span className="material-symbols-outlined text-[20px]">palette</span>
+          <span className="material-symbols-outlined text-[20px]">{icon}</span>
         </div>
-        <h2 id="appearance-heading" className="font-headline-sm text-[20px] text-on-surface">
-          Appearance
-        </h2>
+        <h2 className="font-headline-sm text-[20px] text-on-surface">{title}</h2>
       </div>
-
-      <div role="radiogroup" aria-labelledby="appearance-heading" className="space-y-sm">
-        {OPTIONS.map((opt) => {
-          const selected = theme === opt.value;
-          return (
-            <label
-              key={opt.value}
-              className={`flex items-start gap-md p-md rounded-lg border cursor-pointer transition-colors ${
-                selected
-                  ? 'border-primary bg-primary-fixed'
-                  : 'border-outline-variant hover:bg-surface-container-high'
-              }`}
-            >
-              <input
-                type="radio"
-                name="theme"
-                value={opt.value}
-                checked={selected}
-                onChange={() => pick(opt.value)}
-                className="sr-only"
-              />
-              <span
-                className={`material-symbols-outlined text-[24px] mt-[2px] shrink-0 ${
-                  selected ? 'text-primary' : 'text-on-surface-variant'
-                }`}
-                aria-hidden
-                data-fill={selected ? '1' : undefined}
-              >
-                {opt.icon}
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className={`font-title-lg text-[16px] ${selected ? 'text-primary' : 'text-on-surface'}`}>
-                  {opt.label}
-                </p>
-                <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
-                  {opt.description}
-                </p>
-              </div>
-              <span
-                className={`material-symbols-outlined text-[20px] mt-[2px] shrink-0 ${
-                  selected ? 'text-primary' : 'text-outline'
-                }`}
-                aria-hidden
-                data-fill={selected ? '1' : undefined}
-              >
-                {selected ? 'radio_button_checked' : 'radio_button_unchecked'}
-              </span>
-            </label>
-          );
-        })}
-      </div>
+      {children}
     </section>
+  );
+}
+
+type RadioOption<V extends string> = { value: V; label: string; description: string; icon: string };
+
+function RadioCardGroup<V extends string>({
+  name,
+  ariaLabel,
+  options,
+  selected,
+  onPick,
+}: {
+  name: string;
+  ariaLabel: string;
+  options: ReadonlyArray<RadioOption<V>>;
+  selected: V;
+  onPick: (next: V) => void;
+}) {
+  return (
+    <div role="radiogroup" aria-label={ariaLabel} className="space-y-sm">
+      {options.map((opt) => {
+        const isSelected = selected === opt.value;
+        return (
+          <label
+            key={opt.value}
+            className={`flex items-start gap-md p-md rounded-lg border cursor-pointer transition-colors ${
+              isSelected
+                ? 'border-primary bg-primary-fixed'
+                : 'border-outline-variant hover:bg-surface-container-high'
+            }`}
+          >
+            <input
+              type="radio"
+              name={name}
+              value={opt.value}
+              checked={isSelected}
+              onChange={() => onPick(opt.value)}
+              className="sr-only"
+            />
+            <span
+              className={`material-symbols-outlined text-[24px] mt-[2px] shrink-0 ${
+                isSelected ? 'text-primary' : 'text-on-surface-variant'
+              }`}
+              aria-hidden
+              data-fill={isSelected ? '1' : undefined}
+            >
+              {opt.icon}
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className={`font-title-lg text-[16px] ${isSelected ? 'text-primary' : 'text-on-surface'}`}>
+                {opt.label}
+              </p>
+              <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
+                {opt.description}
+              </p>
+            </div>
+            <span
+              className={`material-symbols-outlined text-[20px] mt-[2px] shrink-0 ${
+                isSelected ? 'text-primary' : 'text-outline'
+              }`}
+              aria-hidden
+              data-fill={isSelected ? '1' : undefined}
+            >
+              {isSelected ? 'radio_button_checked' : 'radio_button_unchecked'}
+            </span>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">{label}</dt>
+      <dd className="font-body-lg text-body-lg text-on-surface mt-xs">{value}</dd>
+    </div>
   );
 }

@@ -136,37 +136,40 @@
   --font-body-md: var(--font-inter), system-ui, sans-serif;
   --font-label-md: var(--font-inter), system-ui, sans-serif;
 
-  /* Type scale — mockup-verified sizes/weights/line-heights */
-  --text-display: 48px;
+  /* Type scale — mockup-verified sizes/weights/line-heights. Sizes are
+     multiplied by --text-scale so /settings → Text size can scale the whole
+     M3 token family. Arbitrary text-[Npx] literals elsewhere in components
+     won't scale until they're migrated to tokens (v1 caveat). */
+  --text-display: calc(48px * var(--text-scale));
   --text-display--line-height: 1.2;
   --text-display--letter-spacing: -0.02em;
   --text-display--font-weight: 700;
 
-  --text-headline-lg: 39px;
+  --text-headline-lg: calc(39px * var(--text-scale));
   --text-headline-lg--line-height: 1.25;
   --text-headline-lg--font-weight: 700;
 
-  --text-headline-md: 31px;
+  --text-headline-md: calc(31px * var(--text-scale));
   --text-headline-md--line-height: 1.3;
   --text-headline-md--font-weight: 600;
 
-  --text-headline-sm: 25px;
+  --text-headline-sm: calc(25px * var(--text-scale));
   --text-headline-sm--line-height: 1.3;
   --text-headline-sm--font-weight: 600;
 
-  --text-title-lg: 20px;
+  --text-title-lg: calc(20px * var(--text-scale));
   --text-title-lg--line-height: 1.5;
   --text-title-lg--font-weight: 600;
 
-  --text-body-lg: 16px;
+  --text-body-lg: calc(16px * var(--text-scale));
   --text-body-lg--line-height: 1.6;
   --text-body-lg--font-weight: 400;
 
-  --text-body-md: 14px;
+  --text-body-md: calc(14px * var(--text-scale));
   --text-body-md--line-height: 1.6;
   --text-body-md--font-weight: 400;
 
-  --text-label-md: 12px;
+  --text-label-md: calc(12px * var(--text-scale));
   --text-label-md--line-height: 1;
   --text-label-md--letter-spacing: 0.05em;
   --text-label-md--font-weight: 600;
@@ -197,6 +200,11 @@
 
   /* A.2: theme native UI (date pickers, selects, scrollbars, autofill) */
   color-scheme: light;
+
+  /* Text-size multiplier — overridden by :root.text-small / :root.text-large
+     (set by /settings → Text size). Scales every M3 typography token via
+     the calc(...px * var(--text-scale)) values defined in @theme above. */
+  --text-scale: 1;
 
   /* Single Geist family: legacy headline var aliases the sans var so the
      headline/display font utilities resolve to Geist with one next/font
@@ -457,6 +465,12 @@
   --inverse-on-surface: #0a0a0a;
   --inverse-primary: #0070f3;
 }
+
+/* Text-size class overrides — set on <html> by /settings → Text size.
+   M3 typography tokens are calc(Npx * var(--text-scale)) so flipping this
+   one variable scales every header/body/label class. */
+:root.text-small { --text-scale: 0.875; }
+:root.text-large { --text-scale: 1.125; }
 
 @layer base {
   * {

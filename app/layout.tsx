@@ -3,14 +3,19 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { THEME_STORAGE_KEY } from "@/lib/theme";
+import { TEXT_SIZE_STORAGE_KEY } from "@/lib/textSize";
 
 // FOUC prevention: runs synchronously before paint, applies the user's saved
-// theme class on <html>. Without this, the page would render in system theme
-// for one frame and then snap to the user's pick after React hydrates. The
-// localStorage key is shared with lib/theme.ts; keep the snippet minimal so
-// it stays inline-able. Any failure (private mode, throwing storage) silently
-// falls back to system theme — the missing class is the system-default state.
-const THEME_INIT_SCRIPT = `try{var t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});if(t==='light'||t==='dark'){document.documentElement.classList.add(t)}}catch(e){}`;
+// theme + text-size classes on <html>. Without this, the page would render
+// in defaults for one frame and snap to the user's picks after React
+// hydrates. The localStorage keys are shared with lib/theme.ts and
+// lib/textSize.ts; keep the snippet minimal so it stays inline-able. Any
+// failure (private mode, throwing storage) silently falls back to defaults
+// — the missing classes are the default state.
+const THEME_INIT_SCRIPT = [
+  `try{var t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});if(t==='light'||t==='dark'){document.documentElement.classList.add(t)}}catch(e){}`,
+  `try{var s=localStorage.getItem(${JSON.stringify(TEXT_SIZE_STORAGE_KEY)});if(s==='small'||s==='large'){document.documentElement.classList.add('text-'+s)}}catch(e){}`,
+].join('');
 
 /* Redesign (2026-06-11): single Geist family everywhere. The one sans
    instance aliases the legacy var name --font-inter; globals.css defines

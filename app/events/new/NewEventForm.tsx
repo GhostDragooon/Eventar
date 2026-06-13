@@ -491,10 +491,14 @@ function DoneRow({ disabled, onDone }: { disabled: boolean; onDone: () => void }
 
 /**
  * Right-column status panel — mirrors the "STATUS: DRAFT / Setup Completion"
- * card from the New Event Setup mockup. Lifts the dark indigo card with
- * progress bar + checkmark list. Completion counts only the required
- * sections; required-but-incomplete items show a hollow ring, optional
- * incomplete items show a muted dash (never a false checkmark).
+ * card from the New Event Setup mockup. Surface tokens match the form
+ * sections so the card sits flat with the rest of the page in both light
+ * and dark modes (previously bg-primary, which inverted to near-black in
+ * light mode under the A.2 Vercel-canonical palette). The Draft pill uses
+ * the amber warning tokens per §7a color rule ("amber = draft").
+ * Completion counts only the required sections; required-but-incomplete
+ * items show a hollow ring, optional incomplete items show a muted dash
+ * (never a false checkmark).
  *
  * "Status" stays Draft on this page — the form has never saved, so the
  * draft/published distinction is the user's INTENT (encoded by which
@@ -509,55 +513,54 @@ function StatusPanel({
   checklist: { label: string; done: boolean; optional?: boolean }[];
 }) {
   return (
-    <div className="bg-primary text-on-primary p-xl rounded-[20px] shadow-xl overflow-hidden relative">
-      <div className="relative z-10">
-        <div className="flex items-center justify-between mb-lg">
-          <span className="font-label-md text-label-md uppercase bg-on-primary/15 px-md py-xs rounded-full tracking-wider">
-            Status: Draft
-          </span>
-          <span className="material-symbols-outlined text-on-primary/60" aria-hidden>auto_awesome</span>
-        </div>
-        <p className="font-label-md text-label-md uppercase tracking-wider text-on-primary/80 mb-xs">
-          Setup Completion
-        </p>
-        <div
-          className="w-full bg-on-primary/20 h-2 rounded-full mb-xl overflow-hidden"
-          role="progressbar"
-          aria-valuenow={completionPct}
-          aria-valuemin={0}
-          aria-valuemax={100}
-        >
-          <div
-            className="bg-on-primary h-full transition-all duration-500"
-            style={{ width: `${completionPct}%` }}
-          />
-        </div>
-        <ul className="space-y-md">
-          {checklist.map((item) => {
-            // Optional, not-yet-done items render in a muted "—" state so the
-            // panel never claims an empty optional step is complete.
-            const icon = item.done
-              ? 'check_circle'
-              : item.optional
-                ? 'remove'
-                : 'radio_button_unchecked';
-            return (
-              <li key={item.label} className={`flex items-center gap-md ${item.done ? '' : 'opacity-60'}`}>
-                <span
-                  className="material-symbols-outlined text-[20px]"
-                  aria-hidden
-                  data-fill={item.done ? '1' : undefined}
-                >
-                  {icon}
-                </span>
-                <span className="font-label-md text-label-md">{item.label}</span>
-              </li>
-            );
-          })}
-        </ul>
+    <div className="bg-surface-container-lowest border border-outline-variant text-on-surface p-xl rounded-[20px] shadow-sm">
+      <div className="flex items-center justify-between mb-lg">
+        <span className="font-label-md text-label-md uppercase bg-warning-container text-on-warning-container px-md py-xs rounded-full tracking-wider">
+          Status: Draft
+        </span>
+        <span className="material-symbols-outlined text-on-surface-variant" aria-hidden>auto_awesome</span>
       </div>
-      {/* Decorative blur */}
-      <div className="absolute -right-12 -bottom-12 w-48 h-48 bg-on-primary/5 rounded-full blur-3xl" aria-hidden />
+      <p className="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant mb-xs">
+        Setup Completion
+      </p>
+      <div
+        className="w-full bg-surface-container-high h-2 rounded-full mb-xl overflow-hidden"
+        role="progressbar"
+        aria-valuenow={completionPct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <div
+          className="bg-primary h-full transition-all duration-500"
+          style={{ width: `${completionPct}%` }}
+        />
+      </div>
+      <ul className="space-y-md">
+        {checklist.map((item) => {
+          // Optional, not-yet-done items render in a muted "—" state so the
+          // panel never claims an empty optional step is complete.
+          const icon = item.done
+            ? 'check_circle'
+            : item.optional
+              ? 'remove'
+              : 'radio_button_unchecked';
+          return (
+            <li
+              key={item.label}
+              className={`flex items-center gap-md ${item.done ? 'text-on-surface' : 'text-on-surface-variant'}`}
+            >
+              <span
+                className={`material-symbols-outlined text-[20px] ${item.done ? 'text-primary' : ''}`}
+                aria-hidden
+                data-fill={item.done ? '1' : undefined}
+              >
+                {icon}
+              </span>
+              <span className="font-label-md text-label-md">{item.label}</span>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

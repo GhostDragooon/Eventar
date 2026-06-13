@@ -20,7 +20,7 @@ export default async function SettingsPage() {
           Personal preferences for your Eventar session.
         </p>
       </header>
-      <SettingsClient />
+      <SettingsClient staff={{ email: staff.email, role: staff.role }} />
     </StaffShell>
   );
 }
