@@ -185,6 +185,21 @@
   --spacing-xl: 32px;
   --spacing-xxl: 48px;
 
+  /* Container scale for max-w-* utilities. Tailwind v4 resolves max-w-{key}
+     against --spacing-{key} when that key exists in the spacing scale — which
+     silently makes max-w-sm = 8px (login card was 8px wide before this fix)
+     and max-w-md = 16px because our spacing scale defines those tokens.
+     The --max-width-{key} namespace is the utility-specific override that
+     wins regardless of spacing collisions. Values match Tailwind v3 defaults
+     the codebase was written against. */
+  --max-width-sm:  24rem;  /* 384px */
+  --max-width-md:  28rem;  /* 448px */
+  --max-width-lg:  32rem;  /* 512px */
+  --max-width-xl:  36rem;  /* 576px */
+  --max-width-2xl: 42rem;  /* 672px */
+  --max-width-3xl: 48rem;  /* 768px */
+  --max-width-7xl: 80rem;  /* 1280px */
+
   /* Radii — shadcn's computed scale stays for component compatibility */
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
