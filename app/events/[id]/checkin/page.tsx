@@ -3,6 +3,8 @@ import { requireStaff, NotAuthorizedError } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { formatInTz } from '@/lib/tz';
 import { StaffShell } from '@/components/shell/StaffShell';
+import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
+import { deriveSpeakerNames } from '@/lib/agenda';
 import RosterClient from './RosterClient';
 
 export default async function StaffCheckinPage({
@@ -22,7 +24,9 @@ export default async function StaffCheckinPage({
   const supabase = await supabaseServer();
   const { data: event } = await supabase
     .from('events')
-    .select('id, title, start_time, end_time, timezone, venue_name, status, max_attendees, created_by')
+    .select(
+      'id, title, start_time, end_time, timezone, venue_name, status, max_attendees, registration_close_at, created_by',
+    )
     .eq('id', id)
     .maybeSingle();
   if (!event) notFound();
@@ -37,11 +41,34 @@ export default async function StaffCheckinPage({
 
   // Initial roster paint: organiser/manager RLS already gates this read.
   // The client subscribes to Realtime postgres_changes for live updates.
-  const { data: initialRoster } = await supabase
-    .from('registrations')
-    .select('id, full_name, email, registration_code, status, check_in_at, check_in_method')
-    .eq('event_id', id)
-    .order('full_name', { ascending: true });
+  // Agenda blocks → derive the speaker list (host + topic speakers, deduped);
+  // speaker_checkins → initial paint of the TC speakers card.
+  const [rosterRes, blocksRes, checkinsRes] = await Promise.all([
+    supabase
+      .from('registrations')
+      .select('id, full_name, email, registration_code, status, check_in_at, check_in_method')
+      .eq('event_id', id)
+      .order('full_name', { ascending: true }),
+    supabase
+      .from('agenda_blocks')
+      .select('host, topics')
+      .eq('event_id', id),
+    supabase
+      .from('speaker_checkins')
+      .select('speaker_name, checked_in_at')
+      .eq('event_id', id),
+  ]);
+
+  if (rosterRes.error) throw rosterRes.error;
+  if (blocksRes.error) throw blocksRes.error;
+  if (checkinsRes.error) throw checkinsRes.error;
+
+  const speakerNames = deriveSpeakerNames(blocksRes.data ?? []);
+  const initialSpeakerCheckins = checkinsRes.data ?? [];
+
+  // eslint-disable-next-line react-hooks/purity
+  const nowMs = Date.now();
+  const lifecycle = computeLifecycle(event as EventLifecycleRow, nowMs);
 
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role }} backHref={`/events/${id}/details`} backLabel="Event">
@@ -69,8 +96,12 @@ export default async function StaffCheckinPage({
       <RosterClient
         eventId={event.id}
         eventTimezone={event.timezone}
-        initialRoster={initialRoster ?? []}
+        eventStartTime={event.start_time}
+        lifecycle={lifecycle}
+        initialRoster={rosterRes.data ?? []}
         maxAttendees={event.max_attendees}
+        speakerNames={speakerNames}
+        initialSpeakerCheckins={initialSpeakerCheckins}
       />
     </StaffShell>
   );
