@@ -7,7 +7,7 @@ import { requireStaff, NotAuthorizedError } from './auth';
 // Fabricate a minimal supabase client shape that requireStaff depends on.
 function mockClient({ user, staffRow }: {
   user: { email: string } | null;
-  staffRow: { id: string; email: string; role: 'organizer' | 'manager' } | null;
+  staffRow: { id: string; email: string; role: 'organizer' | 'manager'; full_name: string | null } | null;
 }) {
   return {
     auth: { getUser: async () => ({ data: { user }, error: null }) },
@@ -25,10 +25,10 @@ describe('requireStaff', () => {
   it('returns staff record when user is logged in and listed in staff', async () => {
     const c = mockClient({
       user: { email: 'a@b.com' },
-      staffRow: { id: 's-1', email: 'a@b.com', role: 'organizer' },
+      staffRow: { id: 's-1', email: 'a@b.com', role: 'organizer', full_name: 'Alex Bee' },
     });
     const staff = await requireStaff(c);
-    expect(staff).toEqual({ id: 's-1', email: 'a@b.com', role: 'organizer' });
+    expect(staff).toEqual({ id: 's-1', email: 'a@b.com', role: 'organizer', full_name: 'Alex Bee' });
   });
 
   it('throws NotAuthorizedError when no session', async () => {

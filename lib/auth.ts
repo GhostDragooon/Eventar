@@ -2,7 +2,12 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabaseServer } from './supabase/server';
 
-export type Staff = { id: string; email: string; role: 'organizer' | 'manager' };
+export type Staff = {
+  id: string;
+  email: string;
+  role: 'organizer' | 'manager';
+  full_name: string | null;
+};
 
 export class NotAuthorizedError extends Error {
   constructor(message = 'not authorized') {
@@ -20,7 +25,7 @@ export async function requireStaff(client?: SupabaseClient): Promise<Staff> {
 
   const { data: staff } = await supabase
     .from('staff')
-    .select('id, email, role')
+    .select('id, email, role, full_name')
     .eq('email', email)
     .maybeSingle();
 

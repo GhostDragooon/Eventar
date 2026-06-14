@@ -2,6 +2,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { isValidRegistrationCode } from '@/lib/registrationCode';
 import { rateLimitByIp } from '@/lib/rateLimit';
 import { isSessionBlockKind, type AgendaTopic } from '@/lib/agenda';
+import { firstName } from '@/lib/name';
 import { PublicShell } from '@/components/shell/PublicShell';
 import SurveyForm from './SurveyForm';
 
@@ -179,9 +180,10 @@ export default async function SurveyPage({
       return { value: b.id, label: speaker ? `${b.title} · ${speaker}` : b.title };
     });
 
-  // First name for the intro line; minimal inline derivation.
-  // E.2 introduces lib/name.ts firstName — consolidate then.
-  const firstName = reg.full_name.trim().split(' ')[0];
+  // First name for the intro line. lib/name.ts::firstName handles padded /
+  // empty / single-token / hyphenated cases consistently across surfaces
+  // (also used by the dashboard greeting).
+  const firstNameStr = firstName(reg.full_name);
 
   return (
     <PublicShell>
@@ -191,7 +193,7 @@ export default async function SurveyPage({
         eventStartTime={event.start_time}
         eventTimezone={event.timezone}
         eventVenueName={event.venue_name}
-        firstName={firstName}
+        firstName={firstNameStr}
         sessionOptions={sessionOptions}
       />
     </PublicShell>
