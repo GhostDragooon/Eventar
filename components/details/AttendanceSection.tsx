@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
+import type { SectionState } from '@/lib/lifecycle/sectionState';
 import { arrivalLatency } from '@/lib/analytics/arrivalLatency';
 
 type Props = {
   lifecycle: Lifecycle;
+  state: SectionState;
   eventId: string;
   registered: number;
   attended: number;
@@ -13,15 +15,26 @@ type Props = {
 
 export function AttendanceSection({
   lifecycle,
+  state,
   eventId,
   registered,
   attended,
   checkIns,
   startTime,
 }: Props) {
+  // patterns §7a — monochrome ladder + §9 "Scanning live" anchors top-LEFT
+  // (after the medallion, before the chip slot — replaces the prior top-right
+  // placement that the sweep note in §9 called out).
+  const wrapperClass =
+    state === 'active'
+      ? 'bg-surface-container-lowest border-2 border-primary rounded-[20px] p-lg shadow-sm mb-lg'
+      : state === 'locked'
+        ? 'bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm mb-lg opacity-60'
+        : 'bg-surface-container-low border border-outline-variant rounded-[20px] p-lg shadow-sm mb-lg';
+
   return (
-    <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm mb-lg">
-      <div className="flex items-center gap-sm mb-md">
+    <section className={wrapperClass}>
+      <div className="flex items-center gap-sm mb-md flex-wrap">
         <span
           className="material-symbols-outlined text-primary bg-primary-container p-xs rounded-md"
           aria-hidden
@@ -29,6 +42,18 @@ export function AttendanceSection({
           how_to_reg
         </span>
         <h2 className="font-title-lg text-title-lg text-on-surface">Attendance</h2>
+        {lifecycle === 'live' && (
+          // §9: top-LEFT, on the same row as the heading. §7a green is the only
+          // place green appears outside the lifecycle pill — it migrates here
+          // for the actively-scanning card.
+          <span
+            className="live-pill-pulse inline-flex items-center gap-xs bg-success text-on-success px-sm py-[2px] rounded-full font-label-md text-label-md"
+            aria-live="polite"
+          >
+            <span aria-hidden>●</span>
+            Scanning live
+          </span>
+        )}
       </div>
 
       {lifecycle === 'live' && (

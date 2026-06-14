@@ -24,6 +24,8 @@ const baseProps = {
   registrationCloseAt: null,
   registeredAt: [],
   nowMs: Date.parse('2026-06-01T00:00:00Z'),
+  state: 'active' as const,
+  confirmationsSent: 0,
 };
 
 describe('RegistrationSection — "Last sign-up" empty copy is lifecycle-aware', () => {
@@ -61,5 +63,61 @@ describe('RegistrationSection — "Last sign-up" empty copy is lifecycle-aware',
       />,
     );
     expect(getByText('1h ago')).toBeInTheDocument();
+  });
+});
+
+describe('RegistrationSection — G6 confirmations "sent" wording', () => {
+  it('renders the confirmation count with the word "sent" (NOT "delivered")', () => {
+    const { getByText, queryByText } = render(
+      <RegistrationSection {...baseProps} lifecycle="registering" confirmationsSent={58} />,
+    );
+    expect(getByText('58 sent')).toBeInTheDocument();
+    expect(getByText('Confirmations')).toBeInTheDocument();
+    // The G6 wording rule: "delivered" must never appear anywhere on this card.
+    expect(queryByText(/delivered/i)).toBeNull();
+  });
+
+  it('renders 0 sent when no confirmations have gone out yet', () => {
+    const { getByText } = render(
+      <RegistrationSection {...baseProps} lifecycle="registering" confirmationsSent={0} />,
+    );
+    expect(getByText('0 sent')).toBeInTheDocument();
+  });
+
+  it('omits the Confirmations stat on the drafted lifecycle (publish copy only)', () => {
+    const { queryByText, getByText } = render(
+      <RegistrationSection {...baseProps} lifecycle="drafted" confirmationsSent={5} />,
+    );
+    expect(getByText('Publish to begin registration.')).toBeInTheDocument();
+    expect(queryByText('Confirmations')).toBeNull();
+    expect(queryByText('5 sent')).toBeNull();
+  });
+});
+
+describe('RegistrationSection — section-state ladder (patterns §7a)', () => {
+  it('active state paints the accent ring (border-primary)', () => {
+    const { container } = render(
+      <RegistrationSection {...baseProps} lifecycle="registering" state="active" />,
+    );
+    const section = container.querySelector('section');
+    expect(section?.className).toContain('border-primary');
+    expect(section?.className).toContain('border-2');
+  });
+
+  it('locked state dims the card (opacity-60)', () => {
+    const { container } = render(
+      <RegistrationSection {...baseProps} lifecycle="drafted" state="locked" />,
+    );
+    const section = container.querySelector('section');
+    expect(section?.className).toContain('opacity-60');
+  });
+
+  it('done state has no accent ring and no opacity dim', () => {
+    const { container } = render(
+      <RegistrationSection {...baseProps} lifecycle="completed" state="done" />,
+    );
+    const section = container.querySelector('section');
+    expect(section?.className).not.toContain('border-primary');
+    expect(section?.className).not.toContain('opacity-60');
   });
 });

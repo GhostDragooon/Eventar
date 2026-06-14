@@ -1,4 +1,5 @@
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
+import type { SectionState } from '@/lib/lifecycle/sectionState';
 import { RegistrationCloseEditor } from './RegistrationCloseEditor';
 
 type Props = {
@@ -9,6 +10,10 @@ type Props = {
   registeredAt: string[];
   nowMs: number;
   lifecycle: Lifecycle;
+  state: SectionState;
+  // G6: count of confirmation emails actually delivered (email_log.status='sent').
+  // Word "sent" matters — copy must never say "delivered".
+  confirmationsSent: number;
 };
 
 export function RegistrationSection({
@@ -19,10 +24,12 @@ export function RegistrationSection({
   registeredAt,
   nowMs,
   lifecycle,
+  state,
+  confirmationsSent,
 }: Props) {
   if (lifecycle === 'drafted') {
     return (
-      <SectionCard title="Registration" icon="how_to_reg">
+      <SectionCard title="Registration" icon="how_to_reg" state={state}>
         <p className="font-body-md text-body-md text-on-surface-variant">Publish to begin registration.</p>
       </SectionCard>
     );
@@ -42,7 +49,7 @@ export function RegistrationSection({
   const closeIsPast = closeMs != null && closeMs <= nowMs;
 
   return (
-    <SectionCard title="Registration" icon="how_to_reg">
+    <SectionCard title="Registration" icon="how_to_reg" state={state}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-lg">
         <div>
           {maxAttendees != null && pct != null ? (
@@ -82,6 +89,8 @@ export function RegistrationSection({
           )}
           {closeIsPast && <Stat label="Registration" value="Closed" />}
           <Stat label="Last sign-up" value={lastSignUpAgo ?? lastSignUpEmptyCopy(lifecycle)} />
+          {/* G6: "sent" wording is locked — must not become "delivered". */}
+          <Stat label="Confirmations" value={`${confirmationsSent} sent`} />
         </div>
       </div>
 
@@ -97,14 +106,24 @@ export function RegistrationSection({
 function SectionCard({
   title,
   icon,
+  state,
   children,
 }: {
   title: string;
   icon: string;
+  state: SectionState;
   children: React.ReactNode;
 }) {
+  // patterns §7a — monochrome ladder. Active = accent ring (the one moment of
+  // color on the cards). Done = neutral surface, no ring. Locked = dimmed.
+  const wrapperClass =
+    state === 'active'
+      ? 'bg-surface-container-lowest border-2 border-primary rounded-[20px] p-lg shadow-sm mb-lg'
+      : state === 'locked'
+        ? 'bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm mb-lg opacity-60'
+        : 'bg-surface-container-low border border-outline-variant rounded-[20px] p-lg shadow-sm mb-lg';
   return (
-    <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm mb-lg">
+    <section className={wrapperClass}>
       <div className="flex items-center gap-sm mb-md">
         <span
           className="material-symbols-outlined text-primary bg-primary-container p-xs rounded-md"

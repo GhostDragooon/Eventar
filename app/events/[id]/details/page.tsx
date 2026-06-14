@@ -2,10 +2,13 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { requireStaff, NotAuthorizedError } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { StaffShell } from '@/components/shell/StaffShell';
 import { StatusPill } from '@/components/lifecycle/StatusPill';
 import { computeLifecycle, type EventLifecycleRow, type Lifecycle } from '@/lib/lifecycle/eventLifecycle';
+import { sectionState } from '@/lib/lifecycle/sectionState';
 import { formatInTz } from '@/lib/tz';
+import { deriveLeadingSession } from '@/lib/details/leadingSession';
 import { RegistrationSection } from '@/components/details/RegistrationSection';
 import { AttendanceSection } from '@/components/details/AttendanceSection';
 import { FeedbackSection } from '@/components/details/FeedbackSection';
@@ -17,8 +20,11 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
 
   const { id } = await params;
   const supabase = await supabaseServer();
+  // email_log is RLS-locked to service role (init_email_log.sql) — staff reads
+  // for the G6 "sent" count must go through supabaseAdmin().
+  const admin = supabaseAdmin();
 
-  const [eventRes, regsRes, surveysRes] = await Promise.all([
+  const [eventRes, regsRes, surveysRes, blocksRes, confirmationsRes] = await Promise.all([
     supabase
       .from('events')
       .select('id, title, start_time, end_time, timezone, venue_name, max_attendees, status, registration_close_at')
@@ -28,24 +34,45 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
       .from('registrations')
       .select('id, status, check_in_at, registered_at')
       .eq('event_id', id),
-    // key_highlights dropped with G1 (Q2 is now session multiple-choice).
-    // E.3 rework: the redesign replaces the latest-comment quote with a
-    // leading-session readout — only the response count is needed until then.
+    // E.3: fetch the Q2 columns so we can both count responses AND derive the
+    // leading session in one round-trip (replaces the head:true count-only call).
     supabase
       .from('survey_responses')
-      .select('id', { count: 'exact', head: true })
+      .select('valuable_block_id, valuable_overall, submitted_at')
+      .eq('event_id', id)
+      .order('submitted_at', { ascending: true }),
+    // Titles for the leading-session join. Only session-kind blocks can be a
+    // valid valuable_block_id (enforced in submitSurvey), but we don't filter
+    // by kind here — deriveLeadingSession just looks up the title by id.
+    supabase
+      .from('agenda_blocks')
+      .select('id, title')
       .eq('event_id', id),
+    // G6: count only `sent` confirmations. Failed/queued don't count.
+    // head:true → server returns just the count, no rows.
+    admin
+      .from('email_log')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_id', id)
+      .eq('purpose', 'confirmation')
+      .eq('status', 'sent'),
   ]);
 
   if (eventRes.error) throw eventRes.error;
   if (!eventRes.data) notFound();
   if (regsRes.error) throw regsRes.error;
   if (surveysRes.error) throw surveysRes.error;
+  if (blocksRes.error) throw blocksRes.error;
+  if (confirmationsRes.error) throw confirmationsRes.error;
 
   const event = eventRes.data;
   const regs = regsRes.data ?? [];
-  const responseCount = surveysRes.count ?? 0;
+  const surveys = surveysRes.data ?? [];
+  const blocks = blocksRes.data ?? [];
+  const responseCount = surveys.length;
   const attended = regs.filter((r) => r.status === 'attended').length;
+  const confirmationsSent = confirmationsRes.count ?? 0;
+  const leadingSession = deriveLeadingSession(surveys, blocks);
 
   // eslint-disable-next-line react-hooks/purity
   const nowMs = Date.now();
@@ -53,25 +80,20 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
 
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role }} backHref="/dashboard" backLabel="Dashboard">
-      <header className="mb-xl">
-        <Link
-          href="/dashboard"
-          className="text-label-md font-label-md text-primary tracking-widest uppercase mb-xs block hover:underline"
-        >
-          ← Dashboard
-        </Link>
-        <div className="flex flex-col md:flex-row justify-between items-start gap-md">
-          <div>
-            <div className="flex items-center gap-sm mb-xs flex-wrap">
-              <StatusPill lifecycle={lifecycle} />
-              <span className="font-body-md text-body-md text-on-surface-variant">
-                {formatInTz(event.start_time, event.timezone)} · {event.venue_name ?? 'No venue set'}
-              </span>
-            </div>
-            <h1 className="font-headline-lg text-headline-lg text-on-surface">{event.title}</h1>
+      {/* Header — patterns §9: pill leads the title row (top-left). Toolbar is
+          its own row below the meta line. Old in-header "← Dashboard" link is
+          gone: the StaffShell NAV's back link already covers it. */}
+      <header className="mb-xl flex flex-col gap-md">
+        <div>
+          <div className="mb-xs">
+            <StatusPill lifecycle={lifecycle} />
           </div>
-          <ActionToolbar eventId={event.id} lifecycle={lifecycle} />
+          <h1 className="font-headline-lg text-headline-lg text-on-surface">{event.title}</h1>
+          <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
+            {formatInTz(event.start_time, event.timezone)} · {event.venue_name ?? 'No venue set'}
+          </p>
         </div>
+        <ActionToolbar eventId={event.id} lifecycle={lifecycle} />
       </header>
 
       <RegistrationSection
@@ -82,10 +104,13 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
         registeredAt={regs.map((r) => r.registered_at)}
         nowMs={nowMs}
         lifecycle={lifecycle}
+        state={sectionState('registration', lifecycle)}
+        confirmationsSent={confirmationsSent}
       />
 
       <AttendanceSection
         lifecycle={lifecycle}
+        state={sectionState('attendance', lifecycle)}
         eventId={event.id}
         registered={regs.length}
         attended={attended}
@@ -95,9 +120,11 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
 
       <FeedbackSection
         lifecycle={lifecycle}
+        state={sectionState('feedback', lifecycle)}
         eventId={event.id}
         responseCount={responseCount}
         attended={attended}
+        leadingSession={leadingSession}
       />
     </StaffShell>
   );
