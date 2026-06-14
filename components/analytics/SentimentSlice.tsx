@@ -3,13 +3,16 @@ import { Slice } from './Slice';
 
 type Q4Slug = 'exceeded' | 'met' | 'partially' | 'not_met';
 
-const SLUG_COLOR: Record<Q4Slug, string> = {
-  exceeded: 'bg-primary',
-  met: 'bg-primary-container',
-  partially: 'bg-outline-variant',
-  not_met: 'bg-error',
+// E.5 plan: sequential accent opacities for the 100% stacked bar. Order
+// matches EXPECTATIONS_OPTIONS (exceeded → met → partially → not_met) so the
+// visual ramp tracks the semantic ramp (best → worst).
+const SLUG_ORDER: Q4Slug[] = ['exceeded', 'met', 'partially', 'not_met'];
+const SLUG_OPACITY: Record<Q4Slug, number> = {
+  exceeded: 1.0,
+  met: 0.7,
+  partially: 0.4,
+  not_met: 0.18,
 };
-
 const SLUG_LABEL: Record<Q4Slug, string> = {
   exceeded: 'Exceeded',
   met: 'Met',
@@ -24,7 +27,8 @@ export function SentimentSlice({
   happyRate: number | null;
   distribution: Distribution[];
 }) {
-  const findPct = (slug: Q4Slug) => distribution.find((d) => d.slug === slug)?.pct ?? 0;
+  const pctBySlug = new Map(distribution.map((d) => [d.slug, d.pct]));
+  const findPct = (slug: Q4Slug) => pctBySlug.get(slug) ?? 0;
 
   return (
     <Slice
@@ -50,17 +54,47 @@ export function SentimentSlice({
           </p>
         </div>
       ) : (
-        <div className="flex-grow flex items-center gap-sm">
-          <div className="h-6 flex-grow bg-surface-container-high rounded-full overflow-hidden relative">
+        <div className="flex-grow flex flex-col gap-sm">
+          {/* Sentiment strip: at-a-glance happy rate. */}
+          <div
+            className="h-6 w-full bg-surface-container-high rounded-full overflow-hidden"
+            role="presentation"
+          >
             <div
               className="h-full bg-primary rounded-full"
               style={{ width: `${Math.round(happyRate * 100)}%` }}
             />
           </div>
-          <div className="flex justify-between gap-md flex-wrap">
-            {(['exceeded', 'met', 'partially', 'not_met'] as Q4Slug[]).map((slug) => (
-              <div key={slug} className="text-[10px] flex items-center gap-1">
-                <div className={`w-1.5 h-1.5 rounded-full ${SLUG_COLOR[slug]}`} />
+          {/* 100% stacked bar — one segment per Q4 option, sequential accent
+              opacity per E.5 plan. Replaces the older per-row distribution
+              bars; segments < 4% are still rendered so the legend stays
+              one-to-one with bar segments. */}
+          <div
+            className="h-3 w-full rounded-full overflow-hidden flex"
+            role="img"
+            aria-label="Expectation distribution stacked bar"
+          >
+            {SLUG_ORDER.map((slug) => {
+              const pct = findPct(slug);
+              if (pct === 0) return null;
+              return (
+                <div
+                  key={slug}
+                  className="h-full bg-primary"
+                  style={{ width: `${pct}%`, opacity: SLUG_OPACITY[slug] }}
+                  title={`${SLUG_LABEL[slug]} ${pct}%`}
+                />
+              );
+            })}
+          </div>
+          <div className="flex flex-wrap gap-md">
+            {SLUG_ORDER.map((slug) => (
+              <div key={slug} className="text-[11px] flex items-center gap-1">
+                <span
+                  className="inline-block w-2 h-2 rounded-sm bg-primary"
+                  style={{ opacity: SLUG_OPACITY[slug] }}
+                  aria-hidden
+                />
                 <span className="text-on-surface-variant">
                   {SLUG_LABEL[slug]} ({findPct(slug)}%)
                 </span>

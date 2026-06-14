@@ -28,6 +28,9 @@ export function BarDistributionSlice({
 
   const bars = distribution.map((d) => {
     const isWinner = d.slug === topSlug;
+    // E.5 winner-row emphasis: top row gets full accent fill, the rest get
+    // accent @ 45%. Replaces the older primary-container fallback so the
+    // distribution-bars share a single accent ramp across Q1/Q3/Q5/Q2.
     return (
       <div key={d.slug} className="space-y-xs">
         <div className={`flex justify-between text-label-md font-bold ${isWinner ? 'text-primary' : 'text-on-surface-variant'}`}>
@@ -36,7 +39,7 @@ export function BarDistributionSlice({
         </div>
         <div className={`h-2 w-full bg-surface-container-high rounded-full overflow-hidden ${isWinner ? 'border border-primary/20' : ''}`}>
           <div
-            className={`h-full ${isWinner ? 'bg-primary' : 'bg-primary-container'}`}
+            className={`h-full ${isWinner ? 'bg-primary' : 'bg-primary/45'}`}
             style={{ width: `${d.pct}%` }}
           />
         </div>
