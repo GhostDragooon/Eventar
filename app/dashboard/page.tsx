@@ -77,7 +77,11 @@ export default async function DashboardPage() {
   cancelled.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
 
   const totalEvents = events?.length ?? 0;
-  const greetingName = firstName(staff.full_name);
+  // Greeting fallback chain: full_name's first token → email local-part →
+  // (nothing). Empty-string final fallback renders "Welcome back." which
+  // reads curtly; falling back to the email local-part keeps the greeting
+  // addressed even when staff.full_name is null (UX review MEDIUM).
+  const greetingName = firstName(staff.full_name) || staff.email.split('@')[0] || '';
 
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role }}>

@@ -64,6 +64,7 @@ export function StaffShell(props: StaffShellProps) {
           <Link
             href="/settings"
             aria-label="Settings"
+            title="Settings"
             className="inline-flex items-center text-on-surface-variant hover:text-primary transition-colors"
           >
             <span className="material-symbols-outlined text-[18px]" aria-hidden>

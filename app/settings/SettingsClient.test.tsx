@@ -5,7 +5,7 @@ import { vi } from 'vitest';
 // jsdom; we only assert that the Sign-out button renders, not its action.
 vi.mock('@/components/shell/SignOutButton', () => ({
   SignOutButton: ({ className }: { className?: string }) => (
-    <button type="button" className={className}>Sign Out</button>
+    <button type="button" className={className}>Sign out</button>
   ),
 }));
 
@@ -105,7 +105,7 @@ describe('SettingsClient — Account', () => {
     expect(screen.getByText('Organizer')).toBeTruthy();
   });
 
-  it('renders the Sign Out action', () => {
+  it('renders the Sign out action', () => {
     render(<SettingsClient staff={STAFF} />);
     expect(screen.getByRole('button', { name: /sign out/i })).toBeTruthy();
   });

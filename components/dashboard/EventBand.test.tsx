@@ -38,8 +38,9 @@ describe('EventBand', () => {
     expect(screen.getByText(/Live/)).toBeInTheDocument();
     expect(screen.getByText(/1 event\b/)).toBeInTheDocument();
     expect(screen.getByText('Onboarding Workshop')).toBeInTheDocument();
-    // Meta line: short date + capacity (no "attended" for non-completed)
-    expect(screen.getByText(/Thu 18 Jun · 32 \/ 60/)).toBeInTheDocument();
+    // Meta line: short date + capacity with "registered" label (added per
+    // UX review — bare "32 / 60" was unexplained on first encounter).
+    expect(screen.getByText(/Thu 18 Jun · 32 \/ 60 registered/)).toBeInTheDocument();
     // Stat line: derived from start − CHECKIN_OPEN_MINUTES; 4 days here
     expect(screen.getByText(/Check-in opens in 4 days/)).toBeInTheDocument();
     // Title links to /details for upcoming
@@ -132,12 +133,12 @@ describe('EventBand', () => {
     );
   });
 
-  it('caps display at 6 and shows overflow count', () => {
+  it('renders every event without a truncation cap (UX review HIGH — dead-end "Showing N of M" line removed)', () => {
     const events = Array.from({ length: 8 }, (_, i) =>
       makeEvent({ id: `id-${i}`, title: `Event ${i}`, lifecycle: 'upcoming' }),
     );
     render(<EventBand lifecycle="live" events={events} nowMs={NOW} />);
-    expect(screen.getAllByRole('link')).toHaveLength(6);
-    expect(screen.getByText(/Showing 6 of 8 events/)).toBeInTheDocument();
+    expect(screen.getAllByRole('link')).toHaveLength(8);
+    expect(screen.queryByText(/Showing \d+ of \d+ events/)).toBeNull();
   });
 });

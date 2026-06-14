@@ -7,7 +7,7 @@ import { vi } from 'vitest';
 vi.mock('./SignOutButton', () => ({
   SignOutButton: ({ className }: { className?: string }) => (
     <button type="button" className={className} data-testid="sign-out-button">
-      Sign Out
+      Sign out
     </button>
   ),
 }));

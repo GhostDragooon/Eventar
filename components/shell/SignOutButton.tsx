@@ -16,7 +16,7 @@ export function SignOutButton({ className }: { className?: string }) {
       }
       className={className}
     >
-      {pending ? 'Signing out…' : 'Sign Out'}
+      {pending ? 'Signing out…' : 'Sign out'}
     </button>
   );
 }

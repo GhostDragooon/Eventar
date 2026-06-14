@@ -41,8 +41,6 @@ const PILL_LABEL: Record<BandLifecycle, string> = {
   cancelled: 'Cancelled',
 };
 
-const MAX_VISIBLE = 6;
-
 export function EventBand({
   lifecycle,
   events,
@@ -53,8 +51,6 @@ export function EventBand({
   nowMs: number;
 }) {
   if (events.length === 0) return null;
-  const visible = events.slice(0, MAX_VISIBLE);
-  const overflow = events.length > MAX_VISIBLE;
   return (
     <section className="mb-xl">
       <h3 className="flex items-center gap-sm mb-md">
@@ -69,18 +65,12 @@ export function EventBand({
         </span>
       </h3>
       <ul className="flex flex-col gap-sm">
-        {visible.map((e) => (
+        {events.map((e) => (
           <li key={e.id}>
             <Tile event={e} band={lifecycle} nowMs={nowMs} />
           </li>
         ))}
       </ul>
-      {overflow && (
-        // v1: count-only line per task spec; expand interaction deferred.
-        <p className="font-body-md text-body-md text-on-surface-variant text-center mt-md">
-          Showing {visible.length} of {events.length} events
-        </p>
-      )}
     </section>
   );
 }
@@ -126,8 +116,11 @@ function metaLine(e: TileEvent): string {
   if (e.lifecycle === 'drafted') return 'Date not set · capacity not set';
   const date = shortDate(e.start_time, e.timezone);
   const cap = e.max_attendees == null ? `${e.registered}` : `${e.registered} / ${e.max_attendees}`;
+  // Completed: "32 / 60 attended" (past tense). Everything else: "32 / 60
+  // registered" — labels the fraction so first-time users don't have to guess
+  // what 32/60 means.
   if (e.lifecycle === 'completed') return `${date} · ${cap} attended`;
-  return `${date} · ${cap}`;
+  return `${date} · ${cap} registered`;
 }
 
 function statLine(e: TileEvent, nowMs: number): { text: string; className: string; href?: string } {
@@ -145,6 +138,9 @@ function statLine(e: TileEvent, nowMs: number): { text: string; className: strin
         const n = daysUntil(new Date(e.registration_close_at).getTime(), nowMs);
         return { text: `● Registration closes in ${pluralDays(n)}`, className: 'text-on-surface-variant' };
       }
+      // No close date set → the meta line already shows "{registered} / {max}
+      // registered", so the stat just needs to confirm the state, not repeat
+      // the number. Keep "Registration open" for the explicit signal.
       return { text: '● Registration open', className: 'text-on-surface-variant' };
     }
     case 'drafted':
