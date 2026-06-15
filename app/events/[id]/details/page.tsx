@@ -27,7 +27,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
   const [eventRes, regsRes, surveysRes, blocksRes, confirmationsRes] = await Promise.all([
     supabase
       .from('events')
-      .select('id, title, start_time, end_time, timezone, venue_name, max_attendees, status, registration_close_at')
+      .select('id, title, start_time, end_time, timezone, venue_name, max_attendees, status, registration_close_at, created_by')
       .eq('id', id)
       .maybeSingle(),
     supabase
@@ -71,7 +71,15 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
   const blocks = blocksRes.data ?? [];
   const responseCount = surveys.length;
   const attended = regs.filter((r) => r.status === 'attended').length;
-  const confirmationsSent = confirmationsRes.count ?? 0;
+  // Gate the admin email_log count on owner-or-manager. supabaseAdmin bypasses
+  // RLS, so without this gate a peer organizer could read the confirmations-sent
+  // count for any event by typing the URL. Non-authorized readers see 0, which
+  // is consistent with the all-zero RLS-gated registration counts they'll see.
+  const canSeeConfirmationsSent =
+    event.created_by === staff.id || staff.role === 'manager';
+  const confirmationsSent = canSeeConfirmationsSent
+    ? (confirmationsRes.count ?? 0)
+    : 0;
   const leadingSession = deriveLeadingSession(surveys, blocks);
 
   // eslint-disable-next-line react-hooks/purity

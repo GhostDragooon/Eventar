@@ -18,14 +18,21 @@ export function ScanAndManual({
   onManualSubmit: (code: string) => void;
 }) {
   const [value, setValue] = useState('');
+  const [attemptedInvalid, setAttemptedInvalid] = useState(false);
   const normalized = value.trim().toUpperCase();
   const isValid = isValidRegistrationCode(normalized);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!isValid) return;
+    if (!isValid) {
+      // Enter-on-invalid bypasses the disabled button. Surface the failure
+      // instead of silently returning (CLAUDE.md rule 12 — fail visibly).
+      setAttemptedInvalid(true);
+      return;
+    }
     onManualSubmit(normalized);
     setValue('');
+    setAttemptedInvalid(false);
   }
 
   return (
@@ -64,15 +71,37 @@ export function ScanAndManual({
           id="manual-code-input"
           type="text"
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={(e) => {
+            setValue(e.target.value);
+            if (attemptedInvalid) setAttemptedInvalid(false);
+          }}
           placeholder="WK-XXXX"
           autoComplete="off"
           spellCheck={false}
-          className="mt-md w-full rounded-lg border border-outline-variant px-md py-md font-mono text-headline-sm uppercase tracking-wider bg-surface-container-lowest focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+          aria-invalid={attemptedInvalid || undefined}
+          aria-describedby={attemptedInvalid ? 'manual-code-error' : 'manual-code-hint'}
+          className={`mt-md w-full rounded-lg border px-md py-md font-mono text-headline-sm uppercase tracking-wider bg-surface-container-lowest focus:outline-none focus:ring-1 ${
+            attemptedInvalid
+              ? 'border-danger focus:border-danger focus:ring-danger'
+              : 'border-outline-variant focus:border-primary focus:ring-primary'
+          }`}
         />
-        <p className="mt-xs font-label-md text-label-md text-on-surface-variant">
-          Format: WK-XXXX (no 0, O, 1, I, or L).
-        </p>
+        {attemptedInvalid ? (
+          <p
+            id="manual-code-error"
+            role="alert"
+            className="mt-xs font-label-md text-label-md text-danger"
+          >
+            Enter a valid WK-XXXX code (no 0, O, 1, I, or L).
+          </p>
+        ) : (
+          <p
+            id="manual-code-hint"
+            className="mt-xs font-label-md text-label-md text-on-surface-variant"
+          >
+            Format: WK-XXXX (no 0, O, 1, I, or L).
+          </p>
+        )}
         <button
           type="submit"
           disabled={!isValid}

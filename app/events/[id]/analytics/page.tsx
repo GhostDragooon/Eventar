@@ -124,25 +124,13 @@ export default async function EventAnalyticsPage({
       backHref={`/events/${id}/details`}
       backLabel="Event"
     >
-      <header className="mb-lg flex flex-col md:flex-row justify-between items-end gap-md">
+      <header className="mb-lg">
         <div className="max-w-3xl">
           <h1 className="font-headline-lg text-headline-lg text-primary mb-xs leading-tight">
             Post-Event Survey Analytics: {event.title}
           </h1>
           <p className="font-body-md text-body-md text-on-surface-variant">{heroMeta}</p>
         </div>
-        <button
-          type="button"
-          disabled
-          className="flex items-center gap-sm bg-surface-container-high text-on-surface px-lg py-sm rounded-lg font-bold border border-outline-variant opacity-60 cursor-not-allowed text-sm"
-          aria-label="Export PDF (not yet available)"
-          title="Export PDF — coming soon"
-        >
-          <span className="material-symbols-outlined text-sm" aria-hidden>
-            download
-          </span>
-          Export PDF
-        </button>
       </header>
 
       {/* Headline block — ring gauges on accent-on-surface-high track. Each
