@@ -102,3 +102,16 @@ describe('SurveyForm — intro line (locked copy, patterns §12)', () => {
     ).toBeInTheDocument();
   });
 });
+
+describe('SurveyForm — F.3 restyle (hints + footer)', () => {
+  it('shows pick-one tags on Q1–Q4 and a pick-any tag on Q5', () => {
+    const { getAllByText } = render(<SurveyForm {...baseProps} />);
+    expect(getAllByText('pick one')).toHaveLength(4);
+    expect(getAllByText('pick any')).toHaveLength(1);
+  });
+
+  it('does not render the deprecated 2-minute footer copy', () => {
+    const { queryByText } = render(<SurveyForm {...baseProps} />);
+    expect(queryByText(/2 minutes/)).toBeNull();
+  });
+});

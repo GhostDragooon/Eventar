@@ -23,8 +23,10 @@ type State =
 
 const CHOICE_BASE =
   'flex items-center px-md py-2.5 border cursor-pointer transition-colors rounded-full has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary has-[:focus-visible]:ring-offset-1';
-const CHOICE_SELECTED = 'border-green-600 bg-green-50';
-const CHOICE_UNSELECTED = 'border-outline-variant hover:bg-green-50';
+const CHOICE_SELECTED = 'border-primary bg-primary text-on-primary';
+const CHOICE_UNSELECTED = 'border-outline-variant bg-surface hover:bg-surface-container-low';
+const HINT_TAG_CLASS =
+  'font-label-md text-label-md uppercase tracking-wider text-on-surface-variant ml-sm';
 
 // Q2 (G1) option: an agenda block (value = block uuid). The form appends the
 // 'general' fallback itself, so callers pass schedule blocks only.
@@ -157,6 +159,7 @@ export default function SurveyForm({
                     </span>
                     <span className="block font-title-lg text-body-lg font-semibold text-on-surface">
                       Which event format did you find most valuable?
+                      <span className={HINT_TAG_CLASS}>pick one</span>
                     </span>
                   </legend>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
@@ -168,14 +171,14 @@ export default function SurveyForm({
                           className={`${CHOICE_BASE} ${selected ? CHOICE_SELECTED : CHOICE_UNSELECTED}`}
                         >
                           <input
-                            className="w-4 h-4 text-primary focus:ring-primary border-outline-variant"
+                            className={`w-4 h-4 focus:ring-primary ${selected ? 'border-on-primary' : 'border-outline-variant'}`}
                             name="session_format"
                             type="radio"
                             value={opt.value}
                             checked={selected}
                             onChange={() => setSessionFormat(opt.value)}
                           />
-                          <span className="ml-3 font-body-md text-on-surface">{opt.label}</span>
+                          <span className="ml-3 font-body-md">{opt.label}</span>
                         </label>
                       );
                     })}
@@ -191,6 +194,7 @@ export default function SurveyForm({
                     </span>
                     <span className="block font-title-lg text-body-lg font-semibold text-on-surface">
                       Which speaker or session provided the most clinical utility?
+                      <span className={HINT_TAG_CLASS}>pick one</span>
                     </span>
                   </legend>
                   <div className="grid grid-cols-1 gap-2 pt-1">
@@ -202,21 +206,21 @@ export default function SurveyForm({
                           className={`${CHOICE_BASE} ${selected ? CHOICE_SELECTED : CHOICE_UNSELECTED}`}
                         >
                           <input
-                            className="w-4 h-4 text-primary focus:ring-primary border-outline-variant"
+                            className={`w-4 h-4 focus:ring-primary ${selected ? 'border-on-primary' : 'border-outline-variant'}`}
                             name="valuable_session"
                             type="radio"
                             value={opt.value}
                             checked={selected}
                             onChange={() => setValuableSession(opt.value)}
                           />
-                          <span className="ml-3 font-body-md text-on-surface">{opt.label}</span>
+                          <span className="ml-3 font-body-md">{opt.label}</span>
                         </label>
                       );
                     })}
                   </div>
                 </fieldset>
 
-                {/* Q3 Value Proposition (single; 3rd option spans 2 cols) */}
+                {/* Q3 Value Proposition (single; 2×2 grid) */}
                 <fieldset className="space-y-sm">
                   <legend className="contents">
                     <span className="block font-label-md text-label-md text-outline uppercase tracking-wider">
@@ -224,28 +228,26 @@ export default function SurveyForm({
                     </span>
                     <span className="block font-title-lg text-body-lg font-semibold text-on-surface">
                       What was the most valuable aspect of this summit?
+                      <span className={HINT_TAG_CLASS}>pick one</span>
                     </span>
                   </legend>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
-                    {VALUE_PROPOSITION_OPTIONS.map((opt, i) => {
+                    {VALUE_PROPOSITION_OPTIONS.map((opt) => {
                       const selected = valueProposition === opt.value;
-                      const spanFull = i === VALUE_PROPOSITION_OPTIONS.length - 1;
                       return (
                         <label
                           key={opt.value}
-                          className={`${CHOICE_BASE} ${spanFull ? 'md:col-span-2' : ''} ${
-                            selected ? CHOICE_SELECTED : CHOICE_UNSELECTED
-                          }`}
+                          className={`${CHOICE_BASE} ${selected ? CHOICE_SELECTED : CHOICE_UNSELECTED}`}
                         >
                           <input
-                            className="w-4 h-4 text-primary focus:ring-primary border-outline-variant"
+                            className={`w-4 h-4 focus:ring-primary ${selected ? 'border-on-primary' : 'border-outline-variant'}`}
                             name="value_proposition"
                             type="radio"
                             value={opt.value}
                             checked={selected}
                             onChange={() => setValueProposition(opt.value)}
                           />
-                          <span className="ml-3 font-body-md text-on-surface">{opt.label}</span>
+                          <span className="ml-3 font-body-md">{opt.label}</span>
                         </label>
                       );
                     })}
@@ -260,6 +262,7 @@ export default function SurveyForm({
                     </span>
                     <span className="block font-title-lg text-body-lg font-semibold text-on-surface">
                       Overall, did the event meet your professional expectations?
+                      <span className={HINT_TAG_CLASS}>pick one</span>
                     </span>
                   </legend>
                   <div className="flex items-center w-full border border-outline-variant overflow-hidden pt-1 rounded-full p-1 gap-1">
@@ -298,6 +301,7 @@ export default function SurveyForm({
                     </span>
                     <span className="block font-title-lg text-body-lg font-semibold text-on-surface">
                       Select areas for future programmatic expansion:
+                      <span className={HINT_TAG_CLASS}>pick any</span>
                     </span>
                   </legend>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
@@ -309,14 +313,14 @@ export default function SurveyForm({
                           className={`${CHOICE_BASE} ${selected ? CHOICE_SELECTED : CHOICE_UNSELECTED}`}
                         >
                           <input
-                            className="w-4 h-4 text-primary focus:ring-primary border-outline-variant rounded-full"
+                            className={`w-4 h-4 focus:ring-primary ${selected ? 'border-on-primary' : 'border-outline-variant'}`}
                             name="future_preferences"
                             type="checkbox"
                             value={opt.value}
                             checked={selected}
                             onChange={() => toggleFuture(opt.value)}
                           />
-                          <span className="ml-3 font-body-md text-on-surface">{opt.label}</span>
+                          <span className="ml-3 font-body-md">{opt.label}</span>
                         </label>
                       );
                     })}
@@ -324,10 +328,7 @@ export default function SurveyForm({
                 </fieldset>
 
                 {/* Action area */}
-                <div className="pt-lg border-t border-outline-variant flex flex-col sm:flex-row items-center justify-between gap-md">
-                  <p className="font-body-md text-on-surface-variant text-sm italic">
-                    Approximate completion time: 2 minutes
-                  </p>
+                <div className="pt-lg flex justify-end">
                   <button
                     type="submit"
                     disabled={state.kind === 'submitting'}
