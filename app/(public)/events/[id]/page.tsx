@@ -1,12 +1,12 @@
 import { notFound } from 'next/navigation';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { formatInTz } from '@/lib/tz';
 import type { AgendaTopic } from '@/lib/agenda';
 import { buildEventQrPng } from '@/lib/qr';
 import { getRequestOrigin } from '@/lib/origin';
 import RegisterCard from '@/components/RegisterCard';
 import { PublicShell } from '@/components/shell/PublicShell';
+import { StatusPill } from '@/components/lifecycle/StatusPill';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 
 export const dynamic = 'force-dynamic';
@@ -58,180 +58,152 @@ export default async function PublicEventPage({
     origin,
   );
 
+  // §1 event-meta: row 1 = address (muted), row 2 = date + time (date accented).
+  const dateLabel = formatDate(event.start_time, event.timezone);
+  const timeLabel = formatTimeRange(event.start_time, event.end_time, event.timezone);
+  // §9: capacity dropped from meta line — capacity context lives in the
+  // lifecycle pill / register card. The §7a "one color per concept" rule
+  // forbids re-using accent blue here for anything other than the date.
+
   return (
     <PublicShell>
-      <div className="w-full max-w-7xl mx-auto px-grid-margin pb-xl">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-xl md:gap-xxl">
-          {/* Left 4 cols: indigo brand panel */}
-          <aside className="md:col-span-4 bg-primary text-on-primary rounded-[20px] p-lg md:p-xl flex flex-col gap-lg relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-primary/0 via-primary/0 to-primary-container/40 pointer-events-none" aria-hidden />
-            <div className="relative z-10">
-              {event.topic && (
-                <span className="font-label-md text-label-md uppercase tracking-widest text-primary-fixed">
-                  {event.topic}
-                </span>
-              )}
-              <h1 className="font-display text-display text-on-primary mt-sm leading-[1.1]">
-                {event.title}
-              </h1>
-            </div>
-            <div className="relative z-10 flex flex-col gap-md mt-md border-t border-primary-fixed/20 pt-md">
-              <InfoRow icon="calendar_month" label="When">
-                <p className="font-body-lg text-body-lg">
-                  {formatInTz(event.start_time, event.timezone)}
-                </p>
-                <p className="font-body-md text-body-md text-primary-fixed-dim">
-                  → {formatInTz(event.end_time, event.timezone)} ({event.timezone})
-                </p>
-              </InfoRow>
-              <InfoRow icon="location_on" label="Where">
-                <p className="font-body-lg text-body-lg">{event.venue_name}</p>
-                {event.venue_address && (
-                  <p className="font-body-md text-body-md text-primary-fixed-dim">
-                    {event.venue_address}
-                  </p>
-                )}
-                <p className="font-body-md text-body-md text-primary-fixed-dim">
-                  {event.city}{event.region ? `, ${event.region}` : ''}, {event.country}
-                </p>
-              </InfoRow>
-              {event.max_attendees != null && (
-                <InfoRow icon="groups" label="Capacity">
-                  <p className="font-body-lg text-body-lg">
-                    {(registrationCount ?? 0)} / {event.max_attendees} registered
-                  </p>
-                </InfoRow>
-              )}
-            </div>
-          </aside>
+      {/* §5 equal-gap rhythm: 480px column, every direct child shares 24px gap.
+          Container padding matches the gap so page edges share the rhythm. */}
+      <div className="mx-auto flex w-full max-w-md flex-col gap-lg px-grid-margin py-xxl">
+        {/* §9 status pill, top-left of its container, leading the title row. */}
+        <StatusPill lifecycle={lifecycle} />
 
-          {/* Right 8 cols: register CTA + about + agenda + QR */}
-          <section className="md:col-span-8 space-y-md">
-            <RegisterCard
-              eventId={event.id}
-              maxAttendees={event.max_attendees}
-              currentCount={registrationCount ?? 0}
-              lifecycle={lifecycle}
-            />
+        {/* §1 hero + 2-row event meta */}
+        <header className="flex flex-col gap-sm">
+          <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">
+            {event.title}
+          </h1>
+          <div className="flex flex-col gap-xs">
+            <p className="font-body-md text-body-md text-on-surface-variant m-0">
+              {event.venue_name}
+              {event.venue_address ? ` · ${event.venue_address}` : ''}
+            </p>
+            <p className="font-body-md text-body-md text-on-surface-variant m-0">
+              <span className="text-on-primary-container font-semibold">{dateLabel}</span>
+              {' · '}
+              {timeLabel} ({event.timezone})
+            </p>
+          </div>
+        </header>
 
-            {event.description && (
-              <ContentCard icon="description" iconBg="bg-tertiary-fixed" iconColor="text-tertiary" title="About">
-                <p className="font-body-md text-body-md text-on-surface whitespace-pre-wrap">
-                  {event.description}
-                </p>
-              </ContentCard>
-            )}
+        {/* §3 description: split into <p> per sentence so line-height carries
+            the rhythm. Empty-line splits in the source kept as paragraph breaks. */}
+        {event.description && (
+          <div className="flex flex-col gap-0">
+            {splitSentences(event.description).map((s, i) => (
+              <p key={i} className="font-body-md text-body-md text-on-surface m-0">
+                {s}
+              </p>
+            ))}
+          </div>
+        )}
 
-            {(blocks?.length ?? 0) > 0 && (
-              <ContentCard icon="view_agenda" iconBg="bg-primary-fixed" iconColor="text-primary" title="Agenda">
-                <ul className="divide-y divide-outline-variant -mx-lg -mb-lg mt-md">
-                  {blocks!.map(b => {
-                    const topics = (Array.isArray(b.topics) ? b.topics : []) as AgendaTopic[];
-                    return (
-                      <li key={b.id} className="px-lg py-md">
-                        <div className="flex items-center justify-between flex-wrap gap-sm mb-xs">
-                          <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
-                            {b.kind}
-                          </span>
-                          <span className="font-body-md text-body-md text-on-surface-variant">
-                            {formatInTz(b.start_time, event.timezone)} → {formatInTz(b.end_time, event.timezone)}
-                          </span>
-                        </div>
-                        <p className="font-title-lg text-title-lg text-on-surface">{b.title}</p>
-                        {b.host && (
-                          <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
-                            Chair: {b.host}
-                          </p>
-                        )}
-                        {topics.length > 0 && (
-                          <ul className="mt-sm font-body-md text-body-md text-on-surface space-y-xs">
-                            {topics.map((t, i) => (
-                              <li key={i}>
-                                • {t.title} — <em>{t.speaker_name}</em>
-                                {t.speaker_credential && (
-                                  <span className="text-on-surface-variant"> ({t.speaker_credential})</span>
-                                )}
-                                {t.speaker_affiliation && (
-                                  <span className="text-on-surface-variant">, {t.speaker_affiliation}</span>
-                                )}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </ContentCard>
-            )}
-
-            <ContentCard icon="qr_code_2" iconBg="bg-secondary-fixed" iconColor="text-secondary" title="Share">
-              <div className="flex items-center gap-md flex-wrap">
-                {/* eslint-disable-next-line @next/next/no-img-element -- inline base64 data URL */}
-                <img
-                  src={`data:image/png;base64,${pngBase64}`}
-                  alt="QR code for this event"
-                  className="w-32 h-32 border border-outline-variant rounded-lg bg-surface-container-lowest p-xs"
-                />
-                <p className="font-body-md text-body-md text-on-surface-variant flex-1 min-w-[200px]">
-                  Scan or share this code to open this event on another device.
-                </p>
-              </div>
-            </ContentCard>
-
+        {(blocks?.length ?? 0) > 0 && (
+          <section className="flex flex-col gap-md">
+            <h2 className="font-title-lg text-title-lg text-on-surface m-0">Agenda</h2>
+            <ul className="flex flex-col gap-md m-0 p-0 list-none">
+              {blocks!.map(b => {
+                const topics = (Array.isArray(b.topics) ? b.topics : []) as AgendaTopic[];
+                return (
+                  <li key={b.id} className="flex gap-md">
+                    <span
+                      className="font-mono text-label-md text-on-primary-container shrink-0 mt-[2px]"
+                      style={{ minWidth: 64 }}
+                    >
+                      {formatClock(b.start_time, event.timezone)}
+                    </span>
+                    <div className="flex-1 min-w-0 flex flex-col gap-xs">
+                      <p className="font-body-md text-body-md font-semibold text-on-surface m-0">
+                        {b.title}
+                      </p>
+                      {b.host && (
+                        <p className="font-body-md text-body-md text-on-surface-variant m-0">
+                          Chair: {b.host}
+                        </p>
+                      )}
+                      {topics.length > 0 && (
+                        <ul className="flex flex-col gap-xs m-0 p-0 list-none">
+                          {topics.map((t, i) => (
+                            <li key={i} className="font-body-md text-body-md text-on-surface m-0">
+                              • {t.title} — <em>{t.speaker_name}</em>
+                              {t.speaker_credential && (
+                                <span className="text-on-surface-variant"> ({t.speaker_credential})</span>
+                              )}
+                              {t.speaker_affiliation && (
+                                <span className="text-on-surface-variant">, {t.speaker_affiliation}</span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
           </section>
-        </div>
+        )}
+
+        <RegisterCard
+          eventId={event.id}
+          maxAttendees={event.max_attendees}
+          currentCount={registrationCount ?? 0}
+          lifecycle={lifecycle}
+        />
+
+        {/* Share QR — compact, sits inside the rhythm; no separate card chrome. */}
+        <section className="flex items-center gap-md">
+          {/* eslint-disable-next-line @next/next/no-img-element -- inline base64 data URL */}
+          <img
+            src={`data:image/png;base64,${pngBase64}`}
+            alt="QR code for this event"
+            className="w-24 h-24 border border-outline-variant rounded-lg bg-surface-container-lowest p-xs"
+          />
+          <p className="font-body-md text-body-md text-on-surface-variant m-0 flex-1 min-w-0">
+            Scan or share this code to open this event on another device.
+          </p>
+        </section>
       </div>
     </PublicShell>
   );
 }
 
-function InfoRow({
-  icon,
-  label,
-  children,
-}: {
-  icon: string;
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-start gap-md">
-      <span className="material-symbols-outlined text-primary-fixed mt-[2px]" aria-hidden>
-        {icon}
-      </span>
-      <div className="flex-1 min-w-0">
-        <h3 className="font-label-md text-label-md text-primary-fixed uppercase tracking-wider mb-xs">
-          {label}
-        </h3>
-        {children}
-      </div>
-    </div>
-  );
+// ─── tz-aware formatters (small, file-local — same pattern as EventBand) ────
+
+function formatDate(iso: string, tz: string): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    weekday: 'short', day: 'numeric', month: 'short', timeZone: tz,
+  }).formatToParts(new Date(iso));
+  const m = Object.fromEntries(parts.map(p => [p.type, p.value]));
+  return `${m.weekday} ${m.day} ${m.month}`;
 }
 
-function ContentCard({
-  icon,
-  iconBg,
-  iconColor,
-  title,
-  children,
-}: {
-  icon: string;
-  iconBg: string;
-  iconColor: string;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm">
-      <div className="flex items-center gap-md mb-md">
-        <div aria-hidden className={`w-10 h-10 rounded-full flex items-center justify-center ${iconBg} ${iconColor}`}>
-          <span className="material-symbols-outlined text-[20px]">{icon}</span>
-        </div>
-        <h2 className="font-headline-sm text-[20px] text-on-surface">{title}</h2>
-      </div>
-      <div>{children}</div>
-    </section>
-  );
+function formatClock(iso: string, tz: string): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz,
+  }).formatToParts(new Date(iso));
+  const m = Object.fromEntries(parts.map(p => [p.type, p.value]));
+  return `${m.hour}:${m.minute}`;
+}
+
+function formatTimeRange(startIso: string, endIso: string, tz: string): string {
+  return `${formatClock(startIso, tz)}–${formatClock(endIso, tz)}`;
+}
+
+// Description sentence split. Splits on period followed by space + capital,
+// preserving the period. Single-sentence input passes through as one <p>.
+function splitSentences(text: string): string[] {
+  const trimmed = text.trim();
+  if (!trimmed) return [];
+  // Split on hard line breaks first (author's intent), then on sentence boundary.
+  return trimmed
+    .split(/\n+/)
+    .flatMap(para => para.split(/(?<=\.)\s+(?=[A-Z])/))
+    .map(s => s.trim())
+    .filter(Boolean);
 }

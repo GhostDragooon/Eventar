@@ -44,50 +44,56 @@ export default function RegisterCard({ eventId, maxAttendees, currentCount, life
             }
           : { title: 'Registration closed', body: 'Registration for this event has closed.' };
     return (
-      <Card>
-        <div className="flex items-center gap-md mb-sm">
-          <div className="w-10 h-10 rounded-full bg-error-container text-on-error-container flex items-center justify-center" aria-hidden>
-            <span className="material-symbols-outlined text-[20px]">event_busy</span>
-          </div>
-          <h2 className="font-headline-sm text-[20px] text-on-surface">{title}</h2>
-        </div>
-        <p className="font-body-md text-body-md text-on-surface-variant">{body}</p>
-      </Card>
+      <Section>
+        <h2 className="font-title-lg text-title-lg text-on-surface m-0">{title}</h2>
+        <p className="font-body-md text-body-md text-on-surface-variant m-0">{body}</p>
+      </Section>
     );
   }
 
   // ─── State 5: At-capacity (form disabled, message replaces it) ────────
   if (atCapacity) {
     return (
-      <Card>
-        <div className="flex items-center gap-md mb-sm">
-          <div className="w-10 h-10 rounded-full bg-error-container text-on-error-container flex items-center justify-center" aria-hidden>
-            <span className="material-symbols-outlined text-[20px]">event_busy</span>
-          </div>
-          <h2 className="font-headline-sm text-[20px] text-on-surface">At capacity</h2>
-        </div>
-        <p className="font-body-md text-body-md text-on-surface-variant">
+      <Section>
+        <h2 className="font-title-lg text-title-lg text-on-surface m-0">At capacity</h2>
+        <p className="font-body-md text-body-md text-on-surface-variant m-0">
           This event is at capacity ({currentCount}/{maxAttendees} registered).
           Future events will open registration soon.
         </p>
-      </Card>
+      </Section>
     );
   }
 
-  // ─── State 3: Success (form swaps to confirmation) ────────────────────
+  // ─── State 3: Success (PR — post-register) ────────────────────────────
+  // §4 IA order: Pill → Hero → (Event card lives on the page above this
+  // component) → Email confirm → Reg code → CTA → Fine print.
+  // §3 sentence stack: each sentence its own <p>, gap-0 so line-height (1.6)
+  // is the sole rhythm authority between lines.
   if (state.kind === 'success') {
     return (
-      <Card>
-        <div className="flex items-center gap-md mb-sm">
-          <div className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center" aria-hidden>
-            <span className="material-symbols-outlined text-[20px]" data-fill="1">check_circle</span>
-          </div>
-          <h2 className="font-headline-sm text-[20px] text-on-surface">You&apos;re registered!</h2>
+      <Section>
+        <span className="font-label-md text-label-md px-sm py-xs rounded-full uppercase inline-flex items-center gap-sm bg-success-container text-on-success-container border border-transparent self-start">
+          <span className="material-symbols-outlined text-[14px]" data-fill="1" aria-hidden>check_circle</span>
+          You&apos;re registered
+        </span>
+        <h2 className="font-headline-sm text-headline-sm text-on-surface m-0">
+          See you on the day
+        </h2>
+        <div className="flex flex-col gap-0">
+          <p className="font-body-md text-body-md text-on-surface m-0">
+            A confirmation has been sent to <strong>{state.email}</strong>.
+          </p>
+          <p className="font-body-md text-body-md text-on-surface m-0">
+            Please scan the QR code at the counter on the day.
+          </p>
+          <p className="font-body-md text-body-md text-on-surface m-0">
+            Alternatively, you may present the code below for manual check-in.
+          </p>
         </div>
-        <p className="font-body-md text-body-md text-on-surface">
-          We&apos;ll email a confirmation to <strong>{state.email}</strong> shortly.
+        <p className="font-body-md text-[12px] text-on-surface-variant m-0">
+          Need to cancel? Reply to your confirmation email.
         </p>
-      </Card>
+      </Section>
     );
   }
 
@@ -109,21 +115,11 @@ export default function RegisterCard({ eventId, maxAttendees, currentCount, life
 
   // ─── States 1, 2, 4: Initial / Submitting / Error ─────────────────────
   return (
-    <Card>
-      <div className="flex items-center gap-md mb-md">
-        <div className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center" aria-hidden>
-          <span className="material-symbols-outlined text-[20px]">edit_note</span>
-        </div>
-        <div>
-          <h2 className="font-headline-sm text-[20px] text-on-surface">Register</h2>
-          <p className="font-body-md text-[12px] text-on-surface-variant">
-            Free. Takes 30 seconds.
-          </p>
-        </div>
-      </div>
-      <form className="space-y-md" onSubmit={onSubmit}>
+    <Section>
+      <h2 className="font-title-lg text-title-lg text-on-surface m-0">Register</h2>
+      <form className="flex flex-col gap-md" onSubmit={onSubmit}>
         <label className="block">
-          <span className="block font-label-md text-label-md text-on-surface uppercase mb-xs">
+          <span className="block font-label-md text-label-md text-on-surface uppercase tracking-wider mb-xs">
             Full name
           </span>
           <Input
@@ -136,7 +132,7 @@ export default function RegisterCard({ eventId, maxAttendees, currentCount, life
           />
         </label>
         <label className="block">
-          <span className="block font-label-md text-label-md text-on-surface uppercase mb-xs">
+          <span className="block font-label-md text-label-md text-on-surface uppercase tracking-wider mb-xs">
             Email
           </span>
           <Input
@@ -161,24 +157,22 @@ export default function RegisterCard({ eventId, maxAttendees, currentCount, life
           </p>
         )}
 
-        <div className="flex justify-end pt-xs">
-          <Button
-            type="submit"
-            disabled={isSubmitting || !name.trim() || !email.trim()}
-            className="min-w-32"
-          >
-            {isSubmitting ? 'Registering…' : 'Register'}
-          </Button>
-        </div>
+        <Button
+          type="submit"
+          disabled={isSubmitting || !name.trim() || !email.trim()}
+          className="w-full"
+        >
+          {isSubmitting ? 'Registering…' : 'Register'}
+        </Button>
       </form>
-    </Card>
+    </Section>
   );
 }
 
-function Card({ children }: { children: React.ReactNode }) {
-  return (
-    <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm">
-      {children}
-    </section>
-  );
+// Section wrapper for the register surface. The page already runs the §5
+// equal-gap container; this just supplies a single rhythm beat between the
+// section's heading and its body. NO border, NO background — the surface
+// flows with the page, not against it.
+function Section({ children }: { children: React.ReactNode }) {
+  return <section className="flex flex-col gap-md">{children}</section>;
 }

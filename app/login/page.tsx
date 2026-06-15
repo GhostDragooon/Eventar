@@ -2,6 +2,7 @@
 import { Suspense, useState, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { sendMagicLink } from './actions';
+import { PublicShell } from '@/components/shell/PublicShell';
 
 const URL_ERROR_MESSAGES: Record<string, string> = {
   missing_code:    'The sign-in link was missing its verification code. Request a new one below.',
@@ -19,25 +20,18 @@ export default function LoginPage() {
   );
 }
 
-function Brand() {
+// Locked patterns (docs/plans/eventar-design-patterns.md):
+//   §5  flex column with gap-lg (24px) on a 480px-max content column
+//   §3  sentence stack: each <p> stands alone, line-height carries the rhythm
+//   §2  "By Eventar" footer applied page-wide by PublicShell — NOT inside this layout
+//   M3  no top branding on attendee surfaces (login is treated as attendee chrome)
+function LoginLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-center gap-sm mb-lg">
-      <span className="material-symbols-outlined text-primary text-[28px]" aria-hidden>
-        event
-      </span>
-      <span className="font-headline-sm text-headline-sm text-primary font-black">Eventar</span>
-    </div>
-  );
-}
-
-function Card({ children }: { children: React.ReactNode }) {
-  return (
-    <main className="min-h-screen grid place-items-center p-grid-margin bg-background">
-      <div className="w-full max-w-sm bg-surface-container-lowest rounded-[20px] border border-outline-variant shadow-sm p-xl">
-        <Brand />
+    <PublicShell>
+      <div className="mx-auto flex w-full max-w-md flex-col gap-lg px-grid-margin py-xxl">
         {children}
       </div>
-    </main>
+    </PublicShell>
   );
 }
 
@@ -55,13 +49,15 @@ function LoginForm() {
   const err = actionErr ?? urlErr;
 
   return (
-    <Card>
-      <h1 className="font-headline-sm text-headline-sm text-on-surface text-center">
+    <LoginLayout>
+      <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">
         Sign in
       </h1>
-      <p className="font-body-md text-body-md text-on-surface-variant text-center mt-xs mb-lg">
+      {/* §3 sentence stack — single sentence, m-0 so the container gap is the sole rhythm authority. */}
+      <p className="font-body-md text-body-md text-on-surface-variant m-0">
         We&apos;ll email you a one-tap sign-in link.
       </p>
+
       <form
         action={(fd) =>
           start(async () => {
@@ -72,7 +68,7 @@ function LoginForm() {
             else setMsg('Check your inbox for a sign-in link.');
           })
         }
-        className="space-y-md"
+        className="flex flex-col gap-md"
       >
         <label className="block">
           <span className="block font-label-md text-label-md uppercase tracking-wider text-on-surface mb-xs">
@@ -111,7 +107,7 @@ function LoginForm() {
           </p>
         )}
       </form>
-    </Card>
+    </LoginLayout>
   );
 }
 
@@ -120,9 +116,9 @@ function LoginForm() {
 // boundary at prerender time).
 function LoginShell() {
   return (
-    <Card>
-      <h1 className="font-headline-sm text-headline-sm text-on-surface text-center">Sign in</h1>
-      <p className="font-body-md text-body-md text-on-surface-variant text-center mt-xs">Loading…</p>
-    </Card>
+    <LoginLayout>
+      <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">Sign in</h1>
+      <p className="font-body-md text-body-md text-on-surface-variant m-0">Loading…</p>
+    </LoginLayout>
   );
 }
