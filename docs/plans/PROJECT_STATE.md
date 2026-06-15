@@ -1,5 +1,5 @@
 # Project State — Eventar
-_Last updated: 2026-06-04 (Phase 7 Resend integration shipped — credentials pending)_
+_Last updated: 2026-06-15 (Redesign + gap-closure phase shipped — Phase 8 unblocked)_
 
 > Source of truth for "what's active vs forward-looking."
 > **Read this BEFORE writing any code.** Updated at the end of each phase.
@@ -7,7 +7,7 @@ _Last updated: 2026-06-04 (Phase 7 Resend integration shipped — credentials pe
 
 ---
 
-## ACTIVE PHASE — Phase 8 (next) — Vercel deploy
+## ACTIVE PHASE — Phase 8 — Vercel deploy
 
 **Goal.** Deploy Eventar to Vercel against the production Supabase project. First public URL; first real email infrastructure exercised end-to-end. Operational work primarily, not code.
 
@@ -20,32 +20,34 @@ _Last updated: 2026-06-04 (Phase 7 Resend integration shipped — credentials pe
 **Active discipline:**
 - CLAUDE.md hard rule 7 (no premature externals) — Vercel is now the canonical deploy, but pg_cron still waits for Phase 9.
 - All Phase-8 deploy gates are CLOSED (see CARRIED-FORWARD below).
+- Redesign visual contract is locked in `docs/plans/eventar-design-patterns.md` §1–§12 + token tables. No further mockup iteration before deploy.
 
 ---
 
-## JUST SHIPPED — Phase 7 (Resend integration — code only; credentials pending)
+## JUST SHIPPED — Redesign + 7-gap closure phase (2026-06-11 → 2026-06-15)
 
-Real production email infrastructure landed in 7 commits (2026-06-04). The code is production-grade; only the `RESEND_API_KEY` is missing. Until it's added in `.env.local`, registrations route through the parallel `lib/devEmailStub.ts` (returns `{ skipped: true }`, leaves `email_log.status='queued'`) — exactly the design's "build temp in parallel for testing; remove without fuss" goal.
+The 13-surface redesign and 7 frontend↔backend gap-closure tasks shipped end-to-end across ~25 commits. Phase covered the executable plan `docs/plans/2026-06-11-redesign-implementation.md` Tasks 0 → H.3, dispatched via `superpowers:subagent-driven-development` (implementer → spec reviewer → quality reviewer per task; controller commits).
 
-**Commits:**
-- `2a0a73c` chore(deps): resend + @react-email/components + @react-email/render
-- `089242f` + `d579900` feat(email): lib/devEmailStub.ts (+ PII test broadening fix)
-- `a9f8eff` feat(email): lib/resend.ts production facade
-- `5762f82` feat(email): emails/confirmation.tsx React Email template
-- `7d7a2c4` feat(email): wire facade into registerForEvent step 6+7
-- `ec388b2` docs(env): document RESEND_API_KEY + RESEND_FROM_EMAIL
+**Deliverables:**
+- **Visual foundation (A.1–A.3):** Geist + Geist Mono swapped in via `next/font/google`; Vercel-canonical palette in `app/globals.css` with `prefers-color-scheme: dark`; §7a one-color-one-meaning sweep (green = "Live", accent = "active", amber = "Draft", red = "error", neutrals = "off / done / locked").
+- **Lifecycle (B.1):** `live` state starts at `start − CHECKIN_OPEN_MINUTES` (G11). Registration-window also enforced server-side in `registerForEvent` (3-layer gap closed).
+- **Data migrations (C.1–C.3):** Q3 4th option `event_format`; Q2 free-text → session multiple-choice (`valuable_block_id` FK + `valuable_overall` bool, `key_highlights` dropped); `speaker_checkins` table + RLS.
+- **Editor (D.1–D.3):** `update_event_with_blocks` RPC (owner-gated, atomic); `updateEvent` action; shared `NewEventForm` for create+edit with numbered sections + "Save & Preview".
+- **Staff surfaces (E.1–E.5):** 3-part NAV bar (patterns §8); DB band redesign + greeting fallback; ED with sent-wording + session-leader stat; TC scoreboard countdown to start + scan+manual row + speakers card; AN with ring gauges + funnel + Q2 distribution + Q4 stacked bar.
+- **Public surfaces (F.1–F.3):** LG + PE + PR restyles; CI restyle to Option A flow + rate limiting; SV all-MC chip-grid form with §7a + §11 + §12 compliance.
+- **Email + poster (G.1–G.2):** Confirmation email rebuilt to email-safe HTML (Geist fallback chains, Vercel-canonical palette, sunny-amber RC-B `#FFFBEB/#FED7AA/#92400E/#7C2D12`, bulletproof CTA, first-name greeting per G9); poster redesigned with `--po-*` light-always tokens, accent black band + white QR card top-right, divided info strip, 3-up speaker cards with initials avatars, dot-grid + corner brackets, real event URL (G7), no "Free ·" (G12).
+- **Cleanup (H.1):** 6 mockup scratch files removed from `public/`.
+- **Phase-completion protocol (H.2):** dev-perspective + user-perspective subagent reviews (separate agents) + backtest against real Supabase + curl :3000. One Important finding (survey error alert below button) fixed in `b64eddc`.
 
-**Test count:** 169 → 180 (+11 tests across 4 new test files).
+**Test count:** 180 → 390 (+210 tests across 18 new test files).
 
-**Design + plan + smoke notes:** `docs/plans/2026-06-04-phase-7-resend-design.md` (fc938e5) + `docs/plans/2026-06-04-phase-7-resend.md` (a3520e5).
+**Detailed handoffs:** `docs/plans/handoff_11062026.md` (Phases 0–C.2 mid-flight) + `docs/plans/handoff_15062026.md` (final close-out, this phase's H.3 deliverable).
 
 **Architectural patterns codified:**
-- Two-file separation (`lib/resend.ts` production / `lib/devEmailStub.ts` removable) over a single facade-with-branches, because removal cost is the design metric.
-- Env switch INSIDE registerForEvent (not at module top) so per-test env mutations work without `vi.resetModules()`.
-- Production code throws on missing `RESEND_API_KEY` (Rule 12 — misconfig must surface); dev stub returns `{ skipped }` instead.
-- React Email template renders to inline-styled HTML; props pre-formatted at the call site so the template imports no request-context helpers.
-
-**One known upstream finding:** `@react-email/components@1.0.12` is marked deprecated. Resend's docs now point to `@react-email/ui` as the successor. Decision was to ship with the deprecated package (it's the latest version, Resend maintains it, only one template uses it) and migrate as a small follow-up. See commit `2a0a73c` body for the full rationale.
+- **Backend-risk-first task ordering** — token/font foundation before lifecycle semantics before migrations before editor before surface restyles before email. Cheap rework cost when later tasks force earlier reconsideration.
+- **§7a one-color-one-meaning** as the cross-page invariant. Every chromatic Tailwind utility (`bg-green-*` etc.) is forbidden outside the documented exceptions (`emails/confirmation.tsx` RC-B amber, `poster/page.tsx` `--po-*` light-always tokens).
+- **Light-always tokens inline-scoped to a route** via `<style>{`.po-root { ... }`}</style>` — sidesteps the global `prefers-color-scheme: dark` cascade entirely. Right pattern for any print or fixed-theme surface.
+- **Subagent-driven development with two-stage review** — spec compliance first, code quality second. Catches over/under-building before quality nits start firing. Limitation found this phase: dispatches scoped to a 25-commit phase hit API timeouts; scope to the most-recently-shipped surfaces and trust earlier ship-time reviews.
 
 ---
 
@@ -101,7 +103,8 @@ _(none currently. Phase 8 work is operational; ask the user before adding non-de
 | 6 | ✅ shipped | Per-event `/analytics` (categorical distributions, no avg ratings — Q16) |
 | 6.5 | ✅ shipped | Dashboard redesign + per-event `/details` with 5-state lifecycle (Q17) |
 | 7 | ✅ shipped (code) | Real Resend infrastructure + React Email template for Email #1 — credentials pending in `.env.local` |
-| **8** | **next** | Vercel deploy; env vars + Resend domain verified; first real email out the door |
+| Redesign + gaps | ✅ shipped | 13-surface Vercel-canonical + Geist redesign · 7 frontend↔backend gaps closed (Q3 4-option, Q2 session MC, speaker check-in, real edit form, live-ops lifecycle, sent-wording, real poster URL) · vitest 180 → 390 |
+| **8** | **active** | Vercel deploy; env vars + Resend domain verified; first real email out the door |
 | 9 | planned | pg_cron drives Email #2 (60-min reminder) + Email #3 (10-min survey invite) |
 
 ---
