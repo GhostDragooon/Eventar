@@ -30,52 +30,39 @@ export default function ConfirmButton({
   }
 
   if (state.kind === 'ok') {
+    // Success message in the §5 rhythm — flat text, no medallion. The
+    // page's surrounding pill + meta already give the visual anchor.
     return (
-      <div className="bg-primary text-on-primary rounded-[20px] p-lg text-center space-y-sm shadow-lg">
-        <div
-          aria-hidden
-          className="inline-flex items-center justify-center w-14 h-14 bg-on-primary/10 rounded-full"
-        >
-          <span className="material-symbols-outlined text-[28px]" data-fill="1">
-            check_circle
-          </span>
-        </div>
-        <p className="font-headline-sm text-headline-sm">You&apos;re checked in!</p>
-        <p className="font-body-md text-body-md text-on-primary/80">See you at the event.</p>
-      </div>
+      <p
+        role="status"
+        aria-live="polite"
+        className="font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm flex items-start gap-sm m-0"
+      >
+        <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden data-fill="1">check_circle</span>
+        <span className="flex-1">You&apos;re checked in. See you at the event.</span>
+      </p>
     );
   }
 
+  // Mockup CI-6: full-width primary "Confirm I'm here". Compact label
+  // (mockup verbatim) — the previous "I'm here — confirm check-in" was
+  // wordier and added an icon the mockup doesn't show.
   return (
-    <div className="space-y-sm">
-      <p className="font-body-md text-body-md text-on-surface-variant text-center">
-        Ready to check in for this event?
-      </p>
+    <div className="flex flex-col gap-sm">
       <button
         type="button"
         onClick={onClick}
         disabled={state.kind === 'loading'}
-        className="w-full bg-primary text-on-primary rounded-lg px-md py-md font-label-md text-body-md font-bold hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-50 flex items-center justify-center gap-sm shadow-sm"
+        className="w-full bg-primary text-on-primary rounded-lg px-md py-md font-label-md text-body-md font-bold hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-50"
       >
-        {state.kind === 'loading' ? (
-          'Checking in…'
-        ) : (
-          <>
-            <span className="material-symbols-outlined text-[20px]" aria-hidden>
-              check
-            </span>
-            I&apos;m here — confirm check-in
-          </>
-        )}
+        {state.kind === 'loading' ? 'Checking in…' : "Confirm I'm here"}
       </button>
       {state.kind === 'error' && (
         <p
           role="alert"
-          className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
+          className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm m-0"
         >
-          <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden>
-            warning
-          </span>
+          <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden>warning</span>
           <span>{state.message}</span>
         </p>
       )}

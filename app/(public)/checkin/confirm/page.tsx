@@ -5,6 +5,27 @@ import { rateLimitByIp } from '@/lib/rateLimit';
 import { PublicShell } from '@/components/shell/PublicShell';
 import ConfirmButton from './ConfirmButton';
 
+// §1 event-meta formatters — same shape as PE/(public)/events/[id]/page.tsx.
+// Duplicated inline per rule 11 (convention) — both PE and CI keep their
+// own copies until a third caller motivates lifting into lib/tz.ts.
+function formatDate(iso: string, tz: string): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    weekday: 'short', day: 'numeric', month: 'short', timeZone: tz,
+  }).formatToParts(new Date(iso));
+  const m = Object.fromEntries(parts.map(p => [p.type, p.value]));
+  return `${m.weekday} ${m.day} ${m.month}`;
+}
+function formatClock(iso: string, tz: string): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz,
+  }).formatToParts(new Date(iso));
+  const m = Object.fromEntries(parts.map(p => [p.type, p.value]));
+  return `${m.hour}:${m.minute}`;
+}
+function formatTimeRange(startIso: string, endIso: string, tz: string): string {
+  return `${formatClock(startIso, tz)}–${formatClock(endIso, tz)}`;
+}
+
 export const dynamic = 'force-dynamic';
 
 export default async function SelfCheckinPage({
@@ -156,9 +177,11 @@ export default async function SelfCheckinPage({
 /* Layout                                                                     */
 /* -------------------------------------------------------------------------- */
 
+// §5 equal-gap rhythm: flex column, gap-lg, 480px-ish (max-w-md) container.
+// Matches PE / LG conventions shipped in F.1.
 function PageWrap({ children }: { children: React.ReactNode }) {
   return (
-    <div className="w-full max-w-md mx-auto px-grid-margin py-lg space-y-md">
+    <div className="w-full max-w-md mx-auto px-grid-margin py-lg flex flex-col gap-lg">
       {children}
     </div>
   );
@@ -181,23 +204,40 @@ function RegisteredView({
   };
   code: string;
 }) {
+  // CI-2/3/4: pill (§9 top-left) → hero title → §1 2-row meta
+  // CI-5: registration code (RC-B Strong popped — warm amber bg, golden text)
+  // CI-6: primary button
+  // CI-7: fine print
   return (
     <>
-      <header className="text-center space-y-sm">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-container text-on-primary-container rounded-full mb-sm" aria-hidden>
-          <span className="material-symbols-outlined text-[32px]">person_check</span>
-        </div>
-        <h1 className="font-headline-lg text-headline-lg text-primary">
-          Check-in ready
+      <header className="flex flex-col gap-sm">
+        <span
+          className="self-start inline-flex items-center gap-xs px-sm py-xs rounded-full bg-success-container text-on-success-container font-label-md text-label-md uppercase tracking-wider"
+        >
+          <span aria-hidden>●</span> Ready to check in
+        </span>
+        <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">
+          {event.title}
         </h1>
-        <p className="font-body-md text-body-md text-on-surface-variant">
-          Confirm your check-in for this event below.
+        <p className="font-body-md text-body-md text-on-surface-variant m-0">
+          {event.venue_name}
+        </p>
+        <p className="font-body-md text-body-md text-on-surface-variant m-0">
+          <span className="text-on-primary-container font-semibold">
+            {formatDate(event.start_time, event.timezone)}
+          </span>
+          {' · '}
+          {formatTimeRange(event.start_time, event.end_time, event.timezone)} ({event.timezone})
         </p>
       </header>
 
-      <EventCard event={event} code={code} />
+      <RegCodePopped code={code} label="Your registration code" />
 
       <ConfirmButton code={code} />
+
+      <p className="font-body-md text-body-md text-on-surface-variant text-center m-0">
+        Tap when you arrive · staff will see you in the roster instantly.
+      </p>
     </>
   );
 }
@@ -215,76 +255,77 @@ function AttendedView({
   };
   checkInAt: string | null;
 }) {
+  // Mirror RegisteredView's layout. Pill flips to "Checked in" (neutral
+  // pattern §7a "done = absence of color"), the code card becomes the
+  // checked-in timestamp instead.
   return (
     <>
-      <header className="text-center space-y-sm">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-primary text-on-primary rounded-full mb-sm" aria-hidden>
-          <span className="material-symbols-outlined text-[32px]" data-fill="1">check_circle</span>
-        </div>
-        <h1 className="font-headline-lg text-headline-lg text-primary">
-          You&apos;re checked in
+      <header className="flex flex-col gap-sm">
+        <span
+          className="self-start inline-flex items-center gap-xs px-sm py-xs rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md uppercase tracking-wider"
+        >
+          <span aria-hidden data-fill="1" className="material-symbols-outlined text-[14px]">check</span>
+          Checked in
+        </span>
+        <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">
+          {event.title}
         </h1>
-        <p className="font-body-md text-body-md text-on-surface-variant">
-          See you at the event.
+        <p className="font-body-md text-body-md text-on-surface-variant m-0">
+          {event.venue_name}
+        </p>
+        <p className="font-body-md text-body-md text-on-surface-variant m-0">
+          <span className="text-on-primary-container font-semibold">
+            {formatDate(event.start_time, event.timezone)}
+          </span>
+          {' · '}
+          {formatTimeRange(event.start_time, event.end_time, event.timezone)} ({event.timezone})
         </p>
       </header>
 
-      <EventCard event={event} />
-
-      <div className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-md text-center">
-        <p className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-xs">
+      <div className="text-center">
+        <p className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-xs m-0">
           Checked in at
         </p>
-        <p className="font-title-lg text-title-lg text-on-surface">
+        <p className="font-title-lg text-title-lg text-on-surface m-0">
           {checkInAt ? formatInTz(checkInAt, event.timezone) : 'an earlier time'}
         </p>
       </div>
+
+      <p className="font-body-md text-body-md text-on-surface-variant text-center m-0">
+        See you at the event.
+      </p>
     </>
   );
 }
 
-function EventCard({
-  event,
-  code,
-}: {
-  event: {
-    title: string;
-    start_time: string;
-    end_time: string;
-    timezone: string;
-    venue_name: string;
-  };
-  code?: string;
-}) {
+// RC-B Strong popped registration code (mockup CI-5). Light: amber-50 bg +
+// orange-900 text; dark: warm-black bg + golden text. Token mapping:
+//   bg  = warning-container (FEF3C7 / rgba(252,211,77,0.15))
+//   fg  = on-warning-container (92400E / FCD34D)
+//   bd  = warning (D97706 / FCD34D)
+// Reuses the design-pattern doc's locked warm palette.
+function RegCodePopped({ code, label }: { code: string; label: string }) {
   return (
-    <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm space-y-sm">
-      <h2 className="font-headline-sm text-headline-sm text-on-surface">{event.title}</h2>
-      <p className="font-body-md text-body-md text-on-surface-variant flex items-start gap-xs">
-        <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden>schedule</span>
-        <span>
-          {formatInTz(event.start_time, event.timezone)} → {formatInTz(event.end_time, event.timezone)}
-        </span>
+    <div
+      className="bg-warning-container border border-warning rounded-[20px] p-lg text-center"
+    >
+      <p className="font-label-md text-label-md text-on-warning-container uppercase tracking-wider mb-xs m-0">
+        {label}
       </p>
-      <p className="font-body-md text-body-md text-on-surface-variant flex items-start gap-xs">
-        <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden>location_on</span>
-        <span>{event.venue_name}</span>
-      </p>
-      {code && (
-        <div className="mt-sm pt-sm border-t border-outline-variant flex items-center justify-between">
-          <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
-            Your code
-          </span>
-          <code className="font-mono font-label-md text-label-md text-primary bg-secondary-fixed px-sm py-xs rounded-full">
-            {code}
-          </code>
-        </div>
-      )}
-    </section>
+      <code
+        className="font-mono font-bold text-[32px] tracking-widest text-on-warning-container"
+      >
+        {code}
+      </code>
+    </div>
   );
 }
 
+// EmptyState: drop the circle medallion (no M3 chrome). Just hero + body
+// in the §5 rhythm. The `icon` prop kept on the signature for caller
+// compatibility but no longer rendered — callers can be cleaned later.
 function EmptyState({
-  icon,
+  icon: _icon,
   title,
   body,
 }: {
@@ -293,14 +334,9 @@ function EmptyState({
   body: string;
 }) {
   return (
-    <div className="text-center space-y-sm">
-      <div className="inline-flex items-center justify-center w-16 h-16 bg-secondary-container text-on-secondary-container rounded-full mb-sm" aria-hidden>
-        <span className="material-symbols-outlined text-[32px]">{icon}</span>
-      </div>
-      <h1 className="font-headline-sm text-headline-sm text-on-surface">{title}</h1>
-      <p className="font-body-md text-body-md text-on-surface-variant max-w-sm mx-auto">
-        {body}
-      </p>
-    </div>
+    <>
+      <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">{title}</h1>
+      <p className="font-body-md text-body-md text-on-surface-variant m-0">{body}</p>
+    </>
   );
 }
