@@ -18,6 +18,7 @@ import { sendEmail as sendEmailStub } from '@/lib/devEmailStub';
 import { renderConfirmationEmail } from '@/emails/confirmation';
 import { getRequestOrigin } from '@/lib/origin';
 import { formatInTz } from '@/lib/tz';
+import { firstName } from '@/lib/name';
 
 /**
  * Register an anonymous visitor for a published event.
@@ -190,7 +191,7 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
 
   // Per design doc: props pre-formatted at call site; template stays pure presentation.
   const html = await renderConfirmationEmail({
-    recipientName: full_name,
+    firstName: firstName(full_name),
     eventTitle: event.title,
     eventStart: formatInTz(event.start_time, event.timezone),
     eventVenue,

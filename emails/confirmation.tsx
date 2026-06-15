@@ -3,8 +3,6 @@ import {
   Button,
   Container,
   Head,
-  Heading,
-  Hr,
   Html,
   Preview,
   Section,
@@ -13,7 +11,7 @@ import {
 import { render } from '@react-email/render';
 
 export type ConfirmationEmailProps = {
-  recipientName: string;
+  firstName: string;
   eventTitle: string;
   eventStart: string;
   eventVenue: string;
@@ -21,18 +19,31 @@ export type ConfirmationEmailProps = {
   registrationCode: string;
 };
 
-// Indigo brand palette aligned with the in-app M3 design tokens (Phase 4.6).
-// Email clients strip Tailwind/CSS — all styling is inline via React Email props.
-const COLOR_PRIMARY = '#4F46E5';
-const COLOR_BG = '#F8F7FB';
-const COLOR_SURFACE = '#FFFFFF';
-const COLOR_TEXT = '#1F1A2E';
-const COLOR_MUTED = '#6B6776';
-const COLOR_CODE_BG = '#EEF1FF';
-const FONT_FAMILY = '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
+// Vercel-canonical palette + sunny-amber RC-B Strong for the registration
+// code block. Email clients strip Tailwind/CSS — all styling is inline.
+// Geist isn't loadable in email (no @font-face), so the fallback chains do
+// the actual rendering work; listing Geist first signals brand intent and
+// renders for any client that happens to have Geist installed.
+const COLOR_BG = '#FFFFFF';        // pure white email body
+const COLOR_SURFACE = '#FAFAFA';   // event card bg (slightly off-white)
+const COLOR_TEXT = '#0A0A0A';      // primary text (Vercel canonical)
+const COLOR_MUTED = '#525252';     // secondary text
+const COLOR_CTA_BG = '#0A0A0A';    // CTA button (no indigo)
+const COLOR_CTA_FG = '#FFFFFF';
+
+// RC-B Strong "sunny amber" code block. Locked palette — three sources agree
+// (regcode-popped.html, design-audit.html §sec-em + #sec-rc, design-audit-dark
+// note §367, eventar-design-patterns.md §332).
+const RC_BG = '#FFFBEB';      // amber-50
+const RC_BORDER = '#FED7AA';  // orange-200
+const RC_LABEL = '#92400E';   // orange-700
+const RC_VALUE = '#7C2D12';   // orange-900
+
+const FONT_SANS = "'Geist', Helvetica, Arial, sans-serif";
+const FONT_MONO = "'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
 
 export default function ConfirmationEmail({
-  recipientName,
+  firstName,
   eventTitle,
   eventStart,
   eventVenue,
@@ -43,50 +54,111 @@ export default function ConfirmationEmail({
     <Html lang="en">
       <Head />
       <Preview>{`You're registered: ${eventTitle}`}</Preview>
-      <Body style={{ backgroundColor: COLOR_BG, fontFamily: FONT_FAMILY, margin: 0, padding: '24px 0' }}>
-        <Container style={{ backgroundColor: COLOR_SURFACE, maxWidth: '560px', margin: '0 auto', padding: '32px', borderRadius: '12px' }}>
-          <Heading as="h1" style={{ color: COLOR_PRIMARY, fontSize: '24px', margin: '0 0 24px', letterSpacing: '0.02em' }}>
-            Eventar
-          </Heading>
+      <Body style={{ backgroundColor: COLOR_BG, fontFamily: FONT_SANS, margin: 0, padding: '32px 0', color: COLOR_TEXT }}>
+        <Container style={{ maxWidth: '560px', margin: '0 auto', padding: '0 24px' }}>
 
-          <Text style={{ color: COLOR_TEXT, fontSize: '16px', lineHeight: '24px', margin: '0 0 16px' }}>
-            Hi {recipientName},
-          </Text>
-
-          <Text style={{ color: COLOR_TEXT, fontSize: '16px', lineHeight: '24px', margin: '0 0 24px' }}>
-            You&apos;re registered for <strong>{eventTitle}</strong>. Here are the details.
-          </Text>
-
-          <Section style={{ backgroundColor: COLOR_BG, borderRadius: '8px', padding: '16px 20px', margin: '0 0 24px' }}>
-            <Text style={{ color: COLOR_MUTED, fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 4px' }}>
-              When
+          {/* EM-1 — small text logo, no styled brand pill */}
+          <Section style={{ margin: '0 0 24px' }}>
+            <Text style={{ color: COLOR_TEXT, fontSize: '14px', fontWeight: 600, letterSpacing: '-0.01em', margin: 0 }}>
+              Eventar
             </Text>
-            <Text style={{ color: COLOR_TEXT, fontSize: '15px', margin: '0 0 12px' }}>
+          </Section>
+
+          {/* EM-2 — H1, sentence-stack pattern, period at end */}
+          <Text
+            style={{
+              color: COLOR_TEXT,
+              fontSize: '26px',
+              fontWeight: 700,
+              lineHeight: 1.2,
+              letterSpacing: '-0.02em',
+              margin: '0 0 12px',
+            }}
+          >
+            You&apos;re registered, {firstName}.
+          </Text>
+
+          {/* EM-3 — body copy */}
+          <Text style={{ color: COLOR_MUTED, fontSize: '15px', lineHeight: 1.55, margin: '0 0 28px' }}>
+            Thanks for signing up. Here&apos;s what to expect — and the code to show at check-in.
+          </Text>
+
+          {/* EM-4 — event card: title + stacked meta lines.
+              Kept stacked (not 2-col) to match the mockup and stay mobile-resilient. */}
+          <Section
+            style={{
+              backgroundColor: COLOR_SURFACE,
+              borderRadius: '10px',
+              padding: '20px 22px',
+              margin: '0 0 28px',
+            }}
+          >
+            <Text
+              style={{
+                color: COLOR_TEXT,
+                fontSize: '16px',
+                fontWeight: 600,
+                lineHeight: 1.35,
+                margin: '0 0 10px',
+              }}
+            >
+              {eventTitle}
+            </Text>
+            <Text style={{ color: COLOR_MUTED, fontSize: '14px', lineHeight: 1.5, margin: '0 0 4px' }}>
               {eventStart}
             </Text>
-            <Text style={{ color: COLOR_MUTED, fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 4px' }}>
-              Where
-            </Text>
-            <Text style={{ color: COLOR_TEXT, fontSize: '15px', margin: '0' }}>
+            <Text style={{ color: COLOR_MUTED, fontSize: '14px', lineHeight: 1.5, margin: 0 }}>
               {eventVenue}
             </Text>
           </Section>
 
-          <Text style={{ color: COLOR_MUTED, fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px' }}>
-            Your registration code · keep this for the door
-          </Text>
-          <Section style={{ backgroundColor: COLOR_CODE_BG, borderRadius: '8px', padding: '16px 20px', margin: '0 0 28px', textAlign: 'center' }}>
-            <Text style={{ color: COLOR_PRIMARY, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace', fontSize: '20px', fontWeight: 600, letterSpacing: '0.15em', margin: 0 }}>
+          {/* EM-5 — RC-B Strong "sunny amber" registration code block */}
+          <Section
+            style={{
+              backgroundColor: RC_BG,
+              border: `1px solid ${RC_BORDER}`,
+              borderRadius: '14px',
+              padding: '36px 28px',
+              margin: '0 0 28px',
+              textAlign: 'center',
+              boxShadow: '0 1px 0 #FDE68A',
+            }}
+          >
+            <Text
+              style={{
+                color: RC_LABEL,
+                fontFamily: FONT_SANS,
+                fontSize: '11px',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.12em',
+                margin: '0 0 14px',
+              }}
+            >
+              Your registration code
+            </Text>
+            <Text
+              style={{
+                color: RC_VALUE,
+                fontFamily: FONT_MONO,
+                fontSize: '40px',
+                fontWeight: 700,
+                letterSpacing: '0.18em',
+                lineHeight: 1,
+                margin: 0,
+              }}
+            >
               {registrationCode}
             </Text>
           </Section>
 
+          {/* EM-6 — bulletproof CTA (React Email renders <Button> as table>tr>td>a) */}
           <Section style={{ textAlign: 'center', margin: '0 0 28px' }}>
             <Button
               href={eventUrl}
               style={{
-                backgroundColor: COLOR_PRIMARY,
-                color: '#FFFFFF',
+                backgroundColor: COLOR_CTA_BG,
+                color: COLOR_CTA_FG,
                 fontSize: '15px',
                 fontWeight: 600,
                 padding: '12px 24px',
@@ -99,15 +171,17 @@ export default function ConfirmationEmail({
             </Button>
           </Section>
 
-          <Text style={{ color: COLOR_MUTED, fontSize: '14px', lineHeight: '20px', margin: '0 0 24px' }}>
-            We&apos;ll send your personal check-in QR code shortly before the event.
+          {/* EM-7 — small body explaining the QR follow-up */}
+          <Text style={{ color: COLOR_MUTED, fontSize: '14px', lineHeight: 1.5, margin: '0 0 28px' }}>
+            A QR code with the same registration value will arrive 60 minutes before the event
+            starts — scan it at the door to skip typing the code.
           </Text>
 
-          <Hr style={{ borderColor: COLOR_BG, margin: '0 0 16px' }} />
-
-          <Text style={{ color: COLOR_MUTED, fontSize: '12px', margin: 0 }}>
-            — Eventar · Internal workshop manager
+          {/* EM-8 — single-line footer, no link, no rule */}
+          <Text style={{ color: COLOR_MUTED, fontSize: '12px', lineHeight: 1.5, margin: 0 }}>
+            Eventar · Internal workshop manager
           </Text>
+
         </Container>
       </Body>
     </Html>
