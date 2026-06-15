@@ -327,17 +327,9 @@ export default function SurveyForm({
                   </div>
                 </fieldset>
 
-                {/* Action area */}
-                <div className="pt-lg flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={state.kind === 'submitting'}
-                    className="w-full sm:w-auto bg-primary text-on-primary font-medium text-body-md shadow-sm hover:opacity-90 transition-all rounded-full px-xl py-3 disabled:opacity-50"
-                  >
-                    {state.kind === 'submitting' ? 'Submitting…' : 'Submit'}
-                  </button>
-                </div>
-
+                {/* Error alert appears ABOVE the action area so a failed
+                    submit is visible adjacent to the button the user just
+                    clicked, not below the fold on a 5-question form. */}
                 {state.kind === 'error' && (
                   <p
                     role="alert"
@@ -349,6 +341,17 @@ export default function SurveyForm({
                     <span>{state.message}</span>
                   </p>
                 )}
+
+                {/* Action area */}
+                <div className="pt-lg flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={state.kind === 'submitting'}
+                    className="w-full sm:w-auto bg-primary text-on-primary font-medium text-body-md shadow-sm hover:opacity-90 transition-all rounded-full px-xl py-3 disabled:opacity-50"
+                  >
+                    {state.kind === 'submitting' ? 'Submitting…' : 'Submit'}
+                  </button>
+                </div>
               </form>
             )}
           </div>
