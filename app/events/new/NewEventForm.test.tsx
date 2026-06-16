@@ -246,7 +246,7 @@ describe('NewEventForm — edit mode prefill', () => {
     const banner = await screen.findByTestId('save-confirmation');
     expect(banner).toHaveAttribute('role', 'status');
     expect(banner).toHaveAttribute('aria-live', 'polite');
-    expect(banner.textContent).toMatch(/saved as draft/i);
+    expect(banner.textContent).toMatch(/saved\.?/i);
   });
 
   it('does NOT show the save confirmation when the submit fails', async () => {

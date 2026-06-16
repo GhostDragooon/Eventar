@@ -316,6 +316,21 @@ export default function NewEventForm(props: Props) {
 
   return (
     <div className="pb-xxl space-y-xl">
+      {/* Progress strip — section-by-section status. The four `v*` flags drive
+          both this and the submit-time scroll-to-first-invalid path, so the
+          UI can't drift from the actual validation. Completed steps go
+          accent blue (Vercel-canonical "active focus"); incomplete steps
+          stay neutral. Agenda is optional — its `v4` is true on empty, so
+          it lights up as soon as the form loads. */}
+      <ProgressStrip
+        steps={[
+          { n: '1', label: 'Basics',        complete: v1 },
+          { n: '2', label: 'Date & venue',  complete: v2 && v3 },
+          { n: '3', label: 'Capacity',      complete: !!basics.capacity },
+          { n: '4', label: 'Agenda',        complete: v4, optional: true },
+        ]}
+      />
+
       {/* 1 · Basics */}
       <FormSection ref={basicsRef} number="1" title="Basics">
         <BasicsSection value={basics} onChange={(p) => setBasics({ ...basics, ...p })} />
@@ -429,7 +444,7 @@ export default function NewEventForm(props: Props) {
           className="font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm flex items-start gap-sm"
         >
           <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden data-fill="1">check_circle</span>
-          <span className="flex-1">Saved as draft. Publish from the panel on the right when ready.</span>
+          <span className="flex-1">Saved.</span>
         </p>
       )}
     </div>
@@ -458,7 +473,7 @@ function FormSection({
   return (
     <section ref={ref} className="space-y-md scroll-mt-grid-margin">
       <h2 className="font-headline-sm text-[20px] text-on-surface flex items-baseline gap-sm">
-        <span className="text-on-surface-variant">{number} ·</span>
+        <span className="text-tertiary font-bold">{number} ·</span>
         <span>{title}</span>
         {optional && (
           <span className="font-body-md text-body-md text-on-surface-variant font-normal">
@@ -468,6 +483,54 @@ function FormSection({
       </h2>
       {children}
     </section>
+  );
+}
+
+/**
+ * Top-of-form progress strip. Four step chips in a horizontal row, each
+ * showing the section number (or a checkmark when complete) plus its label.
+ * Completed steps light up accent blue; the first incomplete step is the
+ * implicit "current focus" for the user. Single source of truth for the
+ * same booleans the submit-time validators check.
+ */
+function ProgressStrip({
+  steps,
+}: {
+  steps: Array<{ n: string; label: string; complete: boolean; optional?: boolean }>;
+}) {
+  return (
+    <ol
+      aria-label="Form progress"
+      className="m-0 p-md list-none flex items-center flex-wrap gap-sm rounded-lg border border-outline-variant bg-surface-container-lowest"
+    >
+      {steps.map((step, i) => {
+        const badgeClass = step.complete
+          ? 'bg-tertiary text-on-tertiary border-transparent'
+          : 'bg-surface-container border-outline-variant text-on-surface-variant';
+        const labelClass = step.complete
+          ? 'text-on-surface font-medium'
+          : 'text-on-surface-variant';
+        return (
+          <li key={step.n} className="flex items-center gap-sm">
+            <span
+              aria-hidden
+              className={`inline-flex items-center justify-center w-6 h-6 rounded-full border text-xs font-bold ${badgeClass}`}
+            >
+              {step.complete ? '✓' : step.n}
+            </span>
+            <span className={`text-sm ${labelClass}`}>
+              {step.label}
+              {step.optional && (
+                <span className="text-on-surface-variant"> (optional)</span>
+              )}
+            </span>
+            {i < steps.length - 1 && (
+              <span aria-hidden className="mx-xs text-on-surface-variant">·</span>
+            )}
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
