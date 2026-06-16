@@ -24,19 +24,12 @@ export default function LoginPage() {
 //   §5  flex column with gap-lg (24px) on a 480px-max content column
 //   §3  sentence stack: each <p> stands alone, line-height carries the rhythm
 //   §2  "By Eventar" footer applied page-wide by PublicShell — NOT inside this layout
-//   M3  no top branding on attendee surfaces — BUT login is the staff entry
-//       point and branding belongs here (explicit user direction). Wordmark
-//       above the hero stack; everything else stays content-first.
+//   §8 revised (2026-06-16) — PublicShell now provides the centered Eventar
+//       wordmark in its top bar, so login no longer needs an in-form wordmark.
 function LoginLayout({ children }: { children: React.ReactNode }) {
   return (
     <PublicShell>
       <div className="mx-auto flex w-full max-w-md flex-col gap-lg px-grid-margin py-xxl">
-        <p
-          aria-label="Eventar"
-          className="m-0 text-center text-[28px] font-bold tracking-tight text-on-surface"
-        >
-          Eventar
-        </p>
         {children}
       </div>
     </PublicShell>

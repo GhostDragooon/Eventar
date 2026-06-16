@@ -143,6 +143,16 @@ export default async function EventPosterPage({
         />
 
         <div className="mx-auto flex max-w-3xl flex-col gap-xl p-grid-margin print:max-w-none print:p-0 print:gap-lg">
+          {/* Eventar wordmark — centered above the band so the brand sits
+              consistently across every surface (revised §8). Small + muted
+              on the poster so the event identity in the band stays primary. */}
+          <p
+            aria-label="Eventar"
+            className="m-0 text-center text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--po-muted)]"
+          >
+            Eventar
+          </p>
+
           {/* ── Accent header band ─────────────────────────────────────────
               Primary-black band with title block on the left and white QR
               card on the top-right. The QR's lifecycle-aware caption stays
