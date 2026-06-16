@@ -355,25 +355,38 @@ export default function NewEventForm(props: Props) {
           it lights up as soon as the form loads. */}
       <ProgressStrip
         steps={[
-          { n: '1', label: 'Basics',        complete: v1 },
-          { n: '2', label: 'Date & venue',  complete: v2 && v3 },
-          { n: '3', label: 'Capacity',      complete: !!basics.capacity },
-          { n: '4', label: 'Agenda',        complete: v4, optional: true },
-          { n: '5', label: 'Partners',      complete: true, optional: true },
-          { n: '6', label: 'Hero image',    complete: true, optional: true },
+          { n: '1', label: 'Hero image',    complete: true, optional: true },
+          { n: '2', label: 'Basics',        complete: v1 },
+          { n: '3', label: 'Date & venue',  complete: v2 && v3 },
+          { n: '4', label: 'Capacity',      complete: !!basics.capacity },
+          { n: '5', label: 'Agenda',        complete: v4, optional: true },
+          { n: '6', label: 'Partners',      complete: true, optional: true },
         ]}
       />
 
-      {/* 1 · Basics */}
-      <FormSection ref={basicsRef} number="1" title="Basics">
+      {/* 1 · Hero image (optional) — Wave 3.
+          Visual identity comes first. Hero upload sits at the top of the
+          form so the organizer sees the event's "face" before the
+          administrative metadata below. Fallback gradient renders on PE
+          when null. */}
+      <FormSection number="1" title="Hero image" optional>
+        <HeroImageSection
+          value={heroImageUrl}
+          onChange={setHeroImageUrl}
+          eventId={props.mode === 'edit' ? props.eventId : undefined}
+        />
+      </FormSection>
+
+      {/* 2 · Basics */}
+      <FormSection ref={basicsRef} number="2" title="Basics">
         <BasicsSection value={basics} onChange={(p) => setBasics({ ...basics, ...p })} />
       </FormSection>
 
-      {/* 2 · Date & venue — DateTimeSection + VenueSection under one heading
+      {/* 3 · Date & venue — DateTimeSection + VenueSection under one heading
           per the EE mockup. Date/time stays in its existing 2-col internal
           grid; venue picker sits below. Timezone hint only renders once a
           venue is picked (so the copy is grounded in a real zone string). */}
-      <FormSection ref={dateVenueRef} number="2" title="Date & venue">
+      <FormSection ref={dateVenueRef} number="3" title="Date & venue">
         <div className="space-y-lg">
           <DateTimeSection value={datetime} onChange={(p) => setDatetime({ ...datetime, ...p })} />
           <VenueSection value={venue} onChange={setVenue} />
@@ -388,15 +401,15 @@ export default function NewEventForm(props: Props) {
         </div>
       </FormSection>
 
-      {/* 3 · Capacity — extracted from Basics so it gets its own numbered
+      {/* 4 · Capacity — extracted from Basics so it gets its own numbered
           beat in the mockup. Same BasicsValue.capacity binding, so the
           submit payload is unchanged. */}
-      <FormSection ref={capacityRef} number="3" title="Capacity">
+      <FormSection ref={capacityRef} number="4" title="Capacity">
         <CapacityField value={basics} onChange={(p) => setBasics({ ...basics, ...p })} />
       </FormSection>
 
-      {/* 4 · Agenda (optional) */}
-      <FormSection ref={agendaRef} number="4" title="Agenda" optional>
+      {/* 5 · Agenda (optional) */}
+      <FormSection ref={agendaRef} number="5" title="Agenda" optional>
         <AgendaSection
           date={datetime.date}
           eventStartMinutes={datetime.startMinutes}
@@ -406,11 +419,11 @@ export default function NewEventForm(props: Props) {
         />
       </FormSection>
 
-      {/* 5 · Hosts & organizers (optional) — Wave 2.
+      {/* 6 · Hosts & organizers (optional) — Wave 2.
           Two repeatable lists of {name, url?}. Empty rows are dropped at
           serialize time so the DB never sees a blank partner. Both lists
           cap at PARTNER_MAX (8) per side. */}
-      <FormSection ref={partnersRef} number="5" title="Hosts & organizers" optional>
+      <FormSection ref={partnersRef} number="6" title="Hosts & organizers" optional>
         <div className="space-y-lg">
           <PartnersSection
             label="Hosted by"
@@ -425,18 +438,6 @@ export default function NewEventForm(props: Props) {
             onChange={setOrganizedBy}
           />
         </div>
-      </FormSection>
-
-      {/* 6 · Hero image (optional) — Wave 3.
-          Browser upload to the event-hero-images bucket; the public URL
-          is stored on the event row. The PE hero renders this image as
-          a backdrop, falling back to a palette color when null. */}
-      <FormSection number="6" title="Hero image" optional>
-        <HeroImageSection
-          value={heroImageUrl}
-          onChange={setHeroImageUrl}
-          eventId={props.mode === 'edit' ? props.eventId : undefined}
-        />
       </FormSection>
 
       {/* Bottom action row — Cancel · Save & Preview (edit-only) · Save.

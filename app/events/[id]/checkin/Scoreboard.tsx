@@ -51,7 +51,7 @@ export function Scoreboard({
             Checked in
           </p>
           <p className="mt-xs">
-            <span className="font-headline-lg text-headline-lg text-on-surface">
+            <span className="font-headline-lg text-headline-lg text-tertiary">
               {attended}
             </span>
             <span className="ml-sm font-body-md text-body-md text-on-surface-variant">
@@ -64,7 +64,7 @@ export function Scoreboard({
             Start
           </p>
           <p
-            className="mt-xs font-headline-sm text-headline-sm text-primary"
+            className="mt-xs font-headline-sm text-headline-sm text-tertiary"
             aria-live="polite"
           >
             {countdown}
@@ -81,7 +81,7 @@ export function Scoreboard({
         aria-label={`${attended} of ${registered} checked in`}
       >
         <div
-          className="bg-primary h-full rounded-full transition-[width] duration-500"
+          className="bg-tertiary h-full rounded-full transition-[width] duration-500"
           style={{ width: `${pct}%` }}
         />
       </div>
