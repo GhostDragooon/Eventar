@@ -21,7 +21,7 @@ export default async function PublicEventPage({
   const { data: event } = await supabase
     .from('events')
     .select(
-      'id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status, max_attendees, registration_close_at',
+      'id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status, max_attendees, registration_close_at, hosted_by, organized_by',
     )
     .eq('id', id)
     .maybeSingle();
@@ -90,6 +90,14 @@ export default async function PublicEventPage({
             </p>
           </div>
         </header>
+
+        {/* Wave 2 — Hosted by / Organized by strip. Renders only when the
+            organizer added partners. Each partner is a name (optionally
+            linked to the partner's site). Empty arrays hide the whole strip. */}
+        <PartnerStrip
+          hostedBy={(event as unknown as { hosted_by?: unknown }).hosted_by}
+          organizedBy={(event as unknown as { organized_by?: unknown }).organized_by}
+        />
 
         {/* §3 description: split into <p> per sentence so line-height carries
             the rhythm. Empty-line splits in the source kept as paragraph breaks. */}
@@ -206,4 +214,81 @@ function splitSentences(text: string): string[] {
     .flatMap(para => para.split(/(?<=\.)\s+(?=[A-Z])/))
     .map(s => s.trim())
     .filter(Boolean);
+}
+
+// ─── Wave 2 partner strip ───────────────────────────────────────────────
+
+type PartnerEntry = { name: string; url?: string };
+
+function normalizePartners(raw: unknown): PartnerEntry[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter(
+      (r): r is { name?: unknown; url?: unknown } =>
+        typeof r === 'object' && r !== null,
+    )
+    .map((r) => ({
+      name: typeof r.name === 'string' ? r.name.trim() : '',
+      url: typeof r.url === 'string' && r.url.trim() !== '' ? r.url.trim() : undefined,
+    }))
+    .filter((r) => r.name !== '');
+}
+
+function PartnerStrip({
+  hostedBy,
+  organizedBy,
+}: {
+  hostedBy: unknown;
+  organizedBy: unknown;
+}) {
+  const hosts = normalizePartners(hostedBy);
+  const orgs = normalizePartners(organizedBy);
+  if (hosts.length === 0 && orgs.length === 0) return null;
+  return (
+    <section
+      aria-label="Hosts and organizers"
+      className="flex flex-col gap-sm border-t border-outline-variant pt-md"
+    >
+      {hosts.length > 0 && (
+        <PartnerRow label="Hosted by" partners={hosts} />
+      )}
+      {orgs.length > 0 && (
+        <PartnerRow label="Organized by" partners={orgs} />
+      )}
+    </section>
+  );
+}
+
+function PartnerRow({
+  label,
+  partners,
+}: {
+  label: string;
+  partners: PartnerEntry[];
+}) {
+  return (
+    <div className="flex flex-col gap-xs">
+      <span className="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">
+        {label}
+      </span>
+      <div className="flex flex-wrap items-center gap-x-md gap-y-xs">
+        {partners.map((p, i) => (
+          <span key={i} className="font-body-md text-body-md text-on-surface">
+            {p.url ? (
+              <a
+                href={p.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-tertiary hover:underline"
+              >
+                {p.name}
+              </a>
+            ) : (
+              p.name
+            )}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
 }

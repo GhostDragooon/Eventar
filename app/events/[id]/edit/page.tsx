@@ -34,7 +34,7 @@ export default async function StaffEventEditPage({
   const supabase = await supabaseServer();
   const { data: event } = await supabase
     .from('events')
-    .select('id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, latitude, longitude, description, status, max_attendees, created_by')
+    .select('id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, latitude, longitude, description, status, max_attendees, created_by, hosted_by, organized_by')
     .eq('id', id)
     .maybeSingle();
   if (!event) notFound();
@@ -390,6 +390,16 @@ function DraftEditFormPanel({
     country: event.country,
     latitude: event.latitude,
     longitude: event.longitude,
+    // Wave 2 — supabase-js's generated types haven't picked up the new
+    // jsonb columns yet; cast through unknown until typegen is rerun.
+    hosted_by: (() => {
+      const v = (event as unknown as { hosted_by?: unknown }).hosted_by;
+      return Array.isArray(v) ? (v as Array<{ name: string; url?: string }>) : [];
+    })(),
+    organized_by: (() => {
+      const v = (event as unknown as { organized_by?: unknown }).organized_by;
+      return Array.isArray(v) ? (v as Array<{ name: string; url?: string }>) : [];
+    })(),
   };
 
   // Pass raw ISO strings + the rest of each row's fields; the form converts

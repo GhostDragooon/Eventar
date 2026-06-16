@@ -17,6 +17,11 @@ import DateTimeSection, {
 import AgendaSection, {
   type BlockDraft, type BlockKind, type TopicDraft, agendaValid,
 } from '@/components/event-form/AgendaSection';
+import {
+  PartnersSection,
+  serializePartners,
+  type PartnerDraft,
+} from '@/components/event-form/PartnersSection';
 import type { Venue } from '@/lib/venue';
 import { tzFromCoords } from '@/lib/tz';
 import { formatMinutes24h } from '@/components/event-form/DateTimeSection';
@@ -58,6 +63,9 @@ export type InitialEvent = {
   country: string;
   latitude: number;
   longitude: number;
+  // Wave 2 — JSON arrays of {name, url?}. Always present (DB defaults to []).
+  hosted_by?: Array<{ name: string; url?: string }>;
+  organized_by?: Array<{ name: string; url?: string }>;
 };
 
 /**
@@ -140,6 +148,13 @@ function initialDateTimeFrom(e: InitialEvent | null): DateTimeValue {
   return { date: start.date, startMinutes: start.minutes, endMinutes: end.minutes };
 }
 
+function initialPartnersFrom(
+  rows: Array<{ name: string; url?: string }> | undefined,
+): PartnerDraft[] {
+  if (!rows || rows.length === 0) return [];
+  return rows.map((r) => ({ name: r.name ?? '', url: r.url ?? '' }));
+}
+
 function hhmmLocal(iso: string): string {
   const d = new Date(iso);
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -185,6 +200,12 @@ export default function NewEventForm(props: Props) {
   const [blocks, setBlocks] = useState<BlockDraft[]>(
     () => (props.mode === 'edit' ? initialBlocksFrom(props.initialBlocks) : []),
   );
+  const [hostedBy, setHostedBy] = useState<PartnerDraft[]>(
+    () => initialPartnersFrom(initialEvent?.hosted_by),
+  );
+  const [organizedBy, setOrganizedBy] = useState<PartnerDraft[]>(
+    () => initialPartnersFrom(initialEvent?.organized_by),
+  );
   // Edit-mode success confirmation. Set after a successful Save; cleared on
   // the next submit attempt. Without this, router.refresh() repaints the
   // form to the same values and the user has no way to tell their click
@@ -195,10 +216,11 @@ export default function NewEventForm(props: Props) {
   // every section at once, so the old "open the failing accordion" trick
   // becomes "smooth-scroll to the failing section". Keyed by section id
   // (the only ids the validators surface in section order).
-  const basicsRef   = useRef<HTMLElement>(null);
+  const basicsRef    = useRef<HTMLElement>(null);
   const dateVenueRef = useRef<HTMLElement>(null);
-  const capacityRef = useRef<HTMLElement>(null);
-  const agendaRef   = useRef<HTMLElement>(null);
+  const capacityRef  = useRef<HTMLElement>(null);
+  const agendaRef    = useRef<HTMLElement>(null);
+  const partnersRef  = useRef<HTMLElement>(null);
 
   const v1 = basicsValid(basics);
   const v2 = venueValid(venue);
@@ -251,6 +273,8 @@ export default function NewEventForm(props: Props) {
       start_time:    new Date(`${datetime.date}T${startTime}:00`).toISOString(),
       end_time:      new Date(`${datetime.date}T${endTime}:00`).toISOString(),
       ...venue!,
+      hosted_by:    serializePartners(hostedBy),
+      organized_by: serializePartners(organizedBy),
     };
     const blocksPayload = blocks.map((b, i) => ({
       start_time: new Date(`${datetime.date}T${b.start}:00`).toISOString(),
@@ -328,6 +352,7 @@ export default function NewEventForm(props: Props) {
           { n: '2', label: 'Date & venue',  complete: v2 && v3 },
           { n: '3', label: 'Capacity',      complete: !!basics.capacity },
           { n: '4', label: 'Agenda',        complete: v4, optional: true },
+          { n: '5', label: 'Partners',      complete: true, optional: true },
         ]}
       />
 
@@ -371,6 +396,27 @@ export default function NewEventForm(props: Props) {
           blocks={blocks}
           onChange={setBlocks}
         />
+      </FormSection>
+
+      {/* 5 · Hosts & organizers (optional) — Wave 2.
+          Two repeatable lists of {name, url?}. Empty rows are dropped at
+          serialize time so the DB never sees a blank partner. Both lists
+          cap at PARTNER_MAX (8) per side. */}
+      <FormSection ref={partnersRef} number="5" title="Hosts & organizers" optional>
+        <div className="space-y-lg">
+          <PartnersSection
+            label="Hosted by"
+            emptyHint="Add the institutions that host this event (optional)."
+            value={hostedBy}
+            onChange={setHostedBy}
+          />
+          <PartnersSection
+            label="Organized by"
+            emptyHint="Add the bodies that organize this event (optional)."
+            value={organizedBy}
+            onChange={setOrganizedBy}
+          />
+        </div>
       </FormSection>
 
       {/* Bottom action row — Cancel · Save & Preview (edit-only) · Save.

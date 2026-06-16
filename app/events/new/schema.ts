@@ -6,6 +6,23 @@ export const KINDS = [
   'break','transition',
 ] as const;
 
+// Wave 2 — partner reference for hosted_by / organized_by. URL is optional
+// (some partners just have a name). Empty string normalises to undefined so
+// the DB sees null rather than ''. Hard cap at 8 partners per side to keep
+// the PE strip layout readable.
+const partnerSchema = z.object({
+  name: z.string().trim().min(1, 'Partner name required').max(80),
+  url: z
+    .string()
+    .trim()
+    .max(500)
+    .optional()
+    .transform((v) => (v === '' || v === undefined ? undefined : v))
+    .pipe(z.string().url().optional()),
+});
+export type Partner = z.infer<typeof partnerSchema>;
+export const PARTNER_MAX = 8;
+
 const topicSchema = z.object({
   title: z.string().trim().min(1).max(200),
   speaker_name: z.string().trim().min(1).max(100),
@@ -44,6 +61,8 @@ export const eventInputSchema = z.object({
   latitude: z.coerce.number().min(-90).max(90),
   longitude: z.coerce.number().min(-180).max(180),
   max_attendees: z.coerce.number().int().positive().optional(),
+  hosted_by:    z.array(partnerSchema).max(PARTNER_MAX).default([]),
+  organized_by: z.array(partnerSchema).max(PARTNER_MAX).default([]),
 })
 .refine(d => new Date(d.end_time) > new Date(d.start_time), {
   message: 'End time must be after start time', path: ['end_time'],
