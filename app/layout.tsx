@@ -4,6 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 import { THEME_STORAGE_KEY } from "@/lib/theme";
 import { TEXT_SIZE_STORAGE_KEY } from "@/lib/textSize";
+import { ReviewOverlay } from "@/components/dev/ReviewOverlay";
 
 // FOUC prevention: runs synchronously before paint, applies the user's saved
 // theme + text-size classes on <html>. Without this, the page would render
@@ -69,6 +70,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col font-body-md" suppressHydrationWarning>
         {children}
+        {process.env.NEXT_PUBLIC_EVENTAR_REVIEW_MODE === 'true' && <ReviewOverlay />}
       </body>
     </html>
   );
