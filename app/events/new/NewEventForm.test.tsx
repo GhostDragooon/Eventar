@@ -331,7 +331,7 @@ describe('NewEventForm — create mode (regression: existing behavior preserved)
  * ==================================================================== */
 
 describe('NewEventForm — D.3b linear layout', () => {
-  it('renders the five sections in mockup order with numbered headings', () => {
+  it('renders the six sections in mockup order with numbered headings', () => {
     render(
       <NewEventForm
         mode="edit"
@@ -342,15 +342,16 @@ describe('NewEventForm — D.3b linear layout', () => {
       />,
     );
     const headings = screen.getAllByRole('heading', { level: 2 }).map(h => h.textContent ?? '');
-    // Five section H2s after Wave 2: 1 Basics · 2 Date & venue · 3 Capacity
-    // · 4 Agenda · 5 Hosts & organizers.
+    // Six section H2s after Wave 3: 1 Basics · 2 Date & venue · 3 Capacity
+    // · 4 Agenda · 5 Hosts & organizers · 6 Hero image.
     const numbered = headings.filter(t => /^\s*\d\s*·/.test(t));
-    expect(numbered).toHaveLength(5);
+    expect(numbered).toHaveLength(6);
     expect(numbered[0]).toMatch(/1\s*·\s*Basics/);
     expect(numbered[1]).toMatch(/2\s*·\s*Date\s*&\s*venue/);
     expect(numbered[2]).toMatch(/3\s*·\s*Capacity/);
     expect(numbered[3]).toMatch(/4\s*·\s*Agenda/);
     expect(numbered[4]).toMatch(/5\s*·\s*Hosts\s*&\s*organizers/);
+    expect(numbered[5]).toMatch(/6\s*·\s*Hero\s*image/);
   });
 
   it('marks the Agenda section as optional in the heading', () => {

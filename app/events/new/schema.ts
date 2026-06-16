@@ -63,6 +63,12 @@ export const eventInputSchema = z.object({
   max_attendees: z.coerce.number().int().positive().optional(),
   hosted_by:    z.array(partnerSchema).max(PARTNER_MAX).default([]),
   organized_by: z.array(partnerSchema).max(PARTNER_MAX).default([]),
+  hero_image_url: z
+    .string()
+    .trim()
+    .max(500)
+    .optional()
+    .default(''),
 })
 .refine(d => new Date(d.end_time) > new Date(d.start_time), {
   message: 'End time must be after start time', path: ['end_time'],

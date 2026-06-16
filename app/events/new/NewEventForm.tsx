@@ -22,6 +22,7 @@ import {
   serializePartners,
   type PartnerDraft,
 } from '@/components/event-form/PartnersSection';
+import { HeroImageSection } from '@/components/event-form/HeroImageSection';
 import type { Venue } from '@/lib/venue';
 import { tzFromCoords } from '@/lib/tz';
 import { formatMinutes24h } from '@/components/event-form/DateTimeSection';
@@ -66,6 +67,8 @@ export type InitialEvent = {
   // Wave 2 — JSON arrays of {name, url?}. Always present (DB defaults to []).
   hosted_by?: Array<{ name: string; url?: string }>;
   organized_by?: Array<{ name: string; url?: string }>;
+  // Wave 3 — public URL into event-hero-images bucket, null when unset.
+  hero_image_url?: string | null;
 };
 
 /**
@@ -206,6 +209,9 @@ export default function NewEventForm(props: Props) {
   const [organizedBy, setOrganizedBy] = useState<PartnerDraft[]>(
     () => initialPartnersFrom(initialEvent?.organized_by),
   );
+  const [heroImageUrl, setHeroImageUrl] = useState<string>(
+    initialEvent?.hero_image_url ?? '',
+  );
   // Edit-mode success confirmation. Set after a successful Save; cleared on
   // the next submit attempt. Without this, router.refresh() repaints the
   // form to the same values and the user has no way to tell their click
@@ -275,6 +281,7 @@ export default function NewEventForm(props: Props) {
       ...venue!,
       hosted_by:    serializePartners(hostedBy),
       organized_by: serializePartners(organizedBy),
+      hero_image_url: heroImageUrl || undefined,
     };
     const blocksPayload = blocks.map((b, i) => ({
       start_time: new Date(`${datetime.date}T${b.start}:00`).toISOString(),
@@ -353,6 +360,7 @@ export default function NewEventForm(props: Props) {
           { n: '3', label: 'Capacity',      complete: !!basics.capacity },
           { n: '4', label: 'Agenda',        complete: v4, optional: true },
           { n: '5', label: 'Partners',      complete: true, optional: true },
+          { n: '6', label: 'Hero image',    complete: true, optional: true },
         ]}
       />
 
@@ -417,6 +425,18 @@ export default function NewEventForm(props: Props) {
             onChange={setOrganizedBy}
           />
         </div>
+      </FormSection>
+
+      {/* 6 · Hero image (optional) — Wave 3.
+          Browser upload to the event-hero-images bucket; the public URL
+          is stored on the event row. The PE hero renders this image as
+          a backdrop, falling back to a palette color when null. */}
+      <FormSection number="6" title="Hero image" optional>
+        <HeroImageSection
+          value={heroImageUrl}
+          onChange={setHeroImageUrl}
+          eventId={props.mode === 'edit' ? props.eventId : undefined}
+        />
       </FormSection>
 
       {/* Bottom action row — Cancel · Save & Preview (edit-only) · Save.

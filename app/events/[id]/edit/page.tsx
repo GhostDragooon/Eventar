@@ -34,7 +34,7 @@ export default async function StaffEventEditPage({
   const supabase = await supabaseServer();
   const { data: event } = await supabase
     .from('events')
-    .select('id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, latitude, longitude, description, status, max_attendees, created_by, hosted_by, organized_by')
+    .select('id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, latitude, longitude, description, status, max_attendees, created_by, hosted_by, organized_by, hero_image_url')
     .eq('id', id)
     .maybeSingle();
   if (!event) notFound();
@@ -399,6 +399,10 @@ function DraftEditFormPanel({
     organized_by: (() => {
       const v = (event as unknown as { organized_by?: unknown }).organized_by;
       return Array.isArray(v) ? (v as Array<{ name: string; url?: string }>) : [];
+    })(),
+    hero_image_url: (() => {
+      const v = (event as unknown as { hero_image_url?: unknown }).hero_image_url;
+      return typeof v === 'string' ? v : null;
     })(),
   };
 

@@ -21,7 +21,7 @@ export default async function PublicEventPage({
   const { data: event } = await supabase
     .from('events')
     .select(
-      'id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status, max_attendees, registration_close_at, hosted_by, organized_by',
+      'id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status, max_attendees, registration_close_at, hosted_by, organized_by, hero_image_url',
     )
     .eq('id', id)
     .maybeSingle();
@@ -65,8 +65,32 @@ export default async function PublicEventPage({
   // lifecycle pill / register card. The §7a "one color per concept" rule
   // forbids re-using accent blue here for anything other than the date.
 
+  const heroImageUrl =
+    (event as unknown as { hero_image_url?: string | null }).hero_image_url ?? null;
+
   return (
     <PublicShell>
+      {/* Wave 3 — hero backdrop. Full-width band, image when uploaded,
+          accent-tinted palette fallback otherwise. No overlay text — the
+          existing event-meta block below is the source of truth for title
+          + date + venue (per user direction, hero is just a visual). */}
+      <div
+        aria-hidden
+        className="w-full h-[200px] sm:h-[280px] bg-surface-container"
+        style={
+          heroImageUrl
+            ? {
+                backgroundImage: `url(${heroImageUrl})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }
+            : {
+                backgroundImage:
+                  'linear-gradient(180deg, var(--tertiary-fixed) 0%, var(--surface-container) 100%)',
+              }
+        }
+      />
+
       {/* §5 equal-gap rhythm: 480px column, every direct child shares 24px gap.
           Container padding matches the gap so page edges share the rhythm. */}
       <div className="mx-auto flex w-full max-w-md flex-col gap-lg px-grid-margin py-xxl">
