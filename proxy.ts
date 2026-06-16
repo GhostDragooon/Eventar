@@ -5,6 +5,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
 export async function proxy(req: NextRequest) {
+  // REVIEW MODE — skip auth gate so the user can browse all staff routes
+  // without signing in. Pair with the EVENTAR_REVIEW_MODE bypass in
+  // lib/auth.ts::requireStaff. Remove both before pushing to production.
+  if (process.env.EVENTAR_REVIEW_MODE === 'true') {
+    return NextResponse.next();
+  }
+
   // We bind the Supabase client's cookie-setter to `res`. The client may write
   // refreshed-session cookies during `getUser()` or clear cookies during
   // `signOut()`. For the happy path we return `res` directly and those cookies
