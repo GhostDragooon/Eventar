@@ -105,7 +105,7 @@ export function ScanAndManual({
         <button
           type="submit"
           disabled={!isValid}
-          className="mt-md self-end min-h-11 rounded-lg bg-primary text-on-primary px-lg py-sm font-label-md text-label-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="mt-md self-end min-h-11 rounded-lg bg-tertiary text-on-tertiary px-lg py-sm font-label-md text-label-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Check in
         </button>

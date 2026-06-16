@@ -57,7 +57,7 @@ export function RegistrationCloseEditor({ eventId, current }: Props) {
           type="button"
           onClick={handleSave}
           disabled={isPending || !dirty}
-          className="bg-primary text-on-primary px-md py-xs rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-tertiary text-on-tertiary px-md py-xs rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isPending ? 'Saving…' : 'Save'}
         </button>

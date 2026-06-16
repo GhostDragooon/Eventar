@@ -128,7 +128,7 @@ export default async function StaffEventEditPage({
               >
                 <button
                   type="submit"
-                  className="w-full bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
+                  className="w-full bg-tertiary text-on-tertiary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
                 >
                   Publish event
                 </button>
@@ -225,7 +225,7 @@ export default async function StaffEventEditPage({
               >
                 <button
                   type="submit"
-                  className="w-full bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
+                  className="w-full bg-tertiary text-on-tertiary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
                 >
                   Publish event
                 </button>
@@ -305,7 +305,7 @@ export default async function StaffEventEditPage({
               >
                 <Link
                   href={`/events/${event.id}/checkin`}
-                  className="inline-flex items-center bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
+                  className="inline-flex items-center bg-tertiary text-on-tertiary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
                 >
                   Open check-in
                 </Link>

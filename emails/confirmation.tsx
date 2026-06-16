@@ -28,7 +28,7 @@ const COLOR_BG = '#FFFFFF';        // pure white email body
 const COLOR_SURFACE = '#FAFAFA';   // event card bg (slightly off-white)
 const COLOR_TEXT = '#0A0A0A';      // primary text (Vercel canonical)
 const COLOR_MUTED = '#525252';     // secondary text
-const COLOR_CTA_BG = '#0A0A0A';    // CTA button (no indigo)
+const COLOR_CTA_BG = '#0070F3';    // Vercel-canonical accent (CTA button)
 const COLOR_CTA_FG = '#FFFFFF';
 
 // RC-B Strong "sunny amber" code block. Locked palette per

@@ -157,7 +157,7 @@ function ActionToolbar({ eventId, lifecycle }: { eventId: string; lifecycle: Lif
           href={`/events/${eventId}/checkin`}
           className={
             lifecycle === 'live'
-              ? 'flex items-center gap-xs bg-primary text-on-primary px-md py-sm rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity'
+              ? 'flex items-center gap-xs bg-tertiary text-on-tertiary px-md py-sm rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity'
               : 'flex items-center gap-xs bg-surface-container-high text-on-surface px-md py-sm rounded-lg font-label-md text-label-md hover:bg-surface-container-highest transition-colors'
           }
         >
@@ -168,7 +168,7 @@ function ActionToolbar({ eventId, lifecycle }: { eventId: string; lifecycle: Lif
       {showAnalytics && (
         <Link
           href={`/events/${eventId}/analytics`}
-          className="flex items-center gap-xs bg-primary text-on-primary px-md py-sm rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity"
+          className="flex items-center gap-xs bg-tertiary text-on-tertiary px-md py-sm rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity"
         >
           <span className="material-symbols-outlined text-[16px]" aria-hidden>insights</span>
           View analytics

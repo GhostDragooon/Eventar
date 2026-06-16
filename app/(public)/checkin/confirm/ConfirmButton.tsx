@@ -53,7 +53,7 @@ export default function ConfirmButton({
         type="button"
         onClick={onClick}
         disabled={state.kind === 'loading'}
-        className="w-full bg-primary text-on-primary rounded-lg px-md py-md font-label-md text-body-md font-bold hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-50"
+        className="w-full bg-tertiary text-on-tertiary rounded-lg px-md py-md font-label-md text-body-md font-bold hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-50"
       >
         {state.kind === 'loading' ? 'Checking in…' : "Confirm I'm here"}
       </button>

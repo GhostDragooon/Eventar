@@ -71,7 +71,7 @@ export function AttendanceSection({
           </div>
           <Link
             href={`/events/${eventId}/checkin`}
-            className="flex items-center gap-sm bg-primary text-on-primary px-lg py-sm rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity"
+            className="flex items-center gap-sm bg-tertiary text-on-tertiary px-lg py-sm rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity"
           >
             <span className="material-symbols-outlined text-[18px]" aria-hidden>
               group

@@ -94,7 +94,7 @@ export default async function DashboardPage() {
         </div>
         <Link
           href="/events/new"
-          className="inline-flex items-center gap-sm bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
+          className="inline-flex items-center gap-sm bg-tertiary text-on-tertiary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
         >
           <span className="material-symbols-outlined text-[18px]" aria-hidden>add</span>
           Create event
@@ -106,7 +106,7 @@ export default async function DashboardPage() {
           <p className="font-body-md text-body-md text-on-surface-variant mb-md">No events yet.</p>
           <Link
             href="/events/new"
-            className="inline-flex items-center gap-sm bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
+            className="inline-flex items-center gap-sm bg-tertiary text-on-tertiary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
           >
             <span className="material-symbols-outlined text-[18px]" aria-hidden>add</span>
             Create your first event

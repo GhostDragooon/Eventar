@@ -84,7 +84,7 @@ function LoginForm() {
         </label>
         <button
           disabled={pending}
-          className="w-full rounded-lg bg-primary text-on-primary font-label-md text-label-md py-md hover:opacity-90 transition-opacity disabled:opacity-50"
+          className="w-full rounded-lg bg-tertiary text-on-tertiary font-label-md text-label-md py-md hover:opacity-90 transition-opacity disabled:opacity-50"
         >
           {pending ? 'Sending…' : 'Email me a link'}
         </button>
