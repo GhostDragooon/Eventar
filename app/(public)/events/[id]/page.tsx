@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import type { AgendaTopic } from '@/lib/agenda';
@@ -8,6 +8,7 @@ import RegisterCard from '@/components/RegisterCard';
 import { PublicShell } from '@/components/shell/PublicShell';
 import { StatusPill } from '@/components/lifecycle/StatusPill';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
+import { requireStaff, NotAuthorizedError } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,13 +22,31 @@ export default async function PublicEventPage({
   const { data: event } = await supabase
     .from('events')
     .select(
-      'id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status, max_attendees, registration_close_at, hosted_by, organized_by, hero_image_url',
+      'id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status, max_attendees, registration_close_at, hosted_by, organized_by, hero_image_url, created_by',
     )
     .eq('id', id)
     .maybeSingle();
 
-  // RLS filters to status='published' for anon; this 404s drafts + non-existent.
-  if (!event || event.status !== 'published') notFound();
+  // Draft handling: anon visitors and non-owners hit 404 as before. The
+  // event's OWNER (and managers) silently bounce to /edit so a freshly-
+  // created draft they navigated to via the public URL doesn't dead-end.
+  // Pre-existing UX bug: clicking the public link for a draft 404'd everyone,
+  // including the staff member who just created it.
+  if (!event) notFound();
+  if (event.status !== 'published') {
+    let isOwnerOrManager = false;
+    try {
+      const staff = await requireStaff(supabase);
+      isOwnerOrManager =
+        event.created_by === staff.id || staff.role === 'manager';
+    } catch (e) {
+      if (!(e instanceof NotAuthorizedError)) throw e;
+    }
+    if (isOwnerOrManager) {
+      redirect(`/events/${id}/edit`);
+    }
+    notFound();
+  }
 
   // Form layer of the registration-window gate: RegisterCard swaps the form
   // for a closed/ended notice outside the 'registering' state. The Server
