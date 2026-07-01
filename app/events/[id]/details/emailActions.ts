@@ -97,7 +97,16 @@ async function runBulkSend(
         skipped += 1; // already handled for this (event, registration, purpose)
         continue;
       }
+      // Genuine ledger-insert failure: no email_log row to inspect afterwards,
+      // so leave a diagnosable trace (rule 12). UUIDs + error code only — never
+      // the recipient's email or name (rule 10).
       failed += 1;
+      console.error('[runBulkSend] email_log insert failed', {
+        purpose,
+        eventId,
+        registrationId: reg.id,
+        code: logErr?.code ?? 'unknown',
+      });
       continue;
     }
 

@@ -62,6 +62,12 @@ describe('renderReminderEmail', () => {
     expect(html).not.toContain('null');
   });
 
+  it('drops the name from the greeting when firstName is empty (no dangling ", .")', async () => {
+    const html = await renderReminderEmail({ ...sampleProps, firstName: '' });
+    expect(html).toContain('See you soon.');
+    expect(html).not.toMatch(/See you soon,\s*\./);
+  });
+
   it('renders to table-based HTML (no flex/grid)', async () => {
     const html = await renderReminderEmail(sampleProps);
     expect(html).toContain('<table');

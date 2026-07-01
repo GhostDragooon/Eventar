@@ -74,6 +74,9 @@ export default function ReminderEmail({
   countdownLabel,
 }: ReminderEmailProps) {
   const reminderEyebrow = editionLabel ? `Reminder · ${editionLabel}` : 'Reminder';
+  // Single interpolated string so a blank name yields "See you soon." rather
+  // than a dangling "See you soon, ." (firstName() returns '' for blank input).
+  const greeting = firstName ? `See you soon, ${firstName}.` : 'See you soon.';
 
   return (
     <Html lang="en">
@@ -113,7 +116,7 @@ export default function ReminderEmail({
 
           {/* Greeting + body */}
           <Text style={{ color: COLOR_TEXT, fontSize: '26px', fontWeight: 700, lineHeight: 1.2, letterSpacing: '-0.02em', margin: '0 0 12px' }}>
-            See you soon, {firstName}.
+            {greeting}
           </Text>
           <Text style={{ color: COLOR_MUTED, fontSize: '15px', lineHeight: 1.55, margin: '0 0 24px' }}>
             Your event starts shortly. Here are the details and your check-in pass — show it at the door.

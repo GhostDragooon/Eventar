@@ -41,6 +41,12 @@ describe('renderSurveyInviteEmail', () => {
     expect(html).not.toContain('null');
   });
 
+  it('drops the name from the greeting when firstName is empty (no dangling ", .")', async () => {
+    const html = await renderSurveyInviteEmail({ ...sampleProps, firstName: '' });
+    expect(html).toContain('Thanks for coming.');
+    expect(html).not.toMatch(/Thanks for coming,\s*\./);
+  });
+
   it('renders to table-based HTML (no flex/grid)', async () => {
     const html = await renderSurveyInviteEmail(sampleProps);
     expect(html).toContain('<table');

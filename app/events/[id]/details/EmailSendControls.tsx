@@ -2,22 +2,26 @@
 
 import { useState, useTransition } from 'react';
 import { sendReminderForEvent, sendSurveyInviteForEvent } from './emailActions';
-import { formatSendResult } from '@/lib/emailSendSummary';
+import { composeSendMessage } from '@/lib/emailSendSummary';
 
 type Kind = 'reminder' | 'survey';
 
 // Minimal manual triggers for Email #2 (reminder/pass) + Email #3 (survey
 // invite) so the loop is exercisable on localhost. Deliberately plain — Wave 5
 // restyles the Event Manager surface. In dev (RESEND_API_KEY unset) sends land
-// on devEmailStub and report "N queued".
+// on devEmailStub and report "logged (dev — not emailed)".
 export function EmailSendControls({
   eventId,
   showReminder,
   showSurvey,
+  registeredCount,
+  attendedCount,
 }: {
   eventId: string;
   showReminder: boolean;
   showSurvey: boolean;
+  registeredCount: number;
+  attendedCount: number;
 }) {
   const [pending, startTransition] = useTransition();
   const [active, setActive] = useState<Kind | null>(null);
@@ -26,12 +30,21 @@ export function EmailSendControls({
   if (!showReminder && !showSurvey) return null;
 
   function run(kind: Kind) {
+    // Sending is irreversible and goes to real attendees — confirm intent and
+    // name the recipient count before firing.
+    const count = kind === 'reminder' ? registeredCount : attendedCount;
+    const what =
+      kind === 'reminder'
+        ? `the reminder + check-in pass to ${count} registered attendee${count === 1 ? '' : 's'}`
+        : `the survey invite to ${count} attendee${count === 1 ? '' : 's'}`;
+    if (!window.confirm(`Send ${what} now? This can't be undone.`)) return;
+
     setActive(kind);
     setMessage(null);
     startTransition(async () => {
       const fn = kind === 'reminder' ? sendReminderForEvent : sendSurveyInviteForEvent;
       const result = await fn(eventId);
-      setMessage(`${kind === 'reminder' ? 'Reminders' : 'Survey invites'}: ${formatSendResult(result)}`);
+      setMessage(composeSendMessage(kind, result));
       setActive(null);
     });
   }

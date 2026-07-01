@@ -43,6 +43,9 @@ export default function SurveyInviteEmail({
   editionLabel,
 }: SurveyInviteEmailProps) {
   const feedbackEyebrow = editionLabel ? `Feedback · ${editionLabel}` : 'Feedback';
+  // Single interpolated string so a blank name yields "Thanks for coming."
+  // rather than a dangling "Thanks for coming, ." (firstName() returns '').
+  const greeting = firstName ? `Thanks for coming, ${firstName}.` : 'Thanks for coming.';
 
   return (
     <Html lang="en">
@@ -75,7 +78,7 @@ export default function SurveyInviteEmail({
 
           {/* Greeting + body */}
           <Text style={{ color: COLOR_TEXT, fontSize: '26px', fontWeight: 700, lineHeight: 1.2, letterSpacing: '-0.02em', margin: '0 0 12px' }}>
-            Thanks for coming, {firstName}.
+            {greeting}
           </Text>
           <Text style={{ color: COLOR_MUTED, fontSize: '15px', lineHeight: 1.55, margin: '0 0 24px' }}>
             We&apos;d love your quick take on how it went — it shapes the next one.

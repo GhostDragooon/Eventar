@@ -247,6 +247,24 @@ describe('sendReminderForEvent — send behaviour', () => {
     expect(mockSendStub).toHaveBeenCalledTimes(1);
   });
 
+  it('a non-23505 email_log insert failure is counted AND logged (UUIDs only, no PII)', async () => {
+    mockEmailLogInsert = async () => ({ data: null, error: { code: '08006', message: 'connection failure' } });
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const result = await sendReminderForEvent(eventId);
+
+    expect(result).toEqual({ sent: 0, queued: 0, skipped: 0, failed: 2 });
+    // Fails visibly (rule 12): a diagnosable trace exists...
+    expect(errSpy).toHaveBeenCalled();
+    // ...but never leaks recipient PII (rule 10).
+    const logged = errSpy.mock.calls.map((c) => JSON.stringify(c)).join(' ');
+    expect(logged).not.toContain('a@x.com');
+    expect(logged).not.toContain('Alice');
+    // No send is attempted when the ledger insert fails.
+    expect(mockSendStub).not.toHaveBeenCalled();
+    errSpy.mockRestore();
+  });
+
   it('returns all-zero (no sends) when there are no registered recipients', async () => {
     mockRegistrations = [];
     const result = await sendReminderForEvent(eventId);

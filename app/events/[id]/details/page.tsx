@@ -106,8 +106,13 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
         {canSeeConfirmationsSent && (
           <EmailSendControls
             eventId={event.id}
-            showReminder={lifecycle === 'registering' || lifecycle === 'upcoming' || lifecycle === 'live'}
+            // Reminder is the 60-min-before pass — only meaningful once the
+            // event is imminent (upcoming/live), NOT during registering when
+            // the event may be days out and "starts soon" would be wrong.
+            showReminder={lifecycle === 'upcoming' || lifecycle === 'live'}
             showSurvey={lifecycle === 'completed'}
+            registeredCount={regs.filter((r) => r.status === 'registered').length}
+            attendedCount={attended}
           />
         )}
       </header>
