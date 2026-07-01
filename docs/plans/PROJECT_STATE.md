@@ -1,5 +1,5 @@
 # Project State — Eventar
-_Last updated: 2026-06-15 (Redesign + gap-closure phase shipped — Phase 8 unblocked)_
+_Last updated: 2026-07-01 (MVP email gaps closed — Email #2 reminder/pass + Email #3 survey invite shipped in code; see `docs/plans/handoff_01072026.md`)_
 
 > Source of truth for "what's active vs forward-looking."
 > **Read this BEFORE writing any code.** Updated at the end of each phase.
@@ -59,8 +59,9 @@ Things to hold in mind during the ACTIVE build, **NOT to act on now**:
   1. ✅ **CLOSED** — PII enumeration oracle on `/checkin/confirm`: name dropped + rate-limited (commits `7c5bcbd` + `20ac68f`).
   2. ✅ **CLOSED** — `Math.random` → `crypto.randomInt`; codes widened 4→6 chars (commit `659eee0`).
   3. ✅ **CLOSED** — Host-header spoofing: `lib/origin.ts::getRequestOrigin` reads `NEXT_PUBLIC_SITE_URL` first (commit `561d2cb`).
-  4. ✅ **CLOSED** — Migration history drift reconciled 2026-06-02 (`list_migrations` ↔ `ls supabase/migrations/` diff exits 0).
-- **devEmailStub removal protocol** — Once `RESEND_API_KEY` is set in `.env.local` AND a smoke registration confirms the real Resend path works, remove the temp per `docs/plans/2026-06-04-phase-7-resend-design.md` §"Removal protocol." ~3 minutes. Until then, ALL registrations log "[email queued]" — no real email sends.
+  4. ⚠️ **REGRESSED** — Migration history drift is back. Remote has 2 migrations with NO local file (`20260616112718_add_event_hosts_and_organizers`, `20260616114424_add_event_hero_image`, applied via MCP during the redesign phase). Backfill local migration files before Phase 8 `db push`. See `docs/plans/handoff_01072026.md` ⚠️ section. (The 2026-07-01 `email_log_dedup_idx` migration is itself drift-free — file + remote history match.)
+- **MVP email gaps CLOSED (2026-07-01)** — Email #2 (reminder/pass w/ personal CID QR) + Email #3 (survey invite) shipped as templates + `sendReminderForEvent`/`sendSurveyInviteForEvent` Server Actions, landing on `devEmailStub`. These are the exact units Phase 9's pg_cron jobs will call. **Phase-9 caveat:** a `queued` reminder/survey `email_log` row is terminal under the new `email_log_dedup_idx` — cron reconciliation must not treat `queued` as "needs sending."
+- **devEmailStub removal protocol** — now spans **THREE** call sites (`registerForEvent` + the two new email actions). Once `RESEND_API_KEY` is set AND a smoke registration confirms the real path, remove the temp per `docs/plans/2026-06-04-phase-7-resend-design.md` §"Removal protocol" (update that doc for the added `emailActions.ts` env-switch). Until then, ALL sends log to console — no real email.
 - **Phase 9 (pg_cron)** will read `email_log` — do NOT rename the `purpose` enum values (`confirmation`, `reminder`, `survey`).
 - **Three-layer validation** (form → Zod → DB constraint) for every new mutation.
 - **`requireStaff()` at top of every staff Server Action** — hard rule.
@@ -105,7 +106,8 @@ _(none currently. Phase 8 work is operational; ask the user before adding non-de
 | 7 | ✅ shipped (code) | Real Resend infrastructure + React Email template for Email #1 — credentials pending in `.env.local` |
 | Redesign + gaps | ✅ shipped | 13-surface Vercel-canonical + Geist redesign · 7 frontend↔backend gaps closed (Q3 4-option, Q2 session MC, speaker check-in, real edit form, live-ops lifecycle, sent-wording, real poster URL) · vitest 180 → 390 |
 | **8** | **active** | Vercel deploy; env vars + Resend domain verified; first real email out the door |
-| 9 | planned | pg_cron drives Email #2 (60-min reminder) + Email #3 (10-min survey invite) |
+| MVP email gaps | ✅ shipped (code) | Email #2 reminder/pass (personal CID QR) + Email #3 survey invite: templates + `sendReminderForEvent`/`sendSurveyInviteForEvent` actions + `email_log_dedup_idx` idempotency · on devEmailStub · vitest 390 → 436 |
+| 9 | planned | pg_cron *calls the already-built* `sendReminderForEvent` (60-min) + `sendSurveyInviteForEvent` (10-min-after) actions; retry/reconciliation + the `queued`-is-terminal caveat |
 
 ---
 
