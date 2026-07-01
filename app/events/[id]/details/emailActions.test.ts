@@ -63,8 +63,10 @@ let emailLogUpdates: Array<{ payload: Record<string, unknown>; id: string }>;
 // Per-call email_log insert outcome. Default: unique id, no error.
 let mockEmailLogInsert: (payload: Record<string, unknown>) => Promise<{ data: { id: string } | null; error: { code: string; message: string } | null }>;
 
-vi.mock('@/lib/supabase/server', () => ({
-  supabaseServer: vi.fn(async () => ({
+// Everything the action touches goes through admin (RLS-independent, post-auth):
+// the event read, the registrations recipient read, and all email_log mutations.
+vi.mock('@/lib/supabase/admin', () => ({
+  supabaseAdmin: vi.fn(() => ({
     from: (table: string) => {
       if (table === 'events') {
         return {
@@ -85,27 +87,21 @@ vi.mock('@/lib/supabase/server', () => ({
         };
         return { select: () => chain };
       }
-      throw new Error(`unexpected server table: ${table}`);
-    },
-  })),
-}));
-
-vi.mock('@/lib/supabase/admin', () => ({
-  supabaseAdmin: vi.fn(() => ({
-    from: (table: string) => {
-      if (table !== 'email_log') throw new Error(`unexpected admin table: ${table}`);
-      return {
-        insert: (payload: Record<string, unknown>) => {
-          emailLogInserts.push(payload);
-          return { select: () => ({ single: async () => mockEmailLogInsert(payload) }) };
-        },
-        update: (payload: Record<string, unknown>) => ({
-          eq: async (_col: string, id: string) => {
-            emailLogUpdates.push({ payload, id });
-            return { error: null };
+      if (table === 'email_log') {
+        return {
+          insert: (payload: Record<string, unknown>) => {
+            emailLogInserts.push(payload);
+            return { select: () => ({ single: async () => mockEmailLogInsert(payload) }) };
           },
-        }),
-      };
+          update: (payload: Record<string, unknown>) => ({
+            eq: async (_col: string, id: string) => {
+              emailLogUpdates.push({ payload, id });
+              return { error: null };
+            },
+          }),
+        };
+      }
+      throw new Error(`unexpected admin table: ${table}`);
     },
   })),
 }));

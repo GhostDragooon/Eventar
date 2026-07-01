@@ -4,7 +4,6 @@
 // helpers below stay non-exported so this module stays compliant.
 import { revalidatePath } from 'next/cache';
 import { requireStaff } from '@/lib/auth';
-import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getRequestOrigin } from '@/lib/origin';
 import { formatInTz } from '@/lib/tz';
@@ -52,8 +51,13 @@ function zero(error?: string): SendResult {
  */
 async function authorizeEvent(eventId: string): Promise<{ event: EventRow } | { error: string }> {
   const staff = await requireStaff();
-  const supabase = await supabaseServer();
-  const { data: event } = await supabase
+  // Admin read (RLS-independent): surveys target *completed* events, which the
+  // anon RLS session (review mode) and the future session-less pg_cron caller
+  // cannot read via supabaseServer — the events anon policy exposes only
+  // 'published'. Authorization is enforced in-code by the explicit
+  // owner/manager gate below; requireStaff already established identity.
+  const admin = supabaseAdmin();
+  const { data: event } = await admin
     .from('events')
     .select('id, title, status, start_time, end_time, timezone, venue_name, venue_address, created_by')
     .eq('id', eventId)
@@ -62,6 +66,25 @@ async function authorizeEvent(eventId: string): Promise<{ event: EventRow } | { 
   const canManage = event.created_by === staff.id || staff.role === 'manager';
   if (!canManage) return { error: 'You are not authorized for this event.' };
   return { event: event as EventRow };
+}
+
+/**
+ * Recipients for a send, read via admin (NOT the RLS-scoped supabaseServer).
+ * authorizeEvent already enforced authorization (requireStaff + explicit
+ * owner/manager gate); and registrations has no anon SELECT policy, so an
+ * RLS read returns zero rows whenever there's no interactive staff DB session
+ * — which is the case under review mode AND for the future session-less
+ * pg_cron caller that is meant to reuse these actions. Same admin-after-auth
+ * pattern as registerForEvent's registrations access.
+ */
+async function readRecipients(eventId: string, status: 'registered' | 'attended'): Promise<Recipient[]> {
+  const admin = supabaseAdmin();
+  const { data } = await admin
+    .from('registrations')
+    .select('id, email, full_name, registration_code, status')
+    .eq('event_id', eventId)
+    .eq('status', status);
+  return (data ?? []) as Recipient[];
 }
 
 /**
@@ -166,13 +189,7 @@ export async function sendReminderForEvent(eventId: string): Promise<SendResult>
   if ('error' in gate) return zero(gate.error);
   const { event } = gate;
 
-  const supabase = await supabaseServer();
-  const { data: regs } = await supabase
-    .from('registrations')
-    .select('id, email, full_name, registration_code, status')
-    .eq('event_id', eventId)
-    .eq('status', 'registered');
-  const recipients = (regs ?? []) as Recipient[];
+  const recipients = await readRecipients(eventId, 'registered');
   if (recipients.length === 0) return zero();
 
   const origin = await getRequestOrigin();
@@ -215,13 +232,7 @@ export async function sendSurveyInviteForEvent(eventId: string): Promise<SendRes
   if ('error' in gate) return zero(gate.error);
   const { event } = gate;
 
-  const supabase = await supabaseServer();
-  const { data: regs } = await supabase
-    .from('registrations')
-    .select('id, email, full_name, registration_code, status')
-    .eq('event_id', eventId)
-    .eq('status', 'attended');
-  const recipients = (regs ?? []) as Recipient[];
+  const recipients = await readRecipients(eventId, 'attended');
   if (recipients.length === 0) return zero();
 
   const origin = await getRequestOrigin();
