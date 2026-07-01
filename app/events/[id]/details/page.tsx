@@ -12,6 +12,7 @@ import { deriveLeadingSession } from '@/lib/details/leadingSession';
 import { RegistrationSection } from '@/components/details/RegistrationSection';
 import { AttendanceSection } from '@/components/details/AttendanceSection';
 import { FeedbackSection } from '@/components/details/FeedbackSection';
+import { EmailSendControls } from './EmailSendControls';
 
 export default async function EventDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   let staff;
@@ -102,6 +103,13 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
           </p>
         </div>
         <ActionToolbar eventId={event.id} lifecycle={lifecycle} />
+        {canSeeConfirmationsSent && (
+          <EmailSendControls
+            eventId={event.id}
+            showReminder={lifecycle === 'registering' || lifecycle === 'upcoming' || lifecycle === 'live'}
+            showSurvey={lifecycle === 'completed'}
+          />
+        )}
       </header>
 
       <RegistrationSection
