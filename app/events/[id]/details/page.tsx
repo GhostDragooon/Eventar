@@ -13,6 +13,11 @@ import { RegistrationSection } from '@/components/details/RegistrationSection';
 import { AttendanceSection } from '@/components/details/AttendanceSection';
 import { FeedbackSection } from '@/components/details/FeedbackSection';
 import { EmailSendControls } from './EmailSendControls';
+import { LiveScoreboard } from '@/components/details/LiveScoreboard';
+
+function fmtHM(iso: string, tz: string): string {
+  return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz }).format(new Date(iso));
+}
 
 export default async function EventDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   let staff;
@@ -89,33 +94,49 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
 
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role }} backHref="/dashboard" backLabel="Dashboard">
-      {/* Header — patterns §9: pill leads the title row (top-left). Toolbar is
-          its own row below the meta line. Old in-header "← Dashboard" link is
-          gone: the StaffShell NAV's back link already covers it. */}
-      <header className="mb-xl flex flex-col gap-md">
-        <div>
-          <div className="mb-xs">
+      {/* Event Manager header — eyebrow + title + status pill on the left, the
+          for-use toolbar (Edit / Roster / Public / Analytics) top-right. */}
+      <header className="mb-lg flex flex-col md:flex-row md:items-start md:justify-between gap-md">
+        <div className="min-w-0">
+          <p className="text-label-md font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-xs">Event Manager</p>
+          <div className="flex items-center gap-sm flex-wrap">
+            <h1 className="text-[30px] leading-[1.1] font-extrabold tracking-[-0.025em] text-on-surface">{event.title}</h1>
             <StatusPill lifecycle={lifecycle} />
           </div>
-          <h1 className="font-headline-lg text-headline-lg text-on-surface">{event.title}</h1>
           <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
             {formatInTz(event.start_time, event.timezone)} · {event.venue_name ?? 'No venue set'}
           </p>
         </div>
         <ActionToolbar eventId={event.id} lifecycle={lifecycle} />
-        {canSeeConfirmationsSent && (
+      </header>
+
+      {/* Dark status scoreboard — the live operator's at-a-glance readout. */}
+      <LiveScoreboard
+        lifecycle={lifecycle}
+        startMs={new Date(event.start_time).getTime()}
+        endMs={new Date(event.end_time).getTime()}
+        serverNowMs={nowMs}
+        startLabel={fmtHM(event.start_time, event.timezone)}
+        endLabel={fmtHM(event.end_time, event.timezone)}
+        registered={regs.length}
+        capacity={event.max_attendees}
+        attended={attended}
+        responses={responseCount}
+      />
+
+      {canSeeConfirmationsSent && (
+        <div className="mb-xl">
           <EmailSendControls
             eventId={event.id}
             // Reminder is the 60-min-before pass — only meaningful once the
-            // event is imminent (upcoming/live), NOT during registering when
-            // the event may be days out and "starts soon" would be wrong.
+            // event is imminent (upcoming/live), NOT during registering.
             showReminder={lifecycle === 'upcoming' || lifecycle === 'live'}
             showSurvey={lifecycle === 'completed'}
             registeredCount={regs.filter((r) => r.status === 'registered').length}
             attendedCount={attended}
           />
-        )}
-      </header>
+        </div>
+      )}
 
       <RegistrationSection
         eventId={event.id}
@@ -153,50 +174,35 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
 
 function ActionToolbar({ eventId, lifecycle }: { eventId: string; lifecycle: Lifecycle }) {
   const showRoster = lifecycle === 'registering' || lifecycle === 'upcoming' || lifecycle === 'live' || lifecycle === 'completed';
-  const showAnalytics = lifecycle === 'completed';
+  const canAnalytics = lifecycle === 'completed';
   const showPublic = lifecycle === 'registering' || lifecycle === 'upcoming' || lifecycle === 'live';
+  const base = 'inline-flex items-center gap-xs px-md py-sm rounded-lg border font-label-md text-label-md transition-colors';
+  const outline = `${base} border-outline-variant text-on-surface hover:bg-surface-container-high`;
+  const live = `${base} border-transparent bg-tertiary text-on-tertiary hover:opacity-90`;
 
   return (
-    <div className="flex gap-sm flex-wrap">
-      <Link
-        href={`/events/${eventId}/edit`}
-        className="flex items-center gap-xs bg-surface-container-high text-on-surface px-md py-sm rounded-lg font-label-md text-label-md hover:bg-surface-container-highest transition-colors"
-      >
-        <span className="material-symbols-outlined text-[16px]" aria-hidden>edit</span>
-        Edit event
+    <div className="flex gap-xs flex-wrap shrink-0">
+      <Link href={`/events/${eventId}/edit`} className={outline}>
+        <span className="material-symbols-outlined text-[16px]" aria-hidden>edit</span>Edit
       </Link>
       {showRoster && (
-        <Link
-          href={`/events/${eventId}/checkin`}
-          className={
-            lifecycle === 'live'
-              ? 'flex items-center gap-xs bg-tertiary text-on-tertiary px-md py-sm rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity'
-              : 'flex items-center gap-xs bg-surface-container-high text-on-surface px-md py-sm rounded-lg font-label-md text-label-md hover:bg-surface-container-highest transition-colors'
-          }
-        >
-          <span className="material-symbols-outlined text-[16px]" aria-hidden>group</span>
-          Open roster
-        </Link>
-      )}
-      {showAnalytics && (
-        <Link
-          href={`/events/${eventId}/analytics`}
-          className="flex items-center gap-xs bg-tertiary text-on-tertiary px-md py-sm rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity"
-        >
-          <span className="material-symbols-outlined text-[16px]" aria-hidden>insights</span>
-          View analytics
+        <Link href={`/events/${eventId}/checkin`} className={lifecycle === 'live' ? live : outline}>
+          <span className="material-symbols-outlined text-[16px]" aria-hidden>group</span>Roster
         </Link>
       )}
       {showPublic && (
-        <Link
-          href={`/events/${eventId}`}
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center gap-xs bg-surface-container-high text-on-surface px-md py-sm rounded-lg font-label-md text-label-md hover:bg-surface-container-highest transition-colors"
-        >
-          <span className="material-symbols-outlined text-[16px]" aria-hidden>open_in_new</span>
-          Public page
+        <Link href={`/events/${eventId}`} target="_blank" rel="noreferrer" className={outline}>
+          <span className="material-symbols-outlined text-[16px]" aria-hidden>open_in_new</span>Public
         </Link>
+      )}
+      {canAnalytics ? (
+        <Link href={`/events/${eventId}/analytics`} className={outline}>
+          <span className="material-symbols-outlined text-[16px]" aria-hidden>insights</span>Analytics
+        </Link>
+      ) : (
+        <span className={`${base} border-outline-variant text-on-surface-variant opacity-50 cursor-not-allowed`} title="Available after the event completes">
+          <span className="material-symbols-outlined text-[16px]" aria-hidden>insights</span>Analytics
+        </span>
       )}
     </div>
   );

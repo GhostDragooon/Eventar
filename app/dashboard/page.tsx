@@ -1,11 +1,23 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireStaff, NotAuthorizedError } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { StaffShell } from '@/components/shell/StaffShell';
-import { EventBand, type TileEvent } from '@/components/dashboard/EventBand';
-import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
+import {
+  DashboardWorkstation,
+  type WorkstationEvent,
+  type DashboardMetrics,
+} from '@/components/dashboard/DashboardWorkstation';
+import { computeLifecycle, type EventLifecycleRow, type Lifecycle } from '@/lib/lifecycle/eventLifecycle';
 import { firstName } from '@/lib/name';
+
+const DAY_MS = 86_400_000;
+
+function fmtDate(iso: string, tz: string): string {
+  return new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: tz }).format(new Date(iso));
+}
+function fmtTime(iso: string, tz: string): string {
+  return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZoneName: 'short', timeZone: tz }).format(new Date(iso));
+}
 
 export default async function DashboardPage() {
   let staff;
@@ -19,107 +31,72 @@ export default async function DashboardPage() {
   const supabase = await supabaseServer();
   const { data: events } = await supabase
     .from('events')
-    .select('id, title, start_time, end_time, timezone, status, venue_name, max_attendees, registration_close_at, created_by')
+    .select('id, title, description, start_time, end_time, timezone, status, venue_name, max_attendees, registration_close_at, created_by')
     .order('start_time', { ascending: false })
     .limit(200);
 
   const eventIds = (events ?? []).map((e) => e.id);
   const regsRes = eventIds.length > 0
-    ? await supabase.from('registrations').select('event_id, status').in('event_id', eventIds)
+    ? await supabase.from('registrations').select('event_id, status, registered_at').in('event_id', eventIds)
     : { data: [], error: null };
   if (regsRes.error) throw regsRes.error;
 
-  // Server component re-runs on every request; reading the wall clock once
-  // here is fine. react-hooks/purity treats Date.now() as impure (correct
-  // for client components, not for server components) — suppress.
   // eslint-disable-next-line react-hooks/purity
   const nowMs = Date.now();
+  const weekAgoMs = nowMs - 7 * DAY_MS;
 
-  // Per-event registration counts
-  const perEventCounts = new Map<string, { registered: number; attended: number }>();
-  for (const e of events ?? []) perEventCounts.set(e.id, { registered: 0, attended: 0 });
+  // Per-event counts + 7-day registration velocity.
+  const counts = new Map<string, { registered: number; attended: number; delta7: number }>();
+  for (const e of events ?? []) counts.set(e.id, { registered: 0, attended: 0, delta7: 0 });
+  let registered7d = 0;
   for (const r of regsRes.data ?? []) {
-    const p = perEventCounts.get(r.event_id);
-    if (!p) continue;
-    p.registered++;
-    if (r.status === 'attended') p.attended++;
+    const c = counts.get(r.event_id);
+    if (!c) continue;
+    c.registered++;
+    if (r.status === 'attended') c.attended++;
+    if (r.registered_at && new Date(r.registered_at).getTime() >= weekAgoMs) {
+      c.delta7++;
+      registered7d++;
+    }
   }
 
-  // Decorate each event with its derived lifecycle + reg counts
-  const decorated: TileEvent[] = (events ?? []).map((e) => {
-    const counts = perEventCounts.get(e.id) ?? { registered: 0, attended: 0 };
+  const decorated: WorkstationEvent[] = (events ?? []).map((e) => {
+    const c = counts.get(e.id) ?? { registered: 0, attended: 0, delta7: 0 };
+    const lifecycle = computeLifecycle(e as EventLifecycleRow, nowMs);
+    const closeMs = e.registration_close_at ? new Date(e.registration_close_at).getTime() : null;
+    const closesInDays = closeMs != null && closeMs > nowMs ? Math.ceil((closeMs - nowMs) / DAY_MS) : null;
     return {
       id: e.id,
       title: e.title,
-      start_time: e.start_time,
-      timezone: e.timezone,
-      max_attendees: e.max_attendees,
-      registered: counts.registered,
-      attended: counts.attended,
-      registration_close_at: e.registration_close_at,
-      lifecycle: computeLifecycle(e as EventLifecycleRow, nowMs),
+      description: e.description,
+      lifecycle,
+      startMs: new Date(e.start_time).getTime(),
+      dateLabel: fmtDate(e.start_time, e.timezone),
+      timeLabel: fmtTime(e.start_time, e.timezone),
+      venueName: e.venue_name,
+      maxAttendees: e.max_attendees,
+      registered: c.registered,
+      attended: c.attended,
+      delta7: c.delta7,
+      closesInDays,
     };
   });
 
-  // 3-band collapse: Live (registering ∪ upcoming ∪ live), Draft, Completed.
-  // Cancelled is its own tiny edge-case band rendered only if any exist.
-  const live = decorated.filter(
-    (d) => d.lifecycle === 'registering' || d.lifecycle === 'upcoming' || d.lifecycle === 'live',
-  );
-  const draft = decorated.filter((d) => d.lifecycle === 'drafted');
-  const completed = decorated.filter((d) => d.lifecycle === 'completed');
-  const cancelled = decorated.filter((d) => d.lifecycle === 'cancelled');
+  const isOpen = (l: Lifecycle) => l === 'registering' || l === 'upcoming' || l === 'live';
+  const metrics: DashboardMetrics = {
+    openRegistered: decorated.filter((d) => isOpen(d.lifecycle)).reduce((s, d) => s + d.registered, 0),
+    registered7d,
+    eventsThisWeek: decorated.filter((d) => d.startMs >= nowMs && d.startMs <= nowMs + 7 * DAY_MS).length,
+    closingSoon: decorated.filter((d) => isOpen(d.lifecycle) && d.closesInDays != null && d.closesInDays <= 7).length,
+  };
 
-  // Live + Draft sort ASC (next-up first); Completed sorts DESC (most recent first).
-  live.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
-  draft.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
-  completed.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
-  cancelled.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
-
-  const totalEvents = events?.length ?? 0;
-  // Greeting fallback chain: full_name's first token → email local-part →
-  // (nothing). Empty-string final fallback renders "Welcome back." which
-  // reads curtly; falling back to the email local-part keeps the greeting
-  // addressed even when staff.full_name is null (UX review MEDIUM).
   const greetingName = firstName(staff.full_name) || staff.email.split('@')[0] || '';
+  const hour = new Date(nowMs).getHours();
+  const greeting = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
 
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role }}>
-      <header className="flex flex-col md:flex-row md:justify-between md:items-center mb-xl gap-md">
-        <div>
-          <h1 className="font-headline-lg text-headline-lg text-on-surface">Your events</h1>
-          <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
-            {`Welcome back${greetingName ? ', ' + greetingName : ''}.`}
-          </p>
-        </div>
-        <Link
-          href="/events/new"
-          className="inline-flex items-center gap-sm bg-tertiary text-on-tertiary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
-        >
-          <span className="material-symbols-outlined text-[18px]" aria-hidden>add</span>
-          Create event
-        </Link>
-      </header>
-
-      {totalEvents === 0 ? (
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-xl text-center">
-          <p className="font-body-md text-body-md text-on-surface-variant mb-md">No events yet.</p>
-          <Link
-            href="/events/new"
-            className="inline-flex items-center gap-sm bg-tertiary text-on-tertiary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
-          >
-            <span className="material-symbols-outlined text-[18px]" aria-hidden>add</span>
-            Create your first event
-          </Link>
-        </div>
-      ) : (
-        <>
-          <EventBand lifecycle="live" events={live} nowMs={nowMs} />
-          <EventBand lifecycle="draft" events={draft} nowMs={nowMs} />
-          <EventBand lifecycle="completed" events={completed} nowMs={nowMs} />
-          <EventBand lifecycle="cancelled" events={cancelled} nowMs={nowMs} />
-        </>
-      )}
+      <DashboardWorkstation events={decorated} greetingName={greetingName} greeting={greeting} metrics={metrics} />
     </StaffShell>
   );
 }
