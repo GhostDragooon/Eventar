@@ -27,7 +27,10 @@ describe('renderSurveyInviteEmail', () => {
   it('shows the survey meta line', async () => {
     const html = await renderSurveyInviteEmail(sampleProps);
     expect(html).toContain('5 questions');
-    expect(html).toContain('Anonymous');
+    // "Confidential" not "Anonymous": survey_responses.registration_id links
+    // each response to a registrant, so the response is not truly anonymous.
+    expect(html).toContain('Confidential');
+    expect(html).not.toContain('Anonymous');
   });
 
   it('renders the blue CTA linking to the survey URL', async () => {

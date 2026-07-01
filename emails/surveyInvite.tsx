@@ -106,9 +106,11 @@ export default function SurveyInviteEmail({
             </Text>
           </Section>
 
-          {/* Meta line — green anonymity dot */}
+          {/* Meta line — green confidentiality dot. "Confidential" not
+              "Anonymous": survey_responses.registration_id links each response
+              to its registrant, so responses are not truly anonymous. */}
           <Text style={{ color: COLOR_MUTED, fontSize: '13px', lineHeight: 1.5, margin: '0 0 20px' }}>
-            5 questions · ~2 minutes · <span style={{ color: GREEN_TEXT }}>●</span> Anonymous
+            5 questions · ~2 minutes · <span style={{ color: GREEN_TEXT }}>●</span> Confidential
           </Text>
 
           {/* Blue CTA */}
