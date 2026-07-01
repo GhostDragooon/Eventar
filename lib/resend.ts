@@ -5,6 +5,18 @@ export type SendEmailResult =
   | { ok: true; id: string }
   | { error: { code: string; message: string } };
 
+/**
+ * Inline attachment for CID-referenced images (e.g. the check-in QR in the
+ * reminder email). `content` is base64-encoded bytes; `contentId` is the value
+ * referenced from the HTML via `<img src="cid:<contentId>">`. Resend maps
+ * `contentId` → the provider's `content_id` and sends it inline.
+ */
+export type EmailAttachment = {
+  filename: string;
+  content: string;
+  contentId: string;
+};
+
 const DEFAULT_FROM = 'Eventar <onboarding@resend.dev>';
 
 /**
@@ -26,6 +38,7 @@ export async function sendEmail(opts: {
   to: string;
   subject: string;
   html: string;
+  attachments?: EmailAttachment[];
 }): Promise<SendEmailResult> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -44,6 +57,11 @@ export async function sendEmail(opts: {
       to: opts.to,
       subject: opts.subject,
       html: opts.html,
+      // Only include the key when attachments are present — keeps the sent
+      // envelope minimal for text-only emails (#1 confirmation, #3 survey).
+      ...(opts.attachments && opts.attachments.length > 0
+        ? { attachments: opts.attachments }
+        : {}),
     });
 
     if (error) {

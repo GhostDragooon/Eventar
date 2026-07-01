@@ -16,7 +16,7 @@
 //   4. drop the "uses stub" test case in actions.test.ts
 
 import 'server-only';
-import type { SendEmailResult } from './resend';
+import type { SendEmailResult, EmailAttachment } from './resend';
 
 export type StubSendEmailResult = SendEmailResult | { skipped: true };
 
@@ -29,6 +29,7 @@ export async function sendEmail(_opts: {
   to: string;
   subject: string;
   html: string;
+  attachments?: EmailAttachment[];
 }): Promise<StubSendEmailResult> {
   // Log a recognisable marker, but NEVER include the recipient address.
   // The action layer already logs its own "queued" message with UUIDs only;

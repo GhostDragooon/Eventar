@@ -63,4 +63,32 @@ describe('lib/resend.sendEmail', () => {
       error: { code: 'ECONNRESET', message: 'ECONNRESET' },
     });
   });
+
+  it('forwards inline CID attachments to the Resend SDK', async () => {
+    mockSend.mockResolvedValueOnce({ data: { id: 're_att' }, error: null });
+    await sendEmail({
+      to: 'a@b.com',
+      subject: 'Reminder',
+      html: '<img src="cid:checkin-qr" />',
+      attachments: [
+        { filename: 'checkin-qr.png', content: 'YmFzZTY0', contentId: 'checkin-qr' },
+      ],
+    });
+    expect(mockSend).toHaveBeenCalledWith({
+      from: 'Eventar Test <test@example.com>',
+      to: 'a@b.com',
+      subject: 'Reminder',
+      html: '<img src="cid:checkin-qr" />',
+      attachments: [
+        { filename: 'checkin-qr.png', content: 'YmFzZTY0', contentId: 'checkin-qr' },
+      ],
+    });
+  });
+
+  it('omits the attachments key entirely when none are provided', async () => {
+    mockSend.mockResolvedValueOnce({ data: { id: 're_noatt' }, error: null });
+    await sendEmail({ to: 'a@b.com', subject: 'x', html: '<p>x</p>' });
+    const callArg = mockSend.mock.calls[0][0];
+    expect(callArg).not.toHaveProperty('attachments');
+  });
 });
