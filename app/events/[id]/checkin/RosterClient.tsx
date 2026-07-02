@@ -110,8 +110,9 @@ export default function RosterClient({
       statusFilter === 'all' ? true : statusFilter === 'attended' ? r.status === 'attended' : r.status === 'registered',
     );
     if (!q) return byStatus;
+    // Locked TC spec: the roster carries no email — search by name or code.
     return byStatus.filter(
-      r => r.full_name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q),
+      r => r.full_name.toLowerCase().includes(q) || r.registration_code.toLowerCase().includes(q),
     );
   }, [roster, search, statusFilter]);
 
@@ -182,7 +183,7 @@ export default function RosterClient({
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search name or email"
+              placeholder="Search name or code"
               className="w-full pl-9 pr-3 py-1.5 bg-surface-container-low border border-outline-variant rounded-full font-body-md text-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
             />
           </div>
@@ -194,17 +195,26 @@ export default function RosterClient({
               {search || statusFilter !== 'all' ? 'No matches.' : 'No registrants yet.'}
             </p>
           ) : (
-            <ul className="divide-y divide-surface-container-highest">
-              {filtered.map(r => (
-                <RosterRowItem
-                  key={r.id}
-                  row={r}
-                  nowMs={nowMs}
-                  eventTimezone={eventTimezone}
-                  onMark={() => handleMark(r.registration_code, 'manual')}
-                />
-              ))}
-            </ul>
+            <>
+              {/* Locked TC spec: 4 columns — Attendee · Code · Status · Method. */}
+              <div className="grid grid-cols-[minmax(0,1fr)_110px_150px_90px] gap-md px-sm pb-xs font-label-md text-label-md text-on-surface-variant uppercase tracking-wider" aria-hidden>
+                <span>Attendee</span>
+                <span>Code</span>
+                <span>Status</span>
+                <span>Method</span>
+              </div>
+              <ul className="divide-y divide-surface-container-highest">
+                {filtered.map(r => (
+                  <RosterRowItem
+                    key={r.id}
+                    row={r}
+                    nowMs={nowMs}
+                    eventTimezone={eventTimezone}
+                    onMark={() => handleMark(r.registration_code, 'manual')}
+                  />
+                ))}
+              </ul>
+            </>
           )}
         </div>
       </section>
@@ -269,7 +279,6 @@ function RosterRowItem({
   const isAttended = r.status === 'attended';
   const checkInMs = r.check_in_at ? new Date(r.check_in_at).getTime() : null;
   const isRecent = isAttended && checkInMs !== null && nowMs - checkInMs <= RECENT_WINDOW_MS;
-  const initials = r.full_name.slice(0, 2).toUpperCase();
 
   // Three-state visual: recent uses the accent-fading background, checked is
   // muted surface-container-low, default is the card surface with a CTA.
@@ -279,36 +288,21 @@ function RosterRowItem({
       ? 'bg-surface-container-low'
       : 'bg-transparent hover:bg-surface-container-low';
 
-  const avatarStyle = isAttended
-    ? 'bg-primary-container text-on-primary-container'
-    : 'bg-surface-container-high text-on-surface-variant';
-
+  // Locked TC spec: 4 columns — Attendee · Code · Status · Method.
+  // No avatar, no email on the roster.
   return (
     <li
       data-row-state={isRecent ? 'recent' : isAttended ? 'checked' : 'default'}
-      className={`py-sm px-sm flex items-center justify-between gap-md transition-colors ${rowBg}`}
+      className={`grid grid-cols-[minmax(0,1fr)_110px_150px_90px] gap-md items-center py-sm px-sm transition-colors ${rowBg}`}
     >
-      <div className="flex items-center gap-md min-w-0">
-        <div
-          aria-hidden
-          className={
-            'w-9 h-9 rounded-full flex items-center justify-center font-label-md text-label-md font-bold shrink-0 ' +
-            avatarStyle
-          }
-        >
-          {initials}
-        </div>
-        <div className="min-w-0">
-          <p className="font-body-md text-body-md font-semibold text-on-surface truncate">
-            {r.full_name}
-          </p>
-          <p className="font-body-md text-[12px] text-on-surface-variant truncate">
-            {r.email} · <code className="font-mono">{r.registration_code}</code>
-          </p>
-        </div>
-      </div>
+      <p className="font-body-md text-body-md font-semibold text-on-surface truncate">
+        {r.full_name}
+      </p>
+      <code className="font-body-md text-[13px] text-on-surface-variant tabular-nums">
+        {r.registration_code}
+      </code>
       {isAttended ? (
-        <span className="shrink-0 font-label-md text-label-md text-on-surface-variant inline-flex items-center gap-xs">
+        <span className="font-label-md text-label-md text-[color:var(--success)] inline-flex items-center gap-xs">
           <span aria-hidden>✓</span>
           {r.check_in_at ? formatInTz(r.check_in_at, eventTimezone) : 'Checked in'}
         </span>
@@ -316,11 +310,14 @@ function RosterRowItem({
         <button
           type="button"
           onClick={onMark}
-          className="shrink-0 min-h-11 rounded-lg px-md py-sm font-label-md text-label-md bg-transparent text-tertiary border border-outline-variant hover:bg-surface-container-low transition-colors"
+          className="justify-self-start min-h-11 rounded-lg px-md py-sm font-label-md text-label-md bg-transparent text-tertiary border border-outline-variant hover:bg-surface-container-low transition-colors"
         >
           Check in →
         </button>
       )}
+      <span className="font-label-md text-label-md text-on-surface-variant normal-case tracking-normal">
+        {isAttended ? (r.check_in_method === 'qr' ? 'QR' : r.check_in_method === 'manual' ? 'Manual' : '—') : '—'}
+      </span>
     </li>
   );
 }

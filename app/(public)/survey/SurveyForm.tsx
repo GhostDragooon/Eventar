@@ -21,9 +21,12 @@ type State =
   | { kind: 'ok' }
   | { kind: 'error'; message: string };
 
+// Locked SV spec: round pills, selected = GREEN (border + soft green fill +
+// green text + filled green radio dot). Q5 multi-select uses the SAME
+// radio-dot visual — the "pick any" meta carries the multi semantics.
 const CHOICE_BASE =
-  'flex items-center px-md py-2.5 border cursor-pointer transition-colors rounded-full has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary has-[:focus-visible]:ring-offset-1';
-const CHOICE_SELECTED = 'border-primary bg-primary text-on-primary';
+  'flex items-center min-h-11 px-md py-2.5 border cursor-pointer transition-colors rounded-full has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary has-[:focus-visible]:ring-offset-1';
+const CHOICE_SELECTED = 'border-[color:var(--success)] bg-success-container/60 text-on-success-container';
 const CHOICE_UNSELECTED = 'border-outline-variant bg-surface hover:bg-surface-container-low';
 const HINT_TAG_CLASS =
   'font-label-md text-label-md uppercase tracking-wider text-on-surface-variant ml-sm';
@@ -111,10 +114,9 @@ export default function SurveyForm({
               <span>{eventVenueName}</span>
             </p>
           </div>
-          {/* Locked one-line intro copy (patterns §12) — em-dash, "five", "(under 3 minutes)". */}
+          {/* Personalized greeting (Design Session Log §SV). */}
           <p className="font-body-md text-body-md text-on-surface-variant mb-lg leading-relaxed">
-            Thank you for attending, {firstName}&mdash;please complete five quick questions (under 3
-            minutes).
+            Dear {firstName}, thank you for joining&mdash;five quick questions, about 2 minutes.
           </p>
           <div className="bg-primary/5 border border-primary/10 p-md rounded-lg">
             <div className="flex items-center gap-sm text-primary mb-1">
@@ -122,11 +124,11 @@ export default function SurveyForm({
                 lock
               </span>
               <p className="font-label-md text-label-md uppercase tracking-wide font-bold">
-                Anonymous feedback
+                Confidential feedback
               </p>
             </div>
             <p className="font-body-md text-body-md text-on-surface-variant">
-              Your responses are anonymous and help shape future events.
+              Your responses are kept confidential and help shape future events.
             </p>
           </div>
         </div>
@@ -171,13 +173,14 @@ export default function SurveyForm({
                           className={`${CHOICE_BASE} ${selected ? CHOICE_SELECTED : CHOICE_UNSELECTED}`}
                         >
                           <input
-                            className={`w-4 h-4 focus:ring-primary ${selected ? 'border-on-primary' : 'border-outline-variant'}`}
+                            className="sr-only"
                             name="session_format"
                             type="radio"
                             value={opt.value}
                             checked={selected}
                             onChange={() => setSessionFormat(opt.value)}
                           />
+                          <RadioDot selected={selected} />
                           <span className="ml-3 font-body-md">{opt.label}</span>
                         </label>
                       );
@@ -206,13 +209,14 @@ export default function SurveyForm({
                           className={`${CHOICE_BASE} ${selected ? CHOICE_SELECTED : CHOICE_UNSELECTED}`}
                         >
                           <input
-                            className={`w-4 h-4 focus:ring-primary ${selected ? 'border-on-primary' : 'border-outline-variant'}`}
+                            className="sr-only"
                             name="valuable_session"
                             type="radio"
                             value={opt.value}
                             checked={selected}
                             onChange={() => setValuableSession(opt.value)}
                           />
+                          <RadioDot selected={selected} />
                           <span className="ml-3 font-body-md">{opt.label}</span>
                         </label>
                       );
@@ -240,13 +244,14 @@ export default function SurveyForm({
                           className={`${CHOICE_BASE} ${selected ? CHOICE_SELECTED : CHOICE_UNSELECTED}`}
                         >
                           <input
-                            className={`w-4 h-4 focus:ring-primary ${selected ? 'border-on-primary' : 'border-outline-variant'}`}
+                            className="sr-only"
                             name="value_proposition"
                             type="radio"
                             value={opt.value}
                             checked={selected}
                             onChange={() => setValueProposition(opt.value)}
                           />
+                          <RadioDot selected={selected} />
                           <span className="ml-3 font-body-md">{opt.label}</span>
                         </label>
                       );
@@ -281,7 +286,7 @@ export default function SurveyForm({
                           <div
                             className={`py-2.5 font-body-md transition-all rounded-full peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-1 ${
                               selected
-                                ? 'bg-primary text-on-primary'
+                                ? 'bg-[color:var(--success)] text-white font-semibold'
                                 : 'hover:bg-surface-container-low'
                             }`}
                           >
@@ -313,13 +318,14 @@ export default function SurveyForm({
                           className={`${CHOICE_BASE} ${selected ? CHOICE_SELECTED : CHOICE_UNSELECTED}`}
                         >
                           <input
-                            className={`w-4 h-4 focus:ring-primary ${selected ? 'border-on-primary' : 'border-outline-variant'}`}
+                            className="sr-only"
                             name="future_preferences"
                             type="checkbox"
                             value={opt.value}
                             checked={selected}
                             onChange={() => toggleFuture(opt.value)}
                           />
+                          <RadioDot selected={selected} />
                           <span className="ml-3 font-body-md">{opt.label}</span>
                         </label>
                       );
@@ -358,5 +364,20 @@ export default function SurveyForm({
         </div>
       </div>
     </div>
+  );
+}
+
+// Filled green radio dot — one visual for single AND multi select (locked:
+// the "pick any" hint carries multi semantics, not a different control).
+function RadioDot({ selected }: { selected: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={`inline-flex items-center justify-center w-4 h-4 rounded-full border-2 shrink-0 transition-colors ${
+        selected ? 'border-[color:var(--success)]' : 'border-outline-variant'
+      }`}
+    >
+      {selected && <span className="w-2 h-2 rounded-full bg-[color:var(--success)]" />}
+    </span>
   );
 }

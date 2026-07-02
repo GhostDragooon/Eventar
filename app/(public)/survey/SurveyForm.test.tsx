@@ -93,12 +93,12 @@ describe('SurveyForm — Q2 session single-select (G1)', () => {
   });
 });
 
-describe('SurveyForm — intro line (locked copy, patterns §12)', () => {
-  it('greets by first name with the five-questions / under-3-minutes promise', () => {
+describe('SurveyForm — intro line (Design Session Log §SV, supersedes patterns §12)', () => {
+  it('greets personally ("Dear {name}") with the five-questions / ~2-minutes promise', () => {
     const { getByText } = render(<SurveyForm {...baseProps} />);
 
     expect(
-      getByText('Thank you for attending, Ivan—please complete five quick questions (under 3 minutes).'),
+      getByText('Dear Ivan, thank you for joining—five quick questions, about 2 minutes.'),
     ).toBeInTheDocument();
   });
 });
@@ -110,8 +110,11 @@ describe('SurveyForm — F.3 restyle (hints + footer)', () => {
     expect(getAllByText('pick any')).toHaveLength(1);
   });
 
-  it('does not render the deprecated 2-minute footer copy', () => {
-    const { queryByText } = render(<SurveyForm {...baseProps} />);
-    expect(queryByText(/2 minutes/)).toBeNull();
+  it('selected pills use the green instructional treatment, not solid dark', () => {
+    const { getByText } = render(<SurveyForm {...baseProps} />);
+    const label = getByText('Scientific Presentations').closest('label')!;
+    fireEvent.click(label);
+    expect(label.className).toContain('border-[color:var(--success)]');
+    expect(label.className).not.toContain('bg-primary ');
   });
 });

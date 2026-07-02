@@ -25,7 +25,7 @@ export default async function StaffCheckinPage({
   const { data: event } = await supabase
     .from('events')
     .select(
-      'id, title, start_time, end_time, timezone, venue_name, status, max_attendees, registration_close_at, created_by',
+      'id, title, start_time, end_time, timezone, venue_name, status, max_attendees, registration_close_at, registration_open_at, created_by',
     )
     .eq('id', id)
     .maybeSingle();
@@ -76,6 +76,10 @@ export default async function StaffCheckinPage({
           header only carries the page title (no breadcrumb — that would
           duplicate the top NAV's "Back to Event" link). */}
       <header className="mb-lg">
+        {/* Function-leads eyebrow (locked naming rule). */}
+        <p className="text-label-md font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-xs">
+          Check-in
+        </p>
         <h1 className="font-headline-lg text-headline-lg text-on-surface mb-sm">
           {event.title}
         </h1>

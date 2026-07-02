@@ -2,8 +2,15 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { formatInTz } from '@/lib/tz';
 import { isValidRegistrationCode } from '@/lib/registrationCode';
 import { rateLimitByIp } from '@/lib/rateLimit';
+import { getRequestOrigin } from '@/lib/origin';
+import { buildCheckinQrPng } from '@/lib/checkinQr';
 import { PublicShell } from '@/components/shell/PublicShell';
 import ConfirmButton from './ConfirmButton';
+
+// CI — the attendee's check-in pass (Design Session Log §"CI page identity").
+// A DISPLAY surface: the attendee presents the QR + code to reception; the
+// check-in action lives in TC. When the organizer enables self-serve
+// (events.checkin_modes.self_serve) a "Confirm I'm here" button appears.
 
 // §1 event-meta formatters — same shape as PE/(public)/events/[id]/page.tsx.
 // Duplicated inline per rule 11 (convention) — both PE and CI keep their
@@ -28,6 +35,17 @@ function formatTimeRange(startIso: string, endIso: string, tz: string): string {
 
 export const dynamic = 'force-dynamic';
 
+type EventRow = {
+  id: string;
+  title: string;
+  start_time: string;
+  end_time: string;
+  timezone: string;
+  venue_name: string;
+  status: string;
+  checkin_modes: { staff?: boolean; self_serve?: boolean } | null;
+};
+
 export default async function SelfCheckinPage({
   searchParams,
 }: {
@@ -37,137 +55,73 @@ export default async function SelfCheckinPage({
 
   if (!code) {
     return (
-      <PublicShell>
-        <PageWrap>
-          <EmptyState
-            icon="qr_code_scanner"
-            title="No check-in code"
-            body="Open this page from your registration link or by scanning your personal QR code. If you don't have one, ask the event organiser for help."
-          />
-        </PageWrap>
-      </PublicShell>
+      <Empty
+        title="No check-in code"
+        body="Open this page from your registration link or by scanning your personal QR code. If you don't have one, ask the event organiser for help."
+      />
     );
   }
   if (!isValidRegistrationCode(code)) {
-    return (
-      <PublicShell>
-        <PageWrap>
-          <EmptyState
-            icon="error"
-            title="Code not recognised"
-            body="Please show this code (or your QR) to the event organiser. They can check you in manually."
-          />
-        </PageWrap>
-      </PublicShell>
-    );
+    return <Empty title="Code not recognised" body="Please show this code (or your QR) to the event organiser. They can check you in manually." />;
   }
 
   // Enumeration defense: cap per-IP page loads before the admin lookup runs.
-  // 60/min easily covers legit re-renders; an attacker iterating codes
-  // saturates quickly.
   const limit = await rateLimitByIp('confirmGet', { windowMs: 60_000, max: 60 });
   if (!limit.allowed) {
-    return (
-      <PublicShell>
-        <PageWrap>
-          <EmptyState
-            icon="hourglass_empty"
-            title="Too many requests"
-            body="Please slow down and try again in a moment."
-          />
-        </PageWrap>
-      </PublicShell>
-    );
+    return <Empty title="Too many requests" body="Please slow down and try again in a moment." />;
   }
 
   const admin = supabaseAdmin();
   // The select string with !inner embed confuses supabase-js's generic
-  // inference and the row gets typed as GenericStringError. Cast to the
-  // shape we actually request — small and contained.
+  // inference — cast to the shape we actually request.
   type RegRow = {
     id: string;
+    full_name: string;
     status: string;
     check_in_at: string | null;
-    events:
-      | {
-          id: string;
-          title: string;
-          start_time: string;
-          end_time: string;
-          timezone: string;
-          venue_name: string;
-          status: string;
-        }
-      | Array<{
-          id: string;
-          title: string;
-          start_time: string;
-          end_time: string;
-          timezone: string;
-          venue_name: string;
-          status: string;
-        }>
-      | null;
+    check_in_method: string | null;
+    events: EventRow | EventRow[] | null;
   };
   const { data: reg } = (await admin
     .from('registrations')
     .select(
-      'id, status, check_in_at, ' +
-        'events!inner(id, title, start_time, end_time, timezone, venue_name, status)',
+      'id, full_name, status, check_in_at, check_in_method, ' +
+        'events!inner(id, title, start_time, end_time, timezone, venue_name, status, checkin_modes)',
     )
     .eq('registration_code', code)
     .maybeSingle()) as { data: RegRow | null };
 
   if (!reg || !reg.events) {
-    return (
-      <PublicShell>
-        <PageWrap>
-          <EmptyState
-            icon="error"
-            title="Code not recognised"
-            body="Please show this code (or your QR) to the event organiser. They can check you in manually."
-          />
-        </PageWrap>
-      </PublicShell>
-    );
+    return <Empty title="Code not recognised" body="Please show this code (or your QR) to the event organiser. They can check you in manually." />;
   }
 
-  // The supabase-js typing for embedded selects can return the relation as
-  // an object OR an array depending on relationship cardinality.
-  // registrations.event_id -> events.id is many-to-one, so it's always an
-  // object here, but TS doesn't know that. Narrow:
   const event = Array.isArray(reg.events) ? reg.events[0] : reg.events;
   if (!event || event.status !== 'published') {
-    return (
-      <PublicShell>
-        <PageWrap>
-          <EmptyState
-            icon="error"
-            title="Code not recognised"
-            body="Please show this code (or your QR) to the event organiser. They can check you in manually."
-          />
-        </PageWrap>
-      </PublicShell>
-    );
+    return <Empty title="Code not recognised" body="Please show this code (or your QR) to the event organiser. They can check you in manually." />;
   }
 
-  // Already-attended state: server-rendered (the page knew status before
-  // any click happened). Distinguished from action-time "already checked
-  // in" (see selfCheckIn action — both copy strings exist deliberately).
+  // Checked-in success state (final v2) — server-rendered when reception (or
+  // self-serve) already marked them in.
   if (reg.status === 'attended') {
     return (
-      <PublicShell>
+      <PublicShell pill={{ label: 'Checked in', tone: 'success' }}>
         <PageWrap>
-          <AttendedView event={event} checkInAt={reg.check_in_at} />
+          <CheckedInView event={event} checkInAt={reg.check_in_at} method={reg.check_in_method} />
         </PageWrap>
       </PublicShell>
     );
   }
 
+  // Pass state — build the personal QR (encodes this page's own URL, same
+  // value the Email #2 pass carries).
+  const origin = await getRequestOrigin();
+  const qr = await buildCheckinQrPng(code, origin);
+  const selfServe = event.checkin_modes?.self_serve === true;
+
   return (
-    <PublicShell>
+    <PublicShell pill={{ label: 'Pass ready', tone: 'success' }}>
       <PageWrap>
-        <RegisteredView event={event} code={code} />
+        <PassView event={event} code={code} name={reg.full_name} qrDataUri={`data:image/png;base64,${qr.pngBase64}`} selfServe={selfServe} />
       </PageWrap>
     </PublicShell>
   );
@@ -177,8 +131,6 @@ export default async function SelfCheckinPage({
 /* Layout                                                                     */
 /* -------------------------------------------------------------------------- */
 
-// §5 equal-gap rhythm: flex column, gap-lg, 480px-ish (max-w-md) container.
-// Matches PE / LG conventions shipped in F.1.
 function PageWrap({ children }: { children: React.ReactNode }) {
   return (
     <div className="w-full max-w-md mx-auto px-grid-margin py-lg flex flex-col gap-lg">
@@ -187,156 +139,156 @@ function PageWrap({ children }: { children: React.ReactNode }) {
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* States                                                                     */
-/* -------------------------------------------------------------------------- */
-
-function RegisteredView({
-  event,
-  code,
-}: {
-  event: {
-    title: string;
-    start_time: string;
-    end_time: string;
-    timezone: string;
-    venue_name: string;
-  };
-  code: string;
-}) {
-  // CI-2/3/4: pill (§9 top-left) → hero title → §1 2-row meta
-  // CI-5: registration code (RC-B Strong popped — warm amber bg, golden text)
-  // CI-6: primary button
-  // CI-7: fine print
+function Empty({ title, body }: { title: string; body: string }) {
   return (
-    <>
-      <header className="flex flex-col gap-sm">
-        <span
-          className="self-start inline-flex items-center gap-xs px-sm py-xs rounded-full bg-success-container text-on-success-container font-label-md text-label-md uppercase tracking-wider"
-        >
-          <span aria-hidden>●</span> Ready to check in
-        </span>
-        <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">
-          {event.title}
-        </h1>
-        <p className="font-body-md text-body-md text-on-surface-variant m-0">
-          {event.venue_name}
-        </p>
-        <p className="font-body-md text-body-md text-on-surface-variant m-0">
-          <span className="text-on-primary-container font-semibold">
-            {formatDate(event.start_time, event.timezone)}
-          </span>
-          {' · '}
-          {formatTimeRange(event.start_time, event.end_time, event.timezone)} ({event.timezone})
-        </p>
-      </header>
-
-      <RegCodePopped code={code} label="Your registration code" />
-
-      <ConfirmButton code={code} />
-
-      <p className="font-body-md text-body-md text-on-surface-variant text-center m-0">
-        Tap when you arrive · staff will see you in the roster instantly.
-      </p>
-    </>
+    <PublicShell>
+      <PageWrap>
+        <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">{title}</h1>
+        <p className="font-body-md text-body-md text-on-surface-variant m-0">{body}</p>
+      </PageWrap>
+    </PublicShell>
   );
 }
 
-function AttendedView({
-  event,
-  checkInAt,
-}: {
-  event: {
-    title: string;
-    start_time: string;
-    end_time: string;
-    timezone: string;
-    venue_name: string;
-  };
-  checkInAt: string | null;
-}) {
-  // Mirror RegisteredView's layout. Pill flips to "Checked in" (neutral
-  // pattern §7a "done = absence of color"), the code card becomes the
-  // checked-in timestamp instead.
+/* -------------------------------------------------------------------------- */
+/* Pass state                                                                  */
+/* -------------------------------------------------------------------------- */
+
+function EventCard({ event, accent }: { event: EventRow; accent?: boolean }) {
   return (
-    <>
-      <header className="flex flex-col gap-sm">
-        <span
-          className="self-start inline-flex items-center gap-xs px-sm py-xs rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md uppercase tracking-wider"
-        >
-          <span aria-hidden data-fill="1" className="material-symbols-outlined text-[14px]">check</span>
-          Checked in
-        </span>
-        <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">
-          {event.title}
-        </h1>
-        <p className="font-body-md text-body-md text-on-surface-variant m-0">
-          {event.venue_name}
-        </p>
-        <p className="font-body-md text-body-md text-on-surface-variant m-0">
-          <span className="text-on-primary-container font-semibold">
-            {formatDate(event.start_time, event.timezone)}
-          </span>
-          {' · '}
-          {formatTimeRange(event.start_time, event.end_time, event.timezone)} ({event.timezone})
-        </p>
-      </header>
-
-      <div className="text-center">
-        <p className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-xs m-0">
-          Checked in at
-        </p>
-        <p className="font-title-lg text-title-lg text-on-surface m-0">
-          {checkInAt ? formatInTz(checkInAt, event.timezone) : 'an earlier time'}
-        </p>
-      </div>
-
-      <p className="font-body-md text-body-md text-on-surface-variant text-center m-0">
-        See you at the event.
+    <div className={`bg-surface-container-lowest border border-outline-variant rounded-[16px] p-md ${accent ? 'border-l-4 border-l-[color:var(--success)]' : ''}`}>
+      <p className="font-title-lg text-title-lg font-semibold text-on-surface m-0">{event.title}</p>
+      <p className="font-body-md text-body-md text-on-surface-variant mt-xs m-0">
+        <span className="text-on-primary-container font-semibold">{formatDate(event.start_time, event.timezone)}</span>
+        {' · '}
+        {formatTimeRange(event.start_time, event.end_time, event.timezone)} ({event.timezone})
       </p>
-    </>
-  );
-}
-
-// RC-B Strong popped registration code (mockup CI-5). Light: amber-50 bg +
-// orange-900 text; dark: warm-black bg + golden text. Token mapping:
-//   bg  = warning-container (FEF3C7 / rgba(252,211,77,0.15))
-//   fg  = on-warning-container (92400E / FCD34D)
-//   bd  = warning (D97706 / FCD34D)
-// Reuses the design-pattern doc's locked warm palette.
-function RegCodePopped({ code, label }: { code: string; label: string }) {
-  return (
-    <div
-      className="bg-warning-container border border-warning rounded-[20px] p-lg text-center"
-    >
-      <p className="font-label-md text-label-md text-on-warning-container uppercase tracking-wider mb-xs m-0">
-        {label}
-      </p>
-      <code
-        className="font-mono font-bold text-[32px] tracking-widest text-on-warning-container"
-      >
-        {code}
-      </code>
+      <p className="font-body-md text-body-md text-on-surface-variant m-0">{event.venue_name}</p>
     </div>
   );
 }
 
-// EmptyState: drop the circle medallion (no M3 chrome). Just hero + body
-// in the §5 rhythm. The `icon` prop kept on the signature for caller
-// compatibility but no longer rendered — callers can be cleaned later.
-function EmptyState({
-  icon: _icon,
-  title,
-  body,
+function PassView({
+  event,
+  code,
+  name,
+  qrDataUri,
+  selfServe,
 }: {
-  icon: string;
-  title: string;
-  body: string;
+  event: EventRow;
+  code: string;
+  name: string;
+  qrDataUri: string;
+  selfServe: boolean;
 }) {
   return (
     <>
-      <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">{title}</h1>
-      <p className="font-body-md text-body-md text-on-surface-variant m-0">{body}</p>
+      <header className="flex flex-col gap-xs">
+        {/* Function-leads eyebrow: PASS · {event}. */}
+        <p className="text-label-md font-semibold uppercase tracking-[0.18em] m-0">
+          <span className="text-[color:var(--on-primary-container)]">Pass</span>
+          <span className="text-on-surface-variant"> · {event.title}</span>
+        </p>
+        <p className="font-body-md text-body-md text-on-surface-variant m-0">
+          Present your personal QR code below to the reception for check-in.
+        </p>
+      </header>
+
+      {/* Brief event card ABOVE the pass (locked — confirms which event). */}
+      <EventCard event={event} />
+
+      {/* Pass card — perforated-ticket pattern. */}
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-[20px] overflow-hidden shadow-sm">
+        <div className="flex items-baseline justify-between px-lg pt-md pb-sm">
+          <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Issued to</span>
+          <span className="font-body-md text-body-md font-semibold text-on-surface">{name}</span>
+        </div>
+
+        {/* Notched divider (ticket perforation). */}
+        <div className="relative flex items-center" aria-hidden>
+          <span className="w-[16px] h-[16px] rounded-full bg-background border border-outline-variant -ml-[8px]" />
+          <span className="flex-1 border-t border-dashed border-outline-variant" />
+          <span className="w-[16px] h-[16px] rounded-full bg-background border border-outline-variant -mr-[8px]" />
+        </div>
+
+        <div className="flex flex-col items-center gap-md px-lg py-lg">
+          {/* 218px QR with the 2px green bezel (matches Live band greens). */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- data URI QR; next/image adds nothing */}
+          <img
+            src={qrDataUri}
+            alt="Your personal check-in QR code"
+            width={218}
+            height={218}
+            className="rounded-[12px] border-2 border-[#4ADE80] bg-white p-xs"
+          />
+          <div className="text-center">
+            <p className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-xs m-0">
+              Manual check-in code
+            </p>
+            <code className="font-mono font-extrabold text-[26px] tracking-[0.14em] text-[color:var(--on-primary-container)]">
+              {code}
+            </code>
+            <p className="font-body-md text-[12px] text-on-surface-variant mt-xs m-0">
+              If the QR won&apos;t scan, give reception this code instead.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {selfServe ? (
+        <>
+          <ConfirmButton code={code} />
+          <p className="font-body-md text-body-md text-on-surface-variant text-center m-0">
+            Tap when you arrive · staff will see you in the roster instantly.
+          </p>
+        </>
+      ) : (
+        <p className="font-body-md text-body-md text-on-surface-variant text-center m-0">
+          Self check-in isn&apos;t enabled for this event — please see reception.
+        </p>
+      )}
+    </>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Checked-in success state (final v2)                                        */
+/* -------------------------------------------------------------------------- */
+
+function CheckedInView({
+  event,
+  checkInAt,
+  method,
+}: {
+  event: EventRow;
+  checkInAt: string | null;
+  method: string | null;
+}) {
+  const via = method === 'qr' ? 'via self-scan' : method === 'manual' ? 'via reception' : null;
+  return (
+    <>
+      {/* Event card at top (green left-accent). NO eyebrow, NO QR/code. */}
+      <EventCard event={event} accent />
+
+      <div className="flex flex-col items-center gap-md text-center py-md">
+        <span
+          className="inline-flex items-center justify-center w-[72px] h-[72px] rounded-full bg-[color:var(--success)] text-white shadow-[0_0_0_8px_rgba(22,163,74,0.15)]"
+          aria-hidden
+        >
+          <span className="material-symbols-outlined text-[40px]">check</span>
+        </span>
+        <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">You&apos;re checked in.</h1>
+        {(checkInAt || via) && (
+          <span className="inline-flex items-center gap-xs px-md py-xs rounded-full bg-surface-container-high font-label-md text-label-md text-on-surface-variant normal-case tracking-normal">
+            {checkInAt ? `at ${formatInTz(checkInAt, event.timezone)}` : ''}
+            {checkInAt && via ? ' · ' : ''}
+            {via ?? ''}
+          </span>
+        )}
+        <p className="font-body-md text-body-md text-on-surface-variant m-0">
+          Enjoy the sessions — we&apos;ll email a short survey after it wraps.
+        </p>
+      </div>
     </>
   );
 }
