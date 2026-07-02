@@ -8,6 +8,7 @@ export function BarDistributionSlice({
   prompt,
   distribution,
   layout,
+  family = 'blue',
   priorityPill,
   sliceBgClass,
   borderBottom = true,
@@ -19,12 +20,19 @@ export function BarDistributionSlice({
   prompt: string;
   distribution: Distribution[];
   layout: 'grid' | 'stack';
+  // Chart color rule (locked): ONE color family per question — saturated for
+  // the leading response, light tint for the rest. Blue = standard questions,
+  // green = sentiment (Q4). Never mix families within a question.
+  family?: 'blue' | 'green';
   priorityPill?: string; // e.g. "Priority Expansion"
   sliceBgClass?: string;
   borderBottom?: boolean;
   caption?: string;
 }) {
   const topSlug = distribution[0]?.slug;
+  const strong = family === 'green' ? 'bg-[color:var(--success)]' : 'bg-[color:var(--on-primary-container)]';
+  const tint = family === 'green' ? 'bg-[color:var(--success)]/35' : 'bg-[color:var(--on-primary-container)]/35';
+  const strongText = family === 'green' ? 'text-[color:var(--success)]' : 'text-[color:var(--on-primary-container)]';
 
   const bars = distribution.map((d) => {
     const isWinner = d.slug === topSlug;
@@ -33,13 +41,13 @@ export function BarDistributionSlice({
     // distribution-bars share a single accent ramp across Q1/Q3/Q5/Q2.
     return (
       <div key={d.slug} className="space-y-xs">
-        <div className={`flex justify-between text-label-md font-bold ${isWinner ? 'text-primary' : 'text-on-surface-variant'}`}>
+        <div className={`flex justify-between text-label-md font-bold ${isWinner ? strongText : 'text-on-surface-variant'}`}>
           <span>{d.label}</span>
           <span>{d.pct}%</span>
         </div>
-        <div className={`h-2 w-full bg-surface-container-high rounded-full overflow-hidden ${isWinner ? 'border border-primary/20' : ''}`}>
+        <div className="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
           <div
-            className={`h-full ${isWinner ? 'bg-primary' : 'bg-primary/45'}`}
+            className={`h-full ${isWinner ? strong : tint}`}
             style={{ width: `${d.pct}%` }}
           />
         </div>

@@ -126,17 +126,40 @@ export default async function EventAnalyticsPage({
     >
       <header className="mb-lg">
         <div className="max-w-3xl">
-          <h1 className="font-headline-lg text-headline-lg text-primary mb-xs leading-tight">
-            Post-Event Survey Analytics: {event.title}
+          {/* Function-leads eyebrow (locked naming rule). */}
+          <p className="text-label-md font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-xs">
+            Analytics
+          </p>
+          <h1 className="text-[30px] leading-[1.15] font-extrabold tracking-[-0.025em] text-on-surface mb-xs">
+            {event.title}
           </h1>
           <p className="font-body-md text-body-md text-on-surface-variant">{heroMeta}</p>
         </div>
       </header>
 
-      {/* Headline block — ring gauges on accent-on-surface-high track. Each
-          ring's max is the previous stage in the funnel; the centre numeric
-          is the raw count. The plan keeps the AN-3 three-card vibe but adds
-          the ring as the dominant visual. */}
+      {/* Dark "Outcome" band (AN v2) — the page's one dark moment: three
+          headline percentages. Green = attendance + sentiment (direction),
+          blue = response (action/participation). */}
+      <section
+        aria-label="Outcome"
+        className="mb-lg rounded-[20px] p-lg text-white"
+        style={{ background: 'radial-gradient(120% 140% at 0% 0%, #123420 0%, #0A0A0A 55%)' }}
+      >
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50 mb-md">Outcome</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-sm">
+          <OutcomeStat pct={Math.round(showUpRate * 100)} label="Attendance" sub={`${attended} of ${registered}`} tone="green" />
+          <OutcomeStat pct={Math.round(responseRate * 100)} label="Response" sub={`${responded} of ${attended}`} tone="blue" />
+          {/* hr is null until at least one Q4 answer exists. */}
+          <OutcomeStat pct={hr == null ? 0 : Math.round(hr * 100)} label="Met / exceeded" sub={hr == null ? 'no answers yet' : 'expectations'} tone="green" />
+        </div>
+      </section>
+
+      {/* §01 Funnel — ring gauges. Each ring's max is the previous stage in
+          the funnel; the centre numeric is the raw count. */}
+      <div className="flex items-center gap-sm mb-md">
+        <span className="inline-flex items-center justify-center w-[30px] h-[22px] rounded-md text-[11px] font-bold tabular-nums bg-primary-container text-on-primary-container" aria-hidden>01</span>
+        <h2 className="text-[20px] font-extrabold tracking-[-0.025em] text-on-surface">Funnel</h2>
+      </div>
       <section
         aria-label="Headline metrics"
         className="mb-lg p-lg bg-surface-container-lowest border border-outline-variant rounded-xxl shadow-sm grid grid-cols-1 md:grid-cols-3 gap-lg"
@@ -172,7 +195,12 @@ export default async function EventAnalyticsPage({
 
       <FunnelCard registered={registered} attended={attended} responded={responded} />
 
-      <div className="mt-lg bg-surface-container-lowest border border-outline-variant rounded-xxl shadow-sm overflow-hidden">
+      {/* §02 Feedback — per-question distributions, one color family each. */}
+      <div className="flex items-center gap-sm mt-lg mb-md">
+        <span className="inline-flex items-center justify-center w-[30px] h-[22px] rounded-md text-[11px] font-bold tabular-nums bg-primary-container text-on-primary-container" aria-hidden>02</span>
+        <h2 className="text-[20px] font-extrabold tracking-[-0.025em] text-on-surface">Feedback</h2>
+      </div>
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-xxl shadow-sm overflow-hidden">
         <BarDistributionSlice
           icon="event_note"
           iconBg="fixed"
@@ -211,5 +239,21 @@ export default async function EventAnalyticsPage({
       <OperationalInsightCard metrics={metrics} />
       <KeyMetricAnalysisCard metrics={metrics} />
     </StaffShell>
+  );
+}
+
+function OutcomeStat({ pct, label, sub, tone }: { pct: number; label: string; sub: string; tone: 'green' | 'blue' }) {
+  return (
+    <div className="rounded-[14px] border border-white/10 bg-white/[0.03] p-md">
+      <p className="leading-none mb-sm">
+        <span className={`text-[34px] font-extrabold tracking-[-0.02em] tabular-nums ${tone === 'green' ? 'text-[#4ADE80]' : 'text-[#79B8FF]'}`}>
+          {pct}%
+        </span>
+      </p>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">
+        {label}
+        <span className="text-white/30"> · {sub}</span>
+      </p>
+    </div>
   );
 }

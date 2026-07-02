@@ -35,7 +35,7 @@ export function SessionDistributionSlice({
               <div key={d.slug} className="space-y-xs">
                 <div
                   className={`flex justify-between text-label-md font-bold gap-md ${
-                    isWinner ? 'text-primary' : 'text-on-surface-variant'
+                    isWinner ? 'text-[color:var(--on-primary-container)]' : 'text-on-surface-variant'
                   }`}
                 >
                   <span className="truncate" title={d.label}>{d.label}</span>
@@ -47,7 +47,7 @@ export function SessionDistributionSlice({
                   }`}
                 >
                   <div
-                    className={`h-full ${isWinner ? 'bg-primary' : 'bg-primary/45'}`}
+                    className={`h-full ${isWinner ? 'bg-[color:var(--on-primary-container)]' : 'bg-[color:var(--on-primary-container)]/35'}`}
                     style={{ width: `${d.pct}%` }}
                   />
                 </div>

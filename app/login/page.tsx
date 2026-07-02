@@ -51,12 +51,17 @@ function LoginForm() {
 
   return (
     <LoginLayout>
+      {/* LG v2 (locked): eyebrow `Sign in · Eventar` + "Welcome back". */}
+      <p className="text-label-md font-semibold uppercase tracking-[0.18em] m-0">
+        <span className="text-[color:var(--on-primary-container)]">Sign in</span>
+        <span className="text-on-surface-variant"> · Eventar</span>
+      </p>
       <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">
-        Sign in
+        Welcome back
       </h1>
       {/* §3 sentence stack — single sentence, m-0 so the container gap is the sole rhythm authority. */}
       <p className="font-body-md text-body-md text-on-surface-variant m-0">
-        We&apos;ll email you a one-tap sign-in link.
+        No password here — we&apos;ll email you a one-tap sign-in link.
       </p>
 
       <form
@@ -75,20 +80,26 @@ function LoginForm() {
           <span className="block font-label-md text-label-md uppercase tracking-wider text-on-surface mb-xs">
             Email
           </span>
+          {/* The field announces itself: 2px accent border + soft accent halo. */}
           <input
             name="email"
             type="email"
             required
+            autoComplete="email"
             placeholder="you@company.com"
-            className="w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+            className="w-full rounded-lg border-2 border-[color:var(--on-primary-container)] shadow-[0_0_0_4px_rgba(0,112,243,0.08)] bg-surface-container-lowest px-md py-sm font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-[color:var(--on-primary-container)]/40 transition-shadow"
           />
         </label>
         <button
           disabled={pending}
-          className="w-full rounded-lg bg-tertiary text-on-tertiary font-label-md text-label-md py-md hover:opacity-90 transition-opacity disabled:opacity-50"
+          className="w-full inline-flex items-center justify-center gap-sm rounded-lg bg-tertiary text-on-tertiary font-label-md text-label-md py-md hover:opacity-90 transition-opacity disabled:opacity-50"
         >
-          {pending ? 'Sending…' : 'Email me a link'}
+          <span className="material-symbols-outlined text-[18px]" aria-hidden>mail</span>
+          {pending ? 'Sending…' : 'Send magic link'}
         </button>
+        <p className="font-body-md text-[12px] text-on-surface-variant text-center m-0">
+          The link expires after 15 minutes and works once.
+        </p>
 
         {msg && (
           <p className="font-body-md text-body-md text-on-surface bg-secondary-container border border-secondary-container rounded-lg px-md py-sm flex items-start gap-sm">
@@ -108,6 +119,20 @@ function LoginForm() {
           </p>
         )}
       </form>
+
+      {/* Recovery — "Trouble signing in?" (locked: NOT "Forgot password";
+          there is no password in a magic-link flow). */}
+      <details className="group">
+        <summary className="cursor-pointer font-body-md text-body-md text-[color:var(--on-primary-container)] hover:underline list-none">
+          Trouble signing in?
+        </summary>
+        <ul className="mt-sm font-body-md text-[13px] text-on-surface-variant leading-relaxed list-disc pl-lg flex flex-col gap-xs">
+          <li>Links expire after 15 minutes and work once — request a fresh one above.</li>
+          <li>Check spam, and make sure you opened the newest email.</li>
+          <li>Only staff emails can sign in. If yours isn&apos;t on the list, ask an admin to add you.</li>
+          <li>Lost access to your email? An admin can update your staff record to a new address.</li>
+        </ul>
+      </details>
     </LoginLayout>
   );
 }

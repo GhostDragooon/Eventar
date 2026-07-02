@@ -61,7 +61,7 @@ export function SentimentSlice({
             role="presentation"
           >
             <div
-              className="h-full bg-primary rounded-full"
+              className="h-full bg-[color:var(--success)] rounded-full"
               style={{ width: `${Math.round(happyRate * 100)}%` }}
             />
           </div>
@@ -80,7 +80,7 @@ export function SentimentSlice({
               return (
                 <div
                   key={slug}
-                  className="h-full bg-primary"
+                  className="h-full bg-[color:var(--success)]"
                   style={{ width: `${pct}%`, opacity: SLUG_OPACITY[slug] }}
                   title={`${SLUG_LABEL[slug]} ${pct}%`}
                 />
@@ -91,7 +91,7 @@ export function SentimentSlice({
             {SLUG_ORDER.map((slug) => (
               <div key={slug} className="text-[11px] flex items-center gap-1">
                 <span
-                  className="inline-block w-2 h-2 rounded-sm bg-primary"
+                  className="inline-block w-2 h-2 rounded-sm bg-[color:var(--success)]"
                   style={{ opacity: SLUG_OPACITY[slug] }}
                   aria-hidden
                 />
