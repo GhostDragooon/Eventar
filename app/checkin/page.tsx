@@ -33,9 +33,25 @@ export default async function CheckinIndexPage() {
 
   // eslint-disable-next-line react-hooks/purity
   const nowMs = Date.now();
-  const rows = (events ?? [])
+  const prelim = (events ?? [])
     .map((e) => ({ ...e, lifecycle: computeLifecycle(e as EventLifecycleRow, nowMs) }))
     .filter((e) => e.lifecycle === 'live' || e.lifecycle === 'upcoming' || e.lifecycle === 'registering');
+
+  // Per-event roster counts — the door-picker should read like the dashboard,
+  // not a bare link list.
+  const ids = prelim.map((e) => e.id);
+  const regsRes = ids.length > 0
+    ? await supabase.from('registrations').select('event_id, status').in('event_id', ids)
+    : { data: [] as Array<{ event_id: string; status: string }>, error: null };
+  const counts = new Map<string, { registered: number; attended: number }>();
+  for (const e of prelim) counts.set(e.id, { registered: 0, attended: 0 });
+  for (const r of regsRes.data ?? []) {
+    const c = counts.get(r.event_id);
+    if (!c) continue;
+    c.registered++;
+    if (r.status === 'attended') c.attended++;
+  }
+  const rows = prelim.map((e) => ({ ...e, ...(counts.get(e.id) ?? { registered: 0, attended: 0 }) }));
   const live = rows.filter((e) => e.lifecycle === 'live');
   const upcoming = rows.filter((e) => e.lifecycle !== 'live');
 
@@ -63,16 +79,25 @@ export default async function CheckinIndexPage() {
               >
                 <span className={`w-[4px] self-stretch rounded-full shrink-0 ${e.lifecycle === 'live' ? 'bg-[color:var(--success)]' : 'bg-[color:var(--on-primary-container)]'}`} aria-hidden />
                 <div className="flex-1 min-w-0">
-                  <p className="font-title-lg text-title-lg font-semibold text-on-surface truncate">{e.title}</p>
+                  <div className="flex items-center gap-sm flex-wrap">
+                    <p className="font-title-lg text-title-lg font-semibold text-on-surface truncate">{e.title}</p>
+                    {e.lifecycle === 'live' && (
+                      <span className="inline-flex items-center gap-xs px-sm py-[3px] rounded-full text-[11px] font-semibold uppercase tracking-wide bg-success-container text-on-success-container shrink-0">
+                        <span className="w-[6px] h-[6px] rounded-full bg-[color:var(--success)]" aria-hidden />Live
+                      </span>
+                    )}
+                  </div>
                   <p className="font-body-md text-body-md text-on-surface-variant mt-[2px]">
                     {formatInTz(e.start_time, e.timezone)}{e.venue_name ? ` · ${e.venue_name}` : ''}
                   </p>
                 </div>
-                {e.lifecycle === 'live' && (
-                  <span className="inline-flex items-center gap-xs px-sm py-[3px] rounded-full text-[11px] font-semibold uppercase tracking-wide bg-success-container text-on-success-container shrink-0">
-                    <span className="w-[6px] h-[6px] rounded-full bg-[color:var(--success)]" aria-hidden />Live
-                  </span>
-                )}
+                <div className="text-right shrink-0">
+                  <p className="leading-none">
+                    <span className={`text-[24px] font-extrabold tracking-[-0.02em] tabular-nums ${e.lifecycle === 'live' ? 'text-[color:var(--success)]' : 'text-on-surface'}`}>{e.attended}</span>
+                    <span className="text-body-md text-on-surface-variant"> / {e.registered}</span>
+                  </p>
+                  <p className="font-label-md text-label-md text-on-surface-variant normal-case tracking-normal mt-[2px]">checked in</p>
+                </div>
                 <span className="material-symbols-outlined text-[18px] text-on-surface-variant shrink-0" aria-hidden>arrow_forward</span>
               </Link>
             </li>

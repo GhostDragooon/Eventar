@@ -32,9 +32,31 @@ export default async function AnalyticsIndexPage() {
 
   // eslint-disable-next-line react-hooks/purity
   const nowMs = Date.now();
-  const completed = (events ?? [])
+  const prelim = (events ?? [])
     .map((e) => ({ ...e, lifecycle: computeLifecycle(e as EventLifecycleRow, nowMs) }))
     .filter((e) => e.lifecycle === 'completed');
+
+  // Outcome numbers per row — a review-picker should show the review.
+  const ids = prelim.map((e) => e.id);
+  const [regsRes, surveysRes] = ids.length > 0
+    ? await Promise.all([
+        supabase.from('registrations').select('event_id, status').in('event_id', ids),
+        supabase.from('survey_responses').select('event_id').in('event_id', ids),
+      ])
+    : [{ data: [] as Array<{ event_id: string; status: string }> }, { data: [] as Array<{ event_id: string }> }];
+  const counts = new Map<string, { registered: number; attended: number; responses: number }>();
+  for (const e of prelim) counts.set(e.id, { registered: 0, attended: 0, responses: 0 });
+  for (const r of regsRes.data ?? []) {
+    const c = counts.get(r.event_id);
+    if (!c) continue;
+    c.registered++;
+    if (r.status === 'attended') c.attended++;
+  }
+  for (const r of surveysRes.data ?? []) {
+    const c = counts.get(r.event_id);
+    if (c) c.responses++;
+  }
+  const completed = prelim.map((e) => ({ ...e, ...(counts.get(e.id) ?? { registered: 0, attended: 0, responses: 0 }) }));
 
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role }}>
@@ -61,6 +83,15 @@ export default async function AnalyticsIndexPage() {
                   <p className="font-title-lg text-title-lg font-semibold text-on-surface truncate">{e.title}</p>
                   <p className="font-body-md text-body-md text-on-surface-variant mt-[2px]">
                     {formatInTz(e.start_time, e.timezone)}{e.venue_name ? ` · ${e.venue_name}` : ''}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="leading-none">
+                    <span className="text-[24px] font-extrabold tracking-[-0.02em] tabular-nums text-on-surface">{e.attended}</span>
+                    <span className="text-body-md text-on-surface-variant"> / {e.registered} attended</span>
+                  </p>
+                  <p className="font-label-md text-label-md text-[color:var(--on-primary-container)] font-semibold normal-case tracking-normal mt-[2px]">
+                    {e.responses} response{e.responses === 1 ? '' : 's'}
                   </p>
                 </div>
                 <span className="material-symbols-outlined text-[18px] text-on-surface-variant shrink-0" aria-hidden>insights</span>

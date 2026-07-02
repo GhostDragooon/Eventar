@@ -113,6 +113,12 @@ export function DashboardWorkstation({
     if (sort === 'soonest') sorted.sort((a, b) => a.startMs - b.startMs);
     else if (sort === 'recent') sorted.sort((a, b) => b.startMs - a.startMs);
     else sorted.sort((a, b) => b.registered - a.registered);
+    // Live events always surface first (operator priority), stable within.
+    if (filter === 'all') {
+      const live = sorted.filter((e) => e.lifecycle === 'live');
+      const rest = sorted.filter((e) => e.lifecycle !== 'live');
+      return [...live, ...rest];
+    }
     return sorted;
   }, [events, query, filter, sort]);
 
@@ -345,17 +351,18 @@ function EventCard({ e, selected, onToggle, onDelete, onRestore, inBin, pending 
             <p className="font-label-md text-label-md text-on-surface-variant mt-[2px] normal-case tracking-normal">closes in {e.closesInDays}d</p>
           ) : null}
         </div>
-        <div className="flex flex-col gap-xs">
+        {/* Fixed-width action column — every button the same size. */}
+        <div className="flex flex-col gap-xs w-[116px] shrink-0">
           {inBin ? (
-            <button type="button" onClick={onRestore} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-lg border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50">
+            <button type="button" onClick={onRestore} disabled={pending} className="w-full inline-flex items-center justify-center gap-xs px-sm py-sm rounded-lg border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50">
               <span className="material-symbols-outlined text-[16px]" aria-hidden>restore_from_trash</span>Restore
             </button>
           ) : (
             <>
-              <Link href={isCompleted ? `/events/${e.id}/analytics` : `/events/${e.id}/edit`} className="inline-flex items-center gap-xs px-md py-sm rounded-lg border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
+              <Link href={isCompleted ? `/events/${e.id}/analytics` : `/events/${e.id}/edit`} className="w-full inline-flex items-center justify-center gap-xs px-sm py-sm rounded-lg border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
                 <span className="material-symbols-outlined text-[16px]" aria-hidden>{isCompleted ? 'insights' : 'edit'}</span>{isCompleted ? 'Analytics' : 'Edit'}
               </Link>
-              <button type="button" onClick={onDelete} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-lg border border-[color:var(--error)] font-label-md text-label-md text-[color:var(--error)] hover:bg-error-container transition-colors disabled:opacity-50">
+              <button type="button" onClick={onDelete} disabled={pending} className="w-full inline-flex items-center justify-center gap-xs px-sm py-sm rounded-lg border border-[color:var(--error)] font-label-md text-label-md text-[color:var(--error)] hover:bg-error-container transition-colors disabled:opacity-50">
                 <span className="material-symbols-outlined text-[16px]" aria-hidden>delete</span>Delete
               </button>
             </>

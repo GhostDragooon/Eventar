@@ -13,6 +13,9 @@ type Props = {
   // G6: count of confirmation emails actually delivered (email_log.status='sent').
   // Word "sent" matters — copy must never say "delivered".
   confirmationsSent: number;
+  // Section-scoped operations (e.g. "Send reminders now" during door prep) —
+  // keeps actions categorized inside their section instead of floating.
+  actionSlot?: React.ReactNode;
 };
 
 // Section 01 — Registration. Full card while the window is open (draft /
@@ -27,6 +30,7 @@ export function RegistrationSection({
   nowMs,
   lifecycle,
   confirmationsSent,
+  actionSlot,
 }: Props) {
   if (lifecycle === 'live' || lifecycle === 'completed' || lifecycle === 'cancelled') {
     return (
@@ -116,6 +120,7 @@ export function RegistrationSection({
           <RegistrationCloseEditor eventId={eventId} current={registrationCloseAt} />
         </div>
       )}
+      {actionSlot && <div className="mt-lg pt-lg border-t border-outline-variant">{actionSlot}</div>}
     </SectionShell>
   );
 }

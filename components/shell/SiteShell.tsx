@@ -10,7 +10,7 @@ export function SiteShell({
   footer = 'brand',
 }: {
   children: React.ReactNode;
-  active: 'home' | 'events';
+  active: 'home' | 'events' | 'signin';
   footer?: 'brand' | 'none';
 }) {
   return (
@@ -37,7 +37,11 @@ export function SiteShell({
           </Link>
         </div>
         <div className="flex items-center justify-self-end">
-          <Link href="/login" className="text-on-surface-variant hover:text-on-surface transition-colors">
+          <Link
+            href="/login"
+            aria-current={active === 'signin' ? 'page' : undefined}
+            className={`transition-colors ${active === 'signin' ? 'text-on-surface font-semibold' : 'text-on-surface-variant hover:text-on-surface'}`}
+          >
             Sign in
           </Link>
         </div>

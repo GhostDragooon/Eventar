@@ -36,37 +36,33 @@ export function ScanAndManual({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-grid-gutter">
-      {/* Scan square — pictogram + animated accent scan line */}
+    <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-grid-gutter items-stretch">
+      {/* Scan — the receptionist's PRIMARY action (locked TC spec): dominant
+          blue CTA, compact horizontal card instead of a giant empty square. */}
       <button
         type="button"
         onClick={onScanClick}
         aria-label="Open camera to scan QR badge"
-        className="group relative aspect-square w-full bg-surface-container-lowest rounded-[20px] border border-outline-variant overflow-hidden hover:border-primary transition-colors cursor-pointer flex flex-col items-center justify-center text-center p-md"
+        className="group relative w-full min-h-[132px] bg-tertiary text-on-tertiary rounded-[20px] overflow-hidden hover:opacity-95 transition-opacity cursor-pointer flex items-center justify-center gap-lg px-lg py-md text-left"
       >
         <ScanPictogram />
-        <p className="mt-md font-title-lg text-title-lg text-on-surface">
-          Scan badge
-        </p>
-        <p className="mt-xs font-body-md text-body-md text-on-surface-variant">
-          Tap to open camera
-        </p>
+        <span>
+          <span className="block text-[20px] font-extrabold tracking-[-0.02em]">Scan badge</span>
+          <span className="block mt-xs font-body-md text-body-md text-white/75">Tap to open the camera</span>
+        </span>
       </button>
 
-      {/* Manual-entry card */}
+      {/* Manual entry — secondary affordance, tight inline form. */}
       <form
         onSubmit={handleSubmit}
-        className="bg-surface-container-lowest rounded-[20px] border border-outline-variant p-lg flex flex-col"
+        className="bg-surface-container-lowest rounded-[20px] border border-outline-variant px-lg py-md flex flex-col justify-center"
       >
         <label
           htmlFor="manual-code-input"
           className="font-label-md text-label-md uppercase text-on-surface-variant"
         >
-          Manual entry
+          Or enter the code manually
         </label>
-        <p className="mt-xs font-body-md text-body-md text-on-surface-variant">
-          Type the WK-XXXX code on the badge.
-        </p>
         <input
           id="manual-code-input"
           type="text"
@@ -80,7 +76,7 @@ export function ScanAndManual({
           spellCheck={false}
           aria-invalid={attemptedInvalid || undefined}
           aria-describedby={attemptedInvalid ? 'manual-code-error' : 'manual-code-hint'}
-          className={`mt-md w-full rounded-lg border px-md py-md font-mono text-headline-sm uppercase tracking-wider bg-surface-container-lowest focus:outline-none focus:ring-1 ${
+          className={`mt-sm w-full rounded-lg border px-md py-sm font-mono text-[22px] uppercase tracking-[0.12em] bg-surface-container-lowest focus:outline-none focus:ring-1 ${
             attemptedInvalid
               ? 'border-danger focus:border-danger focus:ring-danger'
               : 'border-outline-variant focus:border-primary focus:ring-primary'
@@ -105,9 +101,9 @@ export function ScanAndManual({
         <button
           type="submit"
           disabled={!isValid}
-          className="mt-md self-end min-h-11 rounded-lg bg-tertiary text-on-tertiary px-lg py-sm font-label-md text-label-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="mt-sm self-end min-h-11 rounded-lg border border-outline-variant bg-surface-container-high text-on-surface px-lg py-sm font-label-md text-label-md hover:bg-surface-container-highest disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          Check in
+          Check in →
         </button>
       </form>
     </div>
@@ -116,7 +112,7 @@ export function ScanAndManual({
 
 function ScanPictogram() {
   return (
-    <div className="relative w-32 h-32">
+    <div className="relative w-16 h-16 shrink-0">
       <svg
         viewBox="0 0 64 64"
         xmlns="http://www.w3.org/2000/svg"

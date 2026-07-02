@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
 
 export type PublicEventCard = {
@@ -29,6 +29,25 @@ const CATEGORIES: { key: string; label: string }[] = [
 
 export function EventsListClient({ events }: { events: PublicEventCard[] }) {
   const [cat, setCat] = useState('all');
+  const listRef = useRef<HTMLDivElement>(null);
+  const tabRefs = useRef(new Map<string, HTMLDivElement>());
+  const [indicator, setIndicator] = useState<{ left: number; width: number } | null>(null);
+
+  // Sliding underline: one shared indicator translates to the active tab
+  // (measured, so it tracks font metrics + resize).
+  useLayoutEffect(() => {
+    function measure() {
+      const list = listRef.current;
+      const tab = tabRefs.current.get(cat);
+      if (!list || !tab) return;
+      const lr = list.getBoundingClientRect();
+      const tr = tab.getBoundingClientRect();
+      setIndicator({ left: tr.left - lr.left + list.scrollLeft + tr.width / 2 - 12, width: 24 });
+    }
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [cat]);
 
   const visible = useMemo(
     () => (cat === 'all' ? events : events.filter((e) => e.category === cat)),
@@ -38,9 +57,10 @@ export function EventsListClient({ events }: { events: PublicEventCard[] }) {
   return (
     <>
       <div
+        ref={listRef}
         role="tablist"
         aria-label="Event categories"
-        className="flex items-center justify-center gap-[40px] overflow-x-auto border-b border-outline-variant mb-lg"
+        className="relative flex items-center justify-center gap-[40px] overflow-x-auto border-b border-outline-variant mb-lg"
       >
         {CATEGORIES.map((c) => {
           const active = cat === c.key;
@@ -49,6 +69,10 @@ export function EventsListClient({ events }: { events: PublicEventCard[] }) {
             // styling clobbers) + hover stays a subtle text-darken, no box.
             <div
               key={c.key}
+              ref={(el) => {
+                if (el) tabRefs.current.set(c.key, el);
+                else tabRefs.current.delete(c.key);
+              }}
               role="tab"
               tabIndex={0}
               aria-selected={active}
@@ -64,12 +88,16 @@ export function EventsListClient({ events }: { events: PublicEventCard[] }) {
               }`}
             >
               {c.label}
-              {active && (
-                <span className="absolute left-1/2 -translate-x-1/2 -bottom-px h-[2px] w-[24px] bg-[color:var(--on-primary-container)] rounded-full" aria-hidden />
-              )}
             </div>
           );
         })}
+        {indicator && (
+          <span
+            aria-hidden
+            className="absolute bottom-0 h-[2px] bg-[color:var(--on-primary-container)] rounded-full transition-[left,width] duration-250 ease-out"
+            style={{ left: indicator.left, width: indicator.width }}
+          />
+        )}
       </div>
 
       {visible.length === 0 ? (

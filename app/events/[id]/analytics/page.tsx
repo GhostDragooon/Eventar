@@ -19,6 +19,7 @@ import { RingGauge } from '@/components/analytics/RingGauge';
 import { FunnelCard } from '@/components/analytics/FunnelCard';
 import { OperationalInsightCard } from '@/components/analytics/OperationalInsightCard';
 import { KeyMetricAnalysisCard } from '@/components/analytics/KeyMetricAnalysisCard';
+import { ExportAnalyticsCsv } from '@/components/analytics/ExportAnalyticsCsv';
 
 type SurveyRow = {
   id: string;
@@ -124,8 +125,8 @@ export default async function EventAnalyticsPage({
       backHref={`/events/${id}/details`}
       backLabel="Event"
     >
-      <header className="mb-lg">
-        <div className="max-w-3xl">
+      <header className="mb-lg flex flex-col md:flex-row md:items-start md:justify-between gap-md">
+        <div className="max-w-3xl min-w-0">
           {/* Function-leads eyebrow (locked naming rule). */}
           <p className="text-label-md font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-xs">
             Analytics
@@ -135,6 +136,17 @@ export default async function EventAnalyticsPage({
           </h1>
           <p className="font-body-md text-body-md text-on-surface-variant">{heroMeta}</p>
         </div>
+        <ExportAnalyticsCsv
+          eventTitle={event.title}
+          funnel={{ registered, attended, responded }}
+          questions={[
+            { id: 'Q1', prompt: 'Most valuable format', distribution: q1 },
+            { id: 'Q2', prompt: 'Most valuable session', distribution: q2 },
+            { id: 'Q3', prompt: 'Most valuable aspect', distribution: q3 },
+            { id: 'Q4', prompt: 'Expectations', distribution: q4 },
+            { id: 'Q5', prompt: 'Future preferences', distribution: q5 },
+          ]}
+        />
       </header>
 
       {/* Dark "Outcome" band (AN v2) — the page's one dark moment: three
@@ -207,7 +219,7 @@ export default async function EventAnalyticsPage({
           title="Agenda (Q1)"
           prompt={'"Which event format did you find most valuable?"'}
           distribution={q1}
-          layout="grid"
+          layout="stack"
           priorityPill="Priority Expansion"
         />
         {/* E.5 Q2 — replaces the dead HighlightCommentSlice. Counts
@@ -220,7 +232,7 @@ export default async function EventAnalyticsPage({
           title="Value Drivers (Q3)"
           prompt={'"What was the most valuable aspect of this summit?"'}
           distribution={q3}
-          layout="grid"
+          layout="stack"
         />
         <SentimentSlice happyRate={hr} distribution={q4} />
         <BarDistributionSlice

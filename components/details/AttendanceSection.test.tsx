@@ -64,11 +64,18 @@ describe('AttendanceSection — live operator view', () => {
     expect(getByText(/peak .* · 2 arrivals/)).toBeInTheDocument();
   });
 
-  it('offers Open roster while live', () => {
-    const { getByRole } = render(
-      <AttendanceSection {...baseProps} lifecycle="live" attended={3} checkIns={checkIns} />,
+  it('carries NO Open-roster link of its own (toolbar + sticky bar own it) but renders the actionSlot', () => {
+    const { queryByRole, getByText } = render(
+      <AttendanceSection
+        {...baseProps}
+        lifecycle="live"
+        attended={3}
+        checkIns={checkIns}
+        actionSlot={<span>send-reminders-slot</span>}
+      />,
     );
-    expect(getByRole('link', { name: /open roster/i })).toHaveAttribute('href', '/events/e1/checkin');
+    expect(queryByRole('link', { name: /open roster/i })).toBeNull();
+    expect(getByText('send-reminders-slot')).toBeInTheDocument();
   });
 });
 

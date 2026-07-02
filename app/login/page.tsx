@@ -2,7 +2,7 @@
 import { Suspense, useState, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { sendMagicLink } from './actions';
-import { PublicShell } from '@/components/shell/PublicShell';
+import { SiteShell } from '@/components/shell/SiteShell';
 
 const URL_ERROR_MESSAGES: Record<string, string> = {
   missing_code:    'The sign-in link was missing its verification code. Request a new one below.',
@@ -27,12 +27,17 @@ export default function LoginPage() {
 //   §8 revised (2026-06-16) — PublicShell now provides the centered Eventar
 //       wordmark in its top bar, so login no longer needs an in-form wordmark.
 function LoginLayout({ children }: { children: React.ReactNode }) {
+  // SiteShell = the public website chrome (Home · Upcoming events · Sign in)
+  // so there's always a way back to the landing from here. Card container
+  // keeps the form from floating bare on the page.
   return (
-    <PublicShell>
-      <div className="mx-auto flex w-full max-w-md flex-col gap-lg px-grid-margin py-xxl">
-        {children}
+    <SiteShell active="signin">
+      <div className="mx-auto w-full max-w-md px-grid-margin py-xl">
+        <div className="flex flex-col gap-lg bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm">
+          {children}
+        </div>
       </div>
-    </PublicShell>
+    </SiteShell>
   );
 }
 

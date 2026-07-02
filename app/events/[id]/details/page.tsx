@@ -142,20 +142,6 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
         responses={responseCount}
       />
 
-      {canSeeConfirmationsSent && (
-        <div className="mb-xl">
-          <EmailSendControls
-            eventId={event.id}
-            // Reminder is the 60-min-before pass — only meaningful once the
-            // event is imminent (upcoming/live), NOT during registering.
-            showReminder={lifecycle === 'upcoming' || lifecycle === 'live'}
-            showSurvey={lifecycle === 'completed'}
-            registeredCount={regs.filter((r) => r.status === 'registered').length}
-            attendedCount={attended}
-          />
-        </div>
-      )}
-
       <RegistrationSection
         eventId={event.id}
         registered={regs.length}
@@ -165,11 +151,23 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
         nowMs={nowMs}
         lifecycle={lifecycle}
         confirmationsSent={confirmationsSent}
+        // Door prep: sending the reminder/pass belongs to the registration
+        // wind-down (upcoming), categorized inside the section (not floating).
+        actionSlot={
+          canSeeConfirmationsSent && lifecycle === 'upcoming' ? (
+            <EmailSendControls
+              eventId={event.id}
+              showReminder
+              showSurvey={false}
+              registeredCount={regs.filter((r) => r.status === 'registered').length}
+              attendedCount={attended}
+            />
+          ) : undefined
+        }
       />
 
       <AttendanceSection
         lifecycle={lifecycle}
-        eventId={event.id}
         registered={regs.length}
         attended={attended}
         checkIns={regs.map((r) => ({ at: r.check_in_at, method: r.check_in_method }))}
@@ -177,6 +175,18 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
         endTime={event.end_time}
         timezone={event.timezone}
         nowMs={nowMs}
+        // Live door ops: late-arrival reminders live with attendance.
+        actionSlot={
+          canSeeConfirmationsSent && lifecycle === 'live' ? (
+            <EmailSendControls
+              eventId={event.id}
+              showReminder
+              showSurvey={false}
+              registeredCount={regs.filter((r) => r.status === 'registered').length}
+              attendedCount={attended}
+            />
+          ) : undefined
+        }
       />
 
       <FeedbackSection
@@ -187,6 +197,18 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
         leadingSession={leadingSession}
         endTime={event.end_time}
         timezone={event.timezone}
+        // Post-event: survey invites live with feedback.
+        actionSlot={
+          canSeeConfirmationsSent && lifecycle === 'completed' ? (
+            <EmailSendControls
+              eventId={event.id}
+              showReminder={false}
+              showSurvey
+              registeredCount={regs.filter((r) => r.status === 'registered').length}
+              attendedCount={attended}
+            />
+          ) : undefined
+        }
       />
     </StaffShell>
   );

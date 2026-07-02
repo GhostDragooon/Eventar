@@ -40,9 +40,9 @@ export function BarDistributionSlice({
     // accent @ 45%. Replaces the older primary-container fallback so the
     // distribution-bars share a single accent ramp across Q1/Q3/Q5/Q2.
     return (
-      <div key={d.slug} className="space-y-xs">
-        <div className={`flex justify-between text-label-md font-bold ${isWinner ? strongText : 'text-on-surface-variant'}`}>
-          <span>{d.label}</span>
+      <div key={d.slug} className="space-y-[3px]">
+        <div className={`flex justify-between text-[12px] font-semibold tabular-nums ${isWinner ? strongText : 'text-on-surface-variant'}`}>
+          <span className="truncate pr-sm">{d.label}</span>
           <span>{d.pct}%</span>
         </div>
         <div className="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
@@ -57,7 +57,7 @@ export function BarDistributionSlice({
 
   return (
     <Slice icon={icon} iconBg={iconBg} title={title} prompt={prompt} bgClass={sliceBgClass} borderBottom={borderBottom}>
-      <div className={layout === 'grid' ? 'grid grid-cols-2 gap-x-xl gap-y-md flex-grow' : 'flex-grow space-y-sm'}>
+      <div className={layout === 'grid' ? 'grid grid-cols-2 gap-x-xl gap-y-sm flex-grow' : 'flex-grow space-y-sm'}>
         {bars}
         {caption && (
           <p className="text-[11px] italic text-on-surface-variant mt-xs">{caption}</p>

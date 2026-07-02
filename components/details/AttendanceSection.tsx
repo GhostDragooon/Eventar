@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
 import { CHECKIN_OPEN_MINUTES } from '@/lib/lifecycle/eventLifecycle';
 import { arrivalBuckets } from '@/lib/details/arrivalBuckets';
@@ -9,7 +8,6 @@ export type CheckInRecord = { at: string | null; method: string | null };
 
 type Props = {
   lifecycle: Lifecycle;
-  eventId: string;
   registered: number;
   attended: number;
   checkIns: CheckInRecord[];
@@ -17,6 +15,8 @@ type Props = {
   endTime: string;
   timezone: string;
   nowMs: number;
+  // Section-scoped operations (e.g. "Send reminders now" while live).
+  actionSlot?: React.ReactNode;
 };
 
 // Section 02 — Attendance. One-line stub until the door opens; live = the
@@ -24,7 +24,6 @@ type Props = {
 // wrap-up stats + the final histogram.
 export function AttendanceSection({
   lifecycle,
-  eventId,
   registered,
   attended,
   checkIns,
@@ -32,6 +31,7 @@ export function AttendanceSection({
   endTime,
   timezone,
   nowMs,
+  actionSlot,
 }: Props) {
   const startMs = new Date(startTime).getTime();
   const doorOpenMs = startMs - CHECKIN_OPEN_MINUTES * 60_000;
@@ -66,15 +66,9 @@ export function AttendanceSection({
           <SplitRow n={attended} of={registered} unit="" label="Checked in" strong />
           <SplitRow n={qr} unit="QR" label="Self-scan" />
           <SplitRow n={manual} unit="manual" label="Reception" />
-          {lifecycle === 'live' && (
-            <Link
-              href={`/events/${eventId}/checkin`}
-              className="mt-sm self-start inline-flex items-center gap-sm bg-tertiary text-on-tertiary px-lg py-sm rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity"
-            >
-              <span className="material-symbols-outlined text-[18px]" aria-hidden>group</span>
-              Open roster
-            </Link>
-          )}
+          {/* No Open-roster button here — the toolbar (for-use) and the live
+              sticky bar already carry it; a third copy was noise. */}
+          {actionSlot && <div className="mt-sm">{actionSlot}</div>}
         </div>
 
         {/* Arrivals histogram */}
