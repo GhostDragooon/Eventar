@@ -6,7 +6,6 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { StaffShell } from '@/components/shell/StaffShell';
 import { StatusPill } from '@/components/lifecycle/StatusPill';
 import { computeLifecycle, type EventLifecycleRow, type Lifecycle } from '@/lib/lifecycle/eventLifecycle';
-import { sectionState } from '@/lib/lifecycle/sectionState';
 import { formatInTz } from '@/lib/tz';
 import { deriveLeadingSession } from '@/lib/details/leadingSession';
 import { RegistrationSection } from '@/components/details/RegistrationSection';
@@ -14,6 +13,7 @@ import { AttendanceSection } from '@/components/details/AttendanceSection';
 import { FeedbackSection } from '@/components/details/FeedbackSection';
 import { EmailSendControls } from './EmailSendControls';
 import { LiveScoreboard } from '@/components/details/LiveScoreboard';
+import { StickyLiveBar } from '@/components/details/StickyLiveBar';
 
 function fmtHM(iso: string, tz: string): string {
   return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz }).format(new Date(iso));
@@ -33,12 +33,12 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
   const [eventRes, regsRes, surveysRes, blocksRes, confirmationsRes] = await Promise.all([
     supabase
       .from('events')
-      .select('id, title, start_time, end_time, timezone, venue_name, max_attendees, status, registration_close_at, created_by')
+      .select('id, title, start_time, end_time, timezone, venue_name, max_attendees, status, registration_close_at, registration_open_at, created_by')
       .eq('id', id)
       .maybeSingle(),
     supabase
       .from('registrations')
-      .select('id, status, check_in_at, registered_at')
+      .select('id, status, check_in_at, check_in_method, registered_at')
       .eq('event_id', id),
     // E.3: fetch the Q2 columns so we can both count responses AND derive the
     // leading session in one round-trip (replaces the head:true count-only call).
@@ -91,9 +91,22 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
   // eslint-disable-next-line react-hooks/purity
   const nowMs = Date.now();
   const lifecycle = computeLifecycle(event as EventLifecycleRow, nowMs);
+  // Lock policy (locked 2026-06-19): structural fields freeze once published.
+  const structuralLocked = lifecycle !== 'drafted' && lifecycle !== 'cancelled';
 
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role }} backHref="/dashboard" backLabel="Dashboard">
+      {/* Live-only sticky strip — separate element from the toolbar (locked). */}
+      {lifecycle === 'live' && (
+        <StickyLiveBar
+          eventId={event.id}
+          title={event.title}
+          startMs={new Date(event.start_time).getTime()}
+          endMs={new Date(event.end_time).getTime()}
+          serverNowMs={nowMs}
+        />
+      )}
+
       {/* Event Manager header — eyebrow + title + status pill on the left, the
           for-use toolbar (Edit / Roster / Public / Analytics) top-right. */}
       <header className="mb-lg flex flex-col md:flex-row md:items-start md:justify-between gap-md">
@@ -101,10 +114,15 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
           <p className="text-label-md font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-xs">Event Manager</p>
           <div className="flex items-center gap-sm flex-wrap">
             <h1 className="text-[30px] leading-[1.1] font-extrabold tracking-[-0.025em] text-on-surface">{event.title}</h1>
+            {structuralLocked && <LockIcon />}
             <StatusPill lifecycle={lifecycle} />
           </div>
-          <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
-            {formatInTz(event.start_time, event.timezone)} · {event.venue_name ?? 'No venue set'}
+          <p className="font-body-md text-body-md text-on-surface-variant mt-xs flex items-center gap-xs flex-wrap">
+            <span>{formatInTz(event.start_time, event.timezone)}</span>
+            {structuralLocked && <LockIcon />}
+            <span aria-hidden>·</span>
+            <span>{event.venue_name ?? 'No venue set'}</span>
+            {structuralLocked && <LockIcon />}
           </p>
         </div>
         <ActionToolbar eventId={event.id} lifecycle={lifecycle} />
@@ -146,29 +164,45 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
         registeredAt={regs.map((r) => r.registered_at)}
         nowMs={nowMs}
         lifecycle={lifecycle}
-        state={sectionState('registration', lifecycle)}
         confirmationsSent={confirmationsSent}
       />
 
       <AttendanceSection
         lifecycle={lifecycle}
-        state={sectionState('attendance', lifecycle)}
         eventId={event.id}
         registered={regs.length}
         attended={attended}
-        checkIns={regs.map((r) => r.check_in_at)}
+        checkIns={regs.map((r) => ({ at: r.check_in_at, method: r.check_in_method }))}
         startTime={event.start_time}
+        endTime={event.end_time}
+        timezone={event.timezone}
+        nowMs={nowMs}
       />
 
       <FeedbackSection
         lifecycle={lifecycle}
-        state={sectionState('feedback', lifecycle)}
         eventId={event.id}
         responseCount={responseCount}
         attended={attended}
         leadingSession={leadingSession}
+        endTime={event.end_time}
+        timezone={event.timezone}
       />
     </StaffShell>
+  );
+}
+
+// Inline `ti-lock` per the lock policy — tooltip carries the wording.
+function LockIcon() {
+  return (
+    <span
+      className="material-symbols-outlined text-[14px] text-on-surface-variant align-middle"
+      title="Locked since registration opened"
+      aria-label="Locked since registration opened"
+      role="img"
+    >
+      lock
+    </span>
   );
 }
 

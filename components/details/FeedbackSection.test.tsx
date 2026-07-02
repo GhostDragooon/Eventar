@@ -9,8 +9,9 @@ const baseProps = {
   eventId: 'e1',
   responseCount: 0,
   attended: 0,
-  state: 'locked' as const,
   leadingSession: null,
+  endTime: '2026-06-15T12:00:00Z',
+  timezone: 'UTC',
 };
 
 describe('FeedbackSection — G1 leading-session readout', () => {
@@ -19,7 +20,6 @@ describe('FeedbackSection — G1 leading-session readout', () => {
       <FeedbackSection
         {...baseProps}
         lifecycle="completed"
-        state="active"
         responseCount={12}
         attended={20}
         leadingSession={{ kind: 'block', id: 'b1', title: 'Hands-on lab on ECG basics' }}
@@ -34,7 +34,6 @@ describe('FeedbackSection — G1 leading-session readout', () => {
       <FeedbackSection
         {...baseProps}
         lifecycle="completed"
-        state="active"
         responseCount={5}
         attended={10}
         leadingSession={{ kind: 'overall' }}
@@ -45,47 +44,30 @@ describe('FeedbackSection — G1 leading-session readout', () => {
 
   it('omits the Leading session row when leadingSession is null', () => {
     const { queryByText } = render(
-      <FeedbackSection
-        {...baseProps}
-        lifecycle="completed"
-        state="active"
-        responseCount={0}
-        attended={3}
-        leadingSession={null}
-      />,
+      <FeedbackSection {...baseProps} lifecycle="completed" responseCount={0} attended={3} />,
     );
     expect(queryByText('Leading session')).toBeNull();
-  });
-
-  it('does NOT render any feedback stats before the event completes', () => {
-    const { queryByText, getByText } = render(
-      <FeedbackSection
-        {...baseProps}
-        lifecycle="live"
-        state="locked"
-        leadingSession={{ kind: 'overall' }}
-      />,
-    );
-    expect(getByText('Survey opens 10 minutes after event ends.')).toBeInTheDocument();
-    expect(queryByText('Leading session')).toBeNull();
-    expect(queryByText('Response rate')).toBeNull();
   });
 });
 
-describe('FeedbackSection — section-state ladder', () => {
-  it('active state paints the accent ring on completed', () => {
-    const { container } = render(
-      <FeedbackSection {...baseProps} lifecycle="completed" state="active" />,
+describe('FeedbackSection — pending one-line stub', () => {
+  it('collapses to "opens HH:MM · 10 min after wrap" before the event completes', () => {
+    const { getByText, queryByText } = render(
+      <FeedbackSection {...baseProps} lifecycle="live" leadingSession={{ kind: 'overall' }} />,
     );
-    const section = container.querySelector('section');
-    expect(section?.className).toContain('border-primary');
+    // 12:00Z end + 10 min = 12:10 UTC
+    expect(getByText(/opens 12:10/)).toBeInTheDocument();
+    expect(getByText(/10 min after wrap/)).toBeInTheDocument();
+    expect(queryByText('Leading session')).toBeNull();
+    expect(queryByText('Response rate')).toBeNull();
   });
 
-  it('locked state dims the card', () => {
-    const { container } = render(
-      <FeedbackSection {...baseProps} lifecycle="live" state="locked" />,
+  it('shows the full card with response rate once completed', () => {
+    const { getByText, getAllByText } = render(
+      <FeedbackSection {...baseProps} lifecycle="completed" responseCount={5} attended={10} />,
     );
-    const section = container.querySelector('section');
-    expect(section?.className).toContain('opacity-60');
+    expect(getByText('Response rate')).toBeInTheDocument();
+    // Appears in both the section meta ("5 of 10 responded") and the stat body.
+    expect(getAllByText(/5 of 10/).length).toBeGreaterThanOrEqual(1);
   });
 });

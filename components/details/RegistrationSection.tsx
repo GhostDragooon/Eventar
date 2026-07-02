@@ -1,5 +1,5 @@
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
-import type { SectionState } from '@/lib/lifecycle/sectionState';
+import { SectionShell, SectionStub } from './SectionChrome';
 import { RegistrationCloseEditor } from './RegistrationCloseEditor';
 
 type Props = {
@@ -10,12 +10,14 @@ type Props = {
   registeredAt: string[];
   nowMs: number;
   lifecycle: Lifecycle;
-  state: SectionState;
   // G6: count of confirmation emails actually delivered (email_log.status='sent').
   // Word "sent" matters — copy must never say "delivered".
   confirmationsSent: number;
 };
 
+// Section 01 — Registration. Full card while the window is open (draft /
+// registering / upcoming); collapses to a one-line stub once the door opens
+// (live / completed / cancelled) — the scoreboard already carries the number.
 export function RegistrationSection({
   eventId,
   registered,
@@ -24,14 +26,24 @@ export function RegistrationSection({
   registeredAt,
   nowMs,
   lifecycle,
-  state,
   confirmationsSent,
 }: Props) {
+  if (lifecycle === 'live' || lifecycle === 'completed' || lifecycle === 'cancelled') {
+    return (
+      <SectionStub
+        index="01"
+        title="Registration"
+        detail="closed"
+        meta={`${registered} final · ${confirmationsSent} confirmed`}
+      />
+    );
+  }
+
   if (lifecycle === 'drafted') {
     return (
-      <SectionCard title="Registration" icon="how_to_reg" state={state}>
+      <SectionShell index="01" title="Registration" meta="not open yet">
         <p className="font-body-md text-body-md text-on-surface-variant">Publish to begin registration.</p>
-      </SectionCard>
+      </SectionShell>
     );
   }
 
@@ -48,8 +60,13 @@ export function RegistrationSection({
     closeMs != null && closeMs > nowMs ? Math.ceil((closeMs - nowMs) / 86_400_000) : null;
   const closeIsPast = closeMs != null && closeMs <= nowMs;
 
+  const meta =
+    lifecycle === 'registering'
+      ? `open${daysToClose != null ? ` · closes in ${daysToClose}d` : ''}`
+      : 'closed · door prep';
+
   return (
-    <SectionCard title="Registration" icon="how_to_reg" state={state}>
+    <SectionShell index="01" title="Registration" meta={meta} metaTone={lifecycle === 'registering' ? 'success' : 'neutral'}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-lg">
         <div>
           {maxAttendees != null && pct != null ? (
@@ -88,7 +105,7 @@ export function RegistrationSection({
             <Stat label="Closes in" value={daysToClose === 1 ? '1 day' : `${daysToClose} days`} />
           )}
           {closeIsPast && <Stat label="Registration" value="Closed" />}
-          <Stat label="Last sign-up" value={lastSignUpAgo ?? lastSignUpEmptyCopy(lifecycle)} />
+          <Stat label="Last sign-up" value={lastSignUpAgo ?? 'Awaiting first registration'} />
           {/* G6: "sent" wording is locked — must not become "delivered". */}
           <Stat label="Confirmations" value={`${confirmationsSent} sent`} />
         </div>
@@ -99,42 +116,7 @@ export function RegistrationSection({
           <RegistrationCloseEditor eventId={eventId} current={registrationCloseAt} />
         </div>
       )}
-    </SectionCard>
-  );
-}
-
-function SectionCard({
-  title,
-  icon,
-  state,
-  children,
-}: {
-  title: string;
-  icon: string;
-  state: SectionState;
-  children: React.ReactNode;
-}) {
-  // patterns §7a — monochrome ladder. Active = accent ring (the one moment of
-  // color on the cards). Done = neutral surface, no ring. Locked = dimmed.
-  const wrapperClass =
-    state === 'active'
-      ? 'bg-surface-container-lowest border-2 border-primary rounded-[20px] p-lg shadow-sm mb-lg'
-      : state === 'locked'
-        ? 'bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm mb-lg opacity-60'
-        : 'bg-surface-container-low border border-outline-variant rounded-[20px] p-lg shadow-sm mb-lg';
-  return (
-    <section className={wrapperClass}>
-      <div className="flex items-center gap-sm mb-md">
-        <span
-          className="material-symbols-outlined text-primary bg-primary-container p-xs rounded-md"
-          aria-hidden
-        >
-          {icon}
-        </span>
-        <h2 className="font-title-lg text-title-lg text-on-surface">{title}</h2>
-      </div>
-      {children}
-    </section>
+    </SectionShell>
   );
 }
 
@@ -145,15 +127,6 @@ function Stat({ label, value }: { label: string; value: string }) {
       <p className="font-title-lg text-title-lg text-on-surface">{value}</p>
     </div>
   );
-}
-
-// "Awaiting first registration" reads as forward-looking — wrong on a
-// completed or cancelled event where the window has closed. U-LIVE #2.
-function lastSignUpEmptyCopy(lifecycle: Lifecycle): string {
-  if (lifecycle === 'completed' || lifecycle === 'cancelled') {
-    return 'No registrations received';
-  }
-  return 'Awaiting first registration';
 }
 
 function relativeTime(diffMs: number): string {

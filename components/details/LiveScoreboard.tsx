@@ -90,21 +90,36 @@ export function LiveScoreboard({
         </>
       )}
 
-      {/* Three stat tiles */}
+      {/* Three stat tiles — stat color discipline (locked): only the live
+          signal gets accent. Registering → Registered blue; Live → Attended
+          green (Registered settles to neutral); Completed → all neutral. */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-sm">
-        <StatTile n={registered} of={capacity} label="Registered" sub={registered > 0 && (lifecycle === 'completed' || lifecycle === 'live') ? 'closed' : lifecycle === 'drafted' ? 'draft' : 'open'} />
-        <StatTile n={attended} of={registered || null} label="Attended" sub={isLive ? 'live' : isDone ? 'final' : 'pending'} highlight={isLive} />
-        <StatTile n={responses} label="Responses" sub="feedback" />
+        <StatTile
+          n={registered}
+          of={capacity}
+          label="Registered"
+          sub={lifecycle === 'registering' ? 'open' : lifecycle === 'drafted' ? 'draft' : 'closed'}
+          tone={lifecycle === 'registering' ? 'blue' : 'neutral'}
+        />
+        <StatTile
+          n={attended}
+          of={registered || null}
+          label="Attended"
+          sub={isLive ? 'live' : isDone ? 'final' : 'pending'}
+          tone={isLive ? 'green' : 'neutral'}
+        />
+        <StatTile n={responses} label="Responses" sub={isDone ? 'feedback' : 'post-event'} tone="neutral" />
       </div>
     </section>
   );
 }
 
-function StatTile({ n, of, label, sub, highlight }: { n: number; of?: number | null; label: string; sub: string; highlight?: boolean }) {
+function StatTile({ n, of, label, sub, tone }: { n: number; of?: number | null; label: string; sub: string; tone: 'green' | 'blue' | 'neutral' }) {
+  const color = tone === 'green' ? 'text-[#4ADE80]' : tone === 'blue' ? 'text-[#79B8FF]' : 'text-white';
   return (
     <div className="rounded-[14px] border border-white/10 bg-white/[0.03] p-md">
       <p className="leading-none mb-sm">
-        <span className={`text-[30px] font-extrabold tracking-[-0.02em] tabular-nums ${highlight ? 'text-[#4ADE80]' : 'text-white'}`}>{n}</span>
+        <span className={`text-[30px] font-extrabold tracking-[-0.02em] tabular-nums ${color}`}>{n}</span>
         {of != null && <span className="text-body-md text-white/40"> / {of}</span>}
       </p>
       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">

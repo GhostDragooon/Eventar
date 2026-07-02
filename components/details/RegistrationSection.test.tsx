@@ -24,12 +24,11 @@ const baseProps = {
   registrationCloseAt: null,
   registeredAt: [],
   nowMs: Date.parse('2026-06-01T00:00:00Z'),
-  state: 'active' as const,
   confirmationsSent: 0,
 };
 
-describe('RegistrationSection — "Last sign-up" empty copy is lifecycle-aware', () => {
-  it.each(['registering', 'upcoming', 'live'] as const)(
+describe('RegistrationSection — "Last sign-up" empty copy (open window only)', () => {
+  it.each(['registering', 'upcoming'] as const)(
     'shows forward-looking "Awaiting first registration" on %s lifecycle',
     (lifecycle) => {
       const { getByText } = render(<RegistrationSection {...baseProps} lifecycle={lifecycle} />);
@@ -37,20 +36,7 @@ describe('RegistrationSection — "Last sign-up" empty copy is lifecycle-aware',
     },
   );
 
-  it.each(['completed', 'cancelled'] as const)(
-    'shows "No registrations received" on %s lifecycle (event window has closed)',
-    (lifecycle) => {
-      // U-LIVE #2: on a completed or cancelled event, "Awaiting first
-      // registration" is semantically wrong — nothing is being awaited.
-      const { getByText, queryByText } = render(
-        <RegistrationSection {...baseProps} lifecycle={lifecycle} />,
-      );
-      expect(getByText('No registrations received')).toBeInTheDocument();
-      expect(queryByText('Awaiting first registration')).toBeNull();
-    },
-  );
-
-  it('shows the actual relative time when there IS a sign-up, regardless of lifecycle', () => {
+  it('shows the actual relative time when there IS a sign-up', () => {
     const nowMs = Date.parse('2026-06-01T12:00:00Z');
     const oneHourAgo = new Date(nowMs - 3_600_000).toISOString();
     const { getByText } = render(
@@ -59,7 +45,7 @@ describe('RegistrationSection — "Last sign-up" empty copy is lifecycle-aware',
         nowMs={nowMs}
         registered={1}
         registeredAt={[oneHourAgo]}
-        lifecycle="completed"
+        lifecycle="registering"
       />,
     );
     expect(getByText('1h ago')).toBeInTheDocument();
@@ -77,13 +63,6 @@ describe('RegistrationSection — G6 confirmations "sent" wording', () => {
     expect(queryByText(/delivered/i)).toBeNull();
   });
 
-  it('renders 0 sent when no confirmations have gone out yet', () => {
-    const { getByText } = render(
-      <RegistrationSection {...baseProps} lifecycle="registering" confirmationsSent={0} />,
-    );
-    expect(getByText('0 sent')).toBeInTheDocument();
-  });
-
   it('omits the Confirmations stat on the drafted lifecycle (publish copy only)', () => {
     const { queryByText, getByText } = render(
       <RegistrationSection {...baseProps} lifecycle="drafted" confirmationsSent={5} />,
@@ -94,30 +73,32 @@ describe('RegistrationSection — G6 confirmations "sent" wording', () => {
   });
 });
 
-describe('RegistrationSection — section-state ladder (patterns §7a)', () => {
-  it('active state paints the accent ring (border-primary)', () => {
-    const { container } = render(
-      <RegistrationSection {...baseProps} lifecycle="registering" state="active" />,
-    );
-    const section = container.querySelector('section');
-    expect(section?.className).toContain('border-primary');
-    expect(section?.className).toContain('border-2');
-  });
+describe('RegistrationSection — one-line stub after the door opens', () => {
+  it.each(['live', 'completed', 'cancelled'] as const)(
+    'collapses to "closed · N final · M confirmed" on %s lifecycle',
+    (lifecycle) => {
+      const { getByText, queryByText } = render(
+        <RegistrationSection
+          {...baseProps}
+          lifecycle={lifecycle}
+          registered={48}
+          confirmationsSent={48}
+        />,
+      );
+      expect(getByText(/closed/)).toBeInTheDocument();
+      expect(getByText('48 final · 48 confirmed')).toBeInTheDocument();
+      // Full-card stats disappear in the stub.
+      expect(queryByText('Last sign-up')).toBeNull();
+      expect(queryByText('Confirmations')).toBeNull();
+    },
+  );
 
-  it('locked state dims the card (opacity-60)', () => {
-    const { container } = render(
-      <RegistrationSection {...baseProps} lifecycle="drafted" state="locked" />,
+  it('keeps the full card while registering (numbered chip + open meta)', () => {
+    const { getByText } = render(
+      <RegistrationSection {...baseProps} lifecycle="registering" registered={3} />,
     );
-    const section = container.querySelector('section');
-    expect(section?.className).toContain('opacity-60');
-  });
-
-  it('done state has no accent ring and no opacity dim', () => {
-    const { container } = render(
-      <RegistrationSection {...baseProps} lifecycle="completed" state="done" />,
-    );
-    const section = container.querySelector('section');
-    expect(section?.className).not.toContain('border-primary');
-    expect(section?.className).not.toContain('opacity-60');
+    expect(getByText('01')).toBeInTheDocument();
+    expect(getByText(/open/)).toBeInTheDocument();
+    expect(getByText('Last sign-up')).toBeInTheDocument();
   });
 });
