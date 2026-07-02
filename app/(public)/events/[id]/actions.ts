@@ -16,6 +16,7 @@ import { CHECKIN_OPEN_MINUTES } from '@/lib/lifecycle/eventLifecycle';
 import { sendEmail as sendEmailReal } from '@/lib/resend';
 import { sendEmail as sendEmailStub } from '@/lib/devEmailStub';
 import { renderConfirmationEmail } from '@/emails/confirmation';
+import { googleCalendarUrl, outlookCalendarUrl } from '@/lib/calendarLinks';
 import { getRequestOrigin } from '@/lib/origin';
 import { formatInTz } from '@/lib/tz';
 import { firstName } from '@/lib/name';
@@ -60,11 +61,17 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
   // max_attendees + title for the capacity check + stub message.
   const { data: event } = await anon
     .from('events')
-    .select('id, title, status, max_attendees, start_time, end_time, timezone, venue_name, venue_address, registration_close_at')
+    .select('id, title, status, max_attendees, start_time, end_time, timezone, venue_name, venue_address, registration_close_at, registration_open_at')
     .eq('id', event_id)
     .maybeSingle();
   if (!event || event.status !== 'published') {
     return { error: 'Registrations are not open for this event.' };
+  }
+
+  // Step 2a — explicit open date (editor v4). A published event can sit as
+  // Upcoming until registration_open_at arrives; reject early submits.
+  if (event.registration_open_at != null && Date.now() < new Date(event.registration_open_at).getTime()) {
+    return { error: 'Registration for this event has not opened yet.' };
   }
 
   // Step 2b — registration window gate. Registration closes at
@@ -188,15 +195,28 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
 
   const origin = await getRequestOrigin();
   const eventVenue = event.venue_address ? `${event.venue_name}, ${event.venue_address}` : event.venue_name;
+  const eventUrl = `${origin}/events/${event.id}`;
 
-  // Per design doc: props pre-formatted at call site; template stays pure presentation.
+  // Per design doc: props pre-formatted at call site; template stays pure
+  // presentation. Email #1 carries NO code/QR (locked — the pass is Email #2);
+  // it carries the add-to-calendar links instead.
+  const calInput = {
+    title: event.title,
+    startIso: event.start_time,
+    endIso: event.end_time,
+    venue: eventVenue,
+    detailsUrl: eventUrl,
+    uid: event.id,
+  };
   const html = await renderConfirmationEmail({
     firstName: firstName(full_name),
     eventTitle: event.title,
     eventStart: formatInTz(event.start_time, event.timezone),
     eventVenue,
-    eventUrl: `${origin}/events/${event.id}`,
-    registrationCode: reg.registration_code,
+    eventUrl,
+    googleCalUrl: googleCalendarUrl(calInput),
+    outlookCalUrl: outlookCalendarUrl(calInput),
+    icsUrl: `${eventUrl}/calendar.ics`,
   });
 
   const sendResult = await sendEmail({

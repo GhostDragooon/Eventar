@@ -5,12 +5,15 @@ export type Lifecycle = 'drafted' | 'registering' | 'upcoming' | 'live' | 'compl
 export const CHECKIN_OPEN_MINUTES = 60;
 
 // Intentional minimal coupling — the DB row carries far more columns,
-// but the lifecycle derivation only needs these four.
+// but the lifecycle derivation only needs these five.
+// registration_open_at is optional so pre-window callers keep compiling;
+// omitting it (or null) means "opens at publish" — the pre-v4 behaviour.
 export type EventLifecycleRow = {
   status: 'draft' | 'published' | 'completed' | 'cancelled';
   start_time: string;
   end_time: string;
   registration_close_at: string | null;
+  registration_open_at?: string | null;
 };
 
 export function computeLifecycle(event: EventLifecycleRow, nowMs: number): Lifecycle {
@@ -26,9 +29,15 @@ export function computeLifecycle(event: EventLifecycleRow, nowMs: number): Lifec
   const closeMs = event.registration_close_at
     ? new Date(event.registration_close_at).getTime()
     : null;
+  const openMs = event.registration_open_at
+    ? new Date(event.registration_open_at).getTime()
+    : null;
 
   if (nowMs > endMs) return 'completed';
   if (nowMs >= startMs - CHECKIN_OPEN_MINUTES * 60_000) return 'live';
   if (closeMs != null && nowMs >= closeMs) return 'upcoming';
+  // Editor v4: an event can publish in advance and sit as Upcoming (regs not
+  // open yet) until the explicit open date arrives.
+  if (openMs != null && nowMs < openMs) return 'upcoming';
   return 'registering';
 }

@@ -69,10 +69,20 @@ export const eventInputSchema = z.object({
     .max(500)
     .optional()
     .default(''),
+  // Editor v4: explicit registration window (open → close) + the profession
+  // category behind the dashboard tag / public-list tabs. All optional.
+  registration_open_at:  z.string().datetime().optional(),
+  registration_close_at: z.string().datetime().optional(),
+  category: z.enum(['life_sciences', 'engineering', 'finance', 'technology']).optional(),
 })
 .refine(d => new Date(d.end_time) > new Date(d.start_time), {
   message: 'End time must be after start time', path: ['end_time'],
-});
+})
+.refine(
+  d => !d.registration_open_at || !d.registration_close_at ||
+    new Date(d.registration_close_at) > new Date(d.registration_open_at),
+  { message: 'Registration must close after it opens', path: ['registration_close_at'] },
+);
 
 export type EventInput = z.infer<typeof eventInputSchema>;
 export type BlockInput = z.infer<typeof blockInputSchema>;

@@ -44,7 +44,7 @@ export async function createEvent(input: {
   blocks: unknown;
   status?: unknown;
 }): Promise<{ error: string }> {
-  await requireStaff();
+  const staff = await requireStaff();
 
   const statusParse = statusSchema.safeParse(input.status);
   if (!statusParse.success) {
@@ -71,7 +71,10 @@ export async function createEvent(input: {
 
   const supabase = await supabaseServer();
   const { data, error } = await supabase.rpc('create_event_with_blocks', {
-    event_input:  { ...eventParse.data, timezone, status: statusParse.data },
+    // created_by is only honoured by the RPC for the service-role executor
+    // (review mode / session-less contexts); JWT sessions derive it from
+    // app_private.current_staff_id() and ignore this key.
+    event_input:  { ...eventParse.data, timezone, status: statusParse.data, created_by: staff.id },
     blocks_input: blockParse.data,
   });
 

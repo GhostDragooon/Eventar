@@ -35,6 +35,25 @@ vi.mock('@/lib/supabase/server', () => ({
   })),
 }));
 
+// The in-code owner gate reads events.created_by via admin before the RPC
+// (service-role contexts skip the RPC's own JWT-based check). Default: the
+// mocked staff (s-1) owns the event; tests can flip mockOwnerId.
+let mockOwnerId: string | null = 's-1';
+vi.mock('@/lib/supabase/admin', () => ({
+  supabaseAdmin: vi.fn(() => ({
+    from: (_table: string) => ({
+      select: (_cols: string) => ({
+        eq: (_col: string, _val: string) => ({
+          maybeSingle: async () => ({
+            data: mockOwnerId == null ? null : { created_by: mockOwnerId },
+            error: null,
+          }),
+        }),
+      }),
+    }),
+  })),
+}));
+
 import { beforeEach, describe, expect, it } from 'vitest';
 import { updateEvent } from './updateAction';
 
@@ -75,6 +94,7 @@ const validBlock = {
 };
 
 beforeEach(() => {
+  mockOwnerId = 's-1';
   requireStaffMock.mockClear();
   revalidatePathMock.mockClear();
   rpcCalls = [];

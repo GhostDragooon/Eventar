@@ -15,6 +15,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { requireStaff } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { tzFromCoords } from '@/lib/tz';
 import {
   blockInputSchema,
@@ -63,11 +64,25 @@ export async function updateEvent(
   eventId: string,
   input: { event: unknown; blocks: unknown },
 ): Promise<UpdateResult> {
-  await requireStaff();
+  const staff = await requireStaff();
 
   const idParse = eventIdSchema.safeParse(eventId);
   if (!idParse.success) {
     return { error: 'Invalid event id.' };
+  }
+
+  // Explicit in-code owner gate (Q19 — edit is owner-only). The RPC's own
+  // owner check covers JWT sessions but is skipped for the service-role
+  // executor (review mode / session-less contexts), so this check is the
+  // authorization there — admin-after-auth pattern, same as 67d13fd.
+  {
+    const { data: row } = await supabaseAdmin()
+      .from('events')
+      .select('created_by')
+      .eq('id', idParse.data)
+      .maybeSingle();
+    if (!row) return { error: 'Event not found.' };
+    if (row.created_by !== staff.id) return { error: 'You are not the owner of this event.' };
   }
 
   const eventParse = eventInputSchema.safeParse(input.event);
