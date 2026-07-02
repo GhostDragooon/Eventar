@@ -5,6 +5,7 @@ import "./globals.css";
 import { THEME_STORAGE_KEY } from "@/lib/theme";
 import { TEXT_SIZE_STORAGE_KEY } from "@/lib/textSize";
 import { ReviewOverlay } from "@/components/dev/ReviewOverlay";
+import { ToastProvider } from "@/components/ui/toast";
 
 // FOUC prevention: runs synchronously before paint, applies the user's saved
 // theme + text-size classes on <html>. Without this, the page would render
@@ -37,8 +38,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Eventar",
-  description: "Internal workshop manager — registration, reminders, on-site check-in.",
+  // Per-page titles compose through the template ("Dashboard · Eventar").
+  title: { default: "Eventar", template: "%s · Eventar" },
+  description:
+    "Run workshops end to end — registration, reminder passes, on-site check-in, and post-event feedback in one loop.",
+  applicationName: "Eventar",
 };
 
 export default function RootLayout({
@@ -56,10 +60,14 @@ export default function RootLayout({
             Variable axes (wght, FILL) controlled via CSS in globals.css.
             eslint rule below is a false positive — this is the root layout,
             not a per-page font import. */}
-        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        {/* display=block is deliberate for an ICON font: with swap, every
+            icon flashes as its raw ligature text ("arrow_forward") until the
+            font arrives — the classic weekend-project tell. A short blank is
+            the correct trade for glyphs. */}
+        {/* eslint-disable-next-line @next/next/no-page-custom-font, @next/next/google-font-display */}
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block"
         />
         {/* Theme-class init: applies the saved .light/.dark class on <html>
             before paint so there's no flash of system-default. Hardcoded
@@ -69,7 +77,7 @@ export default function RootLayout({
         </Script>
       </head>
       <body className="min-h-full flex flex-col font-body-md" suppressHydrationWarning>
-        {children}
+        <ToastProvider>{children}</ToastProvider>
         {/* ReviewOverlay (DB-N element labels + grid) disabled — it clutters
             the real UI. Part of the review-mode dev debt; strip before push. */}
         {false && <ReviewOverlay />}

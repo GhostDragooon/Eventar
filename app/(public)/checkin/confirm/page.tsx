@@ -7,6 +7,11 @@ import { buildCheckinQrPng } from '@/lib/checkinQr';
 import { PublicShell } from '@/components/shell/PublicShell';
 import ConfirmButton from './ConfirmButton';
 
+export const metadata = {
+  title: 'Your check-in pass',
+  robots: { index: false, follow: false },
+};
+
 // CI — the attendee's check-in pass (Design Session Log §"CI page identity").
 // A DISPLAY surface: the attendee presents the QR + code to reception; the
 // check-in action lives in TC. When the organizer enables self-serve

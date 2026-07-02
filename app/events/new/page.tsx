@@ -4,6 +4,11 @@ import { StaffShell } from '@/components/shell/StaffShell';
 import NewEventForm, { type SubmitPayload } from './NewEventForm';
 import { createEvent } from './actions';
 
+export const metadata = {
+  title: 'New event',
+  robots: { index: false, follow: false },
+};
+
 export default async function NewEventPage() {
   let staff;
   try {

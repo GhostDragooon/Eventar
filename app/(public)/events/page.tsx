@@ -3,6 +3,10 @@ import { SiteShell } from '@/components/shell/SiteShell';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 import { EventsListClient, type PublicEventCard } from './EventsListClient';
 
+export const metadata = {
+  title: 'Upcoming events',
+};
+
 export const dynamic = 'force-dynamic';
 
 // Public events list (final v15 — Design Session Log §"Events list"):

@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { sendReminderForEvent, sendSurveyInviteForEvent } from './emailActions';
 import { composeSendMessage } from '@/lib/emailSendSummary';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 type Kind = 'reminder' | 'survey';
 
@@ -26,19 +27,18 @@ export function EmailSendControls({
   const [pending, startTransition] = useTransition();
   const [active, setActive] = useState<Kind | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [confirmKind, setConfirmKind] = useState<Kind | null>(null);
 
   if (!showReminder && !showSurvey) return null;
 
-  function run(kind: Kind) {
-    // Sending is irreversible and goes to real attendees — confirm intent and
-    // name the recipient count before firing.
-    const count = kind === 'reminder' ? registeredCount : attendedCount;
-    const what =
-      kind === 'reminder'
-        ? `the reminder + check-in pass to ${count} registered attendee${count === 1 ? '' : 's'}`
-        : `the survey invite to ${count} attendee${count === 1 ? '' : 's'}`;
-    if (!window.confirm(`Send ${what} now? This can't be undone.`)) return;
+  // Sending is irreversible and goes to real attendees — a designed dialog
+  // names the recipient count before anything fires (no window.confirm).
+  function requestSend(kind: Kind) {
+    setConfirmKind(kind);
+  }
 
+  function run(kind: Kind) {
+    setConfirmKind(null);
     setActive(kind);
     setMessage(null);
     startTransition(async () => {
@@ -49,6 +49,8 @@ export function EmailSendControls({
     });
   }
 
+  const confirmCount = confirmKind === 'reminder' ? registeredCount : attendedCount;
+
   const btn =
     'flex items-center gap-xs bg-surface-container-high text-on-surface px-md py-sm rounded-lg font-label-md text-label-md hover:bg-surface-container-highest transition-colors disabled:opacity-50';
 
@@ -56,13 +58,13 @@ export function EmailSendControls({
     <div className="flex flex-col gap-sm">
       <div className="flex gap-sm flex-wrap">
         {showReminder && (
-          <button type="button" onClick={() => run('reminder')} disabled={pending} className={btn}>
+          <button type="button" onClick={() => requestSend('reminder')} disabled={pending} className={btn}>
             <span className="material-symbols-outlined text-[16px]" aria-hidden>notifications</span>
             {active === 'reminder' && pending ? 'Sending…' : 'Send reminders now'}
           </button>
         )}
         {showSurvey && (
-          <button type="button" onClick={() => run('survey')} disabled={pending} className={btn}>
+          <button type="button" onClick={() => requestSend('survey')} disabled={pending} className={btn}>
             <span className="material-symbols-outlined text-[16px]" aria-hidden>reviews</span>
             {active === 'survey' && pending ? 'Sending…' : 'Send survey invites'}
           </button>
@@ -73,6 +75,20 @@ export function EmailSendControls({
           {message}
         </p>
       )}
+
+      <ConfirmDialog
+        open={confirmKind != null}
+        title={confirmKind === 'reminder' ? 'Send reminders now?' : 'Send survey invites now?'}
+        body={
+          confirmKind === 'reminder'
+            ? `The reminder + personal check-in pass goes to ${confirmCount} registered attendee${confirmCount === 1 ? '' : 's'}. Sending can't be undone.`
+            : `The survey invite goes to ${confirmCount} checked-in attendee${confirmCount === 1 ? '' : 's'}. Sending can't be undone.`
+        }
+        confirmLabel={confirmKind === 'reminder' ? `Send to ${confirmCount}` : `Send to ${confirmCount}`}
+        pending={pending}
+        onConfirm={() => confirmKind && run(confirmKind)}
+        onCancel={() => setConfirmKind(null)}
+      />
     </div>
   );
 }

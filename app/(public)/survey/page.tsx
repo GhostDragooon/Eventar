@@ -6,6 +6,11 @@ import { firstName } from '@/lib/name';
 import { PublicShell } from '@/components/shell/PublicShell';
 import SurveyForm from './SurveyForm';
 
+export const metadata = {
+  title: 'Event survey',
+  robots: { index: false, follow: false },
+};
+
 export const dynamic = 'force-dynamic';
 
 export default async function SurveyPage({

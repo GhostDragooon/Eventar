@@ -30,6 +30,9 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    // Spawned-session worktrees carry a full repo copy (incl. their own
+    // .next build output) — never lint them from the main tree.
+    ".claude/**",
     "out/**",
     "build/**",
     "next-env.d.ts",

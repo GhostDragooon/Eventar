@@ -6,6 +6,11 @@ import { StaffShell } from '@/components/shell/StaffShell';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 import { formatInTz } from '@/lib/tz';
 
+export const metadata = {
+  title: 'Check-in',
+  robots: { index: false, follow: false },
+};
+
 // Session-scoped staff page — never static-prerender (review mode skips the
 // cookie read that would otherwise force dynamic).
 export const dynamic = 'force-dynamic';

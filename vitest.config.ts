@@ -9,5 +9,8 @@ export default defineConfig({
   },
   test: {
     setupFiles: ['./vitest.setup.ts'],
+    // node_modules/dist are excluded by default; spawned-session worktrees
+    // under .claude/ carry a full repo copy and would double every test.
+    exclude: ['**/node_modules/**', '**/.next/**', '.claude/**'],
   },
 });

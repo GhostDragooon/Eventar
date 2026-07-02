@@ -4,6 +4,11 @@ import { StaffShell } from '@/components/shell/StaffShell';
 import { SignOutButton } from '@/components/shell/SignOutButton';
 import SettingsClient from './SettingsClient';
 
+export const metadata = {
+  title: 'Settings',
+  robots: { index: false, follow: false },
+};
+
 export default async function SettingsPage() {
   let staff;
   try {

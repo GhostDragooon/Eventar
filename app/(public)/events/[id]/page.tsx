@@ -12,6 +12,30 @@ import { requireStaff, NotAuthorizedError } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
+// Link previews are a commercial-facing surface: the shareable event page
+// carries the real event title + a description snippet. Published-only —
+// drafts fall back to the app default and are noindexed.
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await supabaseServer();
+  const { data: event } = await supabase
+    .from('events')
+    .select('title, description, status, venue_name, city')
+    .eq('id', id)
+    .maybeSingle();
+  if (!event || event.status !== 'published') {
+    return { title: 'Event', robots: { index: false, follow: false } };
+  }
+  const description =
+    event.description?.slice(0, 160) ||
+    `Register for ${event.title}${event.venue_name ? ` at ${event.venue_name}` : ''}${event.city ? `, ${event.city}` : ''}.`;
+  return {
+    title: event.title,
+    description,
+    openGraph: { title: event.title, description },
+  };
+}
+
 export default async function PublicEventPage({
   params,
 }: {

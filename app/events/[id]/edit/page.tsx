@@ -17,6 +17,11 @@ import NewEventForm, {
 } from '@/app/events/new/NewEventForm';
 import type { BlockKind, TopicDraft } from '@/components/event-form/AgendaSection';
 
+export const metadata = {
+  title: 'Edit event',
+  robots: { index: false, follow: false },
+};
+
 export default async function StaffEventEditPage({
   params,
 }: {

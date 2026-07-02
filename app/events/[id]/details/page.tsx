@@ -15,6 +15,11 @@ import { EmailSendControls } from './EmailSendControls';
 import { LiveScoreboard } from '@/components/details/LiveScoreboard';
 import { StickyLiveBar } from '@/components/details/StickyLiveBar';
 
+export const metadata = {
+  title: 'Event Manager',
+  robots: { index: false, follow: false },
+};
+
 function fmtHM(iso: string, tz: string): string {
   return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz }).format(new Date(iso));
 }

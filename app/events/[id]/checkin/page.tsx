@@ -7,6 +7,11 @@ import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventL
 import { deriveSpeakerNames } from '@/lib/agenda';
 import RosterClient from './RosterClient';
 
+export const metadata = {
+  title: 'Check-in',
+  robots: { index: false, follow: false },
+};
+
 export default async function StaffCheckinPage({
   params,
 }: {

@@ -21,6 +21,11 @@ import { OperationalInsightCard } from '@/components/analytics/OperationalInsigh
 import { KeyMetricAnalysisCard } from '@/components/analytics/KeyMetricAnalysisCard';
 import { ExportAnalyticsCsv } from '@/components/analytics/ExportAnalyticsCsv';
 
+export const metadata = {
+  title: 'Analytics',
+  robots: { index: false, follow: false },
+};
+
 type SurveyRow = {
   id: string;
   session_format: string | null;

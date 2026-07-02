@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
 import { softDeleteEvents, restoreEvents, cancelEvents } from '@/app/dashboard/actions';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { useToast } from '@/components/ui/toast';
 
 export type WorkstationEvent = {
   id: string;
@@ -87,6 +89,16 @@ export function DashboardWorkstation({
   const [filter, setFilter] = useState<FilterKey>('all');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pending, startTransition] = useTransition();
+  const { toast } = useToast();
+  // Designed confirmation (no window.confirm): what's about to run + on whom.
+  const [confirm, setConfirm] = useState<null | {
+    kind: 'archive' | 'cancel';
+    ids: string[];
+    title: string;
+    body: string;
+    confirmLabel: string;
+    tone: 'primary' | 'danger';
+  }>(null);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { all: 0, deleted: 0 };
@@ -139,24 +151,62 @@ export function DashboardWorkstation({
     });
   }
 
-  function runBulk(kind: 'archive' | 'cancel' | 'restore') {
-    const ids = [...selected];
-    if (ids.length === 0) return;
-    const verb = kind === 'archive' ? 'Delete' : kind === 'cancel' ? 'Cancel' : 'Restore';
-    if (kind !== 'restore' && !window.confirm(`${verb} ${ids.length} event${ids.length > 1 ? 's' : ''}? ${kind === 'archive' ? 'They move to the Deleted bucket and can be restored.' : 'This marks them cancelled.'}`)) return;
+  function execute(kind: 'archive' | 'cancel' | 'restore', ids: string[]) {
     startTransition(async () => {
-      if (kind === 'archive') await softDeleteEvents(ids);
-      else if (kind === 'cancel') await cancelEvents(ids);
-      else await restoreEvents(ids);
-      setSelected(new Set());
+      const res =
+        kind === 'archive' ? await softDeleteEvents(ids)
+        : kind === 'cancel' ? await cancelEvents(ids)
+        : await restoreEvents(ids);
+      setConfirm(null);
+      if ('error' in res) {
+        toast('error', res.error);
+        return;
+      }
+      setSelected((s) => {
+        const n = new Set(s);
+        ids.forEach((id) => n.delete(id));
+        return n;
+      });
+      const n = res.count;
+      toast(
+        'success',
+        kind === 'archive'
+          ? `${n} event${n === 1 ? '' : 's'} moved to Deleted — restore any time.`
+          : kind === 'cancel'
+            ? `${n} event${n === 1 ? '' : 's'} cancelled.`
+            : `${n} event${n === 1 ? '' : 's'} restored.`,
+      );
     });
   }
 
+  function runBulk(kind: 'archive' | 'cancel' | 'restore') {
+    const ids = [...selected];
+    if (ids.length === 0) return;
+    if (kind === 'restore') {
+      execute('restore', ids);
+      return;
+    }
+    const n = ids.length;
+    setConfirm(
+      kind === 'archive'
+        ? {
+            kind, ids, tone: 'danger', confirmLabel: `Delete ${n} event${n === 1 ? '' : 's'}`,
+            title: `Delete ${n} event${n === 1 ? '' : 's'}?`,
+            body: 'They move to the Deleted bucket and can be restored at any time.',
+          }
+        : {
+            kind, ids, tone: 'danger', confirmLabel: `Cancel ${n} event${n === 1 ? '' : 's'}`,
+            title: `Cancel ${n} event${n === 1 ? '' : 's'}?`,
+            body: 'Registrants keep their records, but the events are marked cancelled on every surface.',
+          },
+    );
+  }
+
   function deleteOne(e: WorkstationEvent) {
-    if (!window.confirm(`Delete "${e.title}"? It moves to the Deleted bucket and can be restored.`)) return;
-    startTransition(async () => {
-      await softDeleteEvents([e.id]);
-      setSelected((s) => { const n = new Set(s); n.delete(e.id); return n; });
+    setConfirm({
+      kind: 'archive', ids: [e.id], tone: 'danger', confirmLabel: 'Delete event',
+      title: `Delete “${e.title}”?`,
+      body: 'It moves to the Deleted bucket and can be restored at any time.',
     });
   }
 
@@ -275,9 +325,20 @@ export function DashboardWorkstation({
         </div>
       ) : (
         <ul className="flex flex-col gap-sm">
-          {visible.map((e) => <EventCard key={e.id} e={e} selected={selected.has(e.id)} onToggle={() => toggle(e.id)} onDelete={() => deleteOne(e)} inBin={inBin} onRestore={() => startTransition(async () => { await restoreEvents([e.id]); })} pending={pending} />)}
+          {visible.map((e) => <EventCard key={e.id} e={e} selected={selected.has(e.id)} onToggle={() => toggle(e.id)} onDelete={() => deleteOne(e)} inBin={inBin} onRestore={() => execute('restore', [e.id])} pending={pending} />)}
         </ul>
       )}
+
+      <ConfirmDialog
+        open={confirm != null}
+        title={confirm?.title ?? ''}
+        body={confirm?.body ?? ''}
+        confirmLabel={confirm?.confirmLabel ?? ''}
+        tone={confirm?.tone ?? 'primary'}
+        pending={pending}
+        onConfirm={() => confirm && execute(confirm.kind, confirm.ids)}
+        onCancel={() => setConfirm(null)}
+      />
     </>
   );
 }
@@ -308,9 +369,10 @@ function EventCard({ e, selected, onToggle, onDelete, onRestore, inBin, pending 
     : 'bg-outline-variant';
 
   return (
-    <li className={`relative flex items-stretch gap-md bg-surface-container-lowest border border-outline-variant rounded-[16px] overflow-hidden ${e.deleted ? 'opacity-70' : ''}`}>
-      <span className={`w-[4px] shrink-0 ${e.deleted ? 'bg-outline-variant' : stripe}`} aria-hidden />
-      <div className="flex items-start gap-md flex-1 min-w-0 py-md pr-md">
+    <li className={`relative flex flex-col sm:flex-row sm:items-stretch gap-0 sm:gap-md bg-surface-container-lowest border border-outline-variant rounded-[16px] overflow-hidden ${e.deleted ? 'opacity-70' : ''}`}>
+      <span className={`hidden sm:block w-[4px] shrink-0 ${e.deleted ? 'bg-outline-variant' : stripe}`} aria-hidden />
+      <span className={`sm:hidden h-[4px] w-full shrink-0 ${e.deleted ? 'bg-outline-variant' : stripe}`} aria-hidden />
+      <div className="flex items-start gap-md flex-1 min-w-0 p-md sm:py-md sm:pr-md sm:pl-0">
         <input type="checkbox" checked={selected} onChange={onToggle} aria-label={`Select ${e.title}`} className="mt-1 w-[18px] h-[18px] shrink-0 accent-[color:var(--on-primary-container)] cursor-pointer" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-sm flex-wrap mb-xs">
@@ -331,7 +393,7 @@ function EventCard({ e, selected, onToggle, onDelete, onRestore, inBin, pending 
         </div>
       </div>
 
-      <div className="flex items-center gap-md py-md pr-md pl-0 shrink-0">
+      <div className="flex items-center justify-between sm:justify-end gap-md px-md pb-md sm:py-md sm:pr-md sm:pl-0 shrink-0">
         <div className="text-right min-w-[140px]">
           <p className="leading-none">
             <span className="text-[26px] font-extrabold tracking-[-0.02em] tabular-nums text-[color:var(--on-primary-container)]">{e.registered}</span>
