@@ -1,0 +1,74 @@
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { requireStaff, NotAuthorizedError } from '@/lib/auth';
+import { supabaseServer } from '@/lib/supabase/server';
+import { StaffShell } from '@/components/shell/StaffShell';
+import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
+import { formatInTz } from '@/lib/tz';
+
+// Session-scoped staff page — never static-prerender (review mode skips the
+// cookie read that would otherwise force dynamic).
+export const dynamic = 'force-dynamic';
+
+// Global Analytics index — the nav tab's target. Completed events, most
+// recent first; each row opens the per-event post-event review.
+export default async function AnalyticsIndexPage() {
+  let staff;
+  try {
+    staff = await requireStaff();
+  } catch (e) {
+    if (e instanceof NotAuthorizedError) redirect('/login');
+    throw e;
+  }
+
+  const supabase = await supabaseServer();
+  const { data: events } = await supabase
+    .from('events')
+    .select('id, title, start_time, end_time, timezone, status, venue_name, registration_close_at, registration_open_at, deleted_at')
+    .is('deleted_at', null)
+    .in('status', ['published', 'completed'])
+    .order('start_time', { ascending: false })
+    .limit(100);
+
+  // eslint-disable-next-line react-hooks/purity
+  const nowMs = Date.now();
+  const completed = (events ?? [])
+    .map((e) => ({ ...e, lifecycle: computeLifecycle(e as EventLifecycleRow, nowMs) }))
+    .filter((e) => e.lifecycle === 'completed');
+
+  return (
+    <StaffShell staff={{ email: staff.email, role: staff.role }}>
+      <header className="mb-lg">
+        <p className="text-label-md font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-xs">Analytics</p>
+        <h1 className="text-[30px] leading-[1.1] font-extrabold tracking-[-0.025em] text-on-surface">Pick a completed event to review</h1>
+        <p className="font-body-md text-body-md text-on-surface-variant mt-xs">{completed.length} completed event{completed.length === 1 ? '' : 's'}</p>
+      </header>
+
+      {completed.length === 0 ? (
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-xl text-center">
+          <p className="font-body-md text-body-md text-on-surface-variant">No completed events yet — analytics unlock after an event wraps.</p>
+        </div>
+      ) : (
+        <ul className="flex flex-col gap-sm">
+          {completed.map((e) => (
+            <li key={e.id}>
+              <Link
+                href={`/events/${e.id}/analytics`}
+                className="flex items-center gap-md bg-surface-container-lowest border border-outline-variant rounded-[16px] p-md hover:bg-surface-container-low transition-colors"
+              >
+                <span className="w-[4px] self-stretch rounded-full shrink-0 bg-outline-variant" aria-hidden />
+                <div className="flex-1 min-w-0">
+                  <p className="font-title-lg text-title-lg font-semibold text-on-surface truncate">{e.title}</p>
+                  <p className="font-body-md text-body-md text-on-surface-variant mt-[2px]">
+                    {formatInTz(e.start_time, e.timezone)}{e.venue_name ? ` · ${e.venue_name}` : ''}
+                  </p>
+                </div>
+                <span className="material-symbols-outlined text-[18px] text-on-surface-variant shrink-0" aria-hidden>insights</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </StaffShell>
+  );
+}

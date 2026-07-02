@@ -1,36 +1,65 @@
 /** @vitest-environment jsdom */
 import { vi } from 'vitest';
 
-// SignOutButton imports supabase browser client which talks to env vars
-// at module init. The shell test cares about layout/presence, not the
-// sign-out flow itself — stub it to a button so the shell test stays focused.
-vi.mock('./SignOutButton', () => ({
-  SignOutButton: ({ className }: { className?: string }) => (
-    <button type="button" className={className} data-testid="sign-out-button">
-      Sign out
-    </button>
-  ),
+// The shell derives the active tab from the current route.
+let mockPathname = '/dashboard';
+vi.mock('next/navigation', () => ({
+  usePathname: () => mockPathname,
 }));
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { StaffShell } from './StaffShell';
 
 // vitest config has globals:false — RTL renders accumulate without explicit cleanup.
 afterEach(cleanup);
+beforeEach(() => {
+  mockPathname = '/dashboard';
+});
 
 const staff = { email: 'jane@company.com', role: 'organizer' as const };
 
-describe('StaffShell — 3-part NAV bar (patterns §8)', () => {
-  it('renders Eventar brand linking to /dashboard', () => {
+describe('StaffShell — section-tab NAV (Design Session Log)', () => {
+  it('renders the four section tabs with their routes', () => {
     render(
       <StaffShell staff={staff}>
         <div>page content</div>
       </StaffShell>,
     );
-    const brand = screen.getByRole('link', { name: 'Eventar' });
-    expect(brand).toBeInTheDocument();
-    expect(brand).toHaveAttribute('href', '/dashboard');
+    expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('href', '/dashboard');
+    expect(screen.getByRole('link', { name: 'Events' })).toHaveAttribute('href', '/events');
+    expect(screen.getByRole('link', { name: 'Check-in' })).toHaveAttribute('href', '/checkin');
+    expect(screen.getByRole('link', { name: 'Analytics' })).toHaveAttribute('href', '/analytics');
+  });
+
+  it('marks the current section with aria-current', () => {
+    mockPathname = '/checkin';
+    render(
+      <StaffShell staff={staff}>
+        <div>page content</div>
+      </StaffShell>,
+    );
+    expect(screen.getByRole('link', { name: 'Check-in' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Dashboard' })).not.toHaveAttribute('aria-current');
+  });
+
+  it('does NOT render an Eventar wordmark in the nav (brand lives in the footer)', () => {
+    render(
+      <StaffShell staff={staff}>
+        <div>page content</div>
+      </StaffShell>,
+    );
+    expect(screen.queryByRole('link', { name: 'Eventar' })).toBeNull();
+  });
+
+  it('renders the "By Eventar" footer band', () => {
+    render(
+      <StaffShell staff={staff}>
+        <div>page content</div>
+      </StaffShell>,
+    );
+    expect(screen.getByText(/^By$/)).toBeInTheDocument();
+    expect(screen.getByText('Eventar')).toBeInTheDocument();
   });
 
   it('renders the back link when backHref + backLabel are provided', () => {
@@ -39,9 +68,7 @@ describe('StaffShell — 3-part NAV bar (patterns §8)', () => {
         <div>page content</div>
       </StaffShell>,
     );
-    const back = screen.getByRole('link', { name: /back to dashboard/i });
-    expect(back).toBeInTheDocument();
-    expect(back).toHaveAttribute('href', '/dashboard');
+    expect(screen.getByRole('link', { name: /back to dashboard/i })).toHaveAttribute('href', '/dashboard');
   });
 
   it('does NOT render a back link when backHref + backLabel are absent', () => {
@@ -53,32 +80,14 @@ describe('StaffShell — 3-part NAV bar (patterns §8)', () => {
     expect(screen.queryByRole('link', { name: /back to/i })).toBeNull();
   });
 
-  it('renders the staff email in the right cluster', () => {
+  it('renders the staff email + settings link in the right cluster', () => {
     render(
       <StaffShell staff={staff}>
         <div>page content</div>
       </StaffShell>,
     );
     expect(screen.getByText('jane@company.com')).toBeInTheDocument();
-  });
-
-  it('renders a settings icon link to /settings with accessible label', () => {
-    render(
-      <StaffShell staff={staff}>
-        <div>page content</div>
-      </StaffShell>,
-    );
-    const settings = screen.getByRole('link', { name: /settings/i });
-    expect(settings).toHaveAttribute('href', '/settings');
-  });
-
-  it('mounts the SignOutButton', () => {
-    render(
-      <StaffShell staff={staff}>
-        <div>page content</div>
-      </StaffShell>,
-    );
-    expect(screen.getByTestId('sign-out-button')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /settings/i })).toHaveAttribute('href', '/settings');
   });
 
   it('renders page children', () => {
@@ -88,32 +97,5 @@ describe('StaffShell — 3-part NAV bar (patterns §8)', () => {
       </StaffShell>,
     );
     expect(screen.getByText('unique-child-marker')).toBeInTheDocument();
-  });
-
-  it('does NOT render the removed M3 sidebar nav items (Dashboard / Attendees / Sessions / Analytics / New Event)', () => {
-    // The previous shell shipped a 6-item sidebar; the 3-part bar removes it
-    // entirely. None of those nav labels should appear as links in the chrome.
-    render(
-      <StaffShell staff={staff}>
-        <div>page content</div>
-      </StaffShell>,
-    );
-    expect(screen.queryByRole('link', { name: /^attendees$/i })).toBeNull();
-    expect(screen.queryByRole('link', { name: /^sessions$/i })).toBeNull();
-    expect(screen.queryByRole('link', { name: /^analytics$/i })).toBeNull();
-    expect(screen.queryByRole('link', { name: /^new event$/i })).toBeNull();
-    // "Dashboard" CAN appear if backLabel="Dashboard" — but with no back link
-    // there should be no Dashboard link in the chrome either.
-    expect(screen.queryByRole('link', { name: /^dashboard$/i })).toBeNull();
-  });
-
-  it('does NOT render the old footer ("© YEAR Eventar")', () => {
-    render(
-      <StaffShell staff={staff}>
-        <div>page content</div>
-      </StaffShell>,
-    );
-    expect(screen.queryByText(/© \d{4} Eventar/)).toBeNull();
-    expect(screen.queryByText(/internal workshop manager/i)).toBeNull();
   });
 });

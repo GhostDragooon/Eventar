@@ -1,22 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import { SignOutButton } from './SignOutButton';
+import { usePathname } from 'next/navigation';
 
-// Patterns §8 (revised 2026-06-16) — single 3-part NAV bar with the
-// brand centered, back-link on the left, identity cluster on the right:
-//   [ ← Back to <parent> ]   [ Eventar (centered) ]   [ email · ⚙ · Sign out ]
+// Staff nav — Design Session Log §"Layout patterns → Nav (every staff page)".
+// Three-column CSS grid `1fr auto 1fr`:
+//   LEFT   back-context link (`← Back to {parent}`), empty on root pages
+//   CENTER section tabs `Dashboard · Events · Check-in · Analytics`
+//          (sentence case, active = dark, others muted, NO underline)
+//   RIGHT  account email + settings icon
 //
-// User direction: "EE-1 (Eventar) centered in all pages; EE-2 (back link)
-// takes the EE-1 position." Same pattern lives in PublicShell so the brand
-// anchor is visually identical across every surface.
-//
-// Implementation: CSS grid `auto | 1fr | auto` keeps the center cell true-
-// centered regardless of left/right slot width. Wordmark is a /dashboard
-// link (home affordance) — preserved from the prior layout.
-//
-// Back-link prop pair is enforced as a discriminated union so callers
-// can't pass href without label or vice-versa. Both-absent = root (DB).
+// NO Eventar wordmark in the nav (locked naming rule) — brand presence lives
+// in the "By Eventar" footer band. Sign-out moved to /settings.
 
 type StaffShellBaseProps = {
   staff: { email: string; role: 'organizer' | 'manager' };
@@ -29,13 +24,30 @@ type StaffShellBackProps =
 
 export type StaffShellProps = StaffShellBaseProps & StaffShellBackProps;
 
+const TABS = [
+  { label: 'Dashboard', href: '/dashboard' },
+  { label: 'Events', href: '/events' },
+  { label: 'Check-in', href: '/checkin' },
+  { label: 'Analytics', href: '/analytics' },
+];
+
+function isActive(pathname: string, href: string): boolean {
+  if (href === '/events') {
+    // The Events tab owns the public list only — /events/[id]/* staff pages
+    // belong to their entry tab context, not here.
+    return pathname === '/events';
+  }
+  if (href === '/checkin') return pathname === '/checkin' || pathname.endsWith('/checkin');
+  if (href === '/analytics') return pathname === '/analytics' || pathname.endsWith('/analytics');
+  return pathname === href;
+}
+
 export function StaffShell(props: StaffShellProps) {
   const { staff, children, backHref, backLabel } = props;
+  const pathname = usePathname() ?? '';
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background text-on-surface">
-      {/* 3-part NAV bar — grid keeps the wordmark center-aligned regardless
-          of left/right slot width. Not sticky; scrolls with the page. */}
       <nav
         aria-label="Primary"
         className="grid grid-cols-[1fr_auto_1fr] items-center gap-md border-b border-outline-variant px-grid-margin py-md text-[13px]"
@@ -53,21 +65,30 @@ export function StaffShell(props: StaffShellProps) {
           )}
         </div>
 
-        {/* Center slot: brand. Doubles as a home affordance — /dashboard is
-            the staff root, so clicking from any page returns there. */}
-        <Link
-          href="/dashboard"
-          className="justify-self-center font-bold text-[15px] text-on-surface hover:opacity-90 transition-opacity tracking-tight"
-        >
-          Eventar
-        </Link>
+        {/* Center slot: section tabs. Active = dark, no underline indicator. */}
+        <div className="flex items-center gap-lg justify-self-center">
+          {TABS.map((t) => {
+            const active = isActive(pathname, t.href);
+            return (
+              <Link
+                key={t.href}
+                href={t.href}
+                aria-current={active ? 'page' : undefined}
+                className={`font-medium transition-colors ${
+                  active ? 'text-on-surface font-semibold' : 'text-on-surface-variant hover:text-on-surface'
+                }`}
+              >
+                {t.label}
+              </Link>
+            );
+          })}
+        </div>
 
-        {/* Right slot: email · ⚙ · Sign out */}
+        {/* Right slot: email + settings icon. */}
         <div className="flex items-center gap-sm justify-self-end">
           <span className="text-on-surface-variant" title={staff.email}>
             {staff.email}
           </span>
-          <span aria-hidden className="text-outline-variant">·</span>
           <Link
             href="/settings"
             aria-label="Settings"
@@ -78,8 +99,6 @@ export function StaffShell(props: StaffShellProps) {
               settings
             </span>
           </Link>
-          <span aria-hidden className="text-outline-variant">·</span>
-          <SignOutButton className="text-tertiary hover:underline disabled:opacity-50" />
         </div>
       </nav>
 
@@ -87,6 +106,13 @@ export function StaffShell(props: StaffShellProps) {
       <main className="flex-1 w-full max-w-[1440px] mx-auto p-grid-margin pb-xxl">
         {children}
       </main>
+
+      {/* Brand footer band — the only place the wordmark lives. */}
+      <footer className="w-full border-t border-outline-variant bg-surface-container-lowest py-md text-center">
+        <span className="text-[11px] text-on-surface-variant">
+          By <span className="font-bold text-on-surface">Eventar</span>
+        </span>
+      </footer>
     </div>
   );
 }

@@ -1,19 +1,23 @@
-import Link from 'next/link';
+// Attendee-surface shell (CI pass, SV survey, LG login, PE register).
+// Design Session Log §"Nav (attendee surfaces)": same three-column grid as
+// the staff nav, populated for anonymous context —
+//   LEFT   empty (attendees arrive from email links; no back navigation)
+//   CENTER empty (no in-app sections for anonymous attendees)
+//   RIGHT  optional state pill (`Pass ready` / `Checked in` / …)
+// NO wordmark in the nav — brand lives in the "By Eventar" footer band.
 
-/**
- * Public-facing shell for anon-accessible routes: /events/[id] (register),
- * /checkin/confirm, /survey, /login. Top bar carries the centered Eventar
- * wordmark (matches StaffShell's revised §8 — brand centered on every page).
- * Footer is the single-line "By Eventar" credit (§2).
- *
- * Public pages have no parent + no auth — the left/right NAV slots stay
- * empty, but the bar uses the same `grid-cols-[1fr_auto_1fr]` layout as
- * StaffShell so the wordmark lands at the same horizontal position.
- *
- * Patterns: docs/plans/eventar-design-patterns.md §2 (uniform footer),
- * §3/§5 (rhythm), §8 revised (brand centered on every page).
- */
-export function PublicShell({ children }: { children: React.ReactNode }) {
+export type PublicShellPill = {
+  label: string;
+  tone: 'success' | 'neutral';
+};
+
+export function PublicShell({
+  children,
+  pill,
+}: {
+  children: React.ReactNode;
+  pill?: PublicShellPill;
+}) {
   return (
     <div className="flex min-h-screen flex-col bg-background text-on-surface">
       <nav
@@ -21,20 +25,33 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
         className="grid grid-cols-[1fr_auto_1fr] items-center gap-md border-b border-outline-variant px-grid-margin py-md text-[13px]"
       >
         <div />
-        <Link
-          href="/"
-          className="justify-self-center font-bold text-[15px] text-on-surface hover:opacity-90 transition-opacity tracking-tight"
-        >
-          Eventar
-        </Link>
         <div />
+        <div className="flex items-center justify-self-end">
+          {pill && (
+            <span
+              className={`inline-flex items-center gap-xs px-sm py-[3px] rounded-full text-[11px] font-semibold ${
+                pill.tone === 'success'
+                  ? 'bg-success-container text-on-success-container'
+                  : 'bg-surface-container-high text-on-surface-variant'
+              }`}
+            >
+              <span
+                className={`w-[6px] h-[6px] rounded-full ${
+                  pill.tone === 'success' ? 'bg-[color:var(--success)]' : 'bg-outline'
+                }`}
+                aria-hidden
+              />
+              {pill.label}
+            </span>
+          )}
+        </div>
       </nav>
 
       <main className="flex-1 w-full">{children}</main>
 
-      <footer className="w-full py-lg text-center">
-        <span className="font-sans text-[12px] font-medium tracking-wide text-on-surface-variant">
-          By Eventar
+      <footer className="w-full border-t border-outline-variant bg-surface-container-lowest py-md text-center">
+        <span className="text-[11px] text-on-surface-variant">
+          By <span className="font-bold text-on-surface">Eventar</span>
         </span>
       </footer>
     </div>

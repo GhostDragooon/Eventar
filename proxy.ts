@@ -80,5 +80,10 @@ export const config = {
     '/events/:id/checkin',
     '/events/:id/details',
     '/events/:id/analytics',
+    // Global nav-tab index pages. Exact '/checkin' does NOT catch the public
+    // attendee pass at /checkin/confirm.
+    '/checkin',
+    '/analytics',
+    '/settings',
   ],
 };
