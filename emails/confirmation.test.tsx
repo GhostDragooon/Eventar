@@ -8,27 +8,49 @@ describe('renderConfirmationEmail', () => {
     eventStart: 'Wed, 12 Sep 2026 · 10:00 AM HKT',
     eventVenue: 'Conference Room A, 12/F HQ',
     eventUrl: 'https://eventar.example.com/events/abc-123',
-    registrationCode: 'WK-2345XY',
+    googleCalUrl: 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=x',
+    outlookCalUrl: 'https://outlook.live.com/calendar/0/deeplink/compose?subject=x',
+    icsUrl: 'https://eventar.example.com/events/abc-123/calendar.ics',
   };
 
-  it('rendered HTML contains the registration code, event title, and event URL', async () => {
+  it('contains the green REGISTERED eyebrow, event title, and event URL', async () => {
     const html = await renderConfirmationEmail(sampleProps);
-    expect(html).toContain('WK-2345XY');
+    expect(html).toMatch(/Registered ·/);
     expect(html).toContain('Q3 Engineering All-Hands');
     expect(html).toContain('https://eventar.example.com/events/abc-123');
   });
 
-  it('rendered HTML contains greeting with first name + venue', async () => {
+  it('greets with "You\'re in, {name}." + venue', async () => {
     const html = await renderConfirmationEmail(sampleProps);
-    // The greeting line uses first-name only ("You're registered, Alice.").
-    // React Email inserts <!-- --> comments between static text and JSX
-    // interpolations, so the rendered HTML reads
-    // "You&#x27;re registered, <!-- -->Alice<!-- -->.".
-    expect(html).toMatch(/You(?:&#x27;|&apos;|')re registered, (?:<!-- -->)?Alice(?:<!-- -->)?\./);
+    expect(html).toMatch(/You(?:&#x27;|&apos;|')re in, (?:<!-- -->)?Alice(?:<!-- -->)?\./);
     expect(html).toContain('Conference Room A, 12/F HQ');
   });
 
-  it('rendered HTML does not contain literal "undefined" or "null"', async () => {
+  it('drops the name cleanly when firstName is empty', async () => {
+    const html = await renderConfirmationEmail({ ...sampleProps, firstName: '' });
+    expect(html).toMatch(/You(?:&#x27;|&apos;|')re in\./);
+    expect(html).not.toMatch(/You(?:&#x27;|&apos;|')re in,\s*\./);
+  });
+
+  it('renders the three add-to-calendar links', async () => {
+    const html = await renderConfirmationEmail(sampleProps);
+    expect(html).toContain(sampleProps.googleCalUrl.replace(/&/g, '&amp;'));
+    expect(html).toContain(sampleProps.outlookCalUrl);
+    expect(html).toContain(sampleProps.icsUrl);
+    expect(html).toContain('Add to calendar');
+  });
+
+  it('carries NO QR and NO registration code (locked: the pass ships in Email #2)', async () => {
+    const html = await renderConfirmationEmail(sampleProps);
+    expect(html).not.toMatch(/WK-[A-Z0-9]/);
+    expect(html).not.toMatch(/registration code/i);
+    expect(html).not.toContain('cid:');
+    // What's-next sets the expectation instead.
+    expect(html).toMatch(/What(?:&#x27;|&apos;|')s next/);
+    expect(html).toContain('60 minutes before');
+  });
+
+  it('does not contain literal "undefined" or "null"', async () => {
     const html = await renderConfirmationEmail(sampleProps);
     expect(html).not.toContain('undefined');
     expect(html).not.toContain('null');
@@ -37,23 +59,13 @@ describe('renderConfirmationEmail', () => {
   it('renders to table-based HTML (no flex/grid in output)', async () => {
     const html = await renderConfirmationEmail(sampleProps);
     expect(html).toContain('<table');
-    // React Email pads with table cells; verify no CSS that fails in email clients
     expect(html).not.toMatch(/display\s*:\s*flex/i);
     expect(html).not.toMatch(/display\s*:\s*grid/i);
-    expect(html).not.toMatch(/[^-]gap\s*:/i); // avoid flex/grid gap (border-radius/box-shadow OK)
-  });
-
-  it('renders the locked RC-B sunny-amber code block', async () => {
-    const html = await renderConfirmationEmail(sampleProps);
-    expect(html).toContain('#FFFBEB'); // amber-50 bg
-    expect(html).toContain('#7C2D12'); // orange-900 code value
-    expect(html).toContain('#92400E'); // orange-700 label
+    expect(html).not.toMatch(/[^-]gap\s*:/i);
   });
 
   it('renders the CTA as a table-wrapped bulletproof button', async () => {
     const html = await renderConfirmationEmail(sampleProps);
-    // React Email <Button> wraps in <table>...<td>...<a>
-    // Verify the button text appears inside a <td> not a bare <a> as the first ancestor
     expect(html).toMatch(/<td[^>]*>[\s\S]*?<a[^>]*>[\s\S]*?View event details/);
   });
 });
