@@ -23,6 +23,9 @@ import {
   type PartnerDraft,
 } from '@/components/event-form/PartnersSection';
 import { HeroImageSection } from '@/components/event-form/HeroImageSection';
+import { DatePicker } from '@/components/event-form/DatePicker';
+import { TimePicker15 } from '@/components/event-form/TimePicker15';
+import { registrationWindow } from '@/lib/registrationWindow';
 import type { Venue } from '@/lib/venue';
 import { tzFromCoords } from '@/lib/tz';
 import { formatMinutes24h } from '@/components/event-form/DateTimeSection';
@@ -69,6 +72,10 @@ export type InitialEvent = {
   organized_by?: Array<{ name: string; url?: string }>;
   // Wave 3 — public URL into event-hero-images bucket, null when unset.
   hero_image_url?: string | null;
+  // Editor v4 — explicit registration window + profession category.
+  registration_open_at?: string | null;
+  registration_close_at?: string | null;
+  category?: string | null;
 };
 
 /**
@@ -212,6 +219,19 @@ export default function NewEventForm(props: Props) {
   const [heroImageUrl, setHeroImageUrl] = useState<string>(
     initialEvent?.hero_image_url ?? '',
   );
+  const [category, setCategory] = useState<string>(initialEvent?.category ?? '');
+  // Registration window (editor v4) — date + minutes pairs, encoded to ISO at
+  // submit exactly like the event date/time pair.
+  const [regOpen, setRegOpen] = useState<{ date: string; minutes: number | null }>(() => {
+    if (!initialEvent?.registration_open_at) return { date: '', minutes: null };
+    const p = parseLocalDateTime(initialEvent.registration_open_at);
+    return { date: p.date, minutes: p.minutes };
+  });
+  const [regClose, setRegClose] = useState<{ date: string; minutes: number | null }>(() => {
+    if (!initialEvent?.registration_close_at) return { date: '', minutes: null };
+    const p = parseLocalDateTime(initialEvent.registration_close_at);
+    return { date: p.date, minutes: p.minutes };
+  });
   // Edit-mode success confirmation. Set after a successful Save; cleared on
   // the next submit attempt. Without this, router.refresh() repaints the
   // form to the same values and the user has no way to tell their click
@@ -226,7 +246,7 @@ export default function NewEventForm(props: Props) {
   const dateVenueRef = useRef<HTMLElement>(null);
   const capacityRef  = useRef<HTMLElement>(null);
   const agendaRef    = useRef<HTMLElement>(null);
-  const partnersRef  = useRef<HTMLElement>(null);
+  const regRef       = useRef<HTMLElement>(null);
 
   const v1 = basicsValid(basics);
   const v2 = venueValid(venue);
@@ -266,6 +286,26 @@ export default function NewEventForm(props: Props) {
       setErr('Fix the highlighted agenda blocks (each needs a valid time inside the event window, plus a title).');
       return;
     }
+    // Registration window: each bound needs BOTH date and time once touched;
+    // when both bounds exist, close must be after open.
+    const encodeBound = (b: { date: string; minutes: number | null }): string | undefined =>
+      b.date && b.minutes != null
+        ? new Date(`${b.date}T${formatMinutes24h(b.minutes)}:00`).toISOString()
+        : undefined;
+    const openIso = encodeBound(regOpen);
+    const closeIso = encodeBound(regClose);
+    const openPartial = (regOpen.date !== '') !== (regOpen.minutes != null);
+    const closePartial = (regClose.date !== '') !== (regClose.minutes != null);
+    if (openPartial || closePartial) {
+      regRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setErr('Registration period needs both a date and a time for each bound.');
+      return;
+    }
+    if (openIso && closeIso && new Date(closeIso) <= new Date(openIso)) {
+      regRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setErr('Registration must close after it opens.');
+      return;
+    }
     setIntent(nextIntent);
 
     // dateTimeValid ensured startMinutes and endMinutes are non-null and end > start.
@@ -282,6 +322,9 @@ export default function NewEventForm(props: Props) {
       hosted_by:    serializePartners(hostedBy),
       organized_by: serializePartners(organizedBy),
       hero_image_url: heroImageUrl || undefined,
+      registration_open_at:  openIso,
+      registration_close_at: closeIso,
+      category: category || undefined,
     };
     const blocksPayload = blocks.map((b, i) => ({
       start_time: new Date(`${datetime.date}T${b.start}:00`).toISOString(),
@@ -355,12 +398,11 @@ export default function NewEventForm(props: Props) {
           it lights up as soon as the form loads. */}
       <ProgressStrip
         steps={[
-          { n: '1', label: 'Hero image',    complete: true, optional: true },
-          { n: '2', label: 'Basics',        complete: v1 },
-          { n: '3', label: 'Date & venue',  complete: v2 && v3 },
-          { n: '4', label: 'Capacity',      complete: !!basics.capacity },
-          { n: '5', label: 'Agenda',        complete: v4, optional: true },
-          { n: '6', label: 'Partners',      complete: true, optional: true },
+          { n: '1', label: 'Hero image',          complete: true, optional: true },
+          { n: '2', label: 'Basics',              complete: v1 },
+          { n: '3', label: 'Date & venue',        complete: v2 && v3 },
+          { n: '4', label: 'Agenda',              complete: v4, optional: true },
+          { n: '5', label: 'Registration period', complete: true, optional: true },
         ]}
       />
 
@@ -377,54 +419,27 @@ export default function NewEventForm(props: Props) {
         />
       </FormSection>
 
-      {/* 2 · Basics */}
+      {/* 2 · Basics — v4: title/description + hosted by / organized by rows
+          + profession category (drives the dashboard tag + public-list tabs). */}
       <FormSection ref={basicsRef} number="2" title="Basics">
-        <BasicsSection value={basics} onChange={(p) => setBasics({ ...basics, ...p })} />
-      </FormSection>
-
-      {/* 3 · Date & venue — DateTimeSection + VenueSection under one heading
-          per the EE mockup. Date/time stays in its existing 2-col internal
-          grid; venue picker sits below. Timezone hint only renders once a
-          venue is picked (so the copy is grounded in a real zone string). */}
-      <FormSection ref={dateVenueRef} number="3" title="Date & venue">
         <div className="space-y-lg">
-          <DateTimeSection value={datetime} onChange={(p) => setDatetime({ ...datetime, ...p })} />
-          <VenueSection value={venue} onChange={setVenue} />
-          {venueTz && (
-            <p
-              className="font-body-md text-body-md text-on-surface-variant"
-              data-testid="venue-tz-hint"
+          <BasicsSection value={basics} onChange={(p) => setBasics({ ...basics, ...p })} />
+          <label className="block max-w-xs">
+            <span className="block font-label-md text-label-md uppercase tracking-wider text-on-surface mb-xs">
+              Category <span className="text-on-surface-variant normal-case">(optional)</span>
+            </span>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary transition-colors"
             >
-              Times shown in {venueTz} — picked up from your venue.
-            </p>
-          )}
-        </div>
-      </FormSection>
-
-      {/* 4 · Capacity — extracted from Basics so it gets its own numbered
-          beat in the mockup. Same BasicsValue.capacity binding, so the
-          submit payload is unchanged. */}
-      <FormSection ref={capacityRef} number="4" title="Capacity">
-        <CapacityField value={basics} onChange={(p) => setBasics({ ...basics, ...p })} />
-      </FormSection>
-
-      {/* 5 · Agenda (optional) */}
-      <FormSection ref={agendaRef} number="5" title="Agenda" optional>
-        <AgendaSection
-          date={datetime.date}
-          eventStartMinutes={datetime.startMinutes}
-          eventEndMinutes={datetime.endMinutes}
-          blocks={blocks}
-          onChange={setBlocks}
-        />
-      </FormSection>
-
-      {/* 6 · Hosts & organizers (optional) — Wave 2.
-          Two repeatable lists of {name, url?}. Empty rows are dropped at
-          serialize time so the DB never sees a blank partner. Both lists
-          cap at PARTNER_MAX (8) per side. */}
-      <FormSection ref={partnersRef} number="6" title="Hosts & organizers" optional>
-        <div className="space-y-lg">
+              <option value="">No category</option>
+              <option value="life_sciences">Life sciences</option>
+              <option value="engineering">Engineering</option>
+              <option value="finance">Finance</option>
+              <option value="technology">Technology</option>
+            </select>
+          </label>
           <PartnersSection
             label="Hosted by"
             emptyHint="Add the institutions that host this event (optional)."
@@ -437,6 +452,105 @@ export default function NewEventForm(props: Props) {
             value={organizedBy}
             onChange={setOrganizedBy}
           />
+        </div>
+      </FormSection>
+
+      {/* 3 · Date & venue — DateTimeSection + VenueSection under one heading
+          per the EE mockup. Date/time stays in its existing 2-col internal
+          grid; venue picker sits below. Timezone hint only renders once a
+          venue is picked (so the copy is grounded in a real zone string). */}
+      {/* 3 · Date & venue — v4 order: venue first (timezone follows it),
+          then the calendar + time row, capacity in the right column
+          (optional — blank = unlimited). */}
+      <FormSection ref={dateVenueRef} number="3" title="Date & venue">
+        <div className="space-y-lg">
+          <VenueSection value={venue} onChange={setVenue} />
+          {venueTz && (
+            <p
+              className="font-body-md text-body-md text-on-surface-variant"
+              data-testid="venue-tz-hint"
+            >
+              Timezone follows the venue — {venueTz}.
+            </p>
+          )}
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-lg items-start" ref={capacityRef as unknown as React.Ref<HTMLDivElement>}>
+            <DateTimeSection value={datetime} onChange={(p) => setDatetime({ ...datetime, ...p })} />
+            <div>
+              <CapacityField value={basics} onChange={(p) => setBasics({ ...basics, ...p })} />
+              <p className="font-body-md text-[12px] text-on-surface-variant mt-xs">
+                Leave blank for unlimited — registration then closes only on the close date.
+              </p>
+            </div>
+          </div>
+        </div>
+      </FormSection>
+
+      {/* 4 · Agenda (optional) */}
+      <FormSection ref={agendaRef} number="4" title="Agenda" optional>
+        <AgendaSection
+          date={datetime.date}
+          eventStartMinutes={datetime.startMinutes}
+          eventEndMinutes={datetime.endMinutes}
+          blocks={blocks}
+          onChange={setBlocks}
+        />
+      </FormSection>
+
+      {/* 5 · Registration period (v4 — moved to the bottom): explicit
+          open → close range + the auto day-counter chip. */}
+      <FormSection ref={regRef} number="5" title="Registration period" optional>
+        <div className="space-y-md">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-lg">
+            <div>
+              <span className="block font-label-md text-label-md uppercase tracking-wider text-on-surface mb-xs">Opens</span>
+              <div className="flex gap-sm">
+                <DatePicker
+                  value={regOpen.date}
+                  onChange={(iso) => setRegOpen({ ...regOpen, date: iso })}
+                  placeholder="Open date"
+                  ariaLabel="Registration opens — date"
+                />
+                <TimePicker15
+                  value={regOpen.minutes}
+                  onChange={(m) => setRegOpen({ ...regOpen, minutes: m })}
+                  ariaLabel="Registration opens — time"
+                />
+              </div>
+            </div>
+            <div>
+              <span className="block font-label-md text-label-md uppercase tracking-wider text-on-surface mb-xs">Closes</span>
+              <div className="flex gap-sm">
+                <DatePicker
+                  value={regClose.date}
+                  onChange={(iso) => setRegClose({ ...regClose, date: iso })}
+                  placeholder="Close date"
+                  ariaLabel="Registration closes — date"
+                />
+                <TimePicker15
+                  value={regClose.minutes}
+                  onChange={(m) => setRegClose({ ...regClose, minutes: m })}
+                  ariaLabel="Registration closes — time"
+                />
+              </div>
+            </div>
+          </div>
+          {(() => {
+            const openIso = regOpen.date && regOpen.minutes != null
+              ? new Date(`${regOpen.date}T${formatMinutes24h(regOpen.minutes)}:00`).toISOString() : null;
+            const closeIso = regClose.date && regClose.minutes != null
+              ? new Date(`${regClose.date}T${formatMinutes24h(regClose.minutes)}:00`).toISOString() : null;
+            const w = registrationWindow(openIso, closeIso);
+            if (!w) return (
+              <p className="font-body-md text-[12px] text-on-surface-variant">
+                Leave blank to open at publish and close when check-in starts (60 min before the event).
+              </p>
+            );
+            return (
+              <span className="inline-flex items-center gap-xs px-md py-xs rounded-full bg-surface-container-high font-label-md text-label-md text-on-surface normal-case tracking-normal">
+                Registration window · {w.calendarDays} calendar day{w.calendarDays === 1 ? '' : 's'} · {w.workingDays} working day{w.workingDays === 1 ? '' : 's'}
+              </span>
+            );
+          })()}
         </div>
       </FormSection>
 

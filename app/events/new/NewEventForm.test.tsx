@@ -331,7 +331,7 @@ describe('NewEventForm — create mode (regression: existing behavior preserved)
  * ==================================================================== */
 
 describe('NewEventForm — D.3b linear layout', () => {
-  it('renders the six sections in mockup order with numbered headings', () => {
+  it('renders the five v4 sections in order with numbered headings', () => {
     render(
       <NewEventForm
         mode="edit"
@@ -342,16 +342,15 @@ describe('NewEventForm — D.3b linear layout', () => {
       />,
     );
     const headings = screen.getAllByRole('heading', { level: 2 }).map(h => h.textContent ?? '');
-    // Six section H2s after Wave 3: 1 Basics · 2 Date & venue · 3 Capacity
-    // · 4 Agenda · 5 Hosts & organizers · 6 Hero image.
+    // Editor v4 (locked 2026-06-20): 1 Hero image · 2 Basics · 3 Date & venue
+    // · 4 Agenda · 5 Registration period.
     const numbered = headings.filter(t => /^\s*\d\s*·/.test(t));
-    expect(numbered).toHaveLength(6);
+    expect(numbered).toHaveLength(5);
     expect(numbered[0]).toMatch(/1\s*·\s*Hero\s*image/);
     expect(numbered[1]).toMatch(/2\s*·\s*Basics/);
     expect(numbered[2]).toMatch(/3\s*·\s*Date\s*&\s*venue/);
-    expect(numbered[3]).toMatch(/4\s*·\s*Capacity/);
-    expect(numbered[4]).toMatch(/5\s*·\s*Agenda/);
-    expect(numbered[5]).toMatch(/6\s*·\s*Hosts\s*&\s*organizers/);
+    expect(numbered[3]).toMatch(/4\s*·\s*Agenda/);
+    expect(numbered[4]).toMatch(/5\s*·\s*Registration\s*period/);
   });
 
   it('marks the Agenda section as optional in the heading', () => {
@@ -369,7 +368,7 @@ describe('NewEventForm — D.3b linear layout', () => {
     expect(agendaHeading?.textContent ?? '').toMatch(/optional/i);
   });
 
-  it('shows Max attendees outside the Basics section (now in section 3 · Capacity)', () => {
+  it('shows Max attendees inside the Date & venue section (v4 right column)', () => {
     render(
       <NewEventForm
         mode="edit"
@@ -379,13 +378,12 @@ describe('NewEventForm — D.3b linear layout', () => {
         submit={vi.fn(async () => ({ ok: true as const }))}
       />,
     );
-    // Find the Capacity section by its heading, then assert the max-attendees
-    // input lives inside it (not inside the Basics section). The Capacity
-    // input has the prefilled "80" value from the fixture's max_attendees.
-    const capacityHeading = screen.getAllByRole('heading', { level: 2 })
-      .find(h => /capacity/i.test(h.textContent ?? ''));
-    expect(capacityHeading).toBeDefined();
-    const section = capacityHeading!.closest('section');
+    // v4: capacity moved into Date & venue's right column. Find that section
+    // by heading and assert the prefilled "80" input lives inside it.
+    const dvHeading = screen.getAllByRole('heading', { level: 2 })
+      .find(h => /date\s*&\s*venue/i.test(h.textContent ?? ''));
+    expect(dvHeading).toBeDefined();
+    const section = dvHeading!.closest('section');
     expect(section).not.toBeNull();
     const capacityInput = within(section!).getByDisplayValue('80');
     expect(capacityInput).toBeInTheDocument();
@@ -412,7 +410,8 @@ describe('NewEventForm — D.3b linear layout', () => {
     // hint copy includes the resolved zone string verbatim.
     const hint = screen.getByTestId('venue-tz-hint');
     expect(hint.textContent ?? '').toMatch(/Los_Angeles/);
-    expect(hint.textContent ?? '').toMatch(/picked up from your venue/i);
+    // v4 copy: "Timezone follows the venue — {tz}."
+    expect(hint.textContent ?? '').toMatch(/timezone follows the venue/i);
   });
 
   it('does NOT render the timezone hint before a venue is picked (create mode)', () => {

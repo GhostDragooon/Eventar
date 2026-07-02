@@ -34,7 +34,7 @@ export default async function StaffEventEditPage({
   const supabase = await supabaseServer();
   const { data: event } = await supabase
     .from('events')
-    .select('id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, latitude, longitude, description, status, max_attendees, created_by, hosted_by, organized_by, hero_image_url')
+    .select('id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, latitude, longitude, description, status, max_attendees, created_by, hosted_by, organized_by, hero_image_url, registration_open_at, registration_close_at, category')
     .eq('id', id)
     .maybeSingle();
   if (!event) notFound();
@@ -402,6 +402,19 @@ function DraftEditFormPanel({
     })(),
     hero_image_url: (() => {
       const v = (event as unknown as { hero_image_url?: unknown }).hero_image_url;
+      return typeof v === 'string' ? v : null;
+    })(),
+    // Editor v4 — registration window + category (same cast rationale).
+    registration_open_at: (() => {
+      const v = (event as unknown as { registration_open_at?: unknown }).registration_open_at;
+      return typeof v === 'string' ? v : null;
+    })(),
+    registration_close_at: (() => {
+      const v = (event as unknown as { registration_close_at?: unknown }).registration_close_at;
+      return typeof v === 'string' ? v : null;
+    })(),
+    category: (() => {
+      const v = (event as unknown as { category?: unknown }).category;
       return typeof v === 'string' ? v : null;
     })(),
   };
