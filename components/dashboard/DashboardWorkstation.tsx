@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
+import { softDeleteEvents, restoreEvents, cancelEvents } from '@/app/dashboard/actions';
 
 export type WorkstationEvent = {
   id: string;
@@ -17,7 +18,9 @@ export type WorkstationEvent = {
   registered: number;
   attended: number;
   delta7: number;
-  closesInDays: number | null; // days until registration_close_at, null if none/past
+  closesInDays: number | null;
+  category: string | null;
+  deleted: boolean;
 };
 
 export type DashboardMetrics = {
@@ -27,8 +30,8 @@ export type DashboardMetrics = {
   closingSoon: number;
 };
 
-// Instructional color: green=live/go, blue=action, amber=hold, red=stopped,
-// neutral=context. One pill treatment per lifecycle, used everywhere.
+// Instructional color (locked): green=live/go, blue=action, amber=draft/hold,
+// red=stopped, neutral=context. One pill treatment per lifecycle.
 const PILL: Record<Lifecycle, { label: string; cls: string; dot: string }> = {
   live:        { label: 'Live',        cls: 'bg-success-container text-on-success-container', dot: 'bg-[color:var(--success)]' },
   registering: { label: 'Registering', cls: 'bg-success-container text-on-success-container', dot: 'bg-[color:var(--success)]' },
@@ -38,7 +41,15 @@ const PILL: Record<Lifecycle, { label: string; cls: string; dot: string }> = {
   cancelled:   { label: 'Cancelled',   cls: 'bg-error-container text-[color:var(--error)]', dot: 'bg-[color:var(--error)]' },
 };
 
-const FILTERS: { key: Lifecycle | 'all'; label: string }[] = [
+const CATEGORY_LABEL: Record<string, string> = {
+  life_sciences: 'Life sciences',
+  engineering: 'Engineering',
+  finance: 'Finance',
+  technology: 'Technology',
+};
+
+type FilterKey = Lifecycle | 'all' | 'deleted';
+const FILTERS: { key: FilterKey; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'drafted', label: 'Draft' },
   { key: 'registering', label: 'Registering' },
@@ -46,6 +57,7 @@ const FILTERS: { key: Lifecycle | 'all'; label: string }[] = [
   { key: 'live', label: 'Live' },
   { key: 'completed', label: 'Completed' },
   { key: 'cancelled', label: 'Cancelled' },
+  { key: 'deleted', label: 'Deleted' },
 ];
 
 type SortKey = 'soonest' | 'recent' | 'most';
@@ -67,24 +79,35 @@ export function DashboardWorkstation({
 }: {
   events: WorkstationEvent[];
   greetingName: string;
-  greeting: string; // "morning" | "afternoon" | "evening" — computed server-side to avoid a hydration mismatch
+  greeting: string;
   metrics: DashboardMetrics;
 }) {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortKey>('soonest');
-  const [filter, setFilter] = useState<Lifecycle | 'all'>('all');
+  const [filter, setFilter] = useState<FilterKey>('all');
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [pending, startTransition] = useTransition();
 
   const counts = useMemo(() => {
-    const c: Record<string, number> = { all: events.length };
-    for (const f of FILTERS) if (f.key !== 'all') c[f.key] = 0;
-    for (const e of events) c[e.lifecycle] = (c[e.lifecycle] ?? 0) + 1;
+    const c: Record<string, number> = { all: 0, deleted: 0 };
+    for (const f of FILTERS) if (f.key !== 'all' && f.key !== 'deleted') c[f.key] = 0;
+    for (const e of events) {
+      if (e.deleted) { c.deleted += 1; continue; }
+      c.all += 1;
+      c[e.lifecycle] = (c[e.lifecycle] ?? 0) + 1;
+    }
     return c;
   }, [events]);
 
+  const inBin = filter === 'deleted';
+
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let list = events.filter((e) => (filter === 'all' ? true : e.lifecycle === filter));
+    let list = events.filter((e) =>
+      filter === 'all' ? !e.deleted
+      : filter === 'deleted' ? e.deleted
+      : !e.deleted && e.lifecycle === filter,
+    );
     if (q) list = list.filter((e) => e.title.toLowerCase().includes(q) || (e.venueName ?? '').toLowerCase().includes(q));
     const sorted = [...list];
     if (sort === 'soonest') sorted.sort((a, b) => a.startMs - b.startMs);
@@ -93,11 +116,11 @@ export function DashboardWorkstation({
     return sorted;
   }, [events, query, filter, sort]);
 
-  const liveToday = events.filter((e) => e.lifecycle === 'live').length;
-  const registeringN = events.filter((e) => e.lifecycle === 'registering').length;
+  const live = counts.live ?? 0;
+  const registeringN = counts.registering ?? 0;
   const draftN = counts.drafted ?? 0;
   const summary = [
-    liveToday ? `${liveToday} live today` : null,
+    live ? `${live} live today` : null,
     registeringN ? `${registeringN} registering` : null,
     draftN ? `${draftN} draft${draftN > 1 ? 's' : ''}` : null,
   ].filter(Boolean).join(' · ') || 'No open events';
@@ -110,11 +133,32 @@ export function DashboardWorkstation({
     });
   }
 
+  function runBulk(kind: 'archive' | 'cancel' | 'restore') {
+    const ids = [...selected];
+    if (ids.length === 0) return;
+    const verb = kind === 'archive' ? 'Delete' : kind === 'cancel' ? 'Cancel' : 'Restore';
+    if (kind !== 'restore' && !window.confirm(`${verb} ${ids.length} event${ids.length > 1 ? 's' : ''}? ${kind === 'archive' ? 'They move to the Deleted bucket and can be restored.' : 'This marks them cancelled.'}`)) return;
+    startTransition(async () => {
+      if (kind === 'archive') await softDeleteEvents(ids);
+      else if (kind === 'cancel') await cancelEvents(ids);
+      else await restoreEvents(ids);
+      setSelected(new Set());
+    });
+  }
+
+  function deleteOne(e: WorkstationEvent) {
+    if (!window.confirm(`Delete "${e.title}"? It moves to the Deleted bucket and can be restored.`)) return;
+    startTransition(async () => {
+      await softDeleteEvents([e.id]);
+      setSelected((s) => { const n = new Set(s); n.delete(e.id); return n; });
+    });
+  }
+
   function exportCsv() {
     const rows = events.filter((e) => selected.has(e.id));
-    const header = ['Title', 'Status', 'Date', 'Venue', 'Registered', 'Capacity', 'Attended'];
+    const header = ['Title', 'Status', 'Category', 'Date', 'Venue', 'Registered', 'Capacity', 'Attended'];
     const body = rows.map((e) =>
-      [e.title, PILL[e.lifecycle].label, e.dateLabel, e.venueName ?? '', String(e.registered), e.maxAttendees == null ? '' : String(e.maxAttendees), String(e.attended)]
+      [e.title, PILL[e.lifecycle].label, e.category ? CATEGORY_LABEL[e.category] ?? '' : '', e.dateLabel, e.venueName ?? '', String(e.registered), e.maxAttendees == null ? '' : String(e.maxAttendees), String(e.attended)]
         .map(csvEscape).join(','),
     );
     const blob = new Blob([[header.join(','), ...body].join('\n')], { type: 'text/csv' });
@@ -128,7 +172,6 @@ export function DashboardWorkstation({
 
   return (
     <>
-      {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-md mb-lg">
         <div>
           <p className="text-label-md font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-xs">Dashboard</p>
@@ -146,7 +189,6 @@ export function DashboardWorkstation({
         </Link>
       </header>
 
-      {/* Metric strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-sm mb-lg">
         <Metric label="People registered (open events)" value={metrics.openRegistered} tone="accent" />
         <Metric label="Registered in last 7 days" value={metrics.registered7d} prefix="+" tone="success" />
@@ -154,45 +196,32 @@ export function DashboardWorkstation({
         <Metric label="Registration closing in 7 days" value={metrics.closingSoon} tone="plain" />
       </div>
 
-      {/* Search + sort */}
       <div className="flex flex-col sm:flex-row gap-sm mb-md">
         <div className="relative flex-1">
           <span className="material-symbols-outlined text-[18px] absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none" aria-hidden>search</span>
           <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search events"
-            aria-label="Search events"
+            type="text" value={query} onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search events" aria-label="Search events"
             className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg py-sm pl-[42px] pr-md font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-[color:var(--on-primary-container)] transition-colors"
           />
         </div>
         <label className="inline-flex items-center gap-sm bg-surface-container-lowest border border-outline-variant rounded-lg px-md py-sm shrink-0">
           <span className="material-symbols-outlined text-[18px] text-on-surface-variant" aria-hidden>swap_vert</span>
           <span className="font-label-md text-label-md text-on-surface-variant uppercase">Sort</span>
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-            aria-label="Sort events"
-            className="bg-transparent font-label-md text-label-md text-on-surface focus:outline-none cursor-pointer"
-          >
+          <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} aria-label="Sort events" className="bg-transparent font-label-md text-label-md text-on-surface focus:outline-none cursor-pointer">
             {SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
           </select>
         </label>
       </div>
 
-      {/* Filter tabs */}
       <div className="flex items-center gap-lg overflow-x-auto border-b border-outline-variant mb-lg -mx-grid-margin px-grid-margin">
         {FILTERS.map((f) => {
           const active = filter === f.key;
           const n = counts[f.key] ?? 0;
+          if (f.key === 'deleted' && n === 0) return null;
           return (
-            <button
-              key={f.key}
-              type="button"
-              onClick={() => setFilter(f.key)}
-              className={`relative shrink-0 pb-md pt-xs font-label-md text-label-md transition-colors ${active ? 'text-on-surface' : 'text-on-surface-variant hover:text-on-surface'}`}
-            >
+            <button key={f.key} type="button" onClick={() => { setFilter(f.key); setSelected(new Set()); }}
+              className={`relative shrink-0 pb-md pt-xs font-label-md text-label-md transition-colors ${active ? 'text-on-surface' : 'text-on-surface-variant hover:text-on-surface'}`}>
               {f.label}
               <span className={`ml-xs inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[11px] font-semibold ${active ? 'bg-[color:var(--on-primary-container)] text-white' : 'bg-surface-container-high text-on-surface-variant'}`}>{n}</span>
               {active && <span className="absolute left-0 right-0 -bottom-px h-[2px] bg-[color:var(--on-primary-container)] rounded-full" aria-hidden />}
@@ -201,24 +230,36 @@ export function DashboardWorkstation({
         })}
       </div>
 
-      {/* Bulk action bar */}
       {selected.size > 0 && (
-        <div className="flex items-center justify-between gap-md bg-primary-container/60 border border-[color:var(--primary-fixed-dim)] rounded-lg px-md py-sm mb-md">
+        <div className="flex items-center justify-between gap-md bg-primary-container/60 border border-[color:var(--primary-fixed-dim)] rounded-lg px-md py-sm mb-md flex-wrap">
           <span className="font-label-md text-label-md text-on-surface font-semibold">{selected.size} selected</span>
-          <div className="flex items-center gap-xs">
-            <button type="button" onClick={exportCsv} className="inline-flex items-center gap-xs px-md py-sm rounded-lg bg-surface-container-lowest border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
+          <div className="flex items-center gap-xs flex-wrap">
+            <button type="button" onClick={exportCsv} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-lg bg-surface-container-lowest border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50">
               <span className="material-symbols-outlined text-[16px]" aria-hidden>download</span>Export CSV
             </button>
-            <button type="button" onClick={() => setSelected(new Set())} className="px-md py-sm rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors">Clear</button>
+            {inBin ? (
+              <button type="button" onClick={() => runBulk('restore')} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-lg bg-surface-container-lowest border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50">
+                <span className="material-symbols-outlined text-[16px]" aria-hidden>restore_from_trash</span>Restore
+              </button>
+            ) : (
+              <>
+                <button type="button" onClick={() => runBulk('archive')} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-lg bg-surface-container-lowest border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50">
+                  <span className="material-symbols-outlined text-[16px]" aria-hidden>archive</span>Archive
+                </button>
+                <button type="button" onClick={() => runBulk('cancel')} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-lg border border-[color:var(--error)] font-label-md text-label-md text-[color:var(--error)] hover:bg-error-container transition-colors disabled:opacity-50">
+                  <span className="material-symbols-outlined text-[16px]" aria-hidden>block</span>Cancel
+                </button>
+              </>
+            )}
+            <button type="button" onClick={() => setSelected(new Set())} disabled={pending} className="px-md py-sm rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors disabled:opacity-50">Clear</button>
           </div>
         </div>
       )}
 
-      {/* Event cards */}
       {visible.length === 0 ? (
         <div className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-xl text-center">
           <p className="font-body-md text-body-md text-on-surface-variant">
-            {events.length === 0 ? 'No events yet.' : 'No events match this filter.'}
+            {events.length === 0 ? 'No events yet.' : inBin ? 'The Deleted bucket is empty.' : 'No events match this filter.'}
           </p>
           {events.length === 0 && (
             <Link href="/events/new" className="inline-flex items-center gap-sm mt-md bg-tertiary text-on-tertiary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity">
@@ -228,7 +269,7 @@ export function DashboardWorkstation({
         </div>
       ) : (
         <ul className="flex flex-col gap-sm">
-          {visible.map((e) => <EventCard key={e.id} e={e} selected={selected.has(e.id)} onToggle={() => toggle(e.id)} />)}
+          {visible.map((e) => <EventCard key={e.id} e={e} selected={selected.has(e.id)} onToggle={() => toggle(e.id)} onDelete={() => deleteOne(e)} inBin={inBin} onRestore={() => startTransition(async () => { await restoreEvents([e.id]); })} pending={pending} />)}
         </ul>
       )}
     </>
@@ -238,18 +279,21 @@ export function DashboardWorkstation({
 function Metric({ label, value, prefix, tone }: { label: string; value: number; prefix?: string; tone: 'accent' | 'success' | 'plain' }) {
   const color = tone === 'accent' ? 'text-[color:var(--on-primary-container)]' : tone === 'success' ? 'text-[color:var(--success)]' : 'text-on-surface';
   return (
-    <div className="bg-surface-container-lowest border border-outline-variant rounded-[14px] p-md">
+    <div className="bg-[color:var(--surface-container-high)] rounded-[14px] p-md">
       <p className="font-label-md text-label-md text-on-surface-variant leading-snug mb-sm normal-case tracking-normal">{label}</p>
       <p className={`text-[30px] leading-none font-extrabold tracking-[-0.02em] tabular-nums ${color}`}>{prefix}{value}</p>
     </div>
   );
 }
 
-function EventCard({ e, selected, onToggle }: { e: WorkstationEvent; selected: boolean; onToggle: () => void }) {
+function EventCard({ e, selected, onToggle, onDelete, onRestore, inBin, pending }: {
+  e: WorkstationEvent; selected: boolean; onToggle: () => void; onDelete: () => void; onRestore: () => void; inBin: boolean; pending: boolean;
+}) {
   const pill = PILL[e.lifecycle];
   const cap = e.maxAttendees;
   const pct = cap && cap > 0 ? Math.min(100, Math.round((e.registered / cap) * 100)) : null;
   const showAttended = e.lifecycle === 'live' || e.lifecycle === 'completed';
+  const isCompleted = e.lifecycle === 'completed';
   const stripe =
     e.lifecycle === 'live' || e.lifecycle === 'registering' ? 'bg-[color:var(--success)]'
     : e.lifecycle === 'drafted' ? 'bg-[color:var(--warning)]'
@@ -258,24 +302,19 @@ function EventCard({ e, selected, onToggle }: { e: WorkstationEvent; selected: b
     : 'bg-outline-variant';
 
   return (
-    <li className="relative flex items-stretch gap-md bg-surface-container-lowest border border-outline-variant rounded-[16px] overflow-hidden">
-      <span className={`w-[4px] shrink-0 ${stripe}`} aria-hidden />
+    <li className={`relative flex items-stretch gap-md bg-surface-container-lowest border border-outline-variant rounded-[16px] overflow-hidden ${e.deleted ? 'opacity-70' : ''}`}>
+      <span className={`w-[4px] shrink-0 ${e.deleted ? 'bg-outline-variant' : stripe}`} aria-hidden />
       <div className="flex items-start gap-md flex-1 min-w-0 py-md pr-md">
-        <input
-          type="checkbox"
-          checked={selected}
-          onChange={onToggle}
-          aria-label={`Select ${e.title}`}
-          className="mt-1 w-[18px] h-[18px] shrink-0 accent-[color:var(--on-primary-container)] cursor-pointer"
-        />
+        <input type="checkbox" checked={selected} onChange={onToggle} aria-label={`Select ${e.title}`} className="mt-1 w-[18px] h-[18px] shrink-0 accent-[color:var(--on-primary-container)] cursor-pointer" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-sm flex-wrap mb-xs">
-            <Link href={`/events/${e.id}/details`} className="font-title-lg text-title-lg font-semibold text-on-surface hover:text-[color:var(--on-primary-container)] transition-colors truncate">
-              {e.title}
-            </Link>
+            <Link href={`/events/${e.id}/details`} className="font-title-lg text-title-lg font-semibold text-on-surface hover:text-[color:var(--on-primary-container)] transition-colors truncate">{e.title}</Link>
             <span className={`inline-flex items-center gap-xs px-sm py-[3px] rounded-full text-[11px] font-semibold uppercase tracking-wide ${pill.cls}`}>
               <span className={`w-[6px] h-[6px] rounded-full ${pill.dot}`} aria-hidden />{pill.label}
             </span>
+            {e.category && CATEGORY_LABEL[e.category] && (
+              <span className="inline-flex items-center px-sm py-[3px] rounded-full text-[11px] font-medium bg-surface-container-high text-on-surface-variant">{CATEGORY_LABEL[e.category]}</span>
+            )}
           </div>
           {e.description && <p className="font-body-md text-body-md text-on-surface-variant line-clamp-1 mb-sm">{e.description}</p>}
           <div className="flex items-center gap-md flex-wrap font-label-md text-label-md text-on-surface-variant normal-case tracking-normal">
@@ -286,7 +325,6 @@ function EventCard({ e, selected, onToggle }: { e: WorkstationEvent; selected: b
         </div>
       </div>
 
-      {/* Right rail: registered hero + progress + action */}
       <div className="flex items-center gap-md py-md pr-md pl-0 shrink-0">
         <div className="text-right min-w-[140px]">
           <p className="leading-none">
@@ -308,12 +346,20 @@ function EventCard({ e, selected, onToggle }: { e: WorkstationEvent; selected: b
           ) : null}
         </div>
         <div className="flex flex-col gap-xs">
-          <Link href={`/events/${e.id}/edit`} className="inline-flex items-center gap-xs px-md py-sm rounded-lg border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-            <span className="material-symbols-outlined text-[16px]" aria-hidden>edit</span>Edit
-          </Link>
-          <Link href={`/events/${e.id}/details`} className="inline-flex items-center gap-xs px-md py-sm rounded-lg border border-outline-variant font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high transition-colors">
-            <span className="material-symbols-outlined text-[16px]" aria-hidden>arrow_forward</span>Manage
-          </Link>
+          {inBin ? (
+            <button type="button" onClick={onRestore} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-lg border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50">
+              <span className="material-symbols-outlined text-[16px]" aria-hidden>restore_from_trash</span>Restore
+            </button>
+          ) : (
+            <>
+              <Link href={isCompleted ? `/events/${e.id}/analytics` : `/events/${e.id}/edit`} className="inline-flex items-center gap-xs px-md py-sm rounded-lg border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
+                <span className="material-symbols-outlined text-[16px]" aria-hidden>{isCompleted ? 'insights' : 'edit'}</span>{isCompleted ? 'Analytics' : 'Edit'}
+              </Link>
+              <button type="button" onClick={onDelete} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-lg border border-[color:var(--error)] font-label-md text-label-md text-[color:var(--error)] hover:bg-error-container transition-colors disabled:opacity-50">
+                <span className="material-symbols-outlined text-[16px]" aria-hidden>delete</span>Delete
+              </button>
+            </>
+          )}
         </div>
       </div>
     </li>

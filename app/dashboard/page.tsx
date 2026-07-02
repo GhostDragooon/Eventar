@@ -7,8 +7,12 @@ import {
   type WorkstationEvent,
   type DashboardMetrics,
 } from '@/components/dashboard/DashboardWorkstation';
-import { computeLifecycle, type EventLifecycleRow, type Lifecycle } from '@/lib/lifecycle/eventLifecycle';
+import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 import { firstName } from '@/lib/name';
+
+// Session-scoped staff page — never static-prerender (review mode skips the
+// cookie read that would otherwise force dynamic).
+export const dynamic = 'force-dynamic';
 
 const DAY_MS = 86_400_000;
 
@@ -31,9 +35,9 @@ export default async function DashboardPage() {
   const supabase = await supabaseServer();
   const { data: events } = await supabase
     .from('events')
-    .select('id, title, description, start_time, end_time, timezone, status, venue_name, max_attendees, registration_close_at, created_by')
+    .select('id, title, description, start_time, end_time, timezone, status, venue_name, max_attendees, registration_close_at, registration_open_at, created_by, category, deleted_at')
     .order('start_time', { ascending: false })
-    .limit(200);
+    .limit(300);
 
   const eventIds = (events ?? []).map((e) => e.id);
   const regsRes = eventIds.length > 0
@@ -79,15 +83,19 @@ export default async function DashboardPage() {
       attended: c.attended,
       delta7: c.delta7,
       closesInDays,
+      category: e.category,
+      deleted: e.deleted_at != null,
     };
   });
 
-  const isOpen = (l: Lifecycle) => l === 'registering' || l === 'upcoming' || l === 'live';
+  // Metrics + this-week counts ignore soft-deleted events.
+  const isOpen = (d: WorkstationEvent) =>
+    !d.deleted && (d.lifecycle === 'registering' || d.lifecycle === 'upcoming' || d.lifecycle === 'live');
   const metrics: DashboardMetrics = {
-    openRegistered: decorated.filter((d) => isOpen(d.lifecycle)).reduce((s, d) => s + d.registered, 0),
+    openRegistered: decorated.filter(isOpen).reduce((s, d) => s + d.registered, 0),
     registered7d,
-    eventsThisWeek: decorated.filter((d) => d.startMs >= nowMs && d.startMs <= nowMs + 7 * DAY_MS).length,
-    closingSoon: decorated.filter((d) => isOpen(d.lifecycle) && d.closesInDays != null && d.closesInDays <= 7).length,
+    eventsThisWeek: decorated.filter((d) => !d.deleted && d.startMs >= nowMs && d.startMs <= nowMs + 7 * DAY_MS).length,
+    closingSoon: decorated.filter((d) => isOpen(d) && d.closesInDays != null && d.closesInDays <= 7).length,
   };
 
   const greetingName = firstName(staff.full_name) || staff.email.split('@')[0] || '';
