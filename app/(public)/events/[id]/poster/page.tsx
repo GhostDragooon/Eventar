@@ -53,7 +53,7 @@ export default async function EventPosterPage({
   const { data: event } = await supabase
     .from('events')
     .select(
-      'id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status, max_attendees, registration_close_at',
+      'id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status, max_attendees, registration_close_at, registration_open_at',
     )
     .eq('id', id)
     .maybeSingle();

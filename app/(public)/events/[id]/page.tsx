@@ -22,7 +22,7 @@ export default async function PublicEventPage({
   const { data: event } = await supabase
     .from('events')
     .select(
-      'id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status, max_attendees, registration_close_at, hosted_by, organized_by, hero_image_url, created_by',
+      'id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status, max_attendees, registration_close_at, registration_open_at, hosted_by, organized_by, hero_image_url, created_by',
     )
     .eq('id', id)
     .maybeSingle();

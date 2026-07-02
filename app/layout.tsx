@@ -70,7 +70,9 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col font-body-md" suppressHydrationWarning>
         {children}
-        {process.env.NEXT_PUBLIC_EVENTAR_REVIEW_MODE === 'true' && <ReviewOverlay />}
+        {/* ReviewOverlay (DB-N element labels + grid) disabled — it clutters
+            the real UI. Part of the review-mode dev debt; strip before push. */}
+        {false && <ReviewOverlay />}
       </body>
     </html>
   );
