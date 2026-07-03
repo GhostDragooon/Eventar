@@ -48,10 +48,19 @@
 
 ## What this repo is
 
-**Eventar** — internal workshop manager. **Next.js 16** (App Router) + Tailwind v4 + Supabase + Resend.
+> ⚠️ **PIVOT — 2026-07-03.** Eventar pivoted from internal workshop manager to a **CPD/CME/CE event + credit platform** for regulated professions (HK launch, HKCP first accrediting body). Canonical record + frozen design baseline: vault `20 — Roadmap/Pivot — CPD Platform (2026-07-03).md` + Decisions Log **Q20**. Active plan: vault `20 — Roadmap/CPD Roadmap — Backend First.md` — **backend first, frontend FROZEN** (no new surfaces, no restyles) until the Milestone-M2 review. Current phase: `docs/plans/PROJECT_STATE.md`. Pre-pivot vault notes are historical unless they say otherwise.
+
+**Eventar** — CPD platform (post-pivot). **Next.js 16** (App Router) + Tailwind v4 + Supabase + Resend.
 *Note: vault notes were written assuming Next 15; if you find a discrepancy between vault and Next 16 reality, the Next 16 docs win.*
 
-The PRD calls for: registration → confirmation email → 60-min-before reminder with personal QR → on-site check-in → 10-min-after survey. Up to 200 attendees/event. No attendee accounts.
+The shipped workshop loop (registration → confirmation email → 60-min-before reminder with personal QR → on-site check-in → 10-min-after survey) carries forward as the CPD platform's event/attendance backbone.
+
+**Pivot-era hard rules** (extend the "Hard rules" list below; details in the pivot record):
+
+- **Audit insert last.** Any transaction writing `audit_events` emits the audit event as the LAST statement before commit (the chain trigger holds `pg_advisory_xact_lock` until commit).
+- **Measurement vs inference.** Automation acts only on deterministic measurements (rate limits, Turnstile, OTP failure counts). Inference signals (behavioural classification) produce flags for humans — never automatic action. No IP-level enforcement on authenticated routes, ever.
+- **Multi-tenancy.** Every new domain table carries `organisation_id` + RLS (Q20 reversed old decision 6.3 single-org).
+- **Frontend freeze.** While it holds: backend, migrations, Server Actions, and tests only.
 
 ## Source of truth — read the Obsidian vault first
 
@@ -82,14 +91,16 @@ Bite-sized TDD plans (with full code and commands) live in `docs/plans/`:
 
 When executing a phase, follow its plan task-by-task. Use `superpowers:executing-plans` or `superpowers:subagent-driven-development`.
 
-## Phase-8 deploy gates (do NOT remove without resolving)
+## Pre-deploy gates — ALL CLOSED (kept for the record)
 
-Before Phase 8 (Vercel deploy → public internet) lands, these MUST be resolved:
+The four pre-public-deploy gates are resolved; retained so they aren't re-litigated:
 
-1. **`/checkin/confirm` PII enumeration oracle** — current GET endpoint reveals registrant name for any valid 4-char code, no rate limit. ~923K namespace per event = full registrant list extractable in ~2.6h. See vault note `10 — Architecture/Security + Robustness.md` §14a Risk 1 for mitigation options.
-2. **CSPRNG for registration codes** — `lib/registrationCode.ts` uses `Math.random()`; codes are bearer tokens. Swap to `crypto.randomInt()`. See same vault note §14a Risk 2.
-3. **Host-header spoofing on QR origin** — `lib/qr.ts::buildEventQrPng` derives origin from request headers; add `NEXT_PUBLIC_SITE_URL`. See `docs/plans/handoff_23052026.md` open item 3.
-4. **Supabase migration history drift** — 3 local-only vs 4 remote-only rows; CI `db push` will refuse deploy. See `docs/plans/handoff_23052026.md` open item 2.
+1. ✅ `/checkin/confirm` PII enumeration oracle — name dropped + rate-limited (`7c5bcbd`, `20ac68f`).
+2. ✅ CSPRNG registration codes — `crypto.randomInt()`, widened to 6 chars (`659eee0`).
+3. ✅ Host-header spoofing on QR origin — `NEXT_PUBLIC_SITE_URL` via `lib/origin.ts` (`561d2cb`).
+4. ✅ Migration history drift — reconciled 26/26 local↔remote (`8c8e7d9`, 2026-07-04).
+
+Deploy status post-pivot: old Phase 8 (workshop-MVP deploy) is **PAUSED** — needs an explicit user go decision; never deploy by momentum. The CPD deploy path is Milestone M4 of the backend-first roadmap. Live Supabase project is Seoul (`ap-northeast-2`); canonical prod will be a fresh **Singapore (`ap-southeast-1`)** project provisioned at Sprint 1 start.
 
 ---
 
