@@ -4,7 +4,6 @@ import Script from "next/script";
 import "./globals.css";
 import { THEME_STORAGE_KEY } from "@/lib/theme";
 import { TEXT_SIZE_STORAGE_KEY } from "@/lib/textSize";
-import { ReviewOverlay } from "@/components/dev/ReviewOverlay";
 import { ToastProvider } from "@/components/ui/toast";
 
 // FOUC prevention: runs synchronously before paint, applies the user's saved
@@ -78,9 +77,6 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col font-body-md" suppressHydrationWarning>
         <ToastProvider>{children}</ToastProvider>
-        {/* ReviewOverlay (DB-N element labels + grid) disabled — it clutters
-            the real UI. Part of the review-mode dev debt; strip before push. */}
-        {false && <ReviewOverlay />}
       </body>
     </html>
   );

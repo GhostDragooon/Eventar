@@ -82,19 +82,12 @@ function expectPkceOtpRequest() {
 }
 
 describe('sendMagicLink', () => {
+  // Regression context: the removed EVENTAR_REVIEW_MODE bypass once routed
+  // supabaseServer() to the service-role admin client (plain supabase-js =
+  // implicit flow, no cookie storage), so magic links landed on
+  // /login?error=missing_code. The login action must always use the anon
+  // SSR client for token-minting flows.
   it('sends a PKCE code_challenge and persists the verifier cookie', async () => {
-    vi.stubEnv('EVENTAR_REVIEW_MODE', '');
-    const res = await sendMagicLink(makeFormData('staff@example.com'));
-    expect(res).toEqual({ ok: true });
-    expectPkceOtpRequest();
-  });
-
-  // Regression: EVENTAR_REVIEW_MODE=true routed supabaseServer() to the
-  // service-role admin client (plain supabase-js = implicit flow, no cookie
-  // storage), so magic links landed on /login?error=missing_code. The login
-  // action must use the anon SSR client regardless of review mode.
-  it('still uses the PKCE anon client when EVENTAR_REVIEW_MODE=true', async () => {
-    vi.stubEnv('EVENTAR_REVIEW_MODE', 'true');
     const res = await sendMagicLink(makeFormData('staff@example.com'));
     expect(res).toEqual({ ok: true });
     expectPkceOtpRequest();
