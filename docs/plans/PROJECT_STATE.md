@@ -15,7 +15,9 @@ Eventar pivoted from internal workshop manager to a **CPD/CME/CE event + credit 
 
 **ACTIVE PHASE: CPD Sprint 0 — hygiene + docs landing.** Progress 2026-07-04:
 - ✅ Login PKCE fix committed (`65935c7`) · ✅ review-mode bypass stripped (`c43fd95`) · ✅ migration drift reconciled 26/26 local↔remote (`8c8e7d9` — 2 backfills from remote `schema_migrations.statements`, 5 renames to server-side timestamps, content md5-verified).
-- ⏳ Remaining: user pushes the commit backlog (manual per workflow) · land reconciled CPD build pack under `docs/` · rewrite CLAUDE.md deltas · provision Singapore project.
+- ✅ Build pack landed under `docs/source-buildpack/` + `docs/architecture/BASELINE-DELTAS.md`; CLAUDE.md rewritten (`b5bb5aa`, `669cd68`).
+- ✅ **Sprint 1 executable plan written** — `docs/plans/2026-07-04-cpd-sprint-1-foundations.md` (12 tasks, 6 migrations + env-gated real-DB test suite, zero-ambiguity: exact SQL/commands/expected-output/commit-messages). Vault snapshot: `20 — Roadmap/Sprint 1 — Foundations Executable Plan.md`. **Ready to execute; NOT started.**
+- ⏳ Remaining: user pushes the commit backlog (manual per workflow) · execute Sprint 1 · provision Singapore project (Task 11, after Sprint 1 proven on Seoul).
 - **Decisions 2026-07-04 (Ivan):** live Supabase project is in **ap-northeast-2 Seoul** → **migrate to a fresh ap-southeast-1 Singapore project** as canonical prod (Seoul becomes dev/staging); provision when Sprint 1 migrations are ready so the new project starts with a clean chain. Old Phase 8 (workshop-MVP Vercel deploy) is **PAUSED, not dead** — Ivan keeps the option of an interim workshop deploy; it still requires an explicit go decision and must not happen by momentum.
 
 Old Phase 9 (pg_cron emails) is **absorbed** into CPD Sprint 4. Everything below this banner is the pre-pivot record, kept for reference; the CARRIED-FORWARD engineering patterns (Q18, Q19, three-layer validation, rate-limiting, email_log rules) remain binding.
