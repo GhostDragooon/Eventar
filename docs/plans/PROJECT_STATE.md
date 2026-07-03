@@ -1,5 +1,5 @@
 # Project State — Eventar
-_Last updated: 2026-07-01 (MVP email gaps closed — Email #2 reminder/pass + Email #3 survey invite shipped in code; see `docs/plans/handoff_01072026.md`)_
+_Last updated: 2026-07-03 (**PIVOT** — CPD platform direction; see vault pivot record)_
 
 > Source of truth for "what's active vs forward-looking."
 > **Read this BEFORE writing any code.** Updated at the end of each phase.
@@ -7,7 +7,22 @@ _Last updated: 2026-07-01 (MVP email gaps closed — Email #2 reminder/pass + Em
 
 ---
 
-## ACTIVE PHASE — Phase 8 — Vercel deploy
+## ⚠️ PIVOTAL DIRECTION CHANGE — 2026-07-03
+
+Eventar pivoted from internal workshop manager to a **CPD/CME/CE event + credit platform** (HK launch, HKCP first accrediting body). Canonical record + frozen design baseline: vault note `20 — Roadmap/Pivot — CPD Platform (2026-07-03).md` + Decisions Log **Q20** (reverses Q6.3 single-org; supersedes Q5 magic-link-only staff auth).
+
+**Active plan:** vault `20 — Roadmap/CPD Roadmap — Backend First.md` — backend first, **frontend frozen** (no new surfaces, no restyles; existing 18 routes keep working against a default organisation).
+
+**ACTIVE PHASE: CPD Sprint 0 — hygiene + docs landing.** Progress 2026-07-04:
+- ✅ Login PKCE fix committed (`65935c7`) · ✅ review-mode bypass stripped (`c43fd95`) · ✅ migration drift reconciled 26/26 local↔remote (`8c8e7d9` — 2 backfills from remote `schema_migrations.statements`, 5 renames to server-side timestamps, content md5-verified).
+- ⏳ Remaining: user pushes the commit backlog (manual per workflow) · land reconciled CPD build pack under `docs/` · rewrite CLAUDE.md deltas · provision Singapore project.
+- **Decisions 2026-07-04 (Ivan):** live Supabase project is in **ap-northeast-2 Seoul** → **migrate to a fresh ap-southeast-1 Singapore project** as canonical prod (Seoul becomes dev/staging); provision when Sprint 1 migrations are ready so the new project starts with a clean chain. Old Phase 8 (workshop-MVP Vercel deploy) is **PAUSED, not dead** — Ivan keeps the option of an interim workshop deploy; it still requires an explicit go decision and must not happen by momentum.
+
+Old Phase 9 (pg_cron emails) is **absorbed** into CPD Sprint 4. Everything below this banner is the pre-pivot record, kept for reference; the CARRIED-FORWARD engineering patterns (Q18, Q19, three-layer validation, rate-limiting, email_log rules) remain binding.
+
+---
+
+## PRE-PIVOT ACTIVE PHASE (superseded) — Phase 8 — Vercel deploy
 
 **Goal.** Deploy Eventar to Vercel against the production Supabase project. First public URL; first real email infrastructure exercised end-to-end. Operational work primarily, not code.
 
