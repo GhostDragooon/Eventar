@@ -1,5 +1,5 @@
 'use server';
-import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAnonServer } from '@/lib/supabase/server';
 import { getRequestOrigin } from '@/lib/origin';
 
 export async function sendMagicLink(
@@ -13,7 +13,10 @@ export async function sendMagicLink(
   // NEXT_PUBLIC_SITE_URL in prod (Phase-8 gate 3); request headers in dev.
   const origin = await getRequestOrigin();
 
-  const supabase = await supabaseServer();
+  // supabaseAnonServer, NOT supabaseServer: the review-mode service-role
+  // client can't do PKCE (see lib/supabase/server.ts) and the emailed link
+  // would arrive without ?code=.
+  const supabase = await supabaseAnonServer();
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: { emailRedirectTo: `${origin}/auth/callback` },

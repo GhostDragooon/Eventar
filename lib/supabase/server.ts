@@ -14,6 +14,17 @@ export async function supabaseServer() {
     return supabaseAdmin();
   }
 
+  return supabaseAnonServer();
+}
+
+// Auth flows (sendMagicLink today; anything that mints or exchanges tokens)
+// must ALWAYS use this client, never supabaseServer(): the review-mode
+// service-role client above is a plain supabase-js client — implicit flow,
+// no cookie storage — so signInWithOtp through it sends no PKCE
+// code_challenge and persists no verifier cookie. The emailed link then
+// redirects with fragment tokens instead of ?code= and login dies at
+// /login?error=missing_code.
+export async function supabaseAnonServer() {
   const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
