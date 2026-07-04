@@ -20,6 +20,12 @@ export type TestUser = {
   client: SupabaseClient;
 };
 
+export function createAnonClient(): SupabaseClient {
+  return createClient(url, anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
 const PASSWORD = 'rls-test-Password-1234!';
 
 export async function createTestUser(localPart: string): Promise<TestUser> {
