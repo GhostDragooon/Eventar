@@ -15,9 +15,9 @@
 ## Branch & commit discipline (read first)
 
 - **Single `main` branch** (CLAUDE.md hard rule 6 + repo convention) — this plan does **not** use a worktree, contrary to the generic writing-plans default. Atomic commit per task, on `main`, unpushed (user pushes manually).
-- **Dispatched subagents cannot commit** (Bash gate denies `git commit` for subagents) — if executed via `superpowers:subagent-driven-development`, the controller commits each task's work after review.
+- **Dispatched subagents CAN commit in this session** (verified empirically across Tasks 0-2 — the older "Bash gate denies git commit for subagents" assumption did not hold here; corrected in memory `subagents-cannot-commit.md`). Subagents commit their own work per their task instructions; the controller still verifies the resulting commit (`git show <sha>`) as part of review.
 - **Node PATH:** the shell defaults to node v14. Prefix every `pnpm`/`node` command with `/Users/ivan/.nvm/versions/node/v24.6.0/bin` on PATH (e.g. `PATH="/Users/ivan/.nvm/versions/node/v24.6.0/bin:$PATH" pnpm exec tsc --noEmit`).
-- **Migrations:** new files under `supabase/migrations/`, timestamp-prefixed `20260704140000_*` upward (Sprint 1 used `1307xx`; Sprint 2 uses `1400xx+` to stay ordered). Apply to the live Seoul project via CLI `db push` (Sprint 1 confirmed drift reconciled 32/32) or Supabase MCP `apply_migration`. Backtest by querying rows back (Supabase MCP `execute_sql` / dashboard).
+- **Migrations:** new files under `supabase/migrations/`, timestamp-prefixed `20260704140000_*` upward as a PLACEHOLDER naming convention only. **The Supabase MCP `apply_migration` tool has no version parameter — it assigns the version from server time at the moment it's called, ignoring your local filename.** Confirmed on Task 2: local file `20260704140000_require_active_staff.sql` was applied and recorded remotely as version `20260704162841` — a real, caught drift, fixed by `git mv`-ing to `20260704162841_require_active_staff.sql`. **Mandatory step for every remaining migration task:** immediately after `apply_migration`, call `list_migrations` and `git mv` the local file so its timestamp prefix exactly matches the remote-recorded version, in the same commit, before moving on. Backtest by querying rows back (Supabase MCP `execute_sql` / dashboard).
 - **Frontend freeze:** no files under `app/**/page.tsx`, `components/**`, or any restyle. New code = `lib/`, `supabase/migrations/`, Server Actions, `next.config.ts`, one `/api` report-sink route, and tests only.
 
 ---
@@ -205,9 +205,11 @@ Do not implement in Sprint 2. Tracked for Sprint 3 alongside the 5-role enum mig
 
 ### Task 2: shared DB gate `app_private.require_active_staff(variadic p_roles text[])`
 
+> **Correction confirmed during execution (2026-07-05):** empirically verified via a direct PostgREST call (`curl .../rest/v1/rpc/require_active_staff` → `404 PGRST202`, error text literally "Searched for the function **public**.require_active_staff") that PostgREST only ever searches the `public` schema for RPC — `app_private.*` functions are categorically unreachable via `.rpc()`, by design, regardless of auth or the function's existence. So Step 3 below (calling it directly from a test client) can never pass and is **not** implemented as written. The plan's own footnote pointed at the wrong task for the transitive fallback, too: **Task 6 does not call `require_active_staff`** (its functions gate on `auth.uid()` directly, self-actor pattern) — **Task 7's `transition_dsr` is the actual first real consumer** (`docs/plans/2026-07-04-cpd-sprint-2-implementation.md` line ~609). Task 2 ships the migration only; behavioral regression coverage (non-staff caller of `transition_dsr` → 42501, active staff → succeeds) is Task 7's job and IS the real test of this gate. Task 2 instead does a one-time manual SQL-level backtest (`set_config('request.jwt.claims', ...)` + direct call via `execute_sql`) to prove the gate logic before Task 7 depends on it — documented in the commit, not committed as an automated test file.
+
 **Files:**
 - Create: `supabase/migrations/20260704140000_require_active_staff.sql`
-- Test: `tests/rls/require_active_staff.rls.test.ts`
+- Test: none committed this task (see correction above — automated coverage lands in Task 7)
 
 **Step 1: Write the migration.**
 
