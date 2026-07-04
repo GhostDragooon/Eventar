@@ -539,7 +539,7 @@ $$;
 -- EXECUTE to PUBLIC, which authenticated/anon inherit regardless of any
 -- explicit per-role grant below. Revoke it explicitly on every new definer
 -- function this sprint, or a later "restrict this grant" migration is a no-op.
-revoke execute on function public.grant_consent(text, text) from public;
+revoke execute on function public.grant_consent(text, text) from public, anon;
 grant execute on function public.grant_consent(text, text) to authenticated, service_role;
 
 create function public.withdraw_consent(p_consent_id uuid)
@@ -562,7 +562,7 @@ begin
   );
 end;
 $$;
-revoke execute on function public.withdraw_consent(uuid) from public;
+revoke execute on function public.withdraw_consent(uuid) from public, anon;
 grant execute on function public.withdraw_consent(uuid) to authenticated, service_role;
 ```
 
@@ -636,7 +636,7 @@ begin
   );
 end;
 $$;
-revoke execute on function public.transition_dsr(uuid, text, text) from public;
+revoke execute on function public.transition_dsr(uuid, text, text) from public, anon;
 grant execute on function public.transition_dsr(uuid, text, text) to authenticated, service_role;
 ```
 
@@ -676,9 +676,19 @@ begin
   return v_id;
 end;
 $$;
-revoke execute on function public.record_session_revocation(uuid, text, text) from public;
+-- Project-wide default ACL (confirmed live via pg_default_acl on this
+-- Supabase project) auto-grants EXECUTE to anon/authenticated/service_role
+-- on every new public-schema function at CREATE time, regardless of these
+-- statements. This function has NO in-function actor check (unlike
+-- grant_consent/transition_dsr, which reject anon/authenticated via
+-- auth.uid()/require_active_staff either way) — it blindly trusts
+-- p_user_id/p_reason/p_scope. It is only ever called by lib/abuseTier.ts
+-- via the service-role admin client, so it must be service_role-ONLY:
+-- anon or authenticated access here would let any caller forge an
+-- arbitrary session-revocation audit record for any user.
+revoke execute on function public.record_session_revocation(uuid, text, text) from public, anon, authenticated;
 grant execute on function public.record_session_revocation(uuid, text, text)
-  to authenticated, service_role;
+  to service_role;
 ```
 > `actor_user_id = null`, `actor_role = 'system'` — this is the anonymous/system-actor path the design (§3) confirms is already supported by the nullable actor columns. No signature change to `write_audit_event`.
 
@@ -1151,6 +1161,7 @@ git commit -m "docs(cpd-s2): Sprint 2 close-out — handoff, deferred tracker, b
 - **Audit-insert-last:** every audited definer function emits `write_audit_event` as the LAST statement before return; all slow work (gate, lookups, rate-limit) precedes the mutation; the mutation is second-to-last; no side effects between audit-write and commit (P2).
 - **Actor server-side only:** never accept `actor_user_id`/`actor_role` from client input; read from `auth.uid()`/`auth_email()` inside the function or `requireStaff` in the wrapper.
 - **Definer functions:** `security definer` + `set search_path = public, pg_temp` on every one (Sprint-1 lesson).
+- **Default ACL grants anon+authenticated+service_role on every new function (confirmed live, Task 3):** this Supabase project has `ALTER DEFAULT PRIVILEGES ... GRANT EXECUTE ON FUNCTIONS TO anon, authenticated, service_role` set at the schema level (verified via `pg_default_acl`). Every new `public`-schema function gets these three roles' EXECUTE at `CREATE FUNCTION` time regardless of what the migration's own `grant`/`revoke` statements say — an explicit `revoke ... from public` alone is NOT sufficient to lock a function down; `anon` (and `authenticated`, where the function has no in-function actor check) must be revoked explicitly too, or restated as a hard requirement: **any new definer function without a real in-function actor/authorization check (`auth.uid()`, `require_active_staff`, etc.) must revoke from `public, anon, authenticated` and grant only to `service_role`** — the D1 bug (Task 3) and the `record_session_revocation` design correction both stem from this exact fact.
 - **Call convention:** staff-actor audited fns via `supabaseServer()` (JWT context resolves the gate); anonymous fns (`self_check_in`) via `supabaseAdmin()`; §4 revoke via `supabaseAdmin()`.
 - **Fail visibly (Rule 12):** every zero-row mutation, rate-limit breach, and gate denial returns/raises an explicit signal — never a silent success.
 - **Frozen frontend:** no `page.tsx`/component/restyle changes. Surgical, in-scope edits only.
