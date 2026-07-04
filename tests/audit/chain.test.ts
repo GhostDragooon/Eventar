@@ -1,7 +1,7 @@
 // Audit chain integrity under concurrency, against the live dev project.
 // Gated: only runs under `pnpm test:rls` (RLS_TESTS=1).
 import { describe, it, expect } from 'vitest';
-import { admin } from '../helpers/clients';
+import { admin, createTestUser, deleteTestUser } from '../helpers/clients';
 
 type ChainRow = {
   chain_seq: number;
@@ -75,4 +75,15 @@ describe.skipIf(!process.env.RLS_TESTS)('audit chain', () => {
       expect(raw![i].prev_hash).toBe(raw![i - 1].hash);
     }
   }, 120_000);
+
+  it('authenticated cannot call write_audit_event directly (D1)', async () => {
+    const u = await createTestUser('audit-forger');
+    const { error } = await u.client.rpc('write_audit_event', {
+      p_event_type: 'forged', p_actor_role: 'manager',
+    });
+    expect(error).toBeTruthy();
+    // PostgREST surfaces a function-permission denial (42501 / "permission denied for function")
+    expect(`${error?.code}${error?.message}`).toMatch(/42501|permission denied/i);
+    await deleteTestUser(u);
+  });
 });
