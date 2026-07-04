@@ -27,6 +27,7 @@ export async function requireStaff(client?: SupabaseClient): Promise<Staff> {
     .from('staff')
     .select('id, email, role, full_name')
     .eq('email', email)
+    .eq('status', 'active')          // reconciled: suspended/removed lose access immediately
     .maybeSingle();
 
   if (!staff) throw new NotAuthorizedError('email not in staff table');

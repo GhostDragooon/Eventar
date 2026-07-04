@@ -9,14 +9,18 @@ function mockClient({ user, staffRow }: {
   user: { email: string } | null;
   staffRow: { id: string; email: string; role: 'organizer' | 'manager'; full_name: string | null } | null;
 }) {
+  // Chainable query builder: .eq() can be called any number of times
+  // (requireStaff now chains .eq('email', ...).eq('status', 'active')),
+  // and .maybeSingle() resolves regardless of how many .eq() calls preceded it.
+  const chain: any = {
+    eq: () => chain,
+    maybeSingle: async () => ({ data: staffRow, error: null }),
+  };
+
   return {
     auth: { getUser: async () => ({ data: { user }, error: null }) },
     from: () => ({
-      select: () => ({
-        eq: () => ({
-          maybeSingle: async () => ({ data: staffRow, error: null }),
-        }),
-      }),
+      select: () => chain,
     }),
   } as any;
 }
@@ -38,6 +42,22 @@ describe('requireStaff', () => {
 
   it('throws NotAuthorizedError when user is logged in but not in staff', async () => {
     const c = mockClient({ user: { email: 'unknown@x.com' }, staffRow: null });
+    await expect(requireStaff(c)).rejects.toBeInstanceOf(NotAuthorizedError);
+  });
+
+  it('returns staff record when the active staff row matches (role type unchanged)', async () => {
+    const c = mockClient({
+      user: { email: 'active@x.com' },
+      staffRow: { id: 's-2', email: 'active@x.com', role: 'manager', full_name: 'Active Person' },
+    });
+    const staff = await requireStaff(c);
+    expect(staff).toEqual({ id: 's-2', email: 'active@x.com', role: 'manager', full_name: 'Active Person' });
+  });
+
+  it('throws NotAuthorizedError when staff row exists but is suspended/non-active', async () => {
+    // The status='active' filter is applied server-side (.eq('status','active')),
+    // so a suspended/removed row never comes back from the query — staffRow is null.
+    const c = mockClient({ user: { email: 'suspended@x.com' }, staffRow: null });
     await expect(requireStaff(c)).rejects.toBeInstanceOf(NotAuthorizedError);
   });
 });
