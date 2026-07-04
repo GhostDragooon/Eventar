@@ -535,6 +535,11 @@ begin
   return v_id;
 end;
 $$;
+-- D1 lesson (found live during Task 3): CREATE FUNCTION implicitly grants
+-- EXECUTE to PUBLIC, which authenticated/anon inherit regardless of any
+-- explicit per-role grant below. Revoke it explicitly on every new definer
+-- function this sprint, or a later "restrict this grant" migration is a no-op.
+revoke execute on function public.grant_consent(text, text) from public;
 grant execute on function public.grant_consent(text, text) to authenticated, service_role;
 
 create function public.withdraw_consent(p_consent_id uuid)
@@ -557,6 +562,7 @@ begin
   );
 end;
 $$;
+revoke execute on function public.withdraw_consent(uuid) from public;
 grant execute on function public.withdraw_consent(uuid) to authenticated, service_role;
 ```
 
@@ -630,6 +636,7 @@ begin
   );
 end;
 $$;
+revoke execute on function public.transition_dsr(uuid, text, text) from public;
 grant execute on function public.transition_dsr(uuid, text, text) to authenticated, service_role;
 ```
 
@@ -669,6 +676,7 @@ begin
   return v_id;
 end;
 $$;
+revoke execute on function public.record_session_revocation(uuid, text, text) from public;
 grant execute on function public.record_session_revocation(uuid, text, text)
   to authenticated, service_role;
 ```
@@ -942,6 +950,7 @@ begin
   event_id := v_event.id; event_title := v_event.title; return next;
 end;
 $$;
+revoke execute on function public.mark_attended(text, text) from public, anon;
 grant execute on function public.mark_attended(text, text) to authenticated, service_role;
 ```
 > **Call this via `supabaseServer()` (authenticated client), NOT admin** — the gate reads `auth_email()`/`auth.uid()` from the JWT. Map results to the existing action's return contract. Preserve the raw-ISO `alreadyAttendedAt` by returning `check_in_at` in the `already` branch if the client formats it (add a column to the result table if needed; else keep the action's fallback lookup for that one field via `supabaseServer()`).
@@ -986,6 +995,7 @@ begin
   );
 end;
 $$;
+revoke execute on function public.publish_event(uuid) from public, anon;
 grant execute on function public.publish_event(uuid) to authenticated, service_role;
 ```
 > If `events` has no `published_at` column, add it in this migration (`add column if not exists published_at timestamptz`) and set it in the UPDATE — the P3 checklist asserts `published_at` written. Verify against the live schema (`list_tables`) before writing; if the design's `published_at` doesn't exist yet, adding it is coupled work here.
