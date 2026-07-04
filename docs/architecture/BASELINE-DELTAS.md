@@ -1,6 +1,6 @@
 # CPD Baseline Deltas — authoritative amendments to the Slice 0.x build pack
 
-_Status: frozen 2026-07-03 (four review rounds). Last updated: 2026-07-04._
+_Status: frozen 2026-07-03 (four review rounds). Last updated: 2026-07-04 — see **Sprint 2 amendments** at end (two findings appended; no frozen decision above changed)._
 
 The Slice 0.x build pack (`docs/source-buildpack/*.docx`, preserved verbatim) is the design source **as drafted**. It went through four review rounds on 2026-07-03 that changed real decisions and fixed real defects. **Where this file disagrees with a slice doc, this file wins.** Each domain doc gets properly rewritten under `docs/` during the sprint that builds it; until then, read the slice doc *through* this file.
 
@@ -63,3 +63,23 @@ Canonical decision record: vault `20 — Roadmap/Pivot — CPD Platform (2026-07
 ## 5. AI containment (Slice 0.5.1 §AI — stands as drafted, with §2.1 naming and §3.5 signal deletions applied)
 
 Per-invocation caps · per-org monthly budgets (`ai_org_budgets`) · threshold alerts · global ceiling (`ai_platform_budget`) · `AI_KILL_SWITCH_ENABLED` env var · CloudWatch alarms · app-side cost tracker + `ai_provenance` on every call. Prompt-injection defence layers 1–6 stand; summaries render as plain text only.
+
+---
+
+## Sprint 2 amendments (2026-07-04)
+
+Appended during CPD Sprint 2 design (`docs/plans/2026-07-04-cpd-sprint-2-design.md`). Two findings; **no frozen decision above is changed** — both strengthen existing residuals.
+
+**Finding 1 — strengthens §3.4 (Residual 4a): audit enforcement is a database-function shape, not a wrapper convention.**
+
+> Every PostgREST RPC executes as its own transaction. An application-layer wrapper calling `write_audit_event` after a mutation therefore runs the audit write in a separate transaction from the mutation. This violates the "audit-insert-last, same transaction" rule at the layer we thought would enforce it. Audited mutations must be `SECURITY DEFINER` database functions ending with the audit write. `pseudonymise_user` is the canonical shape.
+
+Consequence (§2 custom-auth cut / §4): `write_audit_event`'s `EXECUTE` grant is revoked from `authenticated`; only `service_role` and definer-owner paths call it.
+
+**Finding 2 — §4 residual: the Turnstile-deferral window on unauthenticated endpoints.**
+
+Sprint 2 defers the Turnstile + escalating IP strike ladder (no Cloudflare keys yet). During that window:
+
+> During the Turnstile deferral window, unauthenticated endpoints have flat per-IP rate limits only. No escalating block, no bot challenge, no strike ladder. A persistent attacker can hammer `/login` and `/otp/*` at just-under-rate-limit indefinitely. Acceptable only while the platform is not publicly exposed. Public exposure gates on Turnstile provisioning.
+
+Re-entry criterion tracked in `docs/DEFERRED.md`.
