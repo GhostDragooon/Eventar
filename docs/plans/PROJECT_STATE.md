@@ -1,5 +1,5 @@
 # Project State — Eventar
-_Last updated: 2026-07-03 (**PIVOT** — CPD platform direction; see vault pivot record)_
+_Last updated: 2026-07-04 (**CPD Sprint 1 shipped** — multi-tenancy + identity + audit-chain foundations; see `docs/plans/handoff_04072026.md`)_
 
 > Source of truth for "what's active vs forward-looking."
 > **Read this BEFORE writing any code.** Updated at the end of each phase.
@@ -13,14 +13,41 @@ Eventar pivoted from internal workshop manager to a **CPD/CME/CE event + credit 
 
 **Active plan:** vault `20 — Roadmap/CPD Roadmap — Backend First.md` — backend first, **frontend frozen** (no new surfaces, no restyles; existing 18 routes keep working against a default organisation).
 
-**ACTIVE PHASE: CPD Sprint 0 — hygiene + docs landing.** Progress 2026-07-04:
-- ✅ Login PKCE fix committed (`65935c7`) · ✅ review-mode bypass stripped (`c43fd95`) · ✅ migration drift reconciled 26/26 local↔remote (`8c8e7d9` — 2 backfills from remote `schema_migrations.statements`, 5 renames to server-side timestamps, content md5-verified).
-- ✅ Build pack landed under `docs/source-buildpack/` + `docs/architecture/BASELINE-DELTAS.md`; CLAUDE.md rewritten (`b5bb5aa`, `669cd68`).
-- ✅ **Sprint 1 executable plan written** — `docs/plans/2026-07-04-cpd-sprint-1-foundations.md` (12 tasks, 6 migrations + env-gated real-DB test suite, zero-ambiguity: exact SQL/commands/expected-output/commit-messages). Vault snapshot: `20 — Roadmap/Sprint 1 — Foundations Executable Plan.md`. **Ready to execute; NOT started.**
-- ⏳ Remaining: user pushes the commit backlog (manual per workflow) · execute Sprint 1 · provision Singapore project (Task 11, after Sprint 1 proven on Seoul).
-- **Decisions 2026-07-04 (Ivan):** live Supabase project is in **ap-northeast-2 Seoul** → **migrate to a fresh ap-southeast-1 Singapore project** as canonical prod (Seoul becomes dev/staging); provision when Sprint 1 migrations are ready so the new project starts with a clean chain. Old Phase 8 (workshop-MVP Vercel deploy) is **PAUSED, not dead** — Ivan keeps the option of an interim workshop deploy; it still requires an explicit go decision and must not happen by momentum.
+**CPD Sprint 0 — hygiene + docs landing: ✅ SHIPPED (2026-07-04).** Login PKCE fix (`65935c7`) · review-mode bypass stripped (`c43fd95`) · migration drift reconciled 26/26 (`8c8e7d9`) · build pack + BASELINE-DELTAS landed (`b5bb5aa`, `669cd68`) · Sprint 1 executable plan written (`4f8b2e4`).
 
-Old Phase 9 (pg_cron emails) is **absorbed** into CPD Sprint 4. Everything below this banner is the pre-pivot record, kept for reference; the CARRIED-FORWARD engineering patterns (Q18, Q19, three-layer validation, rate-limiting, email_log rules) remain binding.
+**CPD Sprint 1 — multi-tenancy + identity + audit-chain foundations: ✅ SHIPPED + PHASE-COMPLETION PROTOCOL PASSED (2026-07-04).** Executed end-to-end from `docs/plans/2026-07-04-cpd-sprint-1-foundations.md`, Tasks 0–10 complete (Task 11 Singapore provisioning is next, gated on Ivan — see below). Six migrations applied to the live Seoul project (`muieupgkpbxpqsrjjwol`) via CLI `db push`, plus an env-gated real-DB integration suite. Full retrospective: `docs/plans/handoff_04072026.md`.
+
+| Commit | Migration / file | What it adds |
+|---|---|---|
+| `a1d6f05` | `20260704130000_init_organisations.sql` | `organisations` table, tenancy root, default-org seed |
+| `841d14f` | `20260704130100_init_users_mirror.sql` | `public.users` mirror of `auth.users`, insert trigger, backfill |
+| `40032cd` | `20260704130200_staff_org_scope.sql` | `staff.organisation_id` + `status`, `eventar_staff` role, hardened `app_private.*` helpers |
+| `3d65ef5` | `20260704130300_events_org_scope.sql` | `events.organisation_id` (default-org adoption) |
+| `9bccd1b` | `20260704130400_init_audit_chain.sql` | `audit_events` hash chain, `chain_seq` under advisory lock, insert-only `audit_writer`, `write_audit_event`, `verify_audit_chain` |
+| `34aa22a` | `20260704130500_init_consent_dsr.sql` | `consent_records`, `data_subject_requests`, `pseudonymise_user` (in-function staff gate + audit write) |
+| `243b76b` | `tests/helpers/*`, `tests/rls/foundations.rls.test.ts`, `tests/audit/chain.test.ts`, `test:rls` script | Real-DB RLS + audit-chain integration suite (17 tests, env-gated) |
+
+**Two real defects found and fixed during execution** (both folded into their migration files before commit, since neither had been committed with the defect present):
+1. `ALTER FUNCTION ... OWNER TO audit_writer` requires the target role to hold `CREATE` on the schema at transfer time — added a grant-then-revoke bracket around the ownership transfer.
+2. `compute_audit_hash()` isn't `SECURITY DEFINER`, so it runs as `audit_writer` once called from inside `write_audit_event()` — `audit_writer` needed `USAGE` on schema `extensions` + `EXECUTE` on `extensions.digest(text,text)`, which the original migration never granted.
+
+**One test-harness defect found and fixed:** the plan's literal 200-concurrent-`Promise.all` design in `tests/audit/chain.test.ts` overwhelmed the local Node/undici connection layer (158/200 client-side `fetch failed`, zero server-side errors — confirmed via Postgres/API log inspection). Fixed by batching into concurrent chunks of 20 (empirically the reliable ceiling; 30 already showed one failure) — still genuinely exercises the advisory-lock serialization under real overlapping transactions.
+
+**Operational caveat (not a defect):** running `pnpm test:rls` in tight back-to-back succession (multiple full runs within a few minutes) can transiently exhaust local client-side sockets and produce spurious failures unrelated to the code — confirmed via Postgres/API logs showing zero server-side pressure during the affected runs. Run it once per session; if it fails, re-run once after a short pause before assuming a real regression.
+
+**Result:** static gates green (tsc clean · eslint 0 errors, 5 pre-existing unrelated warnings · vitest 438 passed \| 17 skipped · next build unchanged, 18 routes) · `pnpm test:rls` 17/17 · migration list 32/32 two-sided · existing routes backtested (curl 200/200/200, manager reads unchanged at 7 events / 63 registrations) · escalation-denial and tamper-denial regression tests both confirmed blocking (`42501`).
+
+**Phase-completion protocol (Task 10) — PASSED, two separate agents:**
+- **Dev-lens review:** PASS. Independently re-verified (queried the live DB directly, did not trust the plan or this handoff) that all four BASELINE-DELTAS defect-fixes are actually present and correct: `chain_seq` overridden inside the trigger under the advisory lock with `chain_seq`-ordering (not `created_at`); `pseudonymise_user`'s staff gate inside the function body; `search_path` pinned on every new SECURITY DEFINER function; `audit_writer`'s live grants confirmed to be exactly SELECT+INSERT on `audit_events` (the transient CREATE grant is confirmed revoked). Zero confirmed defects. `get_advisors` run; findings below.
+- **User-lens review:** PASS. Existing app confirmed unaffected (curl `/`, `/login`, `/events` all 200; `/dashboard` correctly 307-redirects unauthenticated — exactly the behaviour expected of an untouched frontend). No information-disclosure leak in `pseudonymise_user`'s or `audit_events`' error paths (staff-gate raises `42501` before any user-existence check is reachable). Two documentation gaps found and fixed here: this handoff doc didn't exist yet when checked (expected — written last, per protocol) and the vault Sprint 1 note's checklist was stale (fixed below).
+
+**Carried forward from the reviews (not fixed now — explicitly tracked, not silently dropped):**
+1. **`write_audit_event` has no caller-identity check.** It's a plain `SECURITY DEFINER` RPC grantable to `authenticated` with no verification that `p_actor_role`/`p_actor_user_id` match the calling session — a malicious authenticated user could call it directly via PostgREST and forge a legitimately-chained row with false actor claims. The chain's tamper-*evidence* (Sprint 1's actual goal) is intact and unaffected; audit *authenticity* depends on Sprint 2's `withSecurity` Server Action wrapper being the sole real caller, deriving `actor_user_id`/`actor_role` server-side from the authenticated session, never from client input. **Action for Sprint 2:** either restrict `write_audit_event`'s grant off `authenticated` once the wrapper lands (Server Actions run server-side and can call it via a service/definer path instead), or have the wrapper be the only thing that ever calls it with real actor data and treat direct-RPC forgery as an accepted residual risk documented in the security middleware doc. Needs an explicit decision at Sprint 2 start.
+2. **Two Supabase advisor performance WARNs** (not correctness issues, not required by BASELINE-DELTAS or the plan): `multiple_permissive_policies` on `consent_records`/`data_subject_requests`/`users` (self + staff SELECT policies overlap, both evaluated per query) and `auth_rls_initplan` on the same three tables (`auth.uid()` not wrapped in `(select auth.uid())`, re-evaluated per row). Cosmetic at current data volume; candidate for a policy-consolidation cleanup pass once real user volume exists.
+
+**Remaining:** Task 11 (Singapore project provisioning — gated on Ivan, see below) · user pushes the commit backlog manually · **CPD Sprint 2 next** (auth split — Supabase native OTP/TOTP — + security shell/proxy.ts hardening + the `write_audit_event` caller-identity decision above).
+
+Old Phase 9 (pg_cron emails) is **absorbed** into CPD Sprint 4. Old Phase 8 (workshop-MVP Vercel deploy) is **PAUSED, not dead** (Ivan's call, 2026-07-04) — requires an explicit go decision. Everything below this banner is the pre-pivot record, kept for reference; the CARRIED-FORWARD engineering patterns (Q18, Q19, three-layer validation, rate-limiting, email_log rules) remain binding.
 
 ---
 
@@ -122,9 +149,12 @@ _(none currently. Phase 8 work is operational; ask the user before adding non-de
 | 6.5 | ✅ shipped | Dashboard redesign + per-event `/details` with 5-state lifecycle (Q17) |
 | 7 | ✅ shipped (code) | Real Resend infrastructure + React Email template for Email #1 — credentials pending in `.env.local` |
 | Redesign + gaps | ✅ shipped | 13-surface Vercel-canonical + Geist redesign · 7 frontend↔backend gaps closed (Q3 4-option, Q2 session MC, speaker check-in, real edit form, live-ops lifecycle, sent-wording, real poster URL) · vitest 180 → 390 |
-| **8** | **active** | Vercel deploy; env vars + Resend domain verified; first real email out the door |
+| 8 (workshop MVP) | ⏸️ **PAUSED** (not dead) | Vercel deploy of the pre-pivot MVP; superseded in priority by the CPD pivot, kept as an option pending explicit go |
 | MVP email gaps | ✅ shipped (code) | Email #2 reminder/pass (personal CID QR) + Email #3 survey invite: templates + `sendReminderForEvent`/`sendSurveyInviteForEvent` actions + `email_log_dedup_idx` idempotency · on devEmailStub · vitest 390 → 436 |
-| 9 | planned | pg_cron *calls the already-built* `sendReminderForEvent` (60-min) + `sendSurveyInviteForEvent` (10-min-after) actions; retry/reconciliation + the `queued`-is-terminal caveat |
+| 9 (pg_cron) | absorbed into CPD Sprint 4 | — |
+| **CPD Sprint 0** | ✅ shipped 2026-07-04 | Hygiene: PKCE fix, review-mode strip, migration drift reconciled 26/26, build pack + BASELINE-DELTAS landed |
+| **CPD Sprint 1** | ✅ shipped 2026-07-04 | Multi-tenancy (`organisations`, `staff.organisation_id`, `events.organisation_id`) + `users` mirror + hash-chained `audit_events` + consent/DSR + fixed `pseudonymise_user`; real-DB RLS + chain integration suite 17/17; vitest 438 passed \| 17 skipped |
+| **CPD Sprint 2** | **next** | Auth split (Supabase native OTP + TOTP MFA) + `proxy.ts` security shell hardening |
 
 ---
 
