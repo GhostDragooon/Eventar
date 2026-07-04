@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 // Same neutralisation pattern as auth.test.ts.
 vi.mock('server-only', () => ({}));
 
-import { parseClientIp, windowStartMs } from './rateLimit';
+import { composeRateKey, parseClientIp, windowStartMs } from './rateLimit';
 
 describe('parseClientIp', () => {
   it('returns the first IP from x-forwarded-for', () => {
@@ -51,5 +51,15 @@ describe('windowStartMs', () => {
     // 1717180815000 is some real-ish ms timestamp; 60_000-ms window aligns
     // it down to the nearest minute boundary.
     expect(windowStartMs(1_717_180_815_000, 60_000)).toBe(1_717_180_800_000);
+  });
+});
+
+describe('composeRateKey', () => {
+  it('rateLimitBySession composes scope:session key', () => {
+    expect(composeRateKey('sessionAbuse', 'sess_abc')).toBe('sessionAbuse:sess_abc');
+  });
+
+  it('rateLimitByUser composes scope:user key', () => {
+    expect(composeRateKey('sessionAbuse', 'user_123')).toBe('sessionAbuse:user_123');
   });
 });

@@ -101,5 +101,32 @@ export async function rateLimitByIp(
   opts: { windowMs: number; max: number },
 ): Promise<RateLimitResult> {
   const ip = await getClientIp();
-  return rateLimit(`${scope}:${ip}`, opts);
+  return rateLimit(composeRateKey(scope, ip), opts);
+}
+
+/** Compose a rate-limit key. Exported for unit testing. */
+export function composeRateKey(scope: string, discriminator: string): string {
+  return `${scope}:${discriminator}`;
+}
+
+/**
+ * Rate-limit by the caller's Supabase session (access-token-derived id).
+ * Used by the §4 authenticated abuse tier. `sessionId` is derived server-side
+ * from the authenticated session — never from client input.
+ */
+export async function rateLimitBySession(
+  scope: string,
+  sessionId: string,
+  opts: { windowMs: number; max: number },
+): Promise<RateLimitResult> {
+  return rateLimit(composeRateKey(scope, sessionId), opts);
+}
+
+/** Rate-limit by user id (broader than session — all of a user's activity). */
+export async function rateLimitByUser(
+  scope: string,
+  userId: string,
+  opts: { windowMs: number; max: number },
+): Promise<RateLimitResult> {
+  return rateLimit(composeRateKey(scope, userId), opts);
 }
