@@ -17,20 +17,23 @@ describe.skipIf(!process.env.RLS_TESTS)('attendee OTP + consent RLS', () => {
     const client = createAnonClient();
     const { data: v, error: vErr } = await client.auth.verifyOtp({ email, token: otp, type: 'email' });
     expect(vErr).toBeNull();
-    expect(v.session).toBeTruthy();
-
-    // handle_new_user mirror populated public.users
     const uid = v.user!.id;
-    const { data: mirror } = await admin.from('users').select('id').eq('id', uid);
-    expect(mirror?.length).toBe(1);
 
-    // consent-grant exercises the §1 definer pattern against a real session
-    const { error: cErr } = await client.rpc('grant_consent', {
-      p_consent_type: 'terms_of_service', p_version: 'tos-0.1-draft',
-    });
-    expect(cErr).toBeNull();
+    try {
+      expect(v.session).toBeTruthy();
 
-    await admin.auth.admin.deleteUser(uid); // cascades public.users + consent_records
+      // handle_new_user mirror populated public.users
+      const { data: mirror } = await admin.from('users').select('id').eq('id', uid);
+      expect(mirror?.length).toBe(1);
+
+      // consent-grant exercises the §1 definer pattern against a real session
+      const { error: cErr } = await client.rpc('grant_consent', {
+        p_consent_type: 'terms_of_service', p_version: 'tos-0.1-draft',
+      });
+      expect(cErr).toBeNull();
+    } finally {
+      await admin.auth.admin.deleteUser(uid); // cascades public.users + consent_records
+    }
   }, 30_000);
 
   it('consent audit event was actually written for the granting user', async () => {
@@ -44,23 +47,25 @@ describe.skipIf(!process.env.RLS_TESTS)('attendee OTP + consent RLS', () => {
     expect(vErr).toBeNull();
     const uid = v.user!.id;
 
-    const { data: consentId, error: cErr } = await client.rpc('grant_consent', {
-      p_consent_type: 'terms_of_service', p_version: 'tos-0.1-draft',
-    });
-    expect(cErr).toBeNull();
-    expect(typeof consentId).toBe('string');
+    try {
+      const { data: consentId, error: cErr } = await client.rpc('grant_consent', {
+        p_consent_type: 'terms_of_service', p_version: 'tos-0.1-draft',
+      });
+      expect(cErr).toBeNull();
+      expect(typeof consentId).toBe('string');
 
-    // Proves the whole signup -> OTP -> consent chain is genuinely audited
-    // end-to-end, not just that the RPC returned no error.
-    const { data: auditRows, error: auditErr } = await admin
-      .from('audit_events')
-      .select('event_type, subject_id')
-      .eq('event_type', 'consent_granted')
-      .eq('subject_id', consentId);
-    expect(auditErr).toBeNull();
-    expect(auditRows?.length).toBe(1);
-
-    await admin.auth.admin.deleteUser(uid); // cascades public.users + consent_records + no audit cascade (audit is immutable)
+      // Proves the whole signup -> OTP -> consent chain is genuinely audited
+      // end-to-end, not just that the RPC returned no error.
+      const { data: auditRows, error: auditErr } = await admin
+        .from('audit_events')
+        .select('event_type, subject_id')
+        .eq('event_type', 'consent_granted')
+        .eq('subject_id', consentId);
+      expect(auditErr).toBeNull();
+      expect(auditRows?.length).toBe(1);
+    } finally {
+      await admin.auth.admin.deleteUser(uid); // cascades public.users + consent_records + no audit cascade (audit is immutable)
+    }
   }, 30_000);
 
   it('a second, unrelated user cannot read the first user’s consent record (RLS-silent-fail)', async () => {
@@ -74,14 +79,14 @@ describe.skipIf(!process.env.RLS_TESTS)('attendee OTP + consent RLS', () => {
     expect(vErr).toBeNull();
     const uid = v.user!.id;
 
-    const { data: consentId, error: cErr } = await client.rpc('grant_consent', {
-      p_consent_type: 'terms_of_service', p_version: 'tos-0.1-draft',
-    });
-    expect(cErr).toBeNull();
-    expect(typeof consentId).toBe('string');
-
     let stranger: TestUser | undefined;
     try {
+      const { data: consentId, error: cErr } = await client.rpc('grant_consent', {
+        p_consent_type: 'terms_of_service', p_version: 'tos-0.1-draft',
+      });
+      expect(cErr).toBeNull();
+      expect(typeof consentId).toBe('string');
+
       stranger = await createTestUser(`otp-stranger-${Date.now()}`);
       const { data: strangerSees, error: readErr } = await stranger.client
         .from('consent_records')
