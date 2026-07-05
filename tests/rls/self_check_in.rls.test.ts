@@ -53,6 +53,11 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
       .single();
     if (error) throw new Error(`event fixture: ${error.message}`);
     eventIds.push(data.id as string);
+    // self_check_in always touches rate_limits for this event's key
+    // internally (rate_limit_check upserts unconditionally), regardless of
+    // which test calls it — track it here so no test can forget to clean
+    // it up, rather than relying on each call site to push it manually.
+    rateLimitKeys.push(`selfCheckIn:${data.id}`);
     return data.id as string;
   }
 
@@ -180,8 +185,6 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
       .eq('event_id', eventId);
     expect(attended?.every((r) => r.status === 'attended')).toBe(true);
     expect(attended).toHaveLength(8);
-
-    rateLimitKeys.push(`selfCheckIn:${eventId}`);
   }, 30_000);
 
   // ---- 5. rate-limited branch, seeded directly (no 600 real calls) ----
@@ -190,9 +193,15 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
     const regCode = code('SCI005');
     await makeRegistrationFixture(eventId, regCode);
 
-    const key = `selfCheckIn:${eventId}`;
-    rateLimitKeys.push(key);
+    const key = `selfCheckIn:${eventId}`; // already tracked by makeEventFixture
     // Mirror the function's window-alignment: floor(epoch/60)*60, as ISO.
+    // Known narrow race: this window is computed client-side; the function
+    // computes its own window server-side moments later. If the gap between
+    // this seed and the RPC call below straddles a minute boundary, the
+    // function's rate_limit_check would reset the counter instead of reading
+    // the seeded 600, and this test would flake. Not observed in practice —
+    // accepted as a documented limitation rather than restructured into one
+    // transaction for a sub-second race.
     const nowMs = Date.now();
     const winStartMs = Math.floor(nowMs / 60_000) * 60_000;
     const winStartIso = new Date(winStartMs).toISOString();
