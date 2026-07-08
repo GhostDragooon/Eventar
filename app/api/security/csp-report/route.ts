@@ -10,9 +10,15 @@ export async function POST(req: NextRequest) {
     const r = body?.['csp-report'] ?? body;
     let blockedOrigin = 'unknown';
     try { blockedOrigin = new URL(r?.['blocked-uri'] ?? '').origin || 'inline-or-eval'; } catch { blockedOrigin = 'inline-or-eval'; }
+    // The whole report body is client-supplied and untrusted — cap and
+    // type-guard every field we log, not just blocked-uri, so "no PII" is
+    // actually enforced rather than true only by convention.
+    const rawDirective = r?.['violated-directive'] ?? r?.['effective-directive'];
+    const violatedDirective =
+      typeof rawDirective === 'string' ? rawDirective.slice(0, 100) : 'unknown';
     console.warn('[csp-report]', {
       id: randomUUID(),
-      violatedDirective: r?.['violated-directive'] ?? r?.['effective-directive'] ?? 'unknown',
+      violatedDirective,
       blockedOrigin,   // origin only — never full URL (may carry query PII)
     });
   } catch { /* malformed report — ignore, do not 500 */ }

@@ -76,4 +76,21 @@ describe('POST /api/security/csp-report', () => {
       blockedOrigin: 'inline-or-eval',
     });
   });
+
+  it('caps and type-guards violated-directive so the whole client-supplied report is sanitized, not just blocked-uri', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    // Case 1: absurdly long / non-truncated directive string.
+    const longDirective = 'x'.repeat(500);
+    let res = await POST(makeRequest({ 'csp-report': { 'violated-directive': longDirective } }));
+    expect(res.status).toBe(204);
+    let [, logged] = warnSpy.mock.calls.at(-1)!;
+    expect((logged.violatedDirective as string).length).toBeLessThanOrEqual(100);
+
+    // Case 2: non-string directive (a malicious/malformed report) must not crash or pass through untouched.
+    res = await POST(makeRequest({ 'csp-report': { 'violated-directive': { nested: 'object' } } }));
+    expect(res.status).toBe(204);
+    [, logged] = warnSpy.mock.calls.at(-1)!;
+    expect(logged.violatedDirective).toBe('unknown');
+  });
 });
