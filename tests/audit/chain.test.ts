@@ -1,7 +1,7 @@
 // Audit chain integrity under concurrency, against the live dev project.
 // Gated: only runs under `pnpm test:rls` (RLS_TESTS=1).
 import { describe, it, expect } from 'vitest';
-import { admin, createTestUser, deleteTestUser } from '../helpers/clients';
+import { admin, createAnonClient, createTestUser, deleteTestUser } from '../helpers/clients';
 
 type ChainRow = {
   chain_seq: number;
@@ -84,6 +84,33 @@ describe.skipIf(!process.env.RLS_TESTS)('audit chain', () => {
     expect(error).toBeTruthy();
     // PostgREST surfaces a function-permission denial (42501 / "permission denied for function")
     expect(`${error?.code}${error?.message}`).toMatch(/42501|permission denied/i);
+    await deleteTestUser(u);
+  });
+
+  // D1 follow-up (found at the Task 14 exit gate): the negative test above
+  // only ever exercised `authenticated`. write_audit_event has no in-function
+  // actor check, so an open anon grant is the SAME forgery vector D1 exists
+  // to close, just via a role nobody had pointed a test at yet — confirmed
+  // live via has_function_privilege('anon', ...) before the fix.
+  it('anon cannot call write_audit_event directly (D1 follow-up)', async () => {
+    const anon = createAnonClient();
+    const { error } = await anon.rpc('write_audit_event', {
+      p_event_type: 'forged_by_anon', p_actor_role: 'system',
+    });
+    expect(error).toBeTruthy();
+    expect(`${error?.code}${error?.message}`).toMatch(/42501|permission denied/i);
+  });
+
+  it('anon and authenticated cannot call verify_audit_chain directly (D1 follow-up)', async () => {
+    const anon = createAnonClient();
+    const { error: anonErr } = await anon.rpc('verify_audit_chain');
+    expect(anonErr).toBeTruthy();
+    expect(`${anonErr?.code}${anonErr?.message}`).toMatch(/42501|permission denied/i);
+
+    const u = await createTestUser('chain-reader');
+    const { error: authErr } = await u.client.rpc('verify_audit_chain');
+    expect(authErr).toBeTruthy();
+    expect(`${authErr?.code}${authErr?.message}`).toMatch(/42501|permission denied/i);
     await deleteTestUser(u);
   });
 });
