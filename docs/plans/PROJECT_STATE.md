@@ -11,7 +11,7 @@ _Last updated: 2026-07-04 (**CPD Sprint 1 shipped** — multi-tenancy + identity
 
 Eventar pivoted from internal workshop manager to a **CPD/CME/CE event + credit platform** (HK launch, HKCP first accrediting body). Canonical record + frozen design baseline: vault note `20 — Roadmap/Pivot — CPD Platform (2026-07-03).md` + Decisions Log **Q20** (reverses Q6.3 single-org; supersedes Q5 magic-link-only staff auth).
 
-**Active plan:** vault `20 — Roadmap/CPD Roadmap — Backend First.md` — backend first, **frontend frozen** (no new surfaces, no restyles; existing 18 routes keep working against a default organisation).
+**Active plan:** vault `20 — Roadmap/CPD Roadmap — Backend First.md` — backend first, **frontend frozen** (no new surfaces, no restyles; existing 18 routes keep working against a default organisation). CPD Sprint 2 added one backend-only route, `/api/security/csp-report` (19 routes total) — see Sprint 2 close-out below for full invariants.
 
 **CPD Sprint 0 — hygiene + docs landing: ✅ SHIPPED (2026-07-04).** Login PKCE fix (`65935c7`) · review-mode bypass stripped (`c43fd95`) · migration drift reconciled 26/26 (`8c8e7d9`) · build pack + BASELINE-DELTAS landed (`b5bb5aa`, `669cd68`) · Sprint 1 executable plan written (`4f8b2e4`).
 
