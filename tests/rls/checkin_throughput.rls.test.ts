@@ -17,6 +17,10 @@ const DEFAULT_ORG = '00000000-0000-0000-0000-000000000001';
 const ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
 const TOTAL = 200;
 const BATCH_SIZE = 20;
+// RFC 5737 TEST-NET-3 — reserved for documentation/testing. Every one of
+// these 200 calls uses a VALID code and shares this one IP, simulating the
+// exact venue-NAT scenario the per-event (not per-IP) limit exists for.
+const SHARED_VENUE_IP = '203.0.113.20';
 
 function codeForIndex(i: number): string {
   // 6-char valid-alphabet suffix, deterministic per index, no collisions
@@ -113,7 +117,7 @@ describe.skipIf(!process.env.RLS_TESTS)('check-in burst throughput (P2 exit gate
       const batchResults = await Promise.all(
         batch.map(async (c) => {
           const t0 = Date.now();
-          const { data, error } = await admin.rpc('self_check_in', { p_code: c });
+          const { data, error } = await admin.rpc('self_check_in', { p_code: c, p_ip: SHARED_VENUE_IP });
           const elapsed = Date.now() - t0;
           if (error) throw new Error(`self_check_in(${c}): ${error.message}`);
           const row = Array.isArray(data) ? data[0] : data;

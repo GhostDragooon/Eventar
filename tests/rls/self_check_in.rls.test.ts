@@ -15,6 +15,8 @@ const DEFAULT_ORG = '00000000-0000-0000-0000-000000000001';
 // Valid-alphabet (2-9, A-Z minus 0/O/1/I/L) 6-char suffixes so codes pass
 // isValidRegistrationCode's format check.
 const ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+// RFC 5737 TEST-NET-3 — reserved for documentation/testing, safe fake IPs.
+const FAKE_IP = '203.0.113.10';
 
 function code(suffix: string): string {
   return `WK-${suffix}`;
@@ -121,7 +123,7 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
     const regCode = code('SCI001');
     await makeRegistrationFixture(eventId, regCode);
 
-    const { data, error } = await admin.rpc('self_check_in', { p_code: regCode });
+    const { data, error } = await admin.rpc('self_check_in', { p_code: regCode, p_ip: FAKE_IP });
     expect(error).toBeNull();
     const row = Array.isArray(data) ? data[0] : data;
     expect(row.result).toBe('ok');
@@ -143,11 +145,11 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
     const regCode = code('SCI002');
     await makeRegistrationFixture(eventId, regCode);
 
-    const first = await admin.rpc('self_check_in', { p_code: regCode });
+    const first = await admin.rpc('self_check_in', { p_code: regCode, p_ip: FAKE_IP });
     const firstRow = Array.isArray(first.data) ? first.data[0] : first.data;
     expect(firstRow.result).toBe('ok');
 
-    const second = await admin.rpc('self_check_in', { p_code: regCode });
+    const second = await admin.rpc('self_check_in', { p_code: regCode, p_ip: FAKE_IP });
     expect(second.error).toBeNull();
     const secondRow = Array.isArray(second.data) ? second.data[0] : second.data;
     expect(secondRow.result).toBe('already');
@@ -156,11 +158,61 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
 
   // ---- 3. unknown/nonexistent code ----
   it('unknown code returns invalid', async () => {
-    const { data, error } = await admin.rpc('self_check_in', { p_code: code('NOPE99') });
+    const guessIp = '203.0.113.30';
+    rateLimitKeys.push(`selfCheckInGuess:${guessIp}`);
+    const { data, error } = await admin.rpc('self_check_in', { p_code: code('NOPE99'), p_ip: guessIp });
     expect(error).toBeNull();
     const row = Array.isArray(data) ? data[0] : data;
     expect(row.result).toBe('invalid');
     expect(row.event_id).toBeNull();
+  });
+
+  // ---- 3b. guessing-path rate limit (Task 14 exit-gate fix) ----
+  it('rate_limited when the same IP guesses invalid codes past the cap', async () => {
+    const guessIp = '203.0.113.31';
+    rateLimitKeys.push(`selfCheckInGuess:${guessIp}`);
+    const nowMs = Date.now();
+    const winStartIso = new Date(Math.floor(nowMs / 60_000) * 60_000).toISOString();
+
+    // Seed the guess-limit counter directly at cap (avoids 10 real round trips).
+    const { error: seedError } = await admin
+      .from('rate_limits')
+      .upsert({ key: `selfCheckInGuess:${guessIp}`, count: 10, window_start: winStartIso });
+    expect(seedError).toBeNull();
+
+    const { data, error } = await admin.rpc('self_check_in', {
+      p_code: code('NOPE98'), p_ip: guessIp,
+    });
+    expect(error).toBeNull();
+    const row = Array.isArray(data) ? data[0] : data;
+    // The guessing path returns 'rate_limited', not 'invalid', once capped —
+    // this is the regression fix itself: before it, an invalid code always
+    // returned 'invalid' with no limit at all, regardless of how many times
+    // the same IP had already guessed.
+    expect(row.result).toBe('rate_limited');
+    expect(row.event_id).toBeNull();
+  });
+
+  // ---- 3c. a resolvable code from the SAME IP is unaffected by the guess cap ----
+  it('a legitimate attendee is not throttled by another guesser sharing their IP', async () => {
+    const guessIp = '203.0.113.32';
+    rateLimitKeys.push(`selfCheckInGuess:${guessIp}`);
+    const nowMs = Date.now();
+    const winStartIso = new Date(Math.floor(nowMs / 60_000) * 60_000).toISOString();
+    await admin
+      .from('rate_limits')
+      .upsert({ key: `selfCheckInGuess:${guessIp}`, count: 10, window_start: winStartIso });
+
+    const eventId = await makeEventFixture();
+    const regCode = code('SCI003');
+    await makeRegistrationFixture(eventId, regCode);
+
+    // Same IP as the capped guesser above, but this code IS valid — the
+    // guess-limit only gates the invalid-code branch, so this must succeed.
+    const { data, error } = await admin.rpc('self_check_in', { p_code: regCode, p_ip: guessIp });
+    expect(error).toBeNull();
+    const row = Array.isArray(data) ? data[0] : data;
+    expect(row.result).toBe('ok');
   });
 
   // ---- 4. several distinct registrations for one event, low volume ----
@@ -172,7 +224,7 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
     }
 
     for (const c of codes) {
-      const { data, error } = await admin.rpc('self_check_in', { p_code: c });
+      const { data, error } = await admin.rpc('self_check_in', { p_code: c, p_ip: FAKE_IP });
       expect(error).toBeNull();
       const row = Array.isArray(data) ? data[0] : data;
       expect(row.result).toBe('ok');
@@ -211,7 +263,7 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
       .upsert({ key, count: 600, window_start: winStartIso });
     expect(seedError).toBeNull();
 
-    const { data, error } = await admin.rpc('self_check_in', { p_code: regCode });
+    const { data, error } = await admin.rpc('self_check_in', { p_code: regCode, p_ip: FAKE_IP });
     expect(error).toBeNull();
     const row = Array.isArray(data) ? data[0] : data;
     expect(row.result).toBe('rate_limited');

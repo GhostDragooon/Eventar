@@ -28,7 +28,10 @@ export function windowStartMs(nowMs: number, windowMs: number): number {
   return nowMs - (nowMs % windowMs);
 }
 
-async function getClientIp(): Promise<string> {
+/** Exported so callers needing the raw IP (not just an IP-keyed rate-limit
+ * check) can get it directly — e.g. self_check_in's guessing-path guard,
+ * which needs the IP as a DB-function parameter, not just a rateLimit key. */
+export async function getClientIp(): Promise<string> {
   const h = await headers();
   return parseClientIp({
     xff: h.get('x-forwarded-for'),
