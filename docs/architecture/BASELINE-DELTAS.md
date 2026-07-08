@@ -76,10 +76,18 @@ Appended during CPD Sprint 2 design (`docs/plans/2026-07-04-cpd-sprint-2-design.
 
 Consequence (§2 custom-auth cut / §4): `write_audit_event`'s `EXECUTE` grant is revoked from `authenticated`; only `service_role` and definer-owner paths call it.
 
+> **LANDED, with a correction (2026-07-08).** `authenticated` and bare `PUBLIC` were closed as designed (`5611599`, `5e82ffb`), but the fix was incomplete: `anon` retained `EXECUTE` the whole time — this project's schema-wide default ACL grants `anon`/`authenticated`/`service_role` on every new function at `CREATE` time, and D1's own negative test only ever exercised `authenticated`. Any unauthenticated caller holding the public anon key could forge an arbitrary, correctly-chained audit event until this was caught at the Sprint 2 exit gate and closed (`1ed8b72`). `verify_audit_chain()` had the identical gap from Sprint 1, closed in the same pass. **Revised guidance for every future SECURITY DEFINER function in this codebase: query `pg_proc.proacl` directly and confirm `anon`/`authenticated`/`PUBLIC` are each explicitly accounted for — do not assume revoking one role closes the others, and do not trust `has_function_privilege` on only the roles you expect to matter.**
+
 **Finding 2 — §4 residual: the Turnstile-deferral window on unauthenticated endpoints.**
 
 Sprint 2 defers the Turnstile + escalating IP strike ladder (no Cloudflare keys yet). During that window:
 
 > During the Turnstile deferral window, unauthenticated endpoints have flat per-IP rate limits only. No escalating block, no bot challenge, no strike ladder. A persistent attacker can hammer `/login` and `/otp/*` at just-under-rate-limit indefinitely. Acceptable only while the platform is not publicly exposed. Public exposure gates on Turnstile provisioning.
 
-Re-entry criterion tracked in `docs/DEFERRED.md`.
+Re-entry criterion tracked in `docs/DEFERRED.md`. **Status: still deferred, unchanged by Sprint 2** — no Cloudflare keys provisioned yet.
+
+**Finding 3 (new, found at the Sprint 2 exit gate, 2026-07-08) — the per-IP→per-event self-check-in conversion silently dropped brute-force protection on the guessing path.**
+
+> Converting self-check-in to a per-event rate limit (fixing the venue-NAT false-positive problem) had an undocumented side effect: an invalid/guessed registration code returns before the rate-limit check is ever reached, since per-event keying requires a resolved event. Guessing therefore had no rate limit at all — contradicting `lib/registrationCode.ts`'s own stated security model ("887M codes — resists brute-force search ... paired with rate-limiting").
+
+Fixed (`3653a9a`): the guessing path now has its own independent per-IP limit (10/min), applied only when a code fails to resolve — legitimate attendees' codes always resolve, so they never touch it. Verified this doesn't reintroduce the venue-NAT problem (200 legitimate check-ins sharing one IP still all succeed).

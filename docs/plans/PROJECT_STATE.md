@@ -1,5 +1,5 @@
 # Project State — Eventar
-_Last updated: 2026-07-04 (**CPD Sprint 1 shipped** — multi-tenancy + identity + audit-chain foundations; see `docs/plans/handoff_04072026.md`)_
+_Last updated: 2026-07-08 (**CPD Sprint 2 shipped** — security wrapper + audit path + attendee identity; see `docs/plans/handoff_08072026.md`)_
 
 > Source of truth for "what's active vs forward-looking."
 > **Read this BEFORE writing any code.** Updated at the end of each phase.
@@ -45,7 +45,68 @@ Eventar pivoted from internal workshop manager to a **CPD/CME/CE event + credit 
 1. **`write_audit_event` has no caller-identity check.** It's a plain `SECURITY DEFINER` RPC grantable to `authenticated` with no verification that `p_actor_role`/`p_actor_user_id` match the calling session — a malicious authenticated user could call it directly via PostgREST and forge a legitimately-chained row with false actor claims. The chain's tamper-*evidence* (Sprint 1's actual goal) is intact and unaffected; audit *authenticity* depends on Sprint 2's `withSecurity` Server Action wrapper being the sole real caller, deriving `actor_user_id`/`actor_role` server-side from the authenticated session, never from client input. **Action for Sprint 2:** either restrict `write_audit_event`'s grant off `authenticated` once the wrapper lands (Server Actions run server-side and can call it via a service/definer path instead), or have the wrapper be the only thing that ever calls it with real actor data and treat direct-RPC forgery as an accepted residual risk documented in the security middleware doc. Needs an explicit decision at Sprint 2 start.
 2. **Two Supabase advisor performance WARNs** (not correctness issues, not required by BASELINE-DELTAS or the plan): `multiple_permissive_policies` on `consent_records`/`data_subject_requests`/`users` (self + staff SELECT policies overlap, both evaluated per query) and `auth_rls_initplan` on the same three tables (`auth.uid()` not wrapped in `(select auth.uid())`, re-evaluated per row). Cosmetic at current data volume; candidate for a policy-consolidation cleanup pass once real user volume exists.
 
-**Remaining:** Task 11 (Singapore project provisioning — gated on Ivan, see below) · user pushes the commit backlog manually · **CPD Sprint 2 next** (auth split — Supabase native OTP/TOTP — + security shell/proxy.ts hardening + the `write_audit_event` caller-identity decision above).
+**Remaining:** Task 11 (Singapore project provisioning — gated on Ivan, see below) · user pushes the commit backlog manually.
+
+---
+
+## CPD Sprint 2 — security wrapper + audit path + attendee identity: ✅ SHIPPED + PHASE-COMPLETION PROTOCOL PASSED (2026-07-08)
+
+Executed end-to-end from `docs/plans/2026-07-04-cpd-sprint-2-implementation.md` via `superpowers:subagent-driven-development` (fresh implementer subagent per task, independent controller-dispatched review per task, live-DB verification throughout — not just static review). Full retrospective: `docs/plans/handoff_08072026.md`.
+
+Directly answers Sprint 1's carried-forward item #1 (`write_audit_event` had no caller-identity check).
+
+| Commit(s) | What it adds |
+|---|---|
+| `9640fad` | `lib/legalVersions.ts` — consent version pins; Sprint 2 baseline captured |
+| `c35cb3b`, `86413dc` | **Task 1a** — `requireStaff()` gates `status='active'`. **Task 1b (role-union widen) split out and deferred to Sprint 3** — breaks `tsc` at 9 call sites via `StaffShell.tsx`/`SettingsClient.tsx`'s own local prop types; zero Sprint 2 consumer needs it (DB gate reads the column directly) |
+| `56f3b04`, `2185dfc` | **Task 2** — `app_private.require_active_staff(variadic p_roles)`, the shared staff gate every audited definer function calls |
+| `5611599`, `5e82ffb`, `6de2f10`, `1ed8b72` | **Task 3 (D1)** — `write_audit_event` EXECUTE revoked from `authenticated` + bare `PUBLIC` + (found later, at the exit gate) `anon`; `record_session_revocation` tightened to `service_role`-only; `verify_audit_chain` closed the same way. See "Two real defects" below |
+| `c7ec4cb` | **Task 4** — `rateLimitBySession`/`rateLimitByUser` (§4 abuse-tier substrate) |
+| `27fad95` | **Task 5** — `lib/withSecurity.ts` (auth → rate-limit → Zod → Q18 guard). Substrate only, not wired into any existing action this sprint |
+| `da59f63` | **Task 6** — `grant_consent`/`withdraw_consent` (self-actor definer shape) |
+| `8c48d1c` | **Task 7** — `transition_dsr` (staff-actor shape; first real PostgREST-exposed consumer of Task 2's gate) |
+| `f027fae` | **Task 8** — `record_session_revocation` + `lib/abuseTier.ts` (§4, 3-in-60 auto-revoke). Not wired into any live Server Action — no authenticated attendee-facing surface exists yet to feed it |
+| `7e2e2fb`, `9cfb36d` | **Task 9** — `lib/attendeeAuth.ts` (native email-OTP capability) + post-signup audited consent. API-testable only, no frontend |
+| `556cb3a`, `d8708f1`, `3653a9a` | **Task 10** — self-check-in → `self_check_in()` definer fn. Two real defects + one exit-gate regression, see below |
+| `f1a3041` | **Task 11** — staff-scan check-in → `mark_attended()` definer fn (owner-exclusive preserved) |
+| `6357e7b` | **Task 12** — event publish → `publish_event()` definer fn; adds `events.published_at` (confirmed absent from live schema before this task) |
+| `bb9e483`, `ef2bcfb`, `588028c` | **Task 13** — global security headers + report-only CSP in `next.config.ts` (not `proxy.ts` — its matcher excludes public routes) + `/api/security/csp-report` sink |
+| `d10e2ea` | **Task 14 (exit gate)** — burst-throughput suite + full static/integration gates |
+
+**Migrations:** 10 new, applied to the live Seoul project (`muieupgkpbxpqsrjjwol`) via Supabase MCP `apply_migration`, filenames reconciled against `list_migrations`'s actual recorded version after every single call (see defects below) — migration list two-sided, 43/43.
+
+**Two classes of real defect found and fixed during execution:**
+
+1. **Migration filename drift, every single time.** `apply_migration` has no version parameter — it assigns the remote version from server time at the moment it's called, ignoring the local filename entirely. Every one of the 10 new migrations required a post-apply `list_migrations` check + `git mv`/rename to reconcile. Locked into the plan as a mandatory step after the first miss (Task 2).
+
+2. **A systemic grant gap, discovered mid-sprint and then found to recur twice more.** Task 3 (D1) found that revoking `write_audit_event`'s grant from `authenticated` alone was a no-op: this Supabase project has a schema-wide `ALTER DEFAULT PRIVILEGES` granting `anon`/`authenticated`/`service_role` EXECUTE on every new function at `CREATE` time, and the function also had a bare implicit `PUBLIC` grant from Sprint 1 — revoking a named role does nothing if `PUBLIC` (or the default ACL) still holds it. Fixed forward: every new Sprint 2 definer function got an explicit `revoke ... from public, anon` (or `service_role`-only for functions with no in-function actor check, like `record_session_revocation`).
+   **The same class of bug still slipped through twice more, both caught only by the Task 14 exit-gate's phase-completion review, not by Task 3's own fix:**
+   - `write_audit_event` itself still had `anon` EXECUTE — Task 3's two migrations closed `authenticated` and `PUBLIC` but never checked `anon` specifically, and D1's own negative test only ever exercised `authenticated`. Any unauthenticated caller holding the public anon key could forge an arbitrary, correctly-chained audit event. Fixed + two new anon-negative regression tests added.
+   - The fix-attempt for `verify_audit_chain()` (`revoke ... from anon, authenticated`) was *itself* a no-op on the first try — that function's ACL carries a genuine bare `PUBLIC` entry, so revoking from named roles did nothing; the actual fix was `revoke ... from public`. Caught only by re-querying `has_function_privilege` after the "fix" and finding it unchanged.
+
+   **Root-cause takeaway for Sprint 3:** "revoke from `authenticated`" and "revoke from `anon`" are not substitutes for "revoke from `public`" — check `pg_proc.proacl` directly (not just `has_function_privilege` on the roles you think matter) on every new SECURITY DEFINER function, and re-run `get_advisors` after every grant change.
+
+3. **A real behavioral regression in the self-check-in conversion (Task 10), found only by the exit-gate's user-lens review.** The per-IP→per-event rate-limit switch was intentional and documented, but it had an undocumented side effect: an invalid/guessed code now returns before the rate-limit check is ever reached (per-event keying needs a resolved event), so guessing had **no rate limit at all** — undermining `lib/registrationCode.ts`'s own stated model ("887M codes — resists brute-force search ... paired with rate-limiting"). Fixed per Ivan's direction: `self_check_in(p_code, p_ip)` now rate-limits the guessing path specifically by IP (10/min), independent of the existing per-event 600/min cap for resolved codes — verified this doesn't reintroduce the venue-NAT problem the per-event switch was designed to fix (200 shared-IP legitimate check-ins still all succeed, P99 well under the 2s threshold).
+
+4. **A test-harness bug in the new self-check-in migration** (`self_check_in_fn.sql`, Task 10): the original scalar-binding `select ... into` had the same bare-column-vs-OUT-parameter ambiguity Sprint 1 avoided by using `%rowtype` — fixed same-session in a follow-up migration, table-aliased throughout for every subsequent function.
+
+**One test-cleanup leak found and fixed** (Task 10 review): `rate_limits` fixture rows leaked from 2 of 4 tests in `self_check_in.rls.test.ts` because only 2 pushed their key into the cleanup array. Fixed by tracking the key at fixture-*creation* time instead of relying on each call site to remember.
+
+**Result:** static gates green (tsc clean · eslint 0 errors, 5 pre-existing unrelated warnings · vitest 461 passed \| 59 skipped · next build unchanged in shape, 19 routes incl. `/api/security/csp-report`) · `pnpm test:rls` 59/59 across 10 files · migration list 43/43 two-sided · existing routes backtested (curl 200/200/200 public, 307 staff-gated, unchanged) · manager reads unchanged (7 events / 63 registrations / 1 staff — untouched by any fixture).
+
+**Phase-completion protocol — PASSED, two separate agents, run TWICE** (once at Task 14's own boundary, then re-run implicitly via the fixes' own re-verification):
+- **Dev-lens review:** found the anon/D1 gap above (Critical) and confirmed all other structural claims hold (every definer function's `search_path` pinned, audit-write-last, grant/revoke matrix correct, `withSecurity`/`abuseTier`/`attendeeAuth` genuinely unwired, frontend freeze held with zero `.tsx` touches across 27 commits, migration history two-sided, no PII in any new log/payload). Also flagged the exit-gate's own burst test as occasionally flaky against real network conditions (~1-in-4 runs) — informational, not fixed, since changing the plan's own stated 2s threshold is a scope call, not a bug fix.
+- **User-lens review:** found the self-check-in brute-force regression above (Important) and confirmed the three converted surfaces' user-facing behavior is otherwise byte-identical to pre-conversion (same error strings, same info-hiding on cross-owner/invalid codes), the frozen frontend is genuinely untouched, and the new report-only CSP + headers are inert to users (report-only means nothing is blocked).
+- **Backtest:** executed throughout via live Supabase MCP queries (not mocked) — every grant, every migration, every fixture cleanup independently re-verified against the real Seoul project, not just read from migration file text.
+
+**Carried forward from the reviews (not fixed now — explicitly tracked in `docs/DEFERRED.md`):**
+1. **Task 1b** — `Staff.role` TS union widen to include `'eventar_staff'`, bundled with the Sprint 3 5-role enum migration + frontend unfreeze (same commit that will need to touch `StaffShell.tsx`/`SettingsClient.tsx` anyway).
+2. **`withSecurity`, `lib/abuseTier.ts`, `lib/attendeeAuth.ts` are substrate, not wired to any live surface.** Wiring lands with the first authenticated attendee-facing mutation surface (post-freeze).
+3. **Two residual bare-`PUBLIC` ACL entries** on `self_check_in` and `app_private.require_active_staff` — harmless (the former is already intentionally anon-open; the latter isn't PostgREST-exposed) but inconsistent with the explicit-revoke discipline established everywhere else. Cheap cleanup, not urgent.
+4. **The exit-gate burst test's 2s threshold occasionally flakes** against real network conditions to the remote Seoul project (~1-in-4 runs observed, always well under 3s when it does). Not changed — Ivan's call whether to loosen it, make it informational, or leave as-is.
+5. **P2 shared-vs-separate audit-chain lock decision** (credit ledger, Sprint 3) and the **abuse-tier live-caller wire-up** — both already tracked in `docs/DEFERRED.md`.
+
+**Remaining:** Task 11 Singapore provisioning still gated on Ivan (unrelated to Sprint 2) · user pushes the commit backlog manually · **CPD Sprint 3 next** (credit ledger + 5-role enum + practitioner licences — see `docs/DEFERRED.md` for everything explicitly gated to it).
 
 Old Phase 9 (pg_cron emails) is **absorbed** into CPD Sprint 4. Old Phase 8 (workshop-MVP Vercel deploy) is **PAUSED, not dead** (Ivan's call, 2026-07-04) — requires an explicit go decision. Everything below this banner is the pre-pivot record, kept for reference; the CARRIED-FORWARD engineering patterns (Q18, Q19, three-layer validation, rate-limiting, email_log rules) remain binding.
 
@@ -154,7 +215,8 @@ _(none currently. Phase 8 work is operational; ask the user before adding non-de
 | 9 (pg_cron) | absorbed into CPD Sprint 4 | — |
 | **CPD Sprint 0** | ✅ shipped 2026-07-04 | Hygiene: PKCE fix, review-mode strip, migration drift reconciled 26/26, build pack + BASELINE-DELTAS landed |
 | **CPD Sprint 1** | ✅ shipped 2026-07-04 | Multi-tenancy (`organisations`, `staff.organisation_id`, `events.organisation_id`) + `users` mirror + hash-chained `audit_events` + consent/DSR + fixed `pseudonymise_user`; real-DB RLS + chain integration suite 17/17; vitest 438 passed \| 17 skipped |
-| **CPD Sprint 2** | **next** | Auth split (Supabase native OTP + TOTP MFA) + `proxy.ts` security shell hardening |
+| **CPD Sprint 2** | ✅ shipped 2026-07-08 | `withSecurity` wrapper + `require_active_staff` shared gate + D1 audit-authenticity closed (incl. two follow-up anon-grant gaps) + 3 shipped surfaces (self-check-in, staff-scan check-in, event publish) converted to audited definer functions + §4 abuse-tier substrate + attendee OTP capability + report-only CSP/headers; `pnpm test:rls` 59/59, vitest 461\|59 skipped |
+| **CPD Sprint 3** | **next** | Credit ledger + 5-role staff enum + practitioner licences — see `docs/DEFERRED.md` |
 
 ---
 
