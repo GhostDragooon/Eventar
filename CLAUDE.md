@@ -108,7 +108,7 @@ Deploy status post-pivot: old Phase 8 (workshop-MVP deploy) is **PAUSED** — ne
 
 These are mirrored from the vault but worth restating because breaking any of them creates large recovery cost:
 
-1. **Staff identity keyed on email**, not `auth.users.id`. Lets us swap magic-link → MS SSO later as a Supabase Auth config flip with no app code change. See `10 — Architecture/Auth Flow.md`.
+1. **Staff/user identity keyed on UUID (`auth.users.id`)**, not email. Email is a unique-indexed *mutable attribute*, not the key — people change email (marriage, employer, personal preference), and ledger integrity requires a stable FK that doesn't move when that happens. Supabase Auth uses UUIDs natively; keying on UUID avoids a constant translation layer between auth and application data. Email-change history is captured via `email_changed` audit events, not schema. **Supersedes the pre-CPD-pivot rule** (which existed to ease a future magic-link→MS SSO migration — moot now that auth is native Supabase OTP/password+MFA, not magic link). Locked 2026-07-08, see `02 — Decisions Log.md` Q23 item 1. See `10 — Architecture/Auth Flow.md` and `10 — Architecture/Data Model.md`.
 2. **Insert `email_log` row FIRST, send email SECOND.** Reverse order risks duplicate sends on retry. See `10 — Architecture/Cron + Email.md`.
 3. **`requireStaff()` at the top of every staff Server Action.** No exceptions. See `10 — Architecture/Auth Flow.md`.
    - **Next 16 rename:** the staff-route gate file is `proxy.ts` at repo root (NOT `middleware.ts` — that name is deprecated). Exported function is `proxy`. Matcher syntax unchanged.

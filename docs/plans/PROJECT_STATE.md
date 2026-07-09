@@ -193,7 +193,27 @@ Intentionally NOT in Phase 8 — surface as "for later" if they come up in conve
 
 ## Open decisions
 
-_(none currently. Phase 8 work is operational; ask the user before adding non-deployment scope.)_
+_(Refreshed 2026-07-09 — the line above was pre-pivot Phase-8 boilerplate that never got updated for the CPD pivot; treat anything below as current instead.)_
+
+**Still genuinely open — not yet decided by anyone:**
+- Credit Ledger §8.2 — seed real per-body category taxonomies now vs. keep `credit_ledger.category` free text until an organiser-facing picker ships (product sequencing call, Ivan's, not yet made)
+- HKIE's `retention_years` default — no source states a figure; needs a product decision on what to seed
+- HKCR retention/cycle/category — genuinely unverified (site blocks automated fetch); needs manual retrieval, not a decision
+
+**Resolved 2026-07-09** (citation-grounding + product-policy pass — see vault Decisions Log Q24/Q25 and the respective slice open-question sections):
+- Retention windows for 6 of 8 launch bodies (Credit Ledger §8.5, Event Lifecycle §9.5) — per-body citations, 2–6yr verified range, no single default
+- Credit Ledger §8.1 (nullable points/hours columns — confirmed sufficient) and §8.3 (`credit_transferred` — deferred, confirmed)
+- Event Lifecycle §9.2 (grace window = 24h), §9.3 (credit-and-adjust on open dispute), §9.4 (mandatory cancellation notification, organiser-handled refund)
+- Data Model Slice 0.9 §9 — all four items (HKAM hierarchy, HKIE discipline handling, cross-body recognition, superseded-licence aggregation) confirmed as drafted
+
+**Genuinely external — awaiting the body/organiser/practitioner conversation** (not resolvable by grounding or by Ivan alone):
+- Per-body PDF audit-response format
+- Reviewer workflow SLA
+- Cross-body recognition operational rules (the mechanics, not the ledger-level semantics already confirmed above)
+
+**Standing on Ivan** (operational debt, not blocking Sprint 3):
+- Singapore Supabase project provisioning (Sprint 1 Task 11) — gates the PDPO Singapore-residency posture before real practitioner PII lands
+- Commit backlog push (~30+ local-only commits on `main`) — disaster-recovery risk independent of everything else
 
 ---
 
@@ -216,7 +236,8 @@ _(none currently. Phase 8 work is operational; ask the user before adding non-de
 | **CPD Sprint 0** | ✅ shipped 2026-07-04 | Hygiene: PKCE fix, review-mode strip, migration drift reconciled 26/26, build pack + BASELINE-DELTAS landed |
 | **CPD Sprint 1** | ✅ shipped 2026-07-04 | Multi-tenancy (`organisations`, `staff.organisation_id`, `events.organisation_id`) + `users` mirror + hash-chained `audit_events` + consent/DSR + fixed `pseudonymise_user`; real-DB RLS + chain integration suite 17/17; vitest 438 passed \| 17 skipped |
 | **CPD Sprint 2** | ✅ shipped 2026-07-08 | `withSecurity` wrapper + `require_active_staff` shared gate + D1 audit-authenticity closed (incl. two follow-up anon-grant gaps) + 3 shipped surfaces (self-check-in, staff-scan check-in, event publish) converted to audited definer functions + §4 abuse-tier substrate + attendee OTP capability + report-only CSP/headers; `pnpm test:rls` 59/59, vitest 461\|59 skipped |
-| **CPD Sprint 3** | **next** | Credit ledger + 5-role staff enum + practitioner licences — see `docs/DEFERRED.md` |
+| **CPD Sprint 3a** | **next, ready to execute** | Identity/tenancy DDL (`accrediting_bodies`/`organisers`/`practitioner_licences`) + 5-role staff enum + licence mutation functions + 6-body seed data + `credit_ledger` core schema/chain — `docs/plans/2026-07-09-cpd-sprint-3a-implementation.md`. Ungated: everything the external review can't change. |
+| **CPD Sprint 3b** | design outline written, execution gated | Body-reviewer workflow + `accredited` confirmation granularity + PDF format + cross-body recognition mechanics — `docs/plans/2026-07-09-cpd-sprint-3b-design.md`. **Gated** on the external-voice review (one body, one organiser, one practitioner — not yet scheduled). Detail-into-SQL happens after review answers the outline's per-task questions, not before. |
 
 ---
 

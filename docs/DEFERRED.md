@@ -2,7 +2,7 @@
 
 Every deferral carries a **re-entry criterion** — the observable event that makes it wrong to keep deferring. Reviewed at each sprint boundary (standing ritual). Living tracker, not a phase doc.
 
-_Last updated: 2026-07-08 (CPD Sprint 2 shipped)._
+_Last updated: 2026-07-09 (citation-grounding + product-policy pass — items 17 and 29's retention half closed; see vault Decisions Log Q24/Q25)._
 
 | Deferred item | Re-entry criterion | Earliest |
 |---|---|---|
@@ -14,7 +14,7 @@ _Last updated: 2026-07-08 (CPD Sprint 2 shipped)._
 | **`request_events` table + pg_cron scoring job** (4 inference signals → flags) | Ships alongside the first authenticated API surface, one sprint after data accrues | Sprint 5 |
 | **`Staff.role` TS union widen** (`'organizer'\|'manager'` → include `'eventar_staff'`) — Sprint 2's Task 1 split this out after finding it breaks `tsc` at 9 call sites via `StaffShell.tsx`/`SettingsClient.tsx`'s own local prop types | Bundle with the 5-role enum migration below + frontend unfreeze — same commit will touch those two files anyway | Sprint 3 |
 | 5-role staff enum (`organiser_admin`/`organiser_member`/`body_admin`/`auditor`/`eventar_staff`) + `organizer`→`organiser` spelling | Accrediting-body / auditor roles needed | Sprint 3 |
-| **P2 shared-vs-separate audit-chain lock decision** — does the Sprint 3 credit ledger share the global audit-chain advisory lock, or use a separately-anchored chain? | Sprint 3 credit-ledger design | Sprint 3 |
+| ~~**P2 shared-vs-separate audit-chain lock decision**~~ ✅ **CLOSED 2026-07-09** — answered in the vault before this tracker caught up: separate chain, own advisory lock (avoids doubling contention with `audit_events` under check-in bursts). See vault `10 — Architecture/Credit Ledger.md` §8.4. | — | Closed |
 | **`lib/abuseTier.ts` live-caller wire-up** — the §4 3-in-60 session-revoke capability shipped in Sprint 2 has no live caller; nothing authenticated-attendee-facing exists yet to feed it | First authenticated attendee-facing mutation surface (post-freeze) | Sprint 3+ |
 | **Two residual bare-`PUBLIC` grant entries** (`self_check_in`, `app_private.require_active_staff`) — harmless today (former is intentionally anon-open; latter isn't PostgREST-exposed) but inconsistent with the explicit-revoke discipline every other Sprint 2 function follows | Cosmetic; batch with the next grant-hygiene pass | Sprint 3/4 |
 | **Exit-gate burst-throughput test's 2s P99 threshold occasionally flakes** (~1-in-4 runs) against real network conditions to the remote Seoul project — genuine variance, always well under 3s when it happens, not a functional regression | Ivan's call: loosen the bound, make it informational-only, or measure DB-side timing instead of client-observed latency | Whenever it becomes annoying |
@@ -26,4 +26,5 @@ _Last updated: 2026-07-08 (CPD Sprint 2 shipped)._
 | W3C Verifiable Credentials + DID:web + Status List 2021 | First accrediting-body request, or verifier-tooling maturity | Phase 2 |
 | RFC 3161 TSA anchor (external tamper proof) | First body asks how tampering is externally provable | Phase 2 |
 | Behavioural detection graduation (flags → auto-action) | **Locked at "never"** — standing pushback flags any attempt | — |
-| 7-year retention grounding + organiser-attested liability T&Cs (HK counsel) | Retention/evidence requirements firm up | Before launch |
+| ~~7-year retention grounding~~ ✅ **CLOSED 2026-07-09** — no body's CPD retention clause actually reads 7 years; grounded per-body via primary-source citations (GL24 §3.8 = 3yr, Law Society Guideline 10.6 = 2yr, VSB FAQ Q18 = 6yr, PT Board CPD Manual = 6yr, HKICPA Statement 1.500 = 5yr, MPFA Guidelines VI.4 §15(a) = 3yr; HKIE confirmed no stated figure; HKCR unverified). Full detail: vault `10 — Architecture/Credit Ledger.md` §8.5, Decisions Log Q24. | — | Closed |
+| Organiser-attested liability T&Cs (HK counsel) | Before first pilot organiser signs a contract with attested-vs-confirmed terms, per Slice 0.11 §6.7 | Before launch |
