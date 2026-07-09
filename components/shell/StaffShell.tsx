@@ -14,7 +14,7 @@ import { usePathname } from 'next/navigation';
 // in the "By Eventar" footer band. Sign-out moved to /settings.
 
 type StaffShellBaseProps = {
-  staff: { email: string; role: 'organizer' | 'manager' };
+  staff: { email: string; role: 'organiser_admin' | 'organiser_member' | 'body_admin' | 'auditor' | 'eventar_staff' };
   children: React.ReactNode;
 };
 

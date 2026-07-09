@@ -16,7 +16,7 @@ async function bulkUpdate(eventIds: string[], patch: Record<string, unknown>): P
   const admin = supabaseAdmin();
 
   let q = admin.from('events').update(patch).in('id', eventIds);
-  if (staff.role !== 'manager') q = q.eq('created_by', staff.id);
+  if (staff.role !== 'eventar_staff') q = q.eq('created_by', staff.id);
   const { data, error } = await q.select('id');
   if (error) return { error: 'Could not update the selected events.' };
 

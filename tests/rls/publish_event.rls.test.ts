@@ -64,14 +64,14 @@ describe.skipIf(!process.env.RLS_TESTS)('publish_event RLS + audit', () => {
     const { error } = await admin.from('staff').insert([
       {
         email: owner.email,
-        role: 'organizer',
+        role: 'organiser_member',
         full_name: 'RLS Test Owner',
         organisation_id: DEFAULT_ORG,
         status: 'active',
       },
       {
         email: nonOwner.email,
-        role: 'organizer',
+        role: 'organiser_member',
         full_name: 'RLS Test Non-Owner',
         organisation_id: DEFAULT_ORG,
         status: 'active',
@@ -131,7 +131,7 @@ describe.skipIf(!process.env.RLS_TESTS)('publish_event RLS + audit', () => {
       .eq('subject_id', eventId)
       .maybeSingle();
     expect(auditRow).not.toBeNull();
-    expect(auditRow?.actor_role).toBe('organizer');
+    expect(auditRow?.actor_role).toBe('organiser_member');
     expect((auditRow?.payload as { attestation_status?: string })?.attestation_status).toBe(
       'organiser_attested',
     );

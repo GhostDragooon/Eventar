@@ -17,7 +17,7 @@ import { TEXT_SIZE_STORAGE_KEY } from '@/lib/textSize';
 
 afterEach(cleanup);
 
-const STAFF = { email: 'ahf.ivan@gmail.com', role: 'manager' as const };
+const STAFF = { email: 'ahf.ivan@gmail.com', role: 'eventar_staff' as const };
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -97,12 +97,12 @@ describe('SettingsClient — Account', () => {
   it('shows the staff email and the human-readable role', () => {
     render(<SettingsClient staff={STAFF} />);
     expect(screen.getByText('ahf.ivan@gmail.com')).toBeTruthy();
-    expect(screen.getByText('Manager')).toBeTruthy();
+    expect(screen.getByText('Eventar Staff')).toBeTruthy();
   });
 
-  it('renders Organizer (capitalized) for an organizer role', () => {
-    render(<SettingsClient staff={{ email: 'org@x.com', role: 'organizer' }} />);
-    expect(screen.getByText('Organizer')).toBeTruthy();
+  it('renders "Organiser" for an organiser_member role', () => {
+    render(<SettingsClient staff={{ email: 'org@x.com', role: 'organiser_member' }} />);
+    expect(screen.getByText('Organiser')).toBeTruthy();
   });
 
   it('renders the Sign out action', () => {

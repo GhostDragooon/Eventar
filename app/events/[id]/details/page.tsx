@@ -87,7 +87,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
   // count for any event by typing the URL. Non-authorized readers see 0, which
   // is consistent with the all-zero RLS-gated registration counts they'll see.
   const canSeeConfirmationsSent =
-    event.created_by === staff.id || staff.role === 'manager';
+    event.created_by === staff.id || staff.role === 'eventar_staff';
   const confirmationsSent = canSeeConfirmationsSent
     ? (confirmationsRes.count ?? 0)
     : 0;

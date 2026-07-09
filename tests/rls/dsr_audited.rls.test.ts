@@ -28,7 +28,7 @@ describe.skipIf(!process.env.RLS_TESTS)('transition_dsr RLS + audit', () => {
 
   async function makeStaffFixture(
     localPart: string,
-    role: 'manager' | 'eventar_staff' | 'organizer',
+    role: 'organiser_admin' | 'eventar_staff' | 'organiser_member',
   ): Promise<TestUser> {
     const user = await createTestUser(localPart);
     const { error } = await admin.from('staff').insert({
@@ -60,9 +60,9 @@ describe.skipIf(!process.env.RLS_TESTS)('transition_dsr RLS + audit', () => {
 
   beforeAll(async () => {
     nonStaff = await createTestUser('dsr-plain');
-    managerStaff = await makeStaffFixture('dsr-manager', 'manager');
+    managerStaff = await makeStaffFixture('dsr-manager', 'organiser_admin');
     eventarStaff = await makeStaffFixture('dsr-eventarstaff', 'eventar_staff');
-    organizerStaff = await makeStaffFixture('dsr-organizer', 'organizer');
+    organizerStaff = await makeStaffFixture('dsr-organizer', 'organiser_member');
   }, 60_000);
 
   afterAll(async () => {
@@ -96,8 +96,8 @@ describe.skipIf(!process.env.RLS_TESTS)('transition_dsr RLS + audit', () => {
     expect(row?.status).toBe('pending');
   });
 
-  // ---- 2. active manager transitions a fixture DSR successfully ----
-  it('active manager transitions a DSR to completed and writes an audit event', async () => {
+  // ---- 2. active organiser_admin transitions a fixture DSR successfully ----
+  it('active organiser_admin transitions a DSR to completed and writes an audit event', async () => {
     const dsrId = await makeDsrFixture(nonStaff.id);
     const { error } = await managerStaff.client.rpc('transition_dsr', {
       p_id: dsrId,
@@ -144,8 +144,8 @@ describe.skipIf(!process.env.RLS_TESTS)('transition_dsr RLS + audit', () => {
     expect(row?.resolver_staff_id).not.toBeNull();
   });
 
-  // ---- 4. organizer-role staff (not manager/eventar_staff) is rejected ----
-  it('active organizer-role staff (not in allowed role list) gets 42501', async () => {
+  // ---- 4. organiser_member staff (not organiser_admin/eventar_staff) is rejected ----
+  it('active organiser_member staff (not in allowed role list) gets 42501', async () => {
     const dsrId = await makeDsrFixture(nonStaff.id);
     const { data, error } = await organizerStaff.client.rpc('transition_dsr', {
       p_id: dsrId,

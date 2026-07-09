@@ -31,7 +31,7 @@ vi.mock('@/lib/tz', () => ({
 }));
 
 // --- Auth ---
-type Staff = { id: string; role: 'organizer' | 'manager'; email: string; full_name: string | null };
+type Staff = { id: string; role: 'organiser_member' | 'eventar_staff'; email: string; full_name: string | null };
 let mockStaff: Staff;
 vi.mock('@/lib/auth', () => ({
   requireStaff: vi.fn(async () => mockStaff),
@@ -126,7 +126,7 @@ function eventRow(overrides: Partial<EventRow> = {}): EventRow {
 }
 
 beforeEach(() => {
-  mockStaff = { id: ownerId, role: 'organizer', email: 'owner@x.com', full_name: 'Owner' };
+  mockStaff = { id: ownerId, role: 'organiser_member', email: 'owner@x.com', full_name: 'Owner' };
   mockEventRow = eventRow();
   mockRegistrations = [
     { id: 'reg-1', email: 'a@x.com', full_name: 'Alice A', registration_code: 'WK-AAA111', status: 'registered' },
@@ -147,7 +147,7 @@ beforeEach(() => {
 
 describe('sendReminderForEvent — authorization', () => {
   it('refuses when the caller is neither owner nor manager', async () => {
-    mockStaff = { id: 'someone-else', role: 'organizer', email: 'x@x.com', full_name: null };
+    mockStaff = { id: 'someone-else', role: 'organiser_member', email: 'x@x.com', full_name: null };
     const result = await sendReminderForEvent(eventId);
     expect(result.error).toMatch(/not authorized/i);
     expect(result.sent + result.queued + result.skipped + result.failed).toBe(0);
@@ -155,8 +155,8 @@ describe('sendReminderForEvent — authorization', () => {
     expect(mockSendStub).not.toHaveBeenCalled();
   });
 
-  it('allows a manager who does not own the event', async () => {
-    mockStaff = { id: 'mgr', role: 'manager', email: 'm@x.com', full_name: 'Mgr' };
+  it('allows an eventar_staff who does not own the event', async () => {
+    mockStaff = { id: 'mgr', role: 'eventar_staff', email: 'm@x.com', full_name: 'Mgr' };
     const result = await sendReminderForEvent(eventId);
     expect(result.error).toBeUndefined();
     expect(result.queued).toBe(2);
@@ -287,7 +287,7 @@ describe('sendSurveyInviteForEvent', () => {
   });
 
   it('refuses a non-owner non-manager', async () => {
-    mockStaff = { id: 'nope', role: 'organizer', email: 'n@x.com', full_name: null };
+    mockStaff = { id: 'nope', role: 'organiser_member', email: 'n@x.com', full_name: null };
     const result = await sendSurveyInviteForEvent(eventId);
     expect(result.error).toMatch(/not authorized/i);
   });

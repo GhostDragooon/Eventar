@@ -30,10 +30,18 @@ const TEXT_OPTIONS: TextOpt[] = [
   { value: 'large',   label: 'Large',   description: 'Roomier type — easier reading from a tablet.', icon: 'text_increase' },
 ];
 
+const ROLE_LABELS: Record<'organiser_admin' | 'organiser_member' | 'body_admin' | 'auditor' | 'eventar_staff', string> = {
+  organiser_admin:  'Organiser Admin',
+  organiser_member: 'Organiser',
+  body_admin:       'Body Admin',
+  auditor:          'Auditor',
+  eventar_staff:    'Eventar Staff',
+};
+
 export default function SettingsClient({
   staff,
 }: {
-  staff: { email: string; role: 'organizer' | 'manager' };
+  staff: { email: string; role: 'organiser_admin' | 'organiser_member' | 'body_admin' | 'auditor' | 'eventar_staff' };
 }) {
   const theme = useSyncExternalStore<Theme>(
     subscribeStorage,
@@ -83,7 +91,7 @@ export default function SettingsClient({
       <SettingsSection icon="person" title="Account">
         <dl className="space-y-md">
           <Field label="Email" value={staff.email} />
-          <Field label="Role" value={staff.role === 'manager' ? 'Manager' : 'Organizer'} />
+          <Field label="Role" value={ROLE_LABELS[staff.role]} />
         </dl>
         <div className="mt-lg pt-md border-t border-outline-variant">
           <SignOutButton className="inline-flex items-center gap-sm bg-surface-container-high text-on-surface font-label-md text-label-md rounded-lg py-sm px-lg hover:bg-surface-container-highest transition-colors" />

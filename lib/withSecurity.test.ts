@@ -36,7 +36,7 @@ vi.mock('next/cache', () => ({
 
 import { withSecurity, RLS_SILENT_FAIL, type SecurityCtx } from './withSecurity';
 
-const FAKE_STAFF: Staff = { id: 's-1', email: 'a@b.com', role: 'organizer', full_name: 'Alex Bee' };
+const FAKE_STAFF: Staff = { id: 's-1', email: 'a@b.com', role: 'organiser_member', full_name: 'Alex Bee' };
 
 function mockSupabaseClient() {
   return {

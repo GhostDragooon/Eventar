@@ -17,7 +17,7 @@ beforeEach(() => {
   mockPathname = '/dashboard';
 });
 
-const staff = { email: 'jane@company.com', role: 'organizer' as const };
+const staff = { email: 'jane@company.com', role: 'organiser_member' as const };
 
 describe('StaffShell — section-tab NAV (Design Session Log)', () => {
   it('renders the four section tabs with their routes', () => {

@@ -63,7 +63,7 @@ async function authorizeEvent(eventId: string): Promise<{ event: EventRow } | { 
     .eq('id', eventId)
     .maybeSingle();
   if (!event) return { error: 'Event not found.' };
-  const canManage = event.created_by === staff.id || staff.role === 'manager';
+  const canManage = event.created_by === staff.id || staff.role === 'eventar_staff';
   if (!canManage) return { error: 'You are not authorized for this event.' };
   return { event: event as EventRow };
 }

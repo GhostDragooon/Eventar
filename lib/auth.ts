@@ -5,7 +5,7 @@ import { supabaseServer } from './supabase/server';
 export type Staff = {
   id: string;
   email: string;
-  role: 'organizer' | 'manager';
+  role: 'organiser_admin' | 'organiser_member' | 'body_admin' | 'auditor' | 'eventar_staff';
   full_name: string | null;
 };
 

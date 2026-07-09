@@ -62,7 +62,7 @@ export default async function PublicEventPage({
     try {
       const staff = await requireStaff(supabase);
       isOwnerOrManager =
-        event.created_by === staff.id || staff.role === 'manager';
+        event.created_by === staff.id || staff.role === 'eventar_staff';
     } catch (e) {
       if (!(e instanceof NotAuthorizedError)) throw e;
     }
