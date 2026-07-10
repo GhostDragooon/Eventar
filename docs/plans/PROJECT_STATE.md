@@ -1,5 +1,5 @@
 # Project State — Eventar
-_Last updated: 2026-07-10 (**CPD Sprint 3a shipped** — identity/tenancy DDL, licence mutations, credit_ledger core; see `docs/plans/handoff_10072026.md`)_
+_Last updated: 2026-07-10 (**CPD Sprint 3a shipped + post-3a hardening** — backlog pushed, service_role guard + Hard Rule 11, migration replay-from-zero fixed, doctrine captured, Sprint 3b fully scoped; see `docs/plans/handoff_10072026.md` Part 2)_
 
 > Source of truth for "what's active vs forward-looking."
 > **Read this BEFORE writing any code.** Updated at the end of each phase.
@@ -259,7 +259,7 @@ _(Refreshed 2026-07-10 — Sprint 3a resolved the HKIE retention question; treat
 
 **Standing on Ivan** (operational debt, not blocking Sprint 3):
 - Singapore Supabase project provisioning (Sprint 1 Task 11) — gates the PDPO Singapore-residency posture before real practitioner PII lands
-- Commit backlog push (**~133** local-only commits on `main` as of 2026-07-10 — preflight clean: no secret/env/key files, `.env.local` untracked) — disaster-recovery risk independent of everything else
+- ~~Commit backlog push~~ ✅ **DONE 2026-07-10** — all commits pushed to `origin/main` (preflight clean). Push cadence agreed: end of every work session. DR hole closed.
 
 ---
 
@@ -283,7 +283,7 @@ _(Refreshed 2026-07-10 — Sprint 3a resolved the HKIE retention question; treat
 | **CPD Sprint 1** | ✅ shipped 2026-07-04 | Multi-tenancy (`organisations`, `staff.organisation_id`, `events.organisation_id`) + `users` mirror + hash-chained `audit_events` + consent/DSR + fixed `pseudonymise_user`; real-DB RLS + chain integration suite 17/17; vitest 438 passed \| 17 skipped |
 | **CPD Sprint 2** | ✅ shipped 2026-07-08 | `withSecurity` wrapper + `require_active_staff` shared gate + D1 audit-authenticity closed (incl. two follow-up anon-grant gaps) + 3 shipped surfaces (self-check-in, staff-scan check-in, event publish) converted to audited definer functions + §4 abuse-tier substrate + attendee OTP capability + report-only CSP/headers; `pnpm test:rls` 59/59, vitest 461\|59 skipped |
 | **CPD Sprint 3a** | ✅ shipped 2026-07-10 | Identity/tenancy DDL (`accrediting_bodies`/`organisers`/`practitioner_licences`) + 5-role staff enum + 6 audited licence-mutation functions + 8-body seed data + `credit_ledger` core schema/chain + `record_credit_entry`/`credit_disputes`; `pnpm test:rls` 92/92, vitest 461\|92 skipped |
-| **CPD Sprint 3b** | design outline written, execution gated | Body-reviewer workflow + `accredited` confirmation granularity + PDF format + cross-body recognition mechanics — `docs/plans/2026-07-09-cpd-sprint-3b-design.md`. **Gated** on the external-voice review (one body, one organiser, one practitioner — not yet scheduled). Detail-into-SQL happens after review answers the outline's per-task questions, not before. |
+| **CPD Sprint 3b** | fully scoped (both halves + review script), execution gated | **Governance** outline (`2026-07-09-cpd-sprint-3b-design.md`: reviewer workflow, confirmation, PDF, cross-body) + **engine** outline (`2026-07-10-cpd-sprint-3b-engine-design.md`: versioned body_rules, the deterministic evaluator, issuance, roster, retro-trust model — the previously-missing CPD core) + **review script** (`2026-07-10-cpd-sprint-3b-review-prep.md`: 7 questions, going-in defaults, the Q5-is-behavioural rule). All gate-annotated. **Gated** on the external-voice review (not scheduled) + Q26. Detail-into-SQL happens after the review + Q26, not before. See `docs/plans/roadmap-to-mvp.md`. |
 
 ---
 
