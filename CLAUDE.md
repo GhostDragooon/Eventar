@@ -119,6 +119,10 @@ These are mirrored from the vault but worth restating because breaking any of th
 8. **Three-layer validation** (form → Zod → DB constraint) for every mutation. See `10 — Architecture/Security + Robustness.md` §1.
 9. **Three-layer auth** (middleware → `requireStaff` → RLS) for every staff action. Same note §4.
 10. **No PII in logs.** UUIDs only. See `Security + Robustness.md` §12.
+11. **Audited-mutation tables revoke direct writes at the *grant* level, not just via RLS — `service_role` included.** For every table whose sole write path is a SECURITY DEFINER function, RLS is *not* sufficient: `service_role` has `BYPASSRLS`, so only a table-level `REVOKE` blocks it. The restriction differs by table lifecycle:
+    - **Permanent append-only** (`credit_ledger`, `audit_events`): `revoke insert, update, delete … from public, anon, authenticated, service_role`. Nothing edits or deletes a permanent record; corrections are new entries.
+    - **Lifecycle, definer-only** (`practitioner_licences`): `revoke insert, update … from public, anon, authenticated, service_role`, but **may retain `service_role` DELETE** for cleanup/erasure (DSR, test teardown) where the table is not a permanent ledger.
+    The definer functions are unaffected — `SECURITY DEFINER` runs as the table owner, which keeps its rights. Proven by a **negative test asserting SQLSTATE `42501`** on each forbidden direct write (not a bare "an error occurred" — a partial INSERT fails on a NOT NULL column too, so only the specific `42501` distinguishes grant-denial from constraint-rejection), plus a positive round-trip for any retained grant. This class of hole was caught four times across Sprints 2/3 (D1, the anon gap, `credit_ledger` C3, `practitioner_licences`); the standing guard is `tests/rls/audited_table_writes.rls.test.ts`. Every future audited table ships with its row in that matrix. Revoking a named role is a no-op if `public`/the default ACL still holds the grant — verify with `has_table_privilege`, never by reading the migration.
 
 ## Secrets
 
