@@ -246,6 +246,12 @@ _(Refreshed 2026-07-10 — Sprint 3a resolved the HKIE retention question; treat
 - Event Lifecycle §9.2 (grace window = 24h), §9.3 (credit-and-adjust on open dispute), §9.4 (mandatory cancellation notification, organiser-handled refund)
 - Data Model Slice 0.9 §9 — all four items (HKAM hierarchy, HKIE discipline handling, cross-body recognition, superseded-licence aggregation) confirmed as drafted
 
+**Architectural forks — parked doctrine, decide deliberately** (full reasoning in `docs/doctrine.md`, stage into vault Decisions Log when decided):
+- **D.1 config-hash fork** — pinned-in-hash vs chained-version-table. Highest-value open decision (determines whether canonical serialization sits on the ledger's hot write path). Lean: chained-version-table. Re-entry: a real body relationship or the 3b review. Nothing config-referencing gets built into `credit_ledger` before this is decided.
+- **Evaluator-versioning gap** — verdict reproducibility needs the *evaluator* (code) versioned, not just inputs (rows + config). Named, deferred to first verdict computation.
+- **KMS-signing vs RFC 3161** — RFC 3161 TSA is the deferred anchor on record; KMS-signing was never a logged decision, reverted to undecided.
+- **Cycle as a first-class entity** — data-model question, untangled from chain scoping; decide when balance-projection needs it.
+
 **Genuinely external — awaiting the body/organiser/practitioner conversation** (not resolvable by grounding or by Ivan alone):
 - Per-body PDF audit-response format
 - Reviewer workflow SLA
@@ -253,7 +259,7 @@ _(Refreshed 2026-07-10 — Sprint 3a resolved the HKIE retention question; treat
 
 **Standing on Ivan** (operational debt, not blocking Sprint 3):
 - Singapore Supabase project provisioning (Sprint 1 Task 11) — gates the PDPO Singapore-residency posture before real practitioner PII lands
-- Commit backlog push (~30+ local-only commits on `main`) — disaster-recovery risk independent of everything else
+- Commit backlog push (**~133** local-only commits on `main` as of 2026-07-10 — preflight clean: no secret/env/key files, `.env.local` untracked) — disaster-recovery risk independent of everything else
 
 ---
 
