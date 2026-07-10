@@ -1,5 +1,5 @@
 # Project State — Eventar
-_Last updated: 2026-07-08 (**CPD Sprint 2 shipped** — security wrapper + audit path + attendee identity; see `docs/plans/handoff_08072026.md`)_
+_Last updated: 2026-07-10 (**CPD Sprint 3a shipped** — identity/tenancy DDL, licence mutations, credit_ledger core; see `docs/plans/handoff_10072026.md`)_
 
 > Source of truth for "what's active vs forward-looking."
 > **Read this BEFORE writing any code.** Updated at the end of each phase.
@@ -112,6 +112,44 @@ Old Phase 9 (pg_cron emails) is **absorbed** into CPD Sprint 4. Old Phase 8 (wor
 
 ---
 
+## CPD Sprint 3a — identity/tenancy DDL + licence mutations + credit_ledger core: ✅ SHIPPED + PHASE-COMPLETION PROTOCOL PASSED (2026-07-10)
+
+Executed end-to-end from `docs/plans/2026-07-09-cpd-sprint-3a-implementation.md` via `superpowers:subagent-driven-development` (fresh implementer + spec-review + code-quality-review per task, controller commits), plus a full two-agent phase-completion pass (separate dev-lens and user-lens reviewers) at the exit gate. Full retrospective: `docs/plans/handoff_10072026.md`.
+
+| Commit(s) | What it adds |
+|---|---|
+| `311a6e3` | **Task 1** — `users.preferred_name` + `display_language` |
+| `6c31bff` | **Task 2** — 5-role staff enum widen (closes DEFERRED 15/16). Grew into fixing a live regression: `is_manager()` (the sole cross-owner-read RLS gate on events/registrations/agenda_blocks/survey_responses/speaker_checkins) and `pseudonymise_user` both hardcoded the retired `'manager'` literal — the sole staff account had already silently lost cross-owner read access before the fix landed |
+| `d199c92` | **Task 3** — `accrediting_bodies` table + RLS |
+| `b962852` | **Task 4** — `organisers` table + RLS |
+| `6b23af1` | **Task 5** — `practitioner_licences` table + RLS. Code review found the originally-planned self-write policy would let a practitioner forge their own `status='verified'` — dropped in favour of function-only mutation (Task 6) |
+| `ab7f9b1` | **Task 6** — 6 audited licence-mutation functions (`declare`/`set_primary`/`verify`/`lapse`/`revoke`/`supersede_licence`). Code review found `supersede_licence` had no from-state guard, letting a practitioner self-route around a staff revocation — fixed (blocks superseding `revoked`/`superseded`) |
+| `4c9cd3b` | **Task 7** — seed 8 HK accrediting bodies (6 citation-grounded active, LSHK onboarding, HKAM deferred). HKIE `retention_years` NULL — no source states a figure (Q24 verified absence) |
+| `65669fc` | **Task 8** — `credit_ledger` + own hash chain (§8.4, separate advisory lock from `audit_events`). Code review found the hash had no field delimiter (a real collision: `points=1,hours=1` and `points=11,hours=NULL` hashed identically), covered only 6 of ~15 semantic columns, and the append-only posture wasn't enforced against `service_role` — all fixed and backtested live before any real row existed |
+| `75dd2e6` | **Task 9** — `record_credit_entry` (sole ledger writer, service_role-only) + `credit_disputes`. Branching (the planned concurrency-test approach) turned out to need a paid Supabase plan this project doesn't have — backtested directly against live instead (10-row + a `credit_transferred` chain, fully cleaned up) |
+| `f8c0ca1` | Exit gate — `get_advisors` found 5 unindexed FKs introduced this sprint; fixed |
+| `f823a9c` | Exit gate dev-lens review (separate agent) found `practitioner_licences` still granted INSERT/UPDATE/DELETE to `anon`/`authenticated`/`service_role` at the table level — RLS blocked the first two but not `service_role` (BYPASSRLS), so the six Task 6 functions were never actually the sole mutation path. Also added the missing `transfer_reference_id` param to `record_credit_entry` |
+| `9d2b357` | Exit gate user-lens review (separate agent) caught the dev-lens fix breaking this sprint's own test fixtures (16/34 tests) — fixtures rewritten to use the real RPCs; re-granted `DELETE` (not INSERT/UPDATE) to `service_role` on Ivan's call, since `practitioner_licences` isn't a permanent ledger like `credit_ledger` and has no ephemeral-branch testing path |
+
+**Migrations:** 21 new (`20260709120000` through `20260709320000`), applied to the live Seoul project via CLI `db push`, migration list two-sided 63/63 — no drift.
+
+**Result:** static gates green (tsc clean · eslint 0 errors, 5 pre-existing unrelated warnings · vitest 461 passed \| 92 skipped · next build unchanged, 19 routes — frontend freeze held) · `pnpm test:rls` 92/92 across 14 files · `credit_ledger`/`credit_disputes`/`practitioner_licences` confirmed empty at ship (no synthetic residue in the regulator-facing tables) · `get_advisors` clean of new findings after the FK-index fix.
+
+**Phase-completion protocol — PASSED, two separate agents, both found real issues fixed before shipping:**
+- **Dev-lens review:** found `practitioner_licences`' table-grant gap (above) and the missing `transfer_reference_id` param. Confirmed correct: grant hygiene on all 9 new functions, `credit_ledger`'s append-only posture, the 3 `body_admin_read` RLS policies, the multi-tenancy exception (`practitioner_licences`/`credit_ledger`/`credit_disputes` deliberately cross-tenant, documented), and — via a live 10-row backtest under varied session GUCs (`DateStyle`, `TimeZone`) — that the hardened hash chain is genuinely deterministic, not just deterministic-by-luck on this session's settings.
+- **User-lens review:** found the dev-lens fix's own regression (above) by actually running the committed test suite, not just reading it. Also found `PROJECT_STATE.md` was stale (fixed by this update) and `DEFERRED.md`'s handoff-doc pointer was an unfilled placeholder (fixed). Two Minor UX findings logged for Sprint 3b: `declare_licence` leaks a raw FK-violation dump for a bad `p_body_id`, and `record_credit_entry` doesn't cross-validate that `p_licence_id`/`p_user_id`/`p_body_id` are mutually consistent.
+- **Backtest:** every migration verified live via Supabase MCP throughout, not just read from file text — including three separate live exploit attempts (forge-verified-status via direct write, route around a revocation via supersede, bypass the append-only ledger via `service_role`), all confirmed blocked, and one hash-collision + one tamper-detection proof executed and cleaned up.
+
+**Carried forward from the reviews (not fixed now — explicitly tracked in `docs/DEFERRED.md`):**
+1. `credit_disputes` and `credit_ledger`'s hash chain both have zero automated test coverage — no safe way for a committed test to create-and-clean-up a real `credit_ledger` fixture row (service_role can create via `record_credit_entry` but can't delete). Verified manually instead (documented in commit messages); gated on Sprint 3b's real event-transition wiring or Supabase branch-CI support.
+2. `is_manager()`'s role coverage (`organiser_admin`+`eventar_staff`) isn't yet extended to 4 app-layer TS authorization checks (still `eventar_staff`-only) — deliberate minimal-scope call, no `organiser_admin` account exists yet.
+3. Licence-mutation functions are transition-agnostic on `verify`/`lapse`/`revoke`/`set_primary` (only `supersede_licence` got a from-state guard) — decide whether this family needs a real state machine before Sprint 3b's reviewer workflow relies on status transitions.
+4. Two Minor UX findings (FK-violation error leak, `record_credit_entry` cross-field validation) — see above.
+
+**Remaining:** Task 11 Singapore provisioning still gated on Ivan (unrelated) · user pushes the commit backlog manually · **CPD Sprint 3b next**, gated on the external-voice review (not yet scheduled) — see `docs/plans/2026-07-09-cpd-sprint-3b-design.md`.
+
+---
+
 ## PRE-PIVOT ACTIVE PHASE (superseded) — Phase 8 — Vercel deploy
 
 **Goal.** Deploy Eventar to Vercel against the production Supabase project. First public URL; first real email infrastructure exercised end-to-end. Operational work primarily, not code.
@@ -193,12 +231,14 @@ Intentionally NOT in Phase 8 — surface as "for later" if they come up in conve
 
 ## Open decisions
 
-_(Refreshed 2026-07-09 — the line above was pre-pivot Phase-8 boilerplate that never got updated for the CPD pivot; treat anything below as current instead.)_
+_(Refreshed 2026-07-10 — Sprint 3a resolved the HKIE retention question; treat anything below as current.)_
 
 **Still genuinely open — not yet decided by anyone:**
 - Credit Ledger §8.2 — seed real per-body category taxonomies now vs. keep `credit_ledger.category` free text until an organiser-facing picker ships (product sequencing call, Ivan's, not yet made)
-- HKIE's `retention_years` default — no source states a figure; needs a product decision on what to seed
 - HKCR retention/cycle/category — genuinely unverified (site blocks automated fetch); needs manual retrieval, not a decision
+
+**Resolved 2026-07-10** (Sprint 3a Task 7 — see `docs/plans/handoff_10072026.md`):
+- HKIE's `retention_years` — no source states a figure (a verified absence, not a search miss); seeded as `NULL` rather than an unsourced default. `accrediting_bodies.retention_years` made nullable specifically for this.
 
 **Resolved 2026-07-09** (citation-grounding + product-policy pass — see vault Decisions Log Q24/Q25 and the respective slice open-question sections):
 - Retention windows for 6 of 8 launch bodies (Credit Ledger §8.5, Event Lifecycle §9.5) — per-body citations, 2–6yr verified range, no single default
@@ -236,7 +276,7 @@ _(Refreshed 2026-07-09 — the line above was pre-pivot Phase-8 boilerplate that
 | **CPD Sprint 0** | ✅ shipped 2026-07-04 | Hygiene: PKCE fix, review-mode strip, migration drift reconciled 26/26, build pack + BASELINE-DELTAS landed |
 | **CPD Sprint 1** | ✅ shipped 2026-07-04 | Multi-tenancy (`organisations`, `staff.organisation_id`, `events.organisation_id`) + `users` mirror + hash-chained `audit_events` + consent/DSR + fixed `pseudonymise_user`; real-DB RLS + chain integration suite 17/17; vitest 438 passed \| 17 skipped |
 | **CPD Sprint 2** | ✅ shipped 2026-07-08 | `withSecurity` wrapper + `require_active_staff` shared gate + D1 audit-authenticity closed (incl. two follow-up anon-grant gaps) + 3 shipped surfaces (self-check-in, staff-scan check-in, event publish) converted to audited definer functions + §4 abuse-tier substrate + attendee OTP capability + report-only CSP/headers; `pnpm test:rls` 59/59, vitest 461\|59 skipped |
-| **CPD Sprint 3a** | **next, ready to execute** | Identity/tenancy DDL (`accrediting_bodies`/`organisers`/`practitioner_licences`) + 5-role staff enum + licence mutation functions + 6-body seed data + `credit_ledger` core schema/chain — `docs/plans/2026-07-09-cpd-sprint-3a-implementation.md`. Ungated: everything the external review can't change. |
+| **CPD Sprint 3a** | ✅ shipped 2026-07-10 | Identity/tenancy DDL (`accrediting_bodies`/`organisers`/`practitioner_licences`) + 5-role staff enum + 6 audited licence-mutation functions + 8-body seed data + `credit_ledger` core schema/chain + `record_credit_entry`/`credit_disputes`; `pnpm test:rls` 92/92, vitest 461\|92 skipped |
 | **CPD Sprint 3b** | design outline written, execution gated | Body-reviewer workflow + `accredited` confirmation granularity + PDF format + cross-body recognition mechanics — `docs/plans/2026-07-09-cpd-sprint-3b-design.md`. **Gated** on the external-voice review (one body, one organiser, one practitioner — not yet scheduled). Detail-into-SQL happens after review answers the outline's per-task questions, not before. |
 
 ---
