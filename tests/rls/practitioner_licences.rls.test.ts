@@ -78,20 +78,22 @@ describe.skipIf(!process.env.RLS_TESTS)('practitioner_licences RLS', () => {
     staffEmails.push(otherOrgBodyAdminStaff.email);
 
     // userA's existing licence (is_primary=true), used as the read-path
-    // fixture for the cross-user-denied / body-admin-read(s) tests and as
-    // the target of the partial-unique-index (23505) probe.
-    const { data: licence, error: licenceErr } = await admin
-      .from('practitioner_licences')
-      .insert({
-        user_id: userA.id,
-        body_id: bodyId,
-        licence_number: 'HKICPA-RLS-0001',
-        is_primary: true,
-      })
-      .select('id')
-      .single();
+    // fixture for the cross-user-denied / body-admin-read(s) tests. Created
+    // via the real declare_licence/set_primary_licence RPCs, not a direct
+    // admin insert — practitioner_licences.INSERT is revoked from every app
+    // role including service_role (20260709300000), so these SECURITY
+    // DEFINER functions are the only way any credential can create a row.
+    const { data: licence, error: licenceErr } = await userA.client.rpc('declare_licence', {
+      p_body_id: bodyId,
+      p_licence_number: 'HKICPA-RLS-0001',
+    });
     if (licenceErr || !licence) throw new Error(`licence fixture: ${licenceErr?.message}`);
-    licenceId = licence.id as string;
+    licenceId = (licence as { id: string }).id;
+
+    const { error: primaryErr } = await userA.client.rpc('set_primary_licence', {
+      p_licence_id: licenceId,
+    });
+    if (primaryErr) throw new Error(`licence fixture (set_primary): ${primaryErr.message}`);
   }, 60_000);
 
   afterAll(async () => {
@@ -175,21 +177,18 @@ describe.skipIf(!process.env.RLS_TESTS)('practitioner_licences RLS', () => {
     expect(data).toHaveLength(0);
   });
 
-  it('a second is_primary=true row for the same user violates the partial unique index (23505)', async () => {
-    // Constraint-level probe, not an RLS probe (that's the test above) — uses
-    // the admin client since direct authenticated inserts are correctly
-    // blocked by RLS before ever reaching the unique index.
-    const { error } = await admin
-      .from('practitioner_licences')
-      .insert({
-        user_id: userA.id,
-        body_id: bodyId,
-        licence_number: 'HKICPA-RLS-0003',
-        is_primary: true,
-      })
-      .select('id')
-      .single();
-    expect(error).not.toBeNull();
-    expect(error?.code).toBe('23505');
-  });
+  // No direct-insert test for practitioner_licences_one_primary_idx here
+  // (unlike the earlier Task 5 version of this file): 20260709300000
+  // revoked INSERT/UPDATE on practitioner_licences from every app role
+  // including service_role, so a raw admin insert with is_primary=true can
+  // no longer reach the DB at all (PostgREST rejects it before the unique
+  // index is ever evaluated) — this test would just re-prove the grant
+  // revoke, not the index. The invariant itself is double-covered instead:
+  // Task 5's own migration assert confirmed the partial unique index
+  // exists at apply time, and this file's two set_primary_licence tests
+  // above prove the only two writer paths (declare_licence never sets
+  // is_primary=true; set_primary_licence always demotes any other primary
+  // in the same transaction before promoting) can never produce two
+  // is_primary=true rows for one user — the constraint is now structurally
+  // unreachable via any granted credential, not just index-enforced.
 });

@@ -59,25 +59,44 @@ describe.skipIf(!process.env.RLS_TESTS)('licence mutation functions', () => {
     return user;
   }
 
+  // Creates fixture licences via the real RPCs (declare_licence, plus
+  // set_primary_licence/revoke_licence to reach non-default states), not a
+  // direct admin insert — practitioner_licences.INSERT/UPDATE are revoked
+  // from every app role including service_role (20260709300000), so these
+  // SECURITY DEFINER functions are the only way any credential can create
+  // or transition a row, including test fixtures.
   async function makeLicence(
     userId: string,
     licenceNumber: string,
     opts: { isPrimary?: boolean; licenceType?: string; status?: string } = {},
   ): Promise<string> {
-    const { data, error } = await admin
-      .from('practitioner_licences')
-      .insert({
-        user_id: userId,
-        body_id: bodyId,
-        licence_number: licenceNumber,
-        is_primary: opts.isPrimary ?? false,
-        licence_type: opts.licenceType ?? null,
-        status: opts.status ?? 'declared',
-      })
-      .select('id')
-      .single();
-    if (error || !data) throw new Error(`licence fixture: ${error?.message}`);
-    return data.id as string;
+    const client = userId === userA.id ? userA.client : userB.client;
+    const { data, error } = await client.rpc('declare_licence', {
+      p_body_id: bodyId,
+      p_licence_number: licenceNumber,
+      p_licence_type: opts.licenceType ?? null,
+    });
+    if (error || !data) throw new Error(`licence fixture (declare): ${error?.message}`);
+    const licenceId = (data as LicenceRow).id;
+
+    if (opts.isPrimary) {
+      const { error: primaryError } = await client.rpc('set_primary_licence', {
+        p_licence_id: licenceId,
+      });
+      if (primaryError) throw new Error(`licence fixture (set_primary): ${primaryError.message}`);
+    }
+
+    if (opts.status === 'revoked') {
+      const { error: revokeError } = await ownerOrgBodyAdmin.client.rpc('revoke_licence', {
+        p_licence_id: licenceId,
+        p_reason: 'fixture setup',
+      });
+      if (revokeError) throw new Error(`licence fixture (revoke): ${revokeError.message}`);
+    } else if (opts.status && opts.status !== 'declared') {
+      throw new Error(`licence fixture: unsupported status "${opts.status}" — extend makeLicence`);
+    }
+
+    return licenceId;
   }
 
   async function auditEventFor(eventType: string, subjectId: string) {
