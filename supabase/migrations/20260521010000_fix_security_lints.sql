@@ -138,4 +138,18 @@ create policy "registrations_organizer_update_own" on public.registrations
 -- they inherit from. Postgres role inheritance means the direct revoke alone
 -- leaves the privilege in place via PUBLIC. service_role + postgres keep
 -- explicit grants (event-trigger machinery + dashboard tooling).
-revoke execute on function public.rls_auto_enable() from anon, authenticated, public;
+-- Portability guard (added 2026-07-10): rls_auto_enable is injected by the
+-- HOSTED Supabase platform, so it exists on the live project but NOT on a clean
+-- stack (local `supabase start`, or a fresh project provisioned by replaying
+-- migrations — e.g. the planned Singapore project). Without this guard the whole
+-- migration history is un-replayable from zero: the bare revoke errored with
+-- 42883 "function does not exist". Found by the first clean replay-from-zero.
+-- to_regprocedure() returns NULL instead of raising when the function is absent.
+-- Seoul already applied the bare revoke (version-tracked, this edit does not
+-- re-run there); fresh environments now skip it gracefully.
+do $$
+begin
+  if to_regprocedure('public.rls_auto_enable()') is not null then
+    execute 'revoke execute on function public.rls_auto_enable() from anon, authenticated, public';
+  end if;
+end $$;
