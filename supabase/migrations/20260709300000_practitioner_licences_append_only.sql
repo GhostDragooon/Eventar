@@ -1,0 +1,22 @@
+-- CPD Sprint 3a / Task 10 exit gate — dev-lens phase-completion review found
+-- practitioner_licences still granted INSERT/UPDATE/DELETE to anon,
+-- authenticated, AND service_role at the table-grant level, even though
+-- Task 5 dropped its self-write RLS policy specifically so that Task 6's
+-- six SECURITY DEFINER functions (declare_licence/set_primary_licence/
+-- verify_licence/lapse_licence/revoke_licence/supersede_licence) would be
+-- the ONLY mutation path. RLS blocks anon/authenticated (no write policy
+-- exists, default-deny) but NOT service_role — BYPASSRLS means RLS
+-- provides zero protection for that credential, so a raw
+-- admin.from('practitioner_licences').update(...) from any future Server
+-- Action would silently bypass every audit write, org-match staff gate,
+-- and from-state guard those six functions enforce.
+--
+-- This is the exact threat class credit_ledger's C3 hardening
+-- (20260709260000) closed; practitioner_licences never got the equivalent
+-- revoke. Confirmed live before this fix: has_table_privilege('service_
+-- role', 'public.practitioner_licences', 'UPDATE') = true. The six
+-- functions are unaffected — SECURITY DEFINER runs as the table owner,
+-- which retains full DML rights regardless of this revoke, exactly as
+-- record_credit_entry works on credit_ledger after its own revoke.
+
+revoke insert, update, delete on public.practitioner_licences from anon, authenticated, service_role;
