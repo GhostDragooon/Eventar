@@ -147,11 +147,11 @@ when balance-projection needs it.
 
 ---
 
-## PENDING — vault Decisions Log Q-entries (stage; write to vault on explicit go)
-Draft entries for `/Users/ivan/Desktop/Eventar/02 — Decisions Log.md`:
+## Vault Decisions Log cross-reference (written 2026-07-10)
+These open forks are logged in the vault `02 — Decisions Log.md` as OPEN entries:
 - **Q26 (OPEN):** config-hash fork — pinned-in-hash vs chained-version-table. Lean
   chained. Re-entry: real body relationship or 3b review.
 - **Q27 (OPEN):** evaluator-versioning — verdict reproducibility needs the evaluator
   versioned, not just inputs. Re-entry: first verdict computed.
-- **Q28 (REVERTED-TO-OPEN):** signature mechanism — RFC 3161 TSA is the deferred
-  anchor on record; KMS-signing is not a logged decision. Undecided until logged.
+- **Q28 (OPEN, reverted):** signature mechanism — RFC 3161 TSA is the deferred anchor
+  on record; KMS-signing is not a logged decision. Undecided until it earns its own entry.
