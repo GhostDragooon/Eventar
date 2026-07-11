@@ -11,7 +11,7 @@
     {
       "name": "demo-local",
       "runtimeExecutable": "bash",
-      "runtimeArgs": ["scripts/demo/dev-local.sh"],
+      "runtimeArgs": ["/Users/ivan/Eventar-demo/scripts/demo/dev-local.sh"],
       "port": 3100,
       "autoPort": false
     }
