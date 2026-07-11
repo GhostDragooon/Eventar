@@ -7,6 +7,13 @@
       "runtimeArgs": ["dev"],
       "port": 3000,
       "autoPort": false
+    },
+    {
+      "name": "demo-local",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["scripts/demo/dev-local.sh"],
+      "port": 3100,
+      "autoPort": false
     }
   ]
 }
