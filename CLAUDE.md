@@ -61,6 +61,7 @@ The shipped workshop loop (registration → confirmation email → 60-min-before
 - **Measurement vs inference.** Automation acts only on deterministic measurements (rate limits, Turnstile, OTP failure counts). Inference signals (behavioural classification) produce flags for humans — never automatic action. No IP-level enforcement on authenticated routes, ever.
 - **Multi-tenancy.** Every new domain table carries `organisation_id` + RLS (Q20 reversed old decision 6.3 single-org).
 - **Frontend freeze.** While it holds: backend, migrations, Server Actions, and tests only.
+- **Block architecture guardrail (2026-07-11).** Every new feature/table/module must slot into the block map in `docs/architecture/BLOCK-ARCHITECTURE.md` (kernel K1–K3 / domain blocks B1–B8 / surfaces) and pass its new-work admission checklist before any code. Work that doesn't fit a block is a flagged decision first, not code. Kernel changes are constitutional (Decisions Log + Ivan sign-off).
 
 ## Source of truth — read the Obsidian vault first
 
