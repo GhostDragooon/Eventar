@@ -51,3 +51,5 @@ Raw backend effort ≈ **6–9 weeks** (3b + S4 + S5, ~2–3 wk each) + the fron
 - **Full M4** (roadmap's "backend feature-complete for pilot"): everything through Sprint 5 + full unfreeze. The real product; want it before onboarding bodies #2/#3 unattended.
 
 **Recommendation:** aim for the lean cut, and let the body review reshape 3b before detailing it. The single highest-leverage move — bigger than any sprint — is **scheduling the review**: it unblocks 3b's design, resolves Q26, and produces the pilot body, in one conversation.
+
+> **2026-07-11 — the concrete path to that review now exists:** `docs/plans/2026-07-11-poc-engagement-plan.md` — Phase P1 (POC/demo pack + deploy track, Milestone A "demo-ready") then Phase P2 (internal → NGO trials → body outreach → the review meeting, Milestones B–D), per Ivan's direction to trial with NGOs/internal meetings first and never engage empty-handed. That plan feeds E5/E6 outputs (Q26 + governance answers) back into 3b here.
