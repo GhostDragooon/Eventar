@@ -2,7 +2,7 @@
 
 Every deferral carries a **re-entry criterion** — the observable event that makes it wrong to keep deferring. Reviewed at each sprint boundary (standing ritual). Living tracker, not a phase doc.
 
-_Last updated: 2026-07-10 (CPD Sprint 3a shipped — items 15/16 closed (5-role staff enum); see `docs/plans/handoff_10072026.md` for the full sprint retrospective)._
+_Last updated: 2026-07-11 (external-review row reworded to "gates Sprint 3b" per the 3a/3b split — 3a shipped the ungated foundation 2026-07-10; previously: Sprint 3a close, items 15/16 closed — see `docs/plans/handoff_10072026.md`)._
 
 | Deferred item | Re-entry criterion | Earliest |
 |---|---|---|
@@ -30,7 +30,7 @@ _Last updated: 2026-07-10 (CPD Sprint 3a shipped — items 15/16 closed (5-role 
 | **Licence-mutation functions are transition-agnostic on `verify`/`lapse`/`revoke`/`set_primary`** (Task 6) — only `supersede_licence` got a from-state guard (Ivan's call, blocks superseding revoked/superseded). The staff-gated ones will e.g. flip a `revoked` licence to `verified` leaving `revoked_at` set. Consistent with `transition_dsr`'s own transition-agnostic precedent; lower risk since staff-gated. Decide whether this family should enforce a real state machine. | Before a body-reviewer workflow relies on status transitions (Sprint 3b) | Sprint 3b |
 | Cross-jurisdiction schema polymorphism (bodies, licence types, credit schemes) | AU or 2nd jurisdiction onboards — **migration cost accepted as debt** | Sprint 5+ |
 | Practitioner-in-a-week product-flow sketch | Before wallet-unfreeze consideration | Before Sprint 4 |
-| External review by real accrediting body + organiser | **Gates Sprint 3 credit-ledger implementation** | Before Sprint 3 |
+| External review by real accrediting body + organiser | **Gates Sprint 3b** (the CPD domain: `body_rules`/evaluator/issuance/roster + the governance half) — the 3a/3b split resolved the original wording: 3a's *ungated* foundation incl. the `credit_ledger` core shipped 2026-07-10 without the review, deliberately config-reference-free; the review also resolves Q26 | Before Sprint 3b |
 | Bulk-verify endpoint for accreditors | Documented request from an onboarded body | On request |
 | W3C Verifiable Credentials + DID:web + Status List 2021 | First accrediting-body request, or verifier-tooling maturity | Phase 2 |
 | RFC 3161 TSA anchor (external tamper proof) | First body asks how tampering is externally provable | Phase 2 |
