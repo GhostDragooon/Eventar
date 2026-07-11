@@ -15,7 +15,7 @@ _Written 2026-07-11. Direction per Ivan: build the POC/demo pack first, trial th
 
 | # | Task | Owner | Detail / exit check |
 |---|---|---|---|
-| D0 | **Deploy go/no-go decision** | **Ivan** | Explicit go for hosted trials. Everything below is gated on this. |
+| D0 | **Deploy go/no-go decision** | **Ivan** | **DECIDED 2026-07-11: HOLD — demo pack first.** D1 alone proceeds (deploy-neutral: it gates Singapore whenever that happens); D2–D7 stay parked until Ivan flips this. Internal demos/trials run on the local stack + LAN per `demo-run-sheet.md`. Revisit before NGO trials — external attendees need a hosted URL. Build order confirmed: demo pack scripts → D1 → collateral drafts. |
 | D1 | CI harness: replay-from-zero + chain/tamper (parked task #3) | agent | DEFERRED's own re-entry criterion: *before Singapore provisioning*. Local script + CI job: spin local stack → `supabase db reset` (63 migrations + seed) → assert `verify_audit_chain()`/`verify_ledger_chain()` green → owner-level tamper attempt caught. |
 | D2 | **Provision Singapore project** (`ap-southeast-1`) as canonical prod | Ivan (create) + agent (migrate/verify) | Fresh replay of the full migration chain — the real-world validation of the 2026-07-10 portability fixes. Seoul becomes dev/staging per the standing 2026-07-04 decision. Trials collect real PII → they should land on Singapore, not Seoul (PDPO posture). |
 | D3 | Vercel project + env vars | agent + Ivan (accounts) | `NEXT_PUBLIC_SUPABASE_URL/ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL` (hard-required by `lib/origin.ts` in prod), `RESEND_*`, `NEXT_PUBLIC_MAPBOX_TOKEN`. |
