@@ -72,6 +72,7 @@ Before implementing any feature, **read the relevant vault notes**:
 | If your task touches… | Read first |
 |---|---|
 | Anything at all | `00 — Index.md` (orientation), `02 — Decisions Log.md` (locked choices) |
+| How to work — review process, decision-making, conflict resolution, risk, debugging logic | `30 — Reference/Agent Working Method.md` (vault; mirrors `~/.claude/DECISION_PROTOCOL.md` with Eventar worked examples) |
 | Database schema or RLS | `10 — Architecture/Data Model.md` |
 | Auth, middleware, `requireStaff()` | `10 — Architecture/Auth Flow.md` |
 | Emails or cron | `10 — Architecture/Cron + Email.md` |
