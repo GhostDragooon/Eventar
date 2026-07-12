@@ -1,6 +1,6 @@
 # Organiser IA + data-design spec — v1 (2026-07-12)
 
-_Drill-down on the organiser web app: navigation, per-module contents, meaningful data, presentation rules, and input/output flows. Grounded in Ivan's 8 reference screenshots + his proposed IA (this doc adds/subtracts from it explicitly) + the block architecture. Feeds task #8 (design implementation) and the M2 unfreeze scope. "CPD Passport" here = licences + credits + compliance (Ivan's "CPR passport")._
+_Drill-down on the organiser web app: navigation, per-module contents, meaningful data, presentation rules, and input/output flows. Grounded in Ivan's 8 reference screenshots + his proposed IA (this doc adds/subtracts from it explicitly) + the block architecture. Feeds task #8 (design implementation) and the M2 unfreeze scope. Terminology note (2026-07-12, vault Q29): the practitioner credit module is the **"CPD Ledger"** — Ivan's original proposal called this area "CPR/CPD passport", a term now retired (it's a competitor's brand)._
 
 ## Layout decision
 
@@ -13,7 +13,7 @@ _Drill-down on the organiser web app: navigation, per-module contents, meaningfu
 | 1 | Dashboard | ✅ keep | Cross-event operational glance only (Q16 heritage: general vs event-specific separation stays) |
 | 2 | Events | ✅ keep | The workhorse; owns per-event tabs |
 | 3 | Attendees → **Participants** | ⚠️ keep, reshaped | NOT a marketing CRM. PDPO purpose-limitation: registration data was collected to run events, not for cold outreach. v1 = person-level view **derived from event participation** (registration + attendance + credit history, search/filter/tags). No cold-contact imports, no campaign lists. |
-| 4 | CPD Passport → **Accreditation & Compliance** | ⚠️ keep, split by audience | The *wallet* (mocked) is attendee-side. The **organiser-side** module is: event accreditations (body, points, category, status), body relationships, and roster eligibility signals ("licence lapsed — credits blocked"). Practitioner licence *verification* is body/platform-staff work, not organiser work — organisers see outcomes, never edit licences. |
+| 4 | CPD Ledger (proposal said "CPD Passport" — renamed per Q29) → **Accreditation & Compliance** | ⚠️ keep, split by audience | The *wallet* (mocked) is attendee-side. The **organiser-side** module is: event accreditations (body, points, category, status), body relationships, and roster eligibility signals ("licence lapsed — credits blocked"). Practitioner licence *verification* is body/platform-staff work, not organiser work — organisers see outcomes, never edit licences. |
 | 5 | Check-in | ✅ keep top-level | Time-critical, tablet-mode entry point (shipped). Session-level check-in = post-M4. |
 | 6 | Communications | ✅ keep, v1 scoped | v1 = transactional visibility: the 3 shipped emails (confirmation / reminder-with-pass / survey), send log from `email_log`, preview + manual send per event, **scheduled sends shown on a mini calendar** (witan's email-schedule motif — best idea in the references for this module). Segmented blasts = post-M4 + consent check. |
 | 7 | Reports / Analytics | ✅ keep | Shipped per-event analytics + adds CPD layer (below) |
