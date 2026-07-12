@@ -231,11 +231,13 @@ Intentionally NOT in Phase 8 — surface as "for later" if they come up in conve
 
 ## Open decisions
 
-_(Refreshed 2026-07-10 — Sprint 3a resolved the HKIE retention question; treat anything below as current.)_
+_(Refreshed 2026-07-12 — HKCR retention resolved via a sourced document; treat anything below as current.)_
 
 **Still genuinely open — not yet decided by anyone:**
 - Credit Ledger §8.2 — seed real per-body category taxonomies now vs. keep `credit_ledger.category` free text until an organiser-facing picker ships (product sequencing call, Ivan's, not yet made)
-- HKCR retention/cycle/category — genuinely unverified (site blocks automated fetch); needs manual retrieval, not a decision
+
+**Resolved 2026-07-12** (Ivan sourced 12 primary CPD/CME documents; see vault `30 — Reference/CPD Source Documents — Body Manuals & Forms.md`):
+- HKCR retention/cycle/category — was "genuinely unverified (site blocks automated fetch)". Now verified against `HKCR_CMECPD_Guidelines_2026-2028.pdf` (endorsed by HKAM Council 15 May 2025, effective 1 Jan 2026): **no retention-period clause stated anywhere in the 19-page guidelines** — a verified absence, same pattern as HKIE below. Cycle = 3 years (calendar-year start); minimum 90 points/cycle, ≤30 of which may be Category B. Not yet folded into vault Decisions Log Q24's citation table — do that before relying on it in code. **Caveat: this source batch does NOT contain the HKCP manual** (Hong Kong College of Physicians, the specific document roadmap-to-mvp.md names as gating Sprint 3b's rules seed) — that sourcing item stays open.
 
 **Resolved 2026-07-10** (Sprint 3a Task 7 — see `docs/plans/handoff_10072026.md`):
 - HKIE's `retention_years` — no source states a figure (a verified absence, not a search miss); seeded as `NULL` rather than an unsourced default. `accrediting_bodies.retention_years` made nullable specifically for this.
