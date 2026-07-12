@@ -10,6 +10,8 @@
 
 ---
 
+> **T1 SHIPPED with a deviation that supersedes this plan's Task 1/3/5 snippets (2026-07-12, commits `5167071` + follow-up):** `psqlLocal` (docker exec) was replaced by **`sqlLocal`** — a direct `pg` connection to `postgresql://postgres:postgres@127.0.0.1:54322/postgres` — because `spawnSync docker` times out from nested child processes in sandboxed harnesses (verified). Use `sqlLocal(sql): Promise<string>` everywhere this plan says `psqlLocal`. Also verified: `verify_audit_chain()` returns ZERO ROWS when clean (T7's `count(*) = 0` assertions are correct as written). T7's CI script may keep `docker exec` — it runs in GitHub Actions where the socket is native.
+
 ## Environment Facts (verified 2026-07-11/12 — do not rediscover)
 
 - `pnpm`/`node`: **always** `export PATH="/Users/ivan/.nvm/versions/node/v24.6.0/bin:/opt/homebrew/bin:$PATH"` first (system node is v14; launch runners ship minimal PATH).

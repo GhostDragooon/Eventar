@@ -1,5 +1,5 @@
 # Project State — Eventar
-_Last updated: 2026-07-10 (**CPD Sprint 3a shipped + post-3a hardening** — backlog pushed, service_role guard + Hard Rule 11, migration replay-from-zero fixed, doctrine captured, Sprint 3b fully scoped; see `docs/plans/handoff_10072026.md` Part 2)_
+_Last updated: 2026-07-12 (**Program plan A→E locked + Milestone A execution started** — consolidated roadmap `docs/plans/roadmap-to-mvp.md`, program plan `2026-07-12-program-plan-A-to-E.md`, Milestone A executable plan in flight (T1+T11 done); Q29 CPD Ledger rename + Q30 payments posture in vault; **see `docs/plans/handoff_12072026.md` for the active execution state + resume line**. Prior close-out: handoff_10072026.md)_
 
 > Source of truth for "what's active vs forward-looking."
 > **Read this BEFORE writing any code.** Updated at the end of each phase.
