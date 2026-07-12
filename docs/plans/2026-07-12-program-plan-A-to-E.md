@@ -138,11 +138,11 @@ _2026-07-12. The phase-level work plan for the consolidated roadmap (`roadmap-to
 
 Cumulative: **pilot ~10–14 weeks out; production-ready (end of E) realistically ~2 quarters out** — with the body's calendar, not engineering, as the dominant term in both. Anything that shortens the C long pole (warm intro, earlier meeting) pulls the whole program left.
 
-## Open questions (defaults baked in — silence = defaults hold)
+## Open questions — ANSWERED by Ivan 2026-07-12
 
-1. **Pilot event shape** — single-track seminar (default) or multi-track conference? If conference: session/track schema-readiness moves from E-wave-2 into M2, and per-session check-in into D.
-2. **Manual external entries in the pilot?** Default: OUT of D, first wave of E — pilot story is "attendance-verified credits first." Pull IN only if the body review says a partial cycle picture kills pilot value.
-3. **Billing through E** — stay invoice-first (default), Stripe self-serve only when body #2/#3 demands it?
-4. **B7 AI / B8 detection** — excluded from E's production bar (default; they're advisory-by-design with cost/abuse surface), shipped post-E on demand?
-5. **zh-HK depth** — practitioner-facing surfaces first (default), organiser side later?
-6. **Support model through E** — founder-run + docs + stated SLA (default), or a ticketing tool earlier?
+1. **Pilot event shape → "expandable."** Single-track now, schema designed to expand to sessions/tracks (E-W2 unchanged). **New requirement captured:** organisers typically run ONE event at a time, but **administrator roles must see all concurrent events — RLS-scoped** (eventar_staff = all orgs; organiser_admin = own org; body_admin = events accredited by their body). Admin-grade concurrent views land in E-W4; the RLS model already carries the scoping.
+2. **External entries → confirmed, purpose sharpened:** it's the **backfill/onboarding mechanism** — past events and new joiners arriving mid-cycle with existing records. Not obsolete, not pilot-blocking; E-W1, and C's external-evidence question informs its verification tiers.
+3. **Payments → Stripe as placeholder only** (no build now), multiple payment options eventually, **hard constraint: structured to avoid HKMA regulation** — pass-through processing (Stripe as processor/merchant of record), Eventar never holds client money, no stored-value mechanics. Logged as vault **Q30**. Invoice-first remains the operating mode through E.
+4. **B7/B8 → confirmed:** excluded from E's production bar; post-E on demand.
+5. **zh-HK → "later":** removed from E's fixed waves; trigger-driven (pilot body/audience requires it).
+6. **Support → confirmed:** founder-run + docs + stated SLA through E.
