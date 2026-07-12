@@ -17,6 +17,8 @@
 
 **Standing gates unchanged:** frontend freeze until M2 review · Q26 before anything config-referencing · no deploy by momentum (D0) · never single-thread the body (MCHK fallback).
 
+**Phase-level scope/spec/outcomes + execution plans for every milestone:** `docs/plans/2026-07-12-program-plan-A-to-E.md` (incl. the "production-ready at end of E" checklist and the body-#2 acceptance test).
+
 ---
 
 > Original spine below (2026-07-10, pre-consolidation) — kept for context; where they differ, the table above wins.
