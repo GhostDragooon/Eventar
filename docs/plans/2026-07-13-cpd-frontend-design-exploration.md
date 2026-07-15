@@ -87,7 +87,9 @@ Every HK body form, despite different professions, computes the **same shape**:
 
 ---
 
-## 5. App-shell architecture review (2026-07-15)
+## 5. App-shell architecture review (2026-07-15) — NOW BUILT INTO THE ARTIFACT
+
+_Initially delivered as this review only; Ivan's correction: the ask was the shell **in the mockups**. Built same day (artifact v3, label `global-shell-and-system`): persistent top bar on all organiser surfaces (workspace switcher, &#8984;K search, quick action, venue status Connected/Syncing variants, notification bell whose badge count = the needs-attention queue), the right contextual drawer open on Accreditation (participant quick-view with eligibility flag + provenance chips), and a new **System** tab rendering the component library + system states: status-pill vocabulary, provenance/eligibility chips, buttons/breadcrumbs/counted tabs, form field states (default/focus/error with a body-rule error message), toasts &times;4, skeleton loader, venue-status trio, both empty-state variants, and the sticky bulk-action bar with consent-safe v1 actions._
 
 Ivan supplied a "production-ready architectural list" (global shell, component library, system states, page templates, minimum set) and asked for pushback. Verdict: **the skeleton is right and largely matches the organiser IA spec** — top bar + collapsible sidebar, mobile bottom nav with the Scan FAB (already Ivan's own call), breadcrumbs/tabs/metric tiles/data tables/status pills, sticky bulk-action bar, skeleton/empty/error/toast states, and the page templates are all adopted. The **venue status indicator (Connected/Offline/Syncing)** is a genuinely good addition — offline tolerance was already re-ranked up in the IA spec as the #1 live-ops risk; making network state a first-class shell element follows.
 
