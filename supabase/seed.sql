@@ -1,6 +1,36 @@
 -- Seed data for local development / fresh-project rebuilds.
 -- Inserts the first platform operator who can log in.
 --
+-- ── LOCAL-ONLY grant restore (2026-07-15) ────────────────────────────────────
+-- This file runs ONLY on `supabase db reset` (local); the live Seoul project is
+-- migration-only and never executes it. Supabase CLI 2.109.1 applies migrations
+-- as the `postgres` role, whose default privileges grant the API roles only
+-- Dxtm (no SELECT/INSERT/UPDATE/DELETE) — unlike `supabase_admin`'s defaults
+-- (full arwdDxtm) that the platform uses on live. Result: a fresh local reset
+-- leaves every postgres-owned public table with NO DML grant for anon /
+-- authenticated / service_role, so the app can't even read events and the demo
+-- seed can't write staff. (Pre-2.109.1 CLI granted these, which is why the app
+-- ran against local before.) Restore the standard grants here so local matches
+-- live, then RE-ASSERT the Hard Rule 11 audited-table write revokes so this
+-- blanket grant doesn't silently undo them. Keep this list in sync with the
+-- migrations' table-level revokes (audit_events / credit_ledger /
+-- practitioner_licences) — a new audited table must be added here too.
+grant select, insert, update, delete on all tables in schema public
+  to anon, authenticated, service_role;
+grant usage, select on all sequences in schema public
+  to anon, authenticated, service_role;
+
+-- Re-assert Hard Rule 11 (mirror the migrations exactly):
+--   audit_events           — 20260704130400_init_audit_chain.sql
+--   credit_ledger          — 20260709260000_credit_ledger_hardening.sql
+--   practitioner_licences  — 20260709300000_practitioner_licences_append_only.sql
+--                            + 20260709320000 re-grants service_role DELETE
+revoke insert, update, delete on public.audit_events          from anon, authenticated, service_role;
+revoke insert, update, delete on public.credit_ledger         from anon, authenticated, service_role;
+revoke insert, update, delete on public.practitioner_licences from anon, authenticated, service_role;
+grant  delete                  on public.practitioner_licences to service_role;
+-- ─────────────────────────────────────────────────────────────────────────────
+--
 -- For production / pre-seeded projects: skip this file (the live Seoul project
 -- was pre-seeded directly, which is why this file never ran there — and why its
 -- pre-pivot staleness went unnoticed until the first clean replay-from-zero on
