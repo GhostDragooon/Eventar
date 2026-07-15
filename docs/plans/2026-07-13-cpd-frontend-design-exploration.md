@@ -5,6 +5,8 @@ _Exploratory design study run in parallel with the backend build (Milestone A). 
 **Artifact:** https://claude.ai/code/artifact/7b3633c5-67bb-4942-9727-e1ca21040fdb (private; seven surfaces, light + dark, interactive tabs)
 
 > **v2 — 2026-07-15, Ivan's direction:** "too green — main colour/background white, the added colour as highlight." All neutrals (page, surfaces, borders, inks, shadows) moved from green-biased to true neutral (Pajamas-style scale: white page, `#FAFAFA/#F4F4F5` surfaces, `#EAEAEA` borders, `#1A1A1A` ink; dark = neutral near-black). Teal survives **only** as the highlight — active states, brand marks, CPD chips, one filled CTA per view. Three surfaces added the same pass: Landing, Organiser Dashboard, Create event (completing the reference-folder coverage).
+>
+> **v2.1 — 2026-07-15, follow-up:** Ivan still saw dark ("not a hint of white") — the artifact had been theme-*aware*, so a dark OS or claude.ai's own dark stamp (`data-theme="dark"` on the root) flipped it. Fixed by **committing to light**: light tokens on `:root`; dark tokens scoped to `.cpd.dark`, which only the in-page toggle sets. Verified under emulated `prefers-color-scheme: dark` **and** a simulated host `data-theme="dark"` stamp — background stays `rgb(255,255,255)` in both; toggle→dark→toggle-back round-trip works. **Standing rule: Eventar surfaces load white for everyone; dark is an explicit user choice, never an OS/host inheritance.**
 
 **Grounded in:** the 4 real HK body record forms now on file (`30 — Reference/CPD Source Documents — Body Manuals & Forms.md`), the CPD Passport competitor crawl (`30 — Reference/Competitor Analysis — CPD Passport.md`), the ASPS member portal (out-of-scope US, UX reference only), and the 13 previously-unreviewed images in `30 — Reference/UI-UX Design References.md` (now reviewed — see that note).
 
@@ -84,6 +86,39 @@ Every HK body form, despite different professions, computes the **same shape**:
 4. These mockups are **not** shippable code — they're a design target. The unfreeze build translates them onto the real M3 token grid + Geist, honouring the shipped component API.
 
 ---
+
+## 5. App-shell architecture review (2026-07-15)
+
+Ivan supplied a "production-ready architectural list" (global shell, component library, system states, page templates, minimum set) and asked for pushback. Verdict: **the skeleton is right and largely matches the organiser IA spec** — top bar + collapsible sidebar, mobile bottom nav with the Scan FAB (already Ivan's own call), breadcrumbs/tabs/metric tiles/data tables/status pills, sticky bulk-action bar, skeleton/empty/error/toast states, and the page templates are all adopted. The **venue status indicator (Connected/Offline/Syncing)** is a genuinely good addition — offline tolerance was already re-ranked up in the IA spec as the #1 live-ops risk; making network state a first-class shell element follows.
+
+**Corrections applied (each grounded in a locked decision):**
+
+| # | Item in the list | Correction | Grounding |
+|---|---|---|---|
+| 1 | "Attendees (Registry & **CPR Passport** verification sub-tier)" | Name is **CPD Ledger** ("CPD Passport" is the competitor's brand; "CPR" is a typo). And licence *verification* is body/platform-staff work — organisers see **outcomes** (eligibility signals), never a verification workspace | Q29 · IA spec §4 |
+| 2 | "Attendees" as the nav area | **Participants** — person-level view *derived from event participation*; explicitly not a CRM (no cold-contact imports, no campaign lists) | IA spec §3, PDPO purpose-limitation |
+| 3 | Sidebar omits two modules | Add **Accreditation & Compliance** (the differentiating module) and **Communications** (email-log visibility: insert-first, failures with retry) as top-level areas — 8 areas, not 6 | IA spec §§4, 6 |
+| 4 | Bulk bar includes "**Email Blast**" | v1 Communications is transactional-only; segmented blasts are post-M4 **and** consent-gated. v1 bulk actions: Bulk check-in · Export CSV · Print badges | IA spec §6 · Q18/consent |
+| 5 | "**Switch Role**" in profile menu | Roles are admin-granted per account (5-role enum, changes audited via `set_staff_role()`), not a user-switchable mode. Show a role badge; keep the *workspace* switcher (multi-tenancy is real) | Sprint 3a Task 2 · Q20 |
+| 6 | "`VIP` [Purple]" badge example | §7a one-colour-one-meaning: colours map to concepts (green=live/verified, amber=pending/draft, red=error/blocked, teal=brand/active, neutral=done). VIP isn't a CPD concept; purple is currently a schedule-track colour. New colour meanings are a §7a amendment, not per-feature choices | eventar-design-patterns §7a |
+| 7 | Drawers for "heavy inline creation or editing" | Progressive-disclosure rule: row → drawer → page. Drawers = quick-view + light edits; **full editing workflows get pages** (three-layer-validated forms need room and error surfaces) | IA spec presentation rule 5 |
+| 8 | Wizard for event creation | Shipped create-event is a single page with numbered, jumpable sections (CPD section pulls body rules contextually) — keep it; reserve the linear stepper for genuinely linear flows (certificate/badge config, CSV import mapping) | Shipped form + §3g |
+| 9 | Notification bell | Must open the **same needs-attention queue** the dashboard shows, not a second feed — every row actionable, deep-links to the fix. Two notification surfaces will drift | IA spec dashboard rule |
+| 10 | Profile menu "eliminating the need for a global footer" | True for the organiser app; **attendee-facing web keeps a footer** — PDPO/consent-version links (`lib/legalVersions.ts`) must stay reachable on public surfaces | Consent versioning |
+| 11 | Global search / command palette | Keep in the shell design, tag **post-M4** — not must-have for pilot | Out-of-scope discipline |
+
+**Two primitives his minimum set is missing** (both are the product's spine, both repeat across roster/ledger/wallet/check-in per presentation rule 8):
+- **Provenance chip** — `Scanned at venue` / `Self-reported` / evidence ref.
+- **Eligibility flag** — `Licence lapsed — credits will not post`, rendered wherever the person appears.
+
+**Revised minimum reusable system (his 7, amended):**
+1. Global app shell — desktop top/left nav + mobile bottom bar with Scan FAB, **incl. venue status indicator**
+2. Standard page header — title, breadcrumbs, one primary action
+3. Data table container — filter row, **counted tabs/chips**, status pills, **provenance + eligibility chips**
+4. Form field block — default/focus/error, where the error state surfaces **all three validation layers** (form, Zod, DB/RLS — a silent RLS failure must never read as success, Q18)
+5. Sliding drawer — view + light edit; full edits are pages
+6. Feedback set — skeleton loader, both empty-state variants, toasts, **inline rule-tip box** (the annotated-form pattern: "74 days out; HKCR needs ~60")
+7. Split settings layout
 
 ## Related
 - `docs/plans/2026-07-12-organiser-ia-spec.md` — the organiser IA this refines
