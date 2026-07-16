@@ -30,6 +30,7 @@ import {
   createTestUser,
   deleteTestUser,
 } from '../helpers/clients';
+import { mustDelete } from '../helpers/mustDelete';
 
 const DEFAULT_ORG = '00000000-0000-0000-0000-000000000001';
 const BOGUS = '00000000-0000-0000-0000-0000000000ff';
@@ -150,7 +151,7 @@ describe.skipIf(!process.env.RLS_TESTS)('audited-table write guard (service_role
         expect(after, 'licence must be gone after service_role DELETE').toHaveLength(0);
       } finally {
         await deleteTestUser(user);
-        await admin.from('accrediting_bodies').delete().eq('id', body.id);
+        await mustDelete(admin.from('accrediting_bodies').delete().eq('id', body.id), 'accrediting_bodies fixture');
       }
     }, 60_000);
   });

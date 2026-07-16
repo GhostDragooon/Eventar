@@ -17,6 +17,7 @@
 // Gated: only runs under `pnpm test:rls` (RLS_TESTS=1).
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { admin, createTestUser, deleteTestUser, type TestUser } from '../helpers/clients';
+import { mustDelete } from '../helpers/mustDelete';
 
 const DEFAULT_ORG = '00000000-0000-0000-0000-000000000001';
 
@@ -128,25 +129,29 @@ describe.skipIf(!process.env.RLS_TESTS)('mark_attended RLS + audit', () => {
 
   afterEach(async () => {
     if (registrationIds.length > 0) {
-      await admin.from('registrations').delete().in('id', registrationIds);
+      await mustDelete(admin.from('registrations').delete().in('id', registrationIds), 'registrations fixture');
       registrationIds.length = 0;
     }
     if (eventIds.length > 0) {
-      await admin.from('events').delete().in('id', eventIds);
+      await mustDelete(admin.from('events').delete().in('id', eventIds), 'events fixture');
       eventIds.length = 0;
     }
     if (rateLimitKeys.length > 0) {
-      await admin.from('rate_limits').delete().in('key', rateLimitKeys);
+      await mustDelete(admin.from('rate_limits').delete().in('key', rateLimitKeys), 'rate_limits fixture');
       rateLimitKeys.length = 0;
     }
   }, 60_000);
 
   afterAll(async () => {
     // Belt-and-braces in case any single test's afterEach didn't run.
-    if (registrationIds.length > 0) await admin.from('registrations').delete().in('id', registrationIds);
-    if (eventIds.length > 0) await admin.from('events').delete().in('id', eventIds);
-    if (rateLimitKeys.length > 0) await admin.from('rate_limits').delete().in('key', rateLimitKeys);
-    if (staffEmails.length > 0) await admin.from('staff').delete().in('email', staffEmails);
+    if (registrationIds.length > 0) {
+      await mustDelete(admin.from('registrations').delete().in('id', registrationIds), 'registrations fixture');
+    }
+    if (eventIds.length > 0) await mustDelete(admin.from('events').delete().in('id', eventIds), 'events fixture');
+    if (rateLimitKeys.length > 0) {
+      await mustDelete(admin.from('rate_limits').delete().in('key', rateLimitKeys), 'rate_limits fixture');
+    }
+    if (staffEmails.length > 0) await mustDelete(admin.from('staff').delete().in('email', staffEmails), 'staff fixture');
     for (const u of [owner, nonOwner, plainUser]) if (u) await deleteTestUser(u);
   }, 60_000);
 

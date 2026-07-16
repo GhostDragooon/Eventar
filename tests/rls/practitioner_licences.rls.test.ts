@@ -14,6 +14,7 @@ import {
   deleteTestUser,
   type TestUser,
 } from '../helpers/clients';
+import { mustDelete } from '../helpers/mustDelete';
 
 const DEFAULT_ORG = '00000000-0000-0000-0000-000000000001';
 
@@ -97,15 +98,22 @@ describe.skipIf(!process.env.RLS_TESTS)('practitioner_licences RLS', () => {
   }, 60_000);
 
   afterAll(async () => {
-    await admin.from('practitioner_licences').delete().in('user_id', [userA.id, userB.id]);
-    if (bodyId) await admin.from('accrediting_bodies').delete().eq('id', bodyId);
+    await mustDelete(
+      admin.from('practitioner_licences').delete().in('user_id', [userA.id, userB.id]),
+      'practitioner_licences fixture',
+    );
+    if (bodyId) {
+      await mustDelete(admin.from('accrediting_bodies').delete().eq('id', bodyId), 'accrediting_bodies fixture');
+    }
     for (const email of staffEmails) {
-      await admin.from('staff').delete().eq('email', email);
+      await mustDelete(admin.from('staff').delete().eq('email', email), `staff ${email}`);
     }
     for (const u of [userA, userB, ownerBodyAdminStaff, otherOrgBodyAdminStaff]) {
       if (u) await deleteTestUser(u);
     }
-    if (otherOrgId) await admin.from('organisations').delete().eq('id', otherOrgId);
+    if (otherOrgId) {
+      await mustDelete(admin.from('organisations').delete().eq('id', otherOrgId), 'organisations fixture');
+    }
   }, 60_000);
 
   it('self user can read their own licence (self-read RLS)', async () => {

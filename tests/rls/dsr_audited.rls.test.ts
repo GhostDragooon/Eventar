@@ -15,6 +15,7 @@ import {
   deleteTestUser,
   type TestUser,
 } from '../helpers/clients';
+import { mustDelete } from '../helpers/mustDelete';
 
 const DEFAULT_ORG = '00000000-0000-0000-0000-000000000001';
 
@@ -67,10 +68,10 @@ describe.skipIf(!process.env.RLS_TESTS)('transition_dsr RLS + audit', () => {
 
   afterAll(async () => {
     if (dsrIds.length > 0) {
-      await admin.from('data_subject_requests').delete().in('id', dsrIds);
+      await mustDelete(admin.from('data_subject_requests').delete().in('id', dsrIds), 'data_subject_requests fixture');
     }
     for (const email of staffEmails) {
-      await admin.from('staff').delete().eq('email', email);
+      await mustDelete(admin.from('staff').delete().eq('email', email), `staff ${email}`);
     }
     for (const u of [nonStaff, managerStaff, eventarStaff, organizerStaff]) {
       if (u) await deleteTestUser(u);

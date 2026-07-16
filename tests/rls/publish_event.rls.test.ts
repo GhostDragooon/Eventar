@@ -15,6 +15,7 @@
 // Gated: only runs under `pnpm test:rls` (RLS_TESTS=1).
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { admin, createTestUser, deleteTestUser, type TestUser } from '../helpers/clients';
+import { mustDelete } from '../helpers/mustDelete';
 
 const DEFAULT_ORG = '00000000-0000-0000-0000-000000000001';
 
@@ -91,8 +92,11 @@ describe.skipIf(!process.env.RLS_TESTS)('publish_event RLS + audit', () => {
 
   afterEach(async () => {
     if (eventIds.length > 0) {
+      // audit_events is append-only (Hard Rule 11) — service_role DELETE is
+      // denied by design, so this cleanup attempt is expected to no-op/error
+      // and is intentionally NOT wrapped in mustDelete.
       await admin.from('audit_events').delete().in('subject_id', eventIds);
-      await admin.from('events').delete().in('id', eventIds);
+      await mustDelete(admin.from('events').delete().in('id', eventIds), 'events fixture');
       eventIds.length = 0;
     }
   }, 60_000);
@@ -100,10 +104,10 @@ describe.skipIf(!process.env.RLS_TESTS)('publish_event RLS + audit', () => {
   afterAll(async () => {
     // Belt-and-braces in case any single test's afterEach didn't run.
     if (eventIds.length > 0) {
-      await admin.from('audit_events').delete().in('subject_id', eventIds);
-      await admin.from('events').delete().in('id', eventIds);
+      await admin.from('audit_events').delete().in('subject_id', eventIds); // see note above
+      await mustDelete(admin.from('events').delete().in('id', eventIds), 'events fixture');
     }
-    if (staffEmails.length > 0) await admin.from('staff').delete().in('email', staffEmails);
+    if (staffEmails.length > 0) await mustDelete(admin.from('staff').delete().in('email', staffEmails), 'staff fixture');
     for (const u of [owner, nonOwner, plainUser]) if (u) await deleteTestUser(u);
   }, 60_000);
 

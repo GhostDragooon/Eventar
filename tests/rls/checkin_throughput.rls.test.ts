@@ -12,6 +12,7 @@
 // Gated: only runs under `pnpm test:rls` (RLS_TESTS=1).
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { admin } from '../helpers/clients';
+import { mustDelete } from '../helpers/mustDelete';
 
 const DEFAULT_ORG = '00000000-0000-0000-0000-000000000001';
 const ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
@@ -90,11 +91,14 @@ describe.skipIf(!process.env.RLS_TESTS)('check-in burst throughput (P2 exit gate
 
   afterAll(async () => {
     if (registrationIds.length) {
-      await admin.from('registrations').delete().in('id', registrationIds);
+      await mustDelete(admin.from('registrations').delete().in('id', registrationIds), 'registrations fixture');
     }
     if (eventId) {
-      await admin.from('rate_limits').delete().eq('key', `selfCheckIn:${eventId}`);
-      await admin.from('events').delete().eq('id', eventId);
+      await mustDelete(
+        admin.from('rate_limits').delete().eq('key', `selfCheckIn:${eventId}`),
+        'rate_limits fixture',
+      );
+      await mustDelete(admin.from('events').delete().eq('id', eventId), 'events fixture');
     }
   }, 60_000);
 

@@ -13,6 +13,7 @@
 // Gated: only runs under `pnpm test:rls` (RLS_TESTS=1).
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { admin, createTestUser, deleteTestUser, type TestUser } from '../helpers/clients';
+import { mustDelete } from '../helpers/mustDelete';
 
 const DEFAULT_ORG = '00000000-0000-0000-0000-000000000001';
 
@@ -57,7 +58,9 @@ describe.skipIf(!process.env.RLS_TESTS)('set_staff_role — audited role mutatio
   }, 60_000);
 
   afterAll(async () => {
-    if (staffEmails.length > 0) await admin.from('staff').delete().in('email', staffEmails);
+    if (staffEmails.length > 0) {
+      await mustDelete(admin.from('staff').delete().in('email', staffEmails), 'staff fixture');
+    }
     for (const u of [caller, plainUser]) if (u) await deleteTestUser(u);
     // audit_events rows are append-only (Hard Rule 11) — intentionally left in place.
   }, 60_000);

@@ -10,6 +10,7 @@
 // Gated: only runs under `pnpm test:rls` (RLS_TESTS=1).
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { admin } from '../helpers/clients';
+import { mustDelete } from '../helpers/mustDelete';
 
 const DEFAULT_ORG = '00000000-0000-0000-0000-000000000001';
 // Valid-alphabet (2-9, A-Z minus 0/O/1/I/L) 6-char suffixes so codes pass
@@ -97,24 +98,28 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
 
   afterEach(async () => {
     if (registrationIds.length > 0) {
-      await admin.from('registrations').delete().in('id', registrationIds);
+      await mustDelete(admin.from('registrations').delete().in('id', registrationIds), 'registrations fixture');
       registrationIds.length = 0;
     }
     if (eventIds.length > 0) {
-      await admin.from('events').delete().in('id', eventIds);
+      await mustDelete(admin.from('events').delete().in('id', eventIds), 'events fixture');
       eventIds.length = 0;
     }
     if (rateLimitKeys.length > 0) {
-      await admin.from('rate_limits').delete().in('key', rateLimitKeys);
+      await mustDelete(admin.from('rate_limits').delete().in('key', rateLimitKeys), 'rate_limits fixture');
       rateLimitKeys.length = 0;
     }
   }, 60_000);
 
   afterAll(async () => {
     // Belt-and-braces in case any single test's afterEach didn't run.
-    if (registrationIds.length > 0) await admin.from('registrations').delete().in('id', registrationIds);
-    if (eventIds.length > 0) await admin.from('events').delete().in('id', eventIds);
-    if (rateLimitKeys.length > 0) await admin.from('rate_limits').delete().in('key', rateLimitKeys);
+    if (registrationIds.length > 0) {
+      await mustDelete(admin.from('registrations').delete().in('id', registrationIds), 'registrations fixture');
+    }
+    if (eventIds.length > 0) await mustDelete(admin.from('events').delete().in('id', eventIds), 'events fixture');
+    if (rateLimitKeys.length > 0) {
+      await mustDelete(admin.from('rate_limits').delete().in('key', rateLimitKeys), 'rate_limits fixture');
+    }
   }, 60_000);
 
   // ---- 1. valid, not-yet-attended code succeeds ----

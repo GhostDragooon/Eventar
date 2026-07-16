@@ -7,6 +7,7 @@ import {
   deleteTestUser,
   type TestUser,
 } from '../helpers/clients';
+import { mustDelete } from '../helpers/mustDelete';
 
 const DEFAULT_ORG = '00000000-0000-0000-0000-000000000001';
 
@@ -30,7 +31,7 @@ describe.skipIf(!process.env.RLS_TESTS)('foundations RLS', () => {
   }, 60_000);
 
   afterAll(async () => {
-    await admin.from('staff').delete().eq('email', staffUser.email);
+    await mustDelete(admin.from('staff').delete().eq('email', staffUser.email), 'staff fixture');
     for (const u of [alice, bob, staffUser]) if (u) await deleteTestUser(u);
   }, 60_000);
 
