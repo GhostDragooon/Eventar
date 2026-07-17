@@ -138,7 +138,17 @@ async function findOrCreateEvent(client: AdminClient, operatorStaffId: string): 
   if (findErr) throw findErr;
   if (existing) return existing;
 
-  const startTime = new Date(Date.now() + 45 * 60_000);
+  // 90 min, not 45: registration closes UNCONDITIONALLY once the check-in
+  // window opens (start − CHECKIN_OPEN_MINUTES = 60 min — see
+  // lib/lifecycle/eventLifecycle.ts computeLifecycle / G11), independent of
+  // registration_close_at. A 45-min offset put the event already inside that
+  // window at the moment of creation — Beat 3 (public registration) could
+  // never succeed (confirmed live during Task 6 rehearsal: the public page
+  // showed "Registration has closed" immediately post-seed). 90 min leaves a
+  // genuine ~30-min registration-open buffer. Self-check-in (Beat 4) is
+  // unaffected either way — it's gated only by the static
+  // events.checkin_modes.self_serve flag set below, not by this timing.
+  const startTime = new Date(Date.now() + 90 * 60_000);
   const endTime = new Date(startTime.getTime() + 4 * 60 * 60_000);
   const keynoteEnd = new Date(startTime.getTime() + 60 * 60_000);
   const panelEnd = new Date(keynoteEnd.getTime() + 75 * 60_000);
