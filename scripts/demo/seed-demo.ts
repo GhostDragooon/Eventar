@@ -11,10 +11,11 @@
 // second run (no reset in between) reprints the exact same summary as the
 // first, because the event (looked up by title) and every attendee (looked
 // up by event_id+email) are reused rather than recreated. That also means
-// the fixture's timing window (start = now + 45min) is fixed at first
-// creation, not refreshed on every run: to get a new window, `supabase db
-// reset` first (full teardown), then reseed. A lighter tear-down-and-reseed
-// is `reset-demo.ts` in the run sheet's reset procedure — not yet built.
+// the fixture's timing window (start = now + 180min) is fixed at first
+// creation, NOT refreshed on a plain re-run: to move the window, tear down
+// first — `reset-demo.ts` (the run sheet's reset procedure) or `supabase db
+// reset` — then reseed. A plain re-run reprints the identical banner, so it
+// cannot be used to "buy more time" before registration closes.
 //
 // Uses the service-role client throughout (bypasses RLS by design — same
 // posture as supabase/seed.sql, which this script's staff-upsert convention
@@ -34,6 +35,7 @@
 import { admin } from './lib';
 import { generateRegistrationCode } from '../../lib/registrationCode';
 import { formatInTz } from '../../lib/tz';
+import { CHECKIN_OPEN_MINUTES } from '../../lib/lifecycle/eventLifecycle';
 
 type AdminClient = ReturnType<typeof admin>;
 
@@ -138,17 +140,20 @@ async function findOrCreateEvent(client: AdminClient, operatorStaffId: string): 
   if (findErr) throw findErr;
   if (existing) return existing;
 
-  // 90 min, not 45: registration closes UNCONDITIONALLY once the check-in
-  // window opens (start − CHECKIN_OPEN_MINUTES = 60 min — see
+  // 180 min. Registration closes UNCONDITIONALLY once the check-in window
+  // opens (start − CHECKIN_OPEN_MINUTES = 60 min — see
   // lib/lifecycle/eventLifecycle.ts computeLifecycle / G11), independent of
-  // registration_close_at. A 45-min offset put the event already inside that
-  // window at the moment of creation — Beat 3 (public registration) could
-  // never succeed (confirmed live during Task 6 rehearsal: the public page
-  // showed "Registration has closed" immediately post-seed). 90 min leaves a
-  // genuine ~30-min registration-open buffer. Self-check-in (Beat 4) is
-  // unaffected either way — it's gated only by the static
-  // events.checkin_modes.self_serve flag set below, not by this timing.
-  const startTime = new Date(Date.now() + 90 * 60_000);
+  // registration_close_at, so the registration-open window is exactly
+  // (offset − 60) min wide. The original 45-min offset opened the event
+  // already inside the closed window (Beat 3 failed on arrival). 90 fixed
+  // that but left only a ~30-min window — which the run sheet's own ~30-min
+  // prep block consumes, so registration could still be closed by the time
+  // the operator reaches Beat 3 live. 180 leaves a ~120-min window that
+  // comfortably outlasts prep + the 15-min demo. Self-check-in (Beat 4) is
+  // unaffected by any offset — it's gated only by the static
+  // events.checkin_modes.self_serve flag set below, not by this clock — so a
+  // large offset has zero downside to any other beat.
+  const startTime = new Date(Date.now() + 180 * 60_000);
   const endTime = new Date(startTime.getTime() + 4 * 60 * 60_000);
   const keynoteEnd = new Date(startTime.getTime() + 60 * 60_000);
   const panelEnd = new Date(keynoteEnd.getTime() + 75 * 60_000);
@@ -224,8 +229,10 @@ async function findOrCreateEvent(client: AdminClient, operatorStaffId: string): 
   }
 
   // Enable self-serve check-in (default is staff-only) — the run sheet's
-  // Beat 4 has a second attendee self-check-in by typing their manual code,
-  // which the /checkin/confirm page only offers when this is true.
+  // Beat 4 has an attendee self-check-in by opening their personal QR link
+  // and tapping "Confirm I'm here" on /checkin/confirm, which that page only
+  // offers when this flag is true (it reads the code from the link — there is
+  // no typed-entry field on the attendee side; manual typing is the staff surface).
   const { error: modesErr } = await client
     .from('events')
     .update({ checkin_modes: { staff: true, self_serve: true } })
@@ -301,6 +308,13 @@ async function main() {
   const demoReg = registrations.find((r) => r.attendee.email === DEMO_ATTENDEE_EMAIL);
   if (!demoReg) throw new Error('demo attendee registration missing after seeding');
 
+  // Registration closes when the check-in window opens (start − CHECKIN_OPEN_MINUTES),
+  // since this fixture sets no explicit registration_close_at. Surface that
+  // deadline — it's the one clock the operator has to beat at Beat 3, and it's
+  // fixed at first creation (a plain re-seed will NOT move it — see header).
+  const regCloseMs = new Date(event.start_time).getTime() - CHECKIN_OPEN_MINUTES * 60_000;
+  const regCloseMinsFromNow = Math.round((regCloseMs - Date.now()) / 60_000);
+
   console.log('');
   console.log('=== Demo fixture ready ===');
   console.log(`Event:        ${EVENT_TITLE} (draft)`);
@@ -309,6 +323,10 @@ async function main() {
   console.log(`Venue:        ${VENUE_NAME}`);
   console.log(`Starts:       ${formatInTz(event.start_time, EVENT_TIMEZONE)} HKT`);
   console.log(`Ends:         ${formatInTz(event.end_time, EVENT_TIMEZONE)} HKT`);
+  console.log(
+    `Reg. closes:  ${formatInTz(new Date(regCloseMs).toISOString(), EVENT_TIMEZONE)} HKT` +
+      `  (${regCloseMinsFromNow} min from now — the Beat 3 registration deadline)`,
+  );
   console.log('');
   console.log('Logins:');
   console.log(`  Operator:      ${OPERATOR_EMAIL} / ${OPERATOR_PASSWORD}`);
