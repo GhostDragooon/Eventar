@@ -240,6 +240,7 @@ The 13-surface redesign and 7 frontend↔backend gap-closure tasks shipped end-t
 
 Things to hold in mind during the ACTIVE build, **NOT to act on now**:
 
+- **Parallel frontend design-exploration thread (not part of this milestone, freeze held throughout)** — a separate session track has been iterating a mockup artifact for the eventual M2 unfreeze since 2026-07-13. Nothing in it has touched repo frontend code. Current state, decisions locked so far (blue-ramp palette replacing teal, white-ground-always, three-layer design method, global-shell-once architecture), and what's still open (landing aesthetic not yet locked, most organiser/practitioner pages still stubbed) are in `docs/plans/handoff_23072026.md` + the full log at `docs/plans/2026-07-13-cpd-frontend-design-exploration.md`. Read before doing any frontend design work so the two threads don't diverge or duplicate.
 - **Phase-8 deploy gates** — **all 4 closed** (R1 security batch + M1 drift reconcile):
   1. ✅ **CLOSED** — PII enumeration oracle on `/checkin/confirm`: name dropped + rate-limited (commits `7c5bcbd` + `20ac68f`).
   2. ✅ **CLOSED** — `Math.random` → `crypto.randomInt`; codes widened 4→6 chars (commit `659eee0`).
