@@ -32,9 +32,12 @@ grant  delete                  on public.practitioner_licences to service_role;
 -- staff.role is definer-only (set_staff_role, migration 20260716150855). The
 -- blanket grant above re-granted table-level UPDATE on staff, which would
 -- re-expose the role column locally — re-assert the revoke + non-role column
--- grant so local matches live.
+-- grant so local matches live. anon is intentionally EXCLUDED from the grant-back
+-- (20260723000000_staff_grant_narrow_anon, LOW-2): anon has no legitimate staff
+-- write and staff RLS is SELECT-only, so re-granting it here would re-widen the
+-- footgun that migration closes.
 revoke update                                     on public.staff from anon, authenticated, service_role;
-grant  update (email, full_name, organisation_id, status) on public.staff to anon, authenticated, service_role;
+grant  update (email, full_name, organisation_id, status) on public.staff to authenticated, service_role;
 -- ─────────────────────────────────────────────────────────────────────────────
 --
 -- For production / pre-seeded projects: skip this file (the live Seoul project

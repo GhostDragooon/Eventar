@@ -10,6 +10,14 @@
 // service_role DELETE), so they are intentionally NOT cleaned up — same as
 // every other RLS suite that exercises an audited mutation.
 //
+// Hard Rule 11 also wants a POSITIVE round-trip for every RETAINED grant, not
+// just the negative on the locked column: staff_role_update_lock_fix revoked
+// table UPDATE and granted back column UPDATE on every column EXCEPT role, so
+// test 5 asserts a service-role UPDATE of a non-role column (full_name) still
+// succeeds. Paired with test 1's 42501 on role, that pins the column boundary
+// exactly where intended — a future migration that over-revokes staff UPDATE
+// without the column re-grant fails test 5 (42501 on full_name), not silently.
+//
 // Gated: only runs under `pnpm test:rls` (RLS_TESTS=1).
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { admin, createTestUser, deleteTestUser, type TestUser } from '../helpers/clients';
@@ -132,5 +140,24 @@ describe.skipIf(!process.env.RLS_TESTS)('set_staff_role — audited role mutatio
     });
     expect(error).toBeNull();
     staffEmails.push(email);
+  });
+
+  // ---- 5. Hard Rule 11 positive round-trip: the RETAINED column grant works ----
+  // Mirror image of test 1: role UPDATE is denied (42501), but a non-role column
+  // UPDATE (full_name) must still succeed via the column grant re-issued by
+  // staff_role_update_lock_fix. This is the positive round-trip Hard Rule 11
+  // requires for retained grants — without it, a future over-revoke of staff
+  // UPDATE would break the staff-profile write path with no test to catch it.
+  it('service-role update of a non-role column (full_name) still succeeds', async () => {
+    const newName = `RLS SSR Renamed ${Date.now()}`;
+    const { error } = await admin.from('staff').update({ full_name: newName }).eq('id', targetStaffId);
+    expect(error).toBeNull();
+
+    const { data: staff } = await admin
+      .from('staff')
+      .select('full_name')
+      .eq('id', targetStaffId)
+      .single();
+    expect(staff?.full_name).toBe(newName);
   });
 });
