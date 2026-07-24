@@ -3,7 +3,9 @@
 import { revalidatePath } from 'next/cache';
 import { requireStaff } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { isValidRegistrationCode } from '@/lib/registrationCode';
+import { awardAttendanceCredit } from '@/lib/cpd/awardAttendanceCredit';
 
 /**
  * Mark a registrant as attended by their registration_code.
@@ -47,7 +49,16 @@ export async function markAttended(
   const row = Array.isArray(data) ? data[0] : data;
 
   switch (row?.result) {
-    case 'ok':
+    case 'ok': {
+      // Fresh check-in → award a CPD credit (best-effort, decoupled). award_attendance_credit
+      // is service_role-only, so it needs the admin client (not the staff-scoped one).
+      // Attendance is authoritative — a credit failure must never change this response.
+      const admin = supabaseAdmin();
+      try {
+        await awardAttendanceCredit(admin, { eventId: row.event_id, registrationCode: code });
+      } catch {
+        console.error('[cpd] award threw after staff mark-attended', { eventId: row.event_id });
+      }
       revalidatePath(`/events/${row.event_id}/checkin`);
       return {
         ok: true,
@@ -58,6 +69,7 @@ export async function markAttended(
           event_title: row.event_title,
         },
       };
+    }
     case 'already':
       return { error: 'Already attended.', alreadyAttendedAt: row.check_in_at ?? undefined };
     case 'rate_limited':
