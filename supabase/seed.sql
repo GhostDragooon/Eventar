@@ -47,15 +47,19 @@ grant  update (email, full_name, organisation_id, status) on public.staff to aut
 -- events, silently re-opening it — caught by a local `db reset` immediately after
 -- the migration landed, which is exactly what this block exists to prevent.
 -- anon is excluded from the grant-back: it has no UPDATE policy on events, so its
--- grant was always inert.
-revoke update on public.events from anon, authenticated, service_role;
+-- grant was always inert. service_role is deliberately NOT revoked (mirrors the
+-- migration, which only revokes anon+authenticated): it is the trusted
+-- server-side configuration path — seed-demo.ts sets accrediting_body_id/
+-- cpd_hours through it, and the dashboard/edit admin actions use it too.
+-- Revoking service_role here broke `seed-demo.ts` with a 42501 on first run.
+revoke update on public.events from anon, authenticated;
 grant  update (
   id, title, topic, start_time, end_time, timezone, description, poster_path,
   max_attendees, status, created_by, created_at, updated_at, venue_name,
   venue_address, city, region, country, latitude, longitude,
   registration_close_at, hosted_by, organized_by, hero_image_url, category,
   deleted_at, checkin_modes, registration_open_at, organisation_id, published_at
-) on public.events to authenticated, service_role;
+) on public.events to authenticated;
 -- ─────────────────────────────────────────────────────────────────────────────
 --
 -- For production / pre-seeded projects: skip this file (the live Seoul project
