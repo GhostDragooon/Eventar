@@ -1,5 +1,5 @@
 # Project State — Eventar
-_Last updated: 2026-07-18 (**Milestone A — ✅ SHIPPED + PHASE-COMPLETION PROTOCOL PASSED**. Task 13's owed three-lens review (dev-lens + user-lens + `security-reviewer`, scoped to Tasks 9–10's live grants) + a live-Seoul backtest ran clean — zero Critical/High findings, full convergence across all three lenses and the backtest. One real bug found and fixed: the prior session's registration-timing fix (90 min) was incomplete, still colliding with the run sheet's own prep window — widened to 180 min, verified end-to-end via a fresh `reset-demo.ts` run. 37-commit backlog pushed to `origin/main`, triggering `replay-verify.yml`'s first real CI run. **Still open: Task 12 (graph refresh — not attempted this session, out of this session's scope), vault `CPD Roadmap — Backend First.md`'s Sprint→Milestone-A–E reconciliation (flagged, Ivan's call), and Ivan's outstanding inputs (price, first-meeting date, D0 flip) carried from the prior handoff.** Full detail: this doc's new Milestone A section below + `docs/plans/handoff_17072026.md` (build session). Prior: handoff_12072026.md)_
+_Last updated: 2026-07-25 (**CPD MVP attendance-verified issuance — Stages 0–7 shipped (Stage 7 partial), Stage 8 pending Ivan**. Config-free `award_attendance_credit()` wired into both check-in paths, live-browser-proven end-to-end (Karen Lau → real ledger row → chain valid), plus `reconcile-event.ts` for the recovery/retroactive-post path, also live-verified. Four schema mismatches and two live-only bugs (wrong Supabase project, kill-switch polarity) found and fixed during the build — see the new CPD MVP section below. **Still open: Stage 8 (🟡 event-freeze trigger — in MVP or pushed to Full?, needs Ivan's yes/no) and Ivan's carried inputs (price, first-meeting date, D0 flip, vault Sprint↔Milestone reconciliation).** Full detail: this doc's new CPD MVP section below + `docs/plans/handoff_25072026.md`. Prior: Milestone A section below + `handoff_22072026.md`.)_
 
 > Source of truth for "what's active vs forward-looking."
 > **Read this BEFORE writing any code.** Updated at the end of each phase.
@@ -192,6 +192,34 @@ Executed end-to-end from `docs/plans/2026-07-12-milestone-A-executable.md` via `
 
 ---
 
+## CPD MVP — attendance-verified issuance: Stages 0–7 shipped (Stage 7 partial), Stage 8 pending Ivan (2026-07-25)
+
+Executed end-to-end from `docs/plans/2026-07-23-cpd-issuance-execution-plan.md` (rev.1, two rounds of external review folded in) per the architecture in `docs/plans/2026-07-23-cpd-mvp-architecture.md` / vault `20 — Roadmap/CPD MVP — Architecture (2026-07-23).md`. Loop: **create → publish → attend → feedback → CPD logged**, end-to-end and tamper-evident, on seeded identities, frontend still frozen. This is a parallel track alongside Sprint 3b's gated governance/evaluator engine, not a replacement for it — Q26 and the body-rules evaluator remain out of scope, per the architecture doc's "config-free issuance admissible pre-Q26" doctrine. Full retrospective: `docs/plans/handoff_25072026.md`.
+
+| Stage | What | Commit | Status |
+|---|---|---|---|
+| 0/8 | Baseline capture (gates green, Seoul: 69 migrations, `credit_ledger` 0 rows) | — | ✅ |
+| 1/8 | `events.accrediting_body_id` + `cpd_hours` + `credit_ledger_attendance_uniq` partial index | `7aa617f` | ✅ applied to Seoul |
+| 2/8 | `award_attendance_credit()` definer + `lib/cpd/awardAttendanceCredit.ts` wrapper | `d751f67` | ✅ applied to Seoul |
+| 3/8 | Wired into `selfCheckIn` + `markAttended`, fires only on fresh (`'ok'`) transitions | `6fed9d2` | ✅ |
+| 4/8 | Seed identity chain (Karen Lau — real account + verified HKAM licence) | `0d6f83e` | ✅ live-browser-proven |
+| 5/8 | `tests/cpd/attendance_issuance.rls.test.ts` — issue, idempotency, a real `Promise.all` race, guards | `4ecb24a` | ✅ 4/4 green live |
+| 6/8 | `scripts/cpd/reconcile-event.ts` — the recovery + retroactive-post path | `0916a8d` | ✅ live-verified (miss-fill + no-duplicate re-run) |
+| 7/8 | Run-sheet Beat 4.6 + `docs/DEFERRED.md` re-entry rows + this status update | `f738197` + this update | ✅ |
+| 8/8 | 🟡 event-config freeze trigger | — | 🟡 pending Ivan's yes/no |
+
+**Four real schema mismatches the build itself caught** (Stages 1–4, not the plan, not either review round): `entry_type='attendance'` doesn't exist (re-keyed to `entry_type='credit_earned' AND attestation_status='attendance_verified'`); `attestation_status` CHECK widened to add `'attendance_verified'` (a distinct, stronger provenance tier than `organiser_attested`); `public.users` has no email column (identity resolution moved inside the `award_attendance_credit` `SECURITY DEFINER` function, which can read `auth.users`; the TS layer can't); `practitioner_licences.status` has no `'active'` value (good-standing state is `'verified'` — corrective migration `20260724170650`).
+
+**Two bugs only live-browser verification caught (Stage 4):** the main checkout's `.env.local` points at Seoul, not local (`pnpm dev`/`:3000` is a live-Seoul server — use the `demo-local` launch config on `:3100`) · the kill switch defaulted **off** (required explicit `CPD_ISSUANCE_ENABLED==='true'`, which nothing set, so every award silently skipped with nothing logged) — inverted to fail-open (`==='false'` disables), added the missing skip-log, added a regression test.
+
+**Result:** static gates green throughout (no code changed in Stage 7 — doc-only) · `tests/cpd/attendance_issuance.rls.test.ts` 4/4 green live · Seoul migration count 73, local Docker stack applies all 6 CPD migrations via `supabase db reset` · every stage that touched a live user-facing or operational flow found a real bug via live verification that static gates missed alone (Stage 4's two bugs, Stage 6's own live miss/re-run proof) — the load-bearing lesson of the whole build.
+
+**Carried forward** (6 rows added to `docs/DEFERRED.md` 2026-07-25, each already pointed at a native/installed target, no new deps): retry-queue/`pending_credit` state, `creditIssued` API field (needs an unfrozen surface), live kill-switch toggle (deploy-time only today), the real-world issuance-rate bound tied to self-serve accounts + roster ingestion, per-body chains + lock-timeout (global advisory lock has no acquisition timeout), cross-cutting UX/perf polish.
+
+**Remaining:** Stage 8 (🟡 event-freeze trigger — in MVP scope or pushed to Full?) needs Ivan's yes/no, decide when Stage 7 fully closes · Ivan's outstanding inputs carried from `handoff_25072026.md`: `[PRICE]` in `docs/collateral/one-pager.md` + outreach email/phone, first internal-meeting/body-review date, D0 deploy flip (unrelated to this build, gates the *next* thing), whether to reconcile vault `CPD Roadmap — Backend First.md`'s Sprint body into the Milestone A–E spine · `credit_ledger` carries harmless dev-project residue on both Seoul (6 rows) and local (a few) from live test/proof runs, accepted debt per `docs/DEFERRED.md` · `/Users/ivan/Eventar-demo` worktree needs `git checkout --detach main` before its next use (Stages 1–6 are now genuinely committed, no more manual file-copying needed) · `NewEventForm.test.tsx`'s pre-existing concurrency flake has shown up twice this week, always clean in isolation — promote to an active fix if it recurs a third time.
+
+---
+
 ## PRE-PIVOT ACTIVE PHASE (superseded) — Phase 8 — Vercel deploy
 
 **Goal.** Deploy Eventar to Vercel against the production Supabase project. First public URL; first real email infrastructure exercised end-to-end. Operational work primarily, not code.
@@ -328,6 +356,7 @@ _(Refreshed 2026-07-12 — HKCR retention resolved via a sourced document; treat
 | **CPD Sprint 1** | ✅ shipped 2026-07-04 | Multi-tenancy (`organisations`, `staff.organisation_id`, `events.organisation_id`) + `users` mirror + hash-chained `audit_events` + consent/DSR + fixed `pseudonymise_user`; real-DB RLS + chain integration suite 17/17; vitest 438 passed \| 17 skipped |
 | **CPD Sprint 2** | ✅ shipped 2026-07-08 | `withSecurity` wrapper + `require_active_staff` shared gate + D1 audit-authenticity closed (incl. two follow-up anon-grant gaps) + 3 shipped surfaces (self-check-in, staff-scan check-in, event publish) converted to audited definer functions + §4 abuse-tier substrate + attendee OTP capability + report-only CSP/headers; `pnpm test:rls` 59/59, vitest 461\|59 skipped |
 | **CPD Sprint 3a** | ✅ shipped 2026-07-10 | Identity/tenancy DDL (`accrediting_bodies`/`organisers`/`practitioner_licences`) + 5-role staff enum + 6 audited licence-mutation functions + 8-body seed data + `credit_ledger` core schema/chain + `record_credit_entry`/`credit_disputes`; `pnpm test:rls` 92/92, vitest 461\|92 skipped |
+| **CPD MVP issuance** | Stages 0–7 shipped (Stage 7 partial) 2026-07-25 | Config-free `award_attendance_credit()` wired into both check-in paths + `reconcile-event.ts` recovery/retroactive path, both live-browser-verified; parallel track to Sprint 3b, not a substitute for it; Stage 8 (event-freeze trigger) pending Ivan |
 | **CPD Sprint 3b** | fully scoped (both halves + review script), execution gated | **Governance** outline (`2026-07-09-cpd-sprint-3b-design.md`: reviewer workflow, confirmation, PDF, cross-body) + **engine** outline (`2026-07-10-cpd-sprint-3b-engine-design.md`: versioned body_rules, the deterministic evaluator, issuance, roster, retro-trust model — the previously-missing CPD core) + **review script** (`2026-07-10-cpd-sprint-3b-review-prep.md`: 7 questions, going-in defaults, the Q5-is-behavioural rule). All gate-annotated. **Gated** on the external-voice review (not scheduled) + Q26. Detail-into-SQL happens after the review + Q26, not before. See `docs/plans/roadmap-to-mvp.md`. |
 
 ---
