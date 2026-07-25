@@ -30,7 +30,10 @@ export async function awardAttendanceCredit(
   // local/demo stack has no CPD_ISSUANCE_ENABLED set anywhere, so a 'true'-gated
   // check silently skipped every award with nothing logged). Deploy-time env
   // (a live mid-event toggle is a documented ⚪ follow-up).
-  if (process.env.CPD_ISSUANCE_ENABLED === 'false') {
+  // Tolerant match: the one moment anyone reaches for this switch is mid-incident,
+  // editing an env var by hand, deploy-time-only (one attempt per redeploy) —
+  // 'FALSE'/' false'/'False' must not silently leave issuance ON.
+  if (String(process.env.CPD_ISSUANCE_ENABLED ?? '').trim().toLowerCase() === 'false') {
     console.info('[cpd] attendance credit skipped', { eventId, reason: 'disabled' });
     return { status: 'skipped', reason: 'disabled' };
   }

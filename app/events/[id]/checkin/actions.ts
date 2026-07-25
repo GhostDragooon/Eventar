@@ -37,10 +37,10 @@ export async function markAttended(
   | { ok: true; registration: { id: string; full_name: string; event_id: string; event_title: string } }
   | { error: string; alreadyAttendedAt?: string }
 > {
-  await requireStaff();
+  const supabase = await supabaseServer();
+  await requireStaff(supabase);
   if (!isValidRegistrationCode(code)) return { error: 'Invalid code format.' };
 
-  const supabase = await supabaseServer();
   const { data, error } = await supabase.rpc('mark_attended', {
     p_code: code,
     p_method: method,
@@ -52,10 +52,19 @@ export async function markAttended(
     case 'ok': {
       // Fresh check-in → award a CPD credit (best-effort, decoupled). award_attendance_credit
       // is service_role-only, so it needs the admin client (not the staff-scoped one).
-      // Attendance is authoritative — a credit failure must never change this response.
-      const admin = supabaseAdmin();
+      // Attendance is authoritative — a credit failure must never change this response,
+      // so EVERYTHING credit-related lives inside this try: supabaseAdmin() reads
+      // process.env with non-null assertions and throws on a misconfigured deploy,
+      // which outside the boundary would fail an already-committed check-in.
       try {
-        await awardAttendanceCredit(admin, { eventId: row.event_id, registrationCode: code });
+        const { data: actor } = await supabase.auth.getUser();
+        await awardAttendanceCredit(supabaseAdmin(), {
+          eventId: row.event_id,
+          registrationCode: code,
+          // The scanning staff member's auth user id — credit_ledger.actor_id
+          // references public.users(id), NOT staff.id (they are unrelated uuids).
+          actorId: actor?.user?.id ?? null,
+        });
       } catch {
         console.error('[cpd] award threw after staff mark-attended', { eventId: row.event_id });
       }

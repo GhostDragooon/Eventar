@@ -47,8 +47,19 @@ const PRACTITIONER_EMAIL = 'demo-doctor@local.test';
 // Same demo-<role>-pw-2026 naming pattern as the operator password — not
 // the literal same string, so the two logins stay distinguishable live.
 const PRACTITIONER_PASSWORD = 'demo-doctor-pw-2026';
-const PRACTITIONER_NAME = 'Karen Lau';
-const PRACTITIONER_PREFERRED_NAME = 'Dr. Karen Lau';
+// MUST NOT collide with any ATTENDEES name, the operator, or a speaker. This
+// account is the Beat-5 (ledger-demo.ts) organiser_attested creditee; the
+// Beat-4.6 automatic creditee is the ATTENDEE 'Karen Lau' (k.lau@demo.test) —
+// a DIFFERENT auth user. Both were previously named 'Karen Lau', so the Beat-5
+// ledger readout showed two rows labelled 'Karen Lau' on one event (3h and
+// 3.5h) and the run sheet told the operator to call them the same person. In
+// front of an accrediting body that reads as sanctioned double-counting.
+// Also deliberately NOT a speaker any more: a speaker earning attendance
+// credit at their own session is itself a CPD compliance flag.
+const PRACTITIONER_NAME = 'Elaine Tsang';
+const PRACTITIONER_PREFERRED_NAME = 'Dr. Elaine Tsang';
+// The keynote speaker is its own identity, decoupled from the practitioner above.
+const KEYNOTE_SPEAKER_NAME = 'Dr. Nadia Rahman';
 
 const EVENT_TITLE = 'Clinical Update Seminar 2026';
 const EVENT_TIMEZONE = 'Asia/Hong_Kong';
@@ -181,6 +192,19 @@ async function findOrCreateEvent(
       .from('events')
       .update({ accrediting_body_id: bodyId, cpd_hours: CPD_HOURS })
       .eq('id', existing.id);
+    // Stage 8's freeze trigger rejects a CPD-config change once a credit
+    // references this event. Same values re-written = no-op, so a plain re-seed
+    // is unaffected; this only fires if CPD_BODY_SHORT_NAME/CPD_HOURS changed
+    // after a run that issued a credit. Give the remedy instead of a raw dump —
+    // the script's "re-runnable with zero errors" contract holds only while
+    // those constants are unchanged.
+    if (cpdErr?.code === '22023') {
+      throw new Error(
+        `This event already has an issued CPD credit, so its body/hours are frozen.\n` +
+          `To change CPD_BODY_SHORT_NAME or CPD_HOURS, tear down first:\n` +
+          `  pnpm exec tsx scripts/demo/reset-demo.ts`,
+      );
+    }
     if (cpdErr) throw cpdErr;
     return existing;
   }
@@ -234,7 +258,7 @@ async function findOrCreateEvent(
       topics: [
         {
           title: 'Advances in Clinical Practice: A 2026 Update',
-          speaker_name: PRACTITIONER_PREFERRED_NAME,
+          speaker_name: KEYNOTE_SPEAKER_NAME,
           speaker_credential: 'MBBS, FHKCP',
           speaker_affiliation: 'Hong Kong Sanatorium & Hospital',
         },

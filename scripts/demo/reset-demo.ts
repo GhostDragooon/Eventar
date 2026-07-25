@@ -29,7 +29,12 @@ import { execFileSync } from 'node:child_process';
 
 const OPERATOR_EMAIL = 'demo-staff@local.test';
 const PRACTITIONER_EMAIL = 'demo-doctor@local.test';
-const DEMO_AUTH_EMAILS = [OPERATOR_EMAIL, PRACTITIONER_EMAIL];
+// Stage 4 gave the demo attendee 'Karen Lau' a real auth account so
+// award_attendance_credit's email resolution has something to find. It was
+// missing here, so every reset left it behind — contradicting this script's
+// stated contract of removing every demo-created row.
+const DEMO_ATTENDEE_EMAIL = 'k.lau@demo.test';
+const DEMO_AUTH_EMAILS = [OPERATOR_EMAIL, PRACTITIONER_EMAIL, DEMO_ATTENDEE_EMAIL];
 const ZERO_UUID = '00000000-0000-0000-0000-000000000000';
 
 async function assertChainClean(fn: 'verify_audit_chain' | 'verify_ledger_chain'): Promise<void> {

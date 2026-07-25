@@ -38,6 +38,24 @@ grant  delete                  on public.practitioner_licences to service_role;
 -- footgun that migration closes.
 revoke update                                     on public.staff from anon, authenticated, service_role;
 grant  update (email, full_name, organisation_id, status) on public.staff to authenticated, service_role;
+-- events.accrediting_body_id / cpd_hours are the credit-minting columns
+-- (migration 20260725144446, review finding HIGH-1): events_organizer_update_own
+-- lets an organiser UPDATE their own event with no column restriction, so a
+-- table-level UPDATE grant means they can bind the event to ANY accrediting body
+-- and every registrant with a verified licence there earns a permanent credit
+-- that body never authorised. The blanket grant above re-granted table UPDATE on
+-- events, silently re-opening it — caught by a local `db reset` immediately after
+-- the migration landed, which is exactly what this block exists to prevent.
+-- anon is excluded from the grant-back: it has no UPDATE policy on events, so its
+-- grant was always inert.
+revoke update on public.events from anon, authenticated, service_role;
+grant  update (
+  id, title, topic, start_time, end_time, timezone, description, poster_path,
+  max_attendees, status, created_by, created_at, updated_at, venue_name,
+  venue_address, city, region, country, latitude, longitude,
+  registration_close_at, hosted_by, organized_by, hero_image_url, category,
+  deleted_at, checkin_modes, registration_open_at, organisation_id, published_at
+) on public.events to authenticated, service_role;
 -- ─────────────────────────────────────────────────────────────────────────────
 --
 -- For production / pre-seeded projects: skip this file (the live Seoul project

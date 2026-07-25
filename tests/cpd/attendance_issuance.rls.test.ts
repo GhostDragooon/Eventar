@@ -58,6 +58,11 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
   let bodyId: string;
   let cpdEventId: string;
   let nonCpdEventId: string;
+  // Guard-test events (2026-07-25 review). Each guard test needs its OWN event:
+  // registrations carry a unique (event_id, email), so a practitioner already
+  // registered on cpdEventId cannot get a second registration there. All of
+  // these are guard-blocked, so no credit ever references them — safe to delete.
+  const guardEventIds: string[] = [];
   const registrationIds: string[] = [];
   const ts = Date.now();
 
@@ -88,6 +93,33 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
     const { error: verErr } = await bodyAdmin.client.rpc('verify_licence', { p_licence_id: licenceId });
     if (verErr) throw new Error(`verify_licence fixture: ${verErr.message}`);
     return licenceId;
+  }
+
+  /** A CPD-configured event at an arbitrary time, for the guard tests. */
+  async function makeGuardEvent(label: string, startOffsetMs: number): Promise<string> {
+    const start = new Date(Date.now() + startOffsetMs);
+    const { data, error } = await admin
+      .from('events')
+      .insert({
+        title: `attendance_issuance ${label} fixture — DELETE ME ${ts}`,
+        start_time: start.toISOString(),
+        end_time: new Date(start.getTime() + 3_600_000).toISOString(),
+        timezone: 'Asia/Hong_Kong',
+        created_by: bodyAdminStaffId,
+        venue_name: 'Test Venue',
+        city: 'Hong Kong',
+        country: 'HK',
+        latitude: 22.3,
+        longitude: 114.2,
+        status: 'published',
+        accrediting_body_id: bodyId,
+        cpd_hours: 3,
+      })
+      .select('id')
+      .single();
+    if (error || !data) throw new Error(`${label} event fixture: ${error?.message}`);
+    guardEventIds.push(data.id as string);
+    return data.id as string;
   }
 
   async function creditsFor(userId: string, eventId: string): Promise<CreditRow[]> {
@@ -182,6 +214,11 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
       await mustDelete(admin.from('registrations').delete().in('id', registrationIds), 'registrations fixture');
     }
     await mustDelete(admin.from('events').delete().eq('id', nonCpdEventId), 'non-CPD event fixture');
+    // Guard-test events are all blocked before issuance, so no credit references
+    // them — unlike cpdEventId they are genuinely deletable.
+    if (guardEventIds.length > 0) {
+      await mustDelete(admin.from('events').delete().in('id', guardEventIds), 'guard event fixtures');
+    }
     // bodyAdmin's staff row is NOT deleted (permanently pinned by cpdEventId,
     // see header) — but its auth user has no such FK, so deleteTestUser is safe.
     for (const u of [bodyAdmin, practitionerNoLicence]) {
@@ -245,6 +282,47 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
 
     const rows = await creditsFor(practitionerA.id, nonCpdEventId);
     expect(rows).toHaveLength(0);
+  }, 30_000);
+
+  // --- Guards added by the 2026-07-25 three-lens review (HIGH-2) ---------
+  // 'attendance_verified' asserted venue-captured presence, but nothing bound
+  // the credit to the event's lifecycle. Both of these WOULD have issued a
+  // permanent, unrevocable credit before the fix. Neither issues one now, so
+  // neither adds ledger residue.
+
+  it('a cancelled registration earns no credit', async () => {
+    // self_check_in's predicate is `status <> 'attended'`, and 'cancelled' is a
+    // legal registrations.status — so a cancelled registrant could reach
+    // issuance and mint a credit labelled venue-verified.
+    const eventId = await makeGuardEvent('CANCELLED', 0);
+    const code = await makeRegistration(eventId, practitionerA, `CANCEL${ts}`);
+    const { error: updErr } = await admin
+      .from('registrations')
+      .update({ status: 'cancelled' })
+      .eq('registration_code', code);
+    expect(updErr).toBeNull();
+
+    const { data, error } = await admin.rpc('award_attendance_credit', {
+      p_event_id: eventId,
+      p_registration_code: code,
+    });
+    expect(error).toBeNull();
+    expect(data).toBe('skipped:cancelled');
+    expect(await creditsFor(practitionerA.id, eventId)).toHaveLength(0);
+  }, 30_000);
+
+  it('a check-in far outside the event window earns no credit', async () => {
+    // The fraud this closes: an attendee never shows up, then POSTs the code
+    // from the reminder email days later. Window is start-24h..end+24h.
+    const eventId = await makeGuardEvent('STALE', -10 * 86_400_000); // ended ~10 days ago
+    const code = await makeRegistration(eventId, practitionerA, `STALE${ts}`);
+    const { data, error } = await admin.rpc('award_attendance_credit', {
+      p_event_id: eventId,
+      p_registration_code: code,
+    });
+    expect(error).toBeNull();
+    expect(data).toBe('skipped:outside_window');
+    expect(await creditsFor(practitionerA.id, eventId)).toHaveLength(0);
   }, 30_000);
 
   it('an attendee with no licence at the event body writes no credit (skipped, not failed)', async () => {

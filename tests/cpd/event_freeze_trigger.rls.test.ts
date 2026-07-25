@@ -22,6 +22,10 @@ const DEFAULT_ORG = '00000000-0000-0000-0000-000000000001';
 
 describe.skipIf(!process.env.RLS_TESTS)('freeze_cpd_config_if_credited — event-config freeze trigger', () => {
   let bodyAdminStaffId: string;
+  // The staff account that OWNS the event fixtures — needed as a real
+  // authenticated JWT for the HIGH-1 column-lock tests (created_by =
+  // current_staff_id(), so RLS passes and only the grant can deny).
+  let eventOwner: TestUser;
   let practitioner: TestUser;
   let bodyId: string;
   let creditedEventId: string;
@@ -67,7 +71,8 @@ describe.skipIf(!process.env.RLS_TESTS)('freeze_cpd_config_if_credited — event
     if (bodyErr || !body) throw new Error(`body fixture: ${bodyErr?.message}`);
     bodyId = body.id as string;
 
-    const bodyAdmin = await createTestUser(`freeze-body-admin-${ts}`);
+    eventOwner = await createTestUser(`freeze-body-admin-${ts}`);
+    const bodyAdmin = eventOwner;
     practitioner = await createTestUser(`freeze-prac-${ts}`);
 
     const { error: staffErr } = await admin.from('staff').insert({
@@ -164,5 +169,43 @@ describe.skipIf(!process.env.RLS_TESTS)('freeze_cpd_config_if_credited — event
   it('allows cpd_hours/accrediting_body_id changes on an event with no credit', async () => {
     const { error } = await admin.from('events').update({ cpd_hours: 4 }).eq('id', uncreditedEventId);
     expect(error).toBeNull();
+  });
+
+  // --- HIGH-1 column lock (2026-07-25 three-lens review) -------------------
+  // events_organizer_update_own is `for update to authenticated using
+  // (created_by = current_staff_id())` with NO column restriction, and both CPD
+  // columns carried a table-level UPDATE grant — so an organiser could bind
+  // their own event to ANY accrediting body with any hours straight through
+  // PostgREST, and every registrant with a verified licence at that body earned
+  // a permanent credit the body never authorised. Closed at the GRANT layer
+  // (Hard Rule 11's logic: RLS alone is not the control here).
+  it('denies an authenticated organiser a direct write to the CPD config columns', async () => {
+    const { error: hoursErr } = await eventOwner.client
+      .from('events')
+      .update({ cpd_hours: 99 })
+      .eq('id', uncreditedEventId);
+    // 42501 specifically — a bare "an error occurred" would also match an RLS
+    // no-op or a constraint rejection, which prove nothing about the grant.
+    expect(hoursErr?.code).toBe('42501');
+
+    const { error: bodyErr } = await eventOwner.client
+      .from('events')
+      .update({ accrediting_body_id: bodyId })
+      .eq('id', uncreditedEventId);
+    expect(bodyErr?.code).toBe('42501');
+  });
+
+  it('still allows that organiser to update a non-CPD column (no over-revoke)', async () => {
+    const { error } = await eventOwner.client
+      .from('events')
+      .update({ title: `freeze-trigger UNCREDITED fixture (owner touch) — DELETE ME ${ts}` })
+      .eq('id', uncreditedEventId);
+    expect(error).toBeNull();
+  });
+
+  it('rejects cpd_hours above the 24h ceiling', async () => {
+    // Was `> 0` only, so 1e9 was legal and would be snapshotted immutably.
+    const { error } = await admin.from('events').update({ cpd_hours: 999 }).eq('id', uncreditedEventId);
+    expect(error?.code).toBe('23514');
   });
 });

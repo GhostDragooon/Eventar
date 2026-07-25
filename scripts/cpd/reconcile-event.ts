@@ -81,15 +81,33 @@ async function main() {
   const client = admin();
   const awardAttendanceCredit = await loadAwardAttendanceCredit();
 
+  // This writes to an append-only, regulator-facing ledger and can be pointed at
+  // local OR production depending on which env vars are loaded. Which database
+  // it just acted on must be on screen, not inferred.
+  console.log(`Target: ${process.env.NEXT_PUBLIC_SUPABASE_URL}\n`);
+
+  // Distinguish "you typed the wrong id" from "nobody has checked in yet" —
+  // an operator recovering mid-demo cannot act on a message that conflates them.
+  const { data: event, error: eventErr } = await client
+    .from('events')
+    .select('id, title')
+    .eq('id', eventId)
+    .maybeSingle();
+  if (eventErr) throw eventErr;
+  if (!event) {
+    console.error(`Event not found: ${eventId} — check the Event ID from the seed banner.`);
+    process.exit(1);
+  }
+
   const { data: registrations, error } = await client
     .from('registrations')
-    .select('id, registration_code, full_name')
+    .select('id, registration_code')
     .eq('event_id', eventId)
     .eq('status', 'attended');
   if (error) throw error;
 
   if (!registrations || registrations.length === 0) {
-    console.log(`No attended registrations found for event ${eventId}.`);
+    console.log(`"${event.title}" has no attended registrations yet — nobody has checked in.`);
     return;
   }
 
@@ -105,7 +123,10 @@ async function main() {
     });
     tally[outcome.status] += 1;
     const detail = 'reason' in outcome ? ` (${outcome.reason})` : '';
-    console.log(`  ${outcome.status.padEnd(8)} ${reg.full_name}${detail}`);
+    // registration id, never full_name — Hard Rule 10 (no PII in logs, UUIDs
+    // only). This output lands in scrollback, redirected files and any future
+    // CI/cron invocation.
+    console.log(`  ${outcome.status.padEnd(8)} ${reg.id}${detail}`);
     if (outcome.status === 'failed') {
       failures.push({ registrationId: reg.id, reason: outcome.reason });
     }
