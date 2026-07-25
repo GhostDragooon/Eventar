@@ -32,7 +32,7 @@
 // poster's "3-up speaker cards" full with no "+N more" overflow chip
 // (deriveSpeakerNames dedupes across both blocks — see lib/agenda.ts).
 
-import { admin } from './lib';
+import { admin, signedInClient } from './lib';
 import { generateRegistrationCode } from '../../lib/registrationCode';
 import { formatInTz } from '../../lib/tz';
 import { CHECKIN_OPEN_MINUTES } from '../../lib/lifecycle/eventLifecycle';
@@ -52,6 +52,16 @@ const PRACTITIONER_PREFERRED_NAME = 'Dr. Karen Lau';
 
 const EVENT_TITLE = 'Clinical Update Seminar 2026';
 const EVENT_TIMEZONE = 'Asia/Hong_Kong';
+
+// CPD MVP Stage 4 — config-free issuance needs the event to declare a body +
+// hours, and at least one attendee to have a real account + verified licence
+// at that body (award_attendance_credit resolves registration.email -> a real
+// auth.users row -> an active practitioner_licences row; most real attendees
+// won't have either yet, pre-self-serve — this fixture models the one that
+// does). HKAM, not HKCP: the seeded accrediting_bodies reference set
+// (20260709240000) has no HKCP row — see ledger-demo.ts's same note.
+const CPD_BODY_SHORT_NAME = 'HKAM';
+const CPD_HOURS = 3;
 const VENUE_NAME = 'HKCEC — Room 2';
 const VENUE_ADDRESS = '1 Expo Drive, Wan Chai, Hong Kong';
 // Hong Kong Convention and Exhibition Centre, approx. — only used for the
@@ -76,6 +86,14 @@ const ATTENDEES: AttendeeFixture[] = [
   { full_name: 'Samantha Yip', email: 's.yip@demo.test' },
 ];
 const DEMO_ATTENDEE_EMAIL = ATTENDEES[0].email;
+// Karen Lau's REGISTRATION identity, above, is separate from an account — most
+// registrations are anonymous by design. She's the one attendee this fixture
+// resolves to a real account + verified licence (see CPD_BODY_SHORT_NAME
+// above), so her check-in demonstrates automatic issuance. Not printed in the
+// banner: no UI surface uses this login (self-serve attendee auth is
+// deferred) — it exists only so award_attendance_credit's email resolution
+// has a real auth.users row to find.
+const DEMO_ATTENDEE_PASSWORD = 'demo-attendee-pw-2026';
 
 /** Find an existing local-stack auth user by email, or create one. Returns the user id. */
 async function findOrCreateAuthUser(
@@ -125,20 +143,47 @@ async function upsertOperatorStaff(client: AdminClient): Promise<string> {
   return data.id;
 }
 
+/** Look up an accrediting body's id by short_name (e.g. 'HKAM'). Throws if the
+ * seed reference set (20260709240000) doesn't have it — a hard prerequisite,
+ * not a fixture this script creates. */
+async function findBodyId(client: AdminClient, shortName: string): Promise<string> {
+  const { data, error } = await client
+    .from('accrediting_bodies')
+    .select('id')
+    .eq('short_name', shortName)
+    .single();
+  if (error || !data) throw new Error(`accrediting body ${shortName} not found: ${error?.message}`);
+  return data.id as string;
+}
+
 type EventFixture = { id: string; start_time: string; end_time: string };
 
 /** Find the demo event by title, or create it (draft, 2 agenda blocks) via
  * create_event_with_blocks. That RPC is atomic (single PostgREST transaction),
  * so "event exists" implies "its blocks exist too" — no separate block check
- * needed for idempotency. */
-async function findOrCreateEvent(client: AdminClient, operatorStaffId: string): Promise<EventFixture> {
+ * needed for idempotency. accrediting_body_id/cpd_hours are set on an existing
+ * event too (not just at creation) — cheap, and means a pre-Stage-4 fixture
+ * left over from an earlier seed run still ends up CPD-configured on the next
+ * plain re-run, no reset required. */
+async function findOrCreateEvent(
+  client: AdminClient,
+  operatorStaffId: string,
+  bodyId: string,
+): Promise<EventFixture> {
   const { data: existing, error: findErr } = await client
     .from('events')
     .select('id, start_time, end_time')
     .eq('title', EVENT_TITLE)
     .maybeSingle();
   if (findErr) throw findErr;
-  if (existing) return existing;
+  if (existing) {
+    const { error: cpdErr } = await client
+      .from('events')
+      .update({ accrediting_body_id: bodyId, cpd_hours: CPD_HOURS })
+      .eq('id', existing.id);
+    if (cpdErr) throw cpdErr;
+    return existing;
+  }
 
   // 180 min. Registration closes UNCONDITIONALLY once the check-in window
   // opens (start − CHECKIN_OPEN_MINUTES = 60 min — see
@@ -233,9 +278,15 @@ async function findOrCreateEvent(client: AdminClient, operatorStaffId: string): 
   // and tapping "Confirm I'm here" on /checkin/confirm, which that page only
   // offers when this flag is true (it reads the code from the link — there is
   // no typed-entry field on the attendee side; manual typing is the staff surface).
+  // Same update also sets the CPD config columns not in create_event_with_blocks'
+  // fixed insert list (Stage 4) — one round-trip, not a second update call.
   const { error: modesErr } = await client
     .from('events')
-    .update({ checkin_modes: { staff: true, self_serve: true } })
+    .update({
+      checkin_modes: { staff: true, self_serve: true },
+      accrediting_body_id: bodyId,
+      cpd_hours: CPD_HOURS,
+    })
     .eq('id', eventId);
   if (modesErr) throw modesErr;
 
@@ -280,6 +331,46 @@ async function findOrCreateRegistration(
   throw new Error(`Could not allocate a registration_code for ${attendee.email} after 5 attempts`);
 }
 
+/** Give the demo attendee a real account + a verified licence at the CPD body
+ * (Stage 4) — the one identity award_attendance_credit can actually resolve.
+ * Find-first on the licence: declare_licence isn't itself idempotent (a second
+ * call would create a second declared row), so this mirrors
+ * findOrCreateRegistration's pattern rather than calling it unconditionally.
+ * Declares as the attendee (their own auth.uid()), then verifies as the
+ * operator (an eventar_staff row, which satisfies verify_licence's org-match
+ * gate against the default org — same as ledger-demo.ts's choreography). */
+async function ensureVerifiedLicence(client: AdminClient, bodyId: string): Promise<void> {
+  const attendeeUserId = await findOrCreateAuthUser(
+    client,
+    DEMO_ATTENDEE_EMAIL,
+    DEMO_ATTENDEE_PASSWORD,
+    ATTENDEES[0].full_name,
+  );
+
+  const { data: existing, error: findErr } = await client
+    .from('practitioner_licences')
+    .select('id')
+    .eq('user_id', attendeeUserId)
+    .eq('body_id', bodyId)
+    .maybeSingle();
+  if (findErr) throw findErr;
+  if (existing) return;
+
+  const attendee = await signedInClient(DEMO_ATTENDEE_EMAIL, DEMO_ATTENDEE_PASSWORD);
+  const { data: declared, error: declErr } = await attendee.rpc('declare_licence', {
+    p_body_id: bodyId,
+    p_licence_number: 'HKAM-2026-DEMO-01',
+    p_licence_type: 'specialist',
+  });
+  if (declErr || !declared) throw new Error(`declare_licence: ${declErr?.message}`);
+
+  const operator = await signedInClient(OPERATOR_EMAIL, OPERATOR_PASSWORD);
+  const { error: verErr } = await operator.rpc('verify_licence', {
+    p_licence_id: (declared as { id: string }).id,
+  });
+  if (verErr) throw new Error(`verify_licence: ${verErr.message}`);
+}
+
 async function main() {
   const client = admin();
 
@@ -298,7 +389,8 @@ async function main() {
     .eq('id', practitionerUserId);
   if (prefErr) throw prefErr;
 
-  const event = await findOrCreateEvent(client, operatorStaffId);
+  const bodyId = await findBodyId(client, CPD_BODY_SHORT_NAME);
+  const event = await findOrCreateEvent(client, operatorStaffId, bodyId);
 
   const registrations: { attendee: AttendeeFixture; reg: RegistrationFixture }[] = [];
   for (const attendee of ATTENDEES) {
@@ -307,6 +399,8 @@ async function main() {
 
   const demoReg = registrations.find((r) => r.attendee.email === DEMO_ATTENDEE_EMAIL);
   if (!demoReg) throw new Error('demo attendee registration missing after seeding');
+
+  await ensureVerifiedLicence(client, bodyId);
 
   // Registration closes when the check-in window opens (start − CHECKIN_OPEN_MINUTES),
   // since this fixture sets no explicit registration_close_at. Surface that
@@ -326,6 +420,10 @@ async function main() {
   console.log(
     `Reg. closes:  ${formatInTz(new Date(regCloseMs).toISOString(), EVENT_TIMEZONE)} HKT` +
       `  (${regCloseMinsFromNow} min from now — the Beat 3 registration deadline)`,
+  );
+  console.log(
+    `CPD credit:   ${CPD_HOURS} hrs @ ${CPD_BODY_SHORT_NAME} — ${demoReg.attendee.full_name} has a verified` +
+      ` licence, so their check-in (pass code below) auto-posts a credit`,
   );
   console.log('');
   console.log('Logins:');

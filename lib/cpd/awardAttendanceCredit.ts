@@ -24,8 +24,14 @@ export async function awardAttendanceCredit(
   admin: SupabaseClient,
   { eventId, registrationCode, actorId }: { eventId: string; registrationCode: string; actorId?: string | null },
 ): Promise<AwardOutcome> {
-  // Kill switch (deploy-time env; a live mid-event toggle is a documented ⚪ follow-up).
-  if (process.env.CPD_ISSUANCE_ENABLED !== 'true') {
+  // Kill switch: fail-OPEN (issuance runs unless explicitly disabled) — a "kill
+  // switch" that defaults off would mean the feature never runs anywhere until
+  // someone discovers an undocumented env var (found running this live: the
+  // local/demo stack has no CPD_ISSUANCE_ENABLED set anywhere, so a 'true'-gated
+  // check silently skipped every award with nothing logged). Deploy-time env
+  // (a live mid-event toggle is a documented ⚪ follow-up).
+  if (process.env.CPD_ISSUANCE_ENABLED === 'false') {
+    console.info('[cpd] attendance credit skipped', { eventId, reason: 'disabled' });
     return { status: 'skipped', reason: 'disabled' };
   }
 

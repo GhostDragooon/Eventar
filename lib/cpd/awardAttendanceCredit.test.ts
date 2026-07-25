@@ -23,11 +23,22 @@ describe('awardAttendanceCredit — thin wrapper', () => {
     vi.restoreAllMocks();
   });
 
-  it('kill switch off → skipped:disabled, never calls the RPC', async () => {
+  it("kill switch explicitly 'false' → skipped:disabled, never calls the RPC", async () => {
     process.env.CPD_ISSUANCE_ENABLED = 'false';
     const { client, rpc } = fakeAdmin({ data: 'issued', error: null });
     expect(await awardAttendanceCredit(client, ARGS)).toEqual({ status: 'skipped', reason: 'disabled' });
     expect(rpc).not.toHaveBeenCalled();
+  });
+
+  // Fail-OPEN regression: found running this live against the local/demo stack,
+  // which has no CPD_ISSUANCE_ENABLED set anywhere — a "kill switch" that
+  // defaults off means the feature never runs until someone discovers an
+  // undocumented env var. Unset MUST behave like 'true', not like 'false'.
+  it('kill switch unset (undefined) → issuance proceeds, RPC IS called', async () => {
+    delete process.env.CPD_ISSUANCE_ENABLED;
+    const { client, rpc } = fakeAdmin({ data: 'issued', error: null });
+    expect(await awardAttendanceCredit(client, ARGS)).toEqual({ status: 'issued' });
+    expect(rpc).toHaveBeenCalledOnce();
   });
 
   it('maps the definer status strings', async () => {
