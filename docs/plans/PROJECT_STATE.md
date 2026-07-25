@@ -206,7 +206,7 @@ Executed end-to-end from `docs/plans/2026-07-23-cpd-issuance-execution-plan.md` 
 | 5/8 | `tests/cpd/attendance_issuance.rls.test.ts` — issue, idempotency, a real `Promise.all` race, guards | `4ecb24a` | ✅ 4/4 green live |
 | 6/8 | `scripts/cpd/reconcile-event.ts` — the recovery + retroactive-post path | `0916a8d` | ✅ live-verified (miss-fill + no-duplicate re-run) |
 | 7/8 | Run-sheet Beat 4.6 + `docs/DEFERRED.md` re-entry rows + this status update | `f738197`, `fe3756d` | ✅ |
-| 8/8 | 🟡 event-config freeze trigger — Ivan confirmed include | `<pending>` | ✅ applied to Seoul, live-verified |
+| 8/8 | 🟡 event-config freeze trigger — Ivan confirmed include | `4e71ab5` | ✅ applied to Seoul, live-verified |
 
 **Four real schema mismatches the build itself caught** (Stages 1–4, not the plan, not either review round): `entry_type='attendance'` doesn't exist (re-keyed to `entry_type='credit_earned' AND attestation_status='attendance_verified'`); `attestation_status` CHECK widened to add `'attendance_verified'` (a distinct, stronger provenance tier than `organiser_attested`); `public.users` has no email column (identity resolution moved inside the `award_attendance_credit` `SECURITY DEFINER` function, which can read `auth.users`; the TS layer can't); `practitioner_licences.status` has no `'active'` value (good-standing state is `'verified'` — corrective migration `20260724170650`).
 
