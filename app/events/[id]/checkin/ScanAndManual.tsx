@@ -43,7 +43,7 @@ export function ScanAndManual({
         type="button"
         onClick={onScanClick}
         aria-label="Open camera to scan QR badge"
-        className="group relative w-full min-h-[132px] bg-tertiary text-on-tertiary rounded-[20px] overflow-hidden hover:opacity-95 transition-opacity cursor-pointer flex items-center justify-center gap-lg px-lg py-md text-left"
+        className="group relative w-full min-h-[132px] bg-primary text-on-primary rounded-[20px] overflow-hidden hover:opacity-95 transition-opacity cursor-pointer flex items-center justify-center gap-lg px-lg py-md text-left"
       >
         <ScanPictogram />
         <span>

@@ -71,7 +71,7 @@ export function ConfirmDialog({
             className={`min-h-11 px-lg py-sm rounded-lg font-label-md text-label-md transition-opacity disabled:opacity-50 ${
               tone === 'danger'
                 ? 'bg-[color:var(--error)] text-white hover:opacity-90'
-                : 'bg-tertiary text-on-tertiary hover:opacity-90'
+                : 'bg-primary text-on-primary hover:opacity-90'
             }`}
           >
             {pending ? 'Working…' : confirmLabel}

@@ -24,8 +24,11 @@ describe('isTheme', () => {
 });
 
 describe('readTheme', () => {
-  it('returns "system" when nothing is stored', () => {
-    expect(readTheme()).toBe('system');
+  // M2 unfreeze: the default is 'light', not 'system' — the locked design rule
+  // is that Eventar loads white for everyone and dark is only ever an explicit
+  // choice. A dark OS must not decide this for a first-time visitor.
+  it('returns "light" when nothing is stored', () => {
+    expect(readTheme()).toBe('light');
   });
 
   it('returns the stored value when it is a valid theme', () => {
@@ -33,10 +36,17 @@ describe('readTheme', () => {
     expect(readTheme()).toBe('dark');
   });
 
-  it('falls back to "system" when localStorage holds a garbage value', () => {
+  it('still honours an explicit "system" pick', () => {
+    // 'system' stays a working, selectable mode — it just stopped being the
+    // default. Deleting it would have made /settings offer a dead option.
+    window.localStorage.setItem(THEME_STORAGE_KEY, 'system');
+    expect(readTheme()).toBe('system');
+  });
+
+  it('falls back to "light" when localStorage holds a garbage value', () => {
     // Defends against a hand-edited value or a future schema change.
     window.localStorage.setItem(THEME_STORAGE_KEY, 'hot-pink');
-    expect(readTheme()).toBe('system');
+    expect(readTheme()).toBe('light');
   });
 });
 

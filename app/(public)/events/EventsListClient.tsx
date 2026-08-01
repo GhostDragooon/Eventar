@@ -150,7 +150,7 @@ export function EventsListClient({ events }: { events: PublicEventCard[] }) {
                   )}
                   <Link
                     href={`/events/${e.id}`}
-                    className="inline-flex items-center gap-xs px-md py-sm rounded-lg bg-tertiary text-on-tertiary font-label-md text-label-md hover:opacity-90 transition-opacity"
+                    className="inline-flex items-center gap-xs px-md py-sm rounded-lg bg-primary text-on-primary font-label-md text-label-md hover:opacity-90 transition-opacity"
                   >
                     View
                     <span className="material-symbols-outlined text-[15px]" aria-hidden>arrow_forward</span>

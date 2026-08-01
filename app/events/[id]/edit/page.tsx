@@ -133,7 +133,7 @@ export default async function StaffEventEditPage({
               >
                 <button
                   type="submit"
-                  className="w-full bg-tertiary text-on-tertiary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
+                  className="w-full bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
                 >
                   Publish event
                 </button>
@@ -156,7 +156,7 @@ export default async function StaffEventEditPage({
           </Section>
 
           {event.description && (
-            <Section icon="description" iconBg="bg-tertiary-fixed" iconColor="text-tertiary" title="About">
+            <Section icon="description" iconBg="bg-tertiary-fixed" iconColor="text-primary" title="About">
               <p className="font-body-md text-body-md text-on-surface whitespace-pre-wrap">
                 {event.description}
               </p>
@@ -230,7 +230,7 @@ export default async function StaffEventEditPage({
               >
                 <button
                   type="submit"
-                  className="w-full bg-tertiary text-on-tertiary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
+                  className="w-full bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
                 >
                   Publish event
                 </button>
@@ -310,7 +310,7 @@ export default async function StaffEventEditPage({
               >
                 <Link
                   href={`/events/${event.id}/checkin`}
-                  className="inline-flex items-center bg-tertiary text-on-tertiary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
+                  className="inline-flex items-center bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
                 >
                   Open check-in
                 </Link>

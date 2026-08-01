@@ -19,9 +19,13 @@ type ThemeOpt   = { value: Theme;    label: string; description: string; icon: s
 type TextOpt    = { value: TextSize; label: string; description: string; icon: string };
 
 const THEME_OPTIONS: ThemeOpt[] = [
+  // Don't put the word "default" in a description: it lands in the radio's
+  // accessible name and collides with the Text size "Default" option, which
+  // getByRole('radio', {name:/default/i}) then matches twice. Light being
+  // pre-selected already communicates that it is the default.
   { value: 'light',  label: 'Light',  description: 'Always use the light palette, regardless of OS.', icon: 'light_mode' },
   { value: 'dark',   label: 'Dark',   description: 'Always use the dark palette, regardless of OS.',  icon: 'dark_mode'  },
-  { value: 'system', label: 'System', description: 'Follow your operating-system preference.',         icon: 'computer'   },
+  { value: 'system', label: 'System', description: 'Follow your operating-system preference instead.', icon: 'computer'   },
 ];
 
 const TEXT_OPTIONS: TextOpt[] = [
@@ -46,7 +50,9 @@ export default function SettingsClient({
   const theme = useSyncExternalStore<Theme>(
     subscribeStorage,
     readTheme,
-    () => 'system',
+    // Server snapshot must match readTheme()'s no-storage default, or the
+    // first client render flips the selected radio (M2 unfreeze: 'light').
+    () => 'light',
   );
   const textSize = useSyncExternalStore<TextSize>(
     subscribeStorage,

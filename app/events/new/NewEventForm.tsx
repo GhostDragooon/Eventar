@@ -654,7 +654,7 @@ function FormSection({
   return (
     <section ref={ref} className="space-y-md scroll-mt-grid-margin">
       <h2 className="font-headline-sm text-[20px] text-on-surface flex items-baseline gap-sm">
-        <span className="text-tertiary font-bold">{number} ·</span>
+        <span className="text-primary font-bold">{number} ·</span>
         <span>{title}</span>
         {optional && (
           <span className="font-body-md text-body-md text-on-surface-variant font-normal">
@@ -686,7 +686,7 @@ function ProgressStrip({
     >
       {steps.map((step, i) => {
         const badgeClass = step.complete
-          ? 'bg-tertiary text-on-tertiary border-transparent'
+          ? 'bg-primary text-on-primary border-transparent'
           : 'bg-surface-container border-outline-variant text-on-surface-variant';
         const labelClass = step.complete
           ? 'text-on-surface font-medium'

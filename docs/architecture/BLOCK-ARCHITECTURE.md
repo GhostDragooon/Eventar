@@ -49,7 +49,7 @@ One deployable app (Next.js) + one Postgres (Supabase). **Modularity is enforced
 
 ## Tier 2 — Surfaces
 
-Thin by contract: business rules live behind Server Actions / definer functions, never in UI. The 19 existing routes are S-Public + S-Organiser; S-Organiser is **frozen** until the M2 review. S-Attendee (wallet), S-Auditor (portal), and any real S-Integration API are post-M4 blocks-of-work with the design language already locked.
+Thin by contract: business rules live behind Server Actions / definer functions, never in UI. The 19 existing routes are S-Public + S-Organiser. S-Organiser was frozen until the M2 review; **the review happened and the freeze is LIFTED for S-Organiser as of 2026-08-01** (`docs/plans/2026-08-01-m2-frontend-unfreeze.md`, which carries the admission-checklist run for the one non-Tier-2 piece). S-Attendee (wallet), S-Auditor (portal), and any real S-Integration API remain post-M4 blocks-of-work with the design language already locked — the unfreeze does not promote them.
 
 ## The fitting rules (how anything bolts on)
 
@@ -82,4 +82,4 @@ Turnstile/strike ladder → K3 · staff MFA-mandatory → K1 (S4) · pg_cron ema
 | Kernel (K1–K3) | roles, chain mechanics, grant posture | Decisions Log entry + Ivan sign-off + full protocol |
 | Block contracts | a block's definer-fn signatures, table ownership | Flagged in the sprint plan + this doc updated |
 | Block internals | new function inside a block, internal refactor | Normal sprint discipline |
-| Surfaces | UI (post-freeze) | Cheapest — but frozen until M2 |
+| Surfaces | UI (post-freeze) | Cheapest — S-Organiser unfrozen 2026-08-01; other surfaces still gated by their own milestones |

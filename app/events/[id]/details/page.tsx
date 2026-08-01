@@ -239,7 +239,7 @@ function ActionToolbar({ eventId, lifecycle }: { eventId: string; lifecycle: Lif
   const showPublic = lifecycle === 'registering' || lifecycle === 'upcoming' || lifecycle === 'live';
   const base = 'inline-flex items-center gap-xs px-md py-sm rounded-lg border font-label-md text-label-md transition-colors';
   const outline = `${base} border-outline-variant text-on-surface hover:bg-surface-container-high`;
-  const live = `${base} border-transparent bg-tertiary text-on-tertiary hover:opacity-90`;
+  const live = `${base} border-transparent bg-primary text-on-primary hover:opacity-90`;
 
   return (
     <div className="flex gap-xs flex-wrap shrink-0">

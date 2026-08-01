@@ -238,7 +238,7 @@ export function DashboardWorkstation({
         </div>
         <Link
           href="/events/new"
-          className="inline-flex items-center gap-sm bg-tertiary text-on-tertiary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity shrink-0"
+          className="inline-flex items-center gap-sm bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity shrink-0"
         >
           <span className="material-symbols-outlined text-[18px]" aria-hidden>add</span>
           New event
@@ -318,7 +318,7 @@ export function DashboardWorkstation({
             {events.length === 0 ? 'No events yet.' : inBin ? 'The Deleted bucket is empty.' : 'No events match this filter.'}
           </p>
           {events.length === 0 && (
-            <Link href="/events/new" className="inline-flex items-center gap-sm mt-md bg-tertiary text-on-tertiary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity">
+            <Link href="/events/new" className="inline-flex items-center gap-sm mt-md bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity">
               <span className="material-symbols-outlined text-[18px]" aria-hidden>add</span>Create your first event
             </Link>
           )}

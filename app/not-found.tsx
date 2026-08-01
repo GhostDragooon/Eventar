@@ -22,7 +22,7 @@ export default function NotFound() {
         <div className="flex items-center justify-center gap-sm">
           <Link
             href="/events"
-            className="inline-flex items-center gap-xs bg-tertiary text-on-tertiary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
+            className="inline-flex items-center gap-xs bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
           >
             Upcoming events
             <span className="material-symbols-outlined text-[16px]" aria-hidden>arrow_forward</span>

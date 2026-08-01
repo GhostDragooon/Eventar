@@ -25,7 +25,7 @@ export default function LandingPage() {
             and a post-event survey — one loop, no attendee accounts.
           </p>
           <div className="flex items-center justify-center gap-sm mb-xl">
-            <Link href="/events" className="inline-flex items-center gap-xs bg-tertiary text-on-tertiary font-label-md text-label-md rounded-lg py-md px-lg hover:opacity-90 transition-opacity">
+            <Link href="/events" className="inline-flex items-center gap-xs bg-primary text-on-primary font-label-md text-label-md rounded-lg py-md px-lg hover:opacity-90 transition-opacity">
               See upcoming events
               <span className="material-symbols-outlined text-[16px]" aria-hidden>arrow_forward</span>
             </Link>
@@ -89,7 +89,7 @@ export default function LandingPage() {
         <div className="max-w-[1100px] mx-auto px-grid-margin py-xl text-center">
           <h2 className="text-[30px] font-extrabold tracking-[-0.03em] mb-sm">Your next event, end to end.</h2>
           <p className="text-[14px] text-white/60 mb-lg">Staff sign in with a magic link — attendees never sign in at all.</p>
-          <Link href="/login" className="inline-flex items-center gap-xs bg-tertiary text-on-tertiary font-label-md text-label-md rounded-lg py-md px-lg hover:opacity-90 transition-opacity">
+          <Link href="/login" className="inline-flex items-center gap-xs bg-primary text-on-primary font-label-md text-label-md rounded-lg py-md px-lg hover:opacity-90 transition-opacity">
             Staff sign in
             <span className="material-symbols-outlined text-[16px]" aria-hidden>arrow_forward</span>
           </Link>

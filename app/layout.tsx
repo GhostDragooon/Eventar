@@ -14,7 +14,16 @@ import { ToastProvider } from "@/components/ui/toast";
 // failure (private mode, throwing storage) silently falls back to defaults
 // — the missing classes are the default state.
 const THEME_INIT_SCRIPT = [
-  `try{var t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});if(t==='light'||t==='dark'){document.documentElement.classList.add(t)}}catch(e){}`,
+  // The default is light, not system (M2 unfreeze): a dark-OS visitor with no
+  // stored pick must still get the white app, so the absence of a pick has to
+  // resolve to an explicit .light class rather than to "no class" (which the
+  // prefers-color-scheme block in globals.css would then claim).
+  //
+  // <html> already ships class="light" from the server, so the common case —
+  // no stored pick — needs no mutation at all and hydrates byte-identically.
+  // This script only has work to do for a stored 'dark' or 'system' pick, and
+  // in those two cases it must REMOVE the server's 'light' first.
+  `try{var t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});if(t==='dark'||t==='system'){var c=document.documentElement.classList;c.remove('light');if(t==='dark'){c.add('dark')}}}catch(e){}`,
   `try{var s=localStorage.getItem(${JSON.stringify(TEXT_SIZE_STORAGE_KEY)});if(s==='small'||s==='large'){document.documentElement.classList.add('text-'+s)}}catch(e){}`,
 ].join('');
 
@@ -52,7 +61,17 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      // "light" is rendered server-side because light IS the default (M2
+      // unfreeze) — that way the overwhelmingly common case (no stored pick)
+      // matches what the pre-paint script leaves on the element, so there is
+      // nothing to hydrate-mismatch. suppressHydrationWarning covers the two
+      // cases that legitimately differ by design: a stored 'dark' pick (script
+      // swaps light→dark) and a stored 'system' pick (script strips light so
+      // the prefers-color-scheme block can apply). The server cannot know
+      // either — localStorage is client-only — so the difference is intended,
+      // not a bug, and this is the documented React escape hatch for it.
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased light`}
     >
       <head>
         {/* Material Symbols Outlined — mockups use it inline throughout.

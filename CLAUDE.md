@@ -60,7 +60,7 @@ The shipped workshop loop (registration → confirmation email → 60-min-before
 - **Audit insert last.** Any transaction writing `audit_events` emits the audit event as the LAST statement before commit (the chain trigger holds `pg_advisory_xact_lock` until commit).
 - **Measurement vs inference.** Automation acts only on deterministic measurements (rate limits, Turnstile, OTP failure counts). Inference signals (behavioural classification) produce flags for humans — never automatic action. No IP-level enforcement on authenticated routes, ever.
 - **Multi-tenancy.** Every new domain table carries `organisation_id` + RLS (Q20 reversed old decision 6.3 single-org).
-- **Frontend freeze.** While it holds: backend, migrations, Server Actions, and tests only.
+- ~~**Frontend freeze.**~~ **LIFTED for S-Organiser, 2026-08-01** (Ivan's M2 unfreeze scope call — the roadmap's "M2 unfreeze scope call" Ivan-critical item). Plan + admission checklist + staging: `docs/plans/2026-08-01-m2-frontend-unfreeze.md`. **Still off-limits, each for its OWN reason and not because of the freeze:** practitioner compliance math (Q26 + Milestone C gated — the evaluator half of M2 is untouched), the practitioner app / S-Attendee (post-M4), evidence locker + share-and-verify (B6, planned S5), multi-track scheduling (needs a deliberate data-model decision, rule 13). Adopting a design token's *value* without its *role* is how the first live pass broke WCAG AA on every CTA — read the plan's Stage 1 findings before touching the palette.
 - **Block architecture guardrail (2026-07-11).** Every new feature/table/module must slot into the block map in `docs/architecture/BLOCK-ARCHITECTURE.md` (kernel K1–K3 / domain blocks B1–B8 / surfaces) and pass its new-work admission checklist before any code. Work that doesn't fit a block is a flagged decision first, not code. Kernel changes are constitutional (Decisions Log + Ivan sign-off).
 
 ## Source of truth — read the Obsidian vault first
@@ -81,6 +81,7 @@ Before implementing any feature, **read the relevant vault notes**:
 | Where files live, naming, route groups | `10 — Architecture/Repo Structure.md` |
 | What we're building next | `20 — Roadmap/Phased Roadmap.md`, `20 — Roadmap/Phase N — *.md` |
 | Library choices + alternatives considered | `30 — Reference/Stack.md` |
+| Frontend component/token work resumes (currently FROZEN — see pivot banner above) — need real design tokens, component reference, motion/animation (GSAP), or a design-review/polish pass | `design-system-libraries` skill for tokens (global, `~/.claude/skills/design-system-libraries/SKILL.md`); also see `gsap-*`, `emil-design-eng`, `emilkowalski-motion`, `web-design-guidelines`, `impeccable-design-polish`, `redesign-existing-projects`, `minimalist-ui`, `industrial-brutalist-ui` — all global skills under `~/.claude/skills/` |
 | Env vars, key rotation | `30 — Reference/Credentials.md` |
 | "Can we just add X?" — check if it's deferred | `30 — Reference/Out of Scope.md` |
 

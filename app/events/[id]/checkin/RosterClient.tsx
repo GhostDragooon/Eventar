@@ -310,7 +310,7 @@ function RosterRowItem({
         <button
           type="button"
           onClick={onMark}
-          className="justify-self-start min-h-11 rounded-lg px-md py-sm font-label-md text-label-md bg-transparent text-tertiary border border-outline-variant hover:bg-surface-container-low transition-colors"
+          className="justify-self-start min-h-11 rounded-lg px-md py-sm font-label-md text-label-md bg-transparent text-primary border border-outline-variant hover:bg-surface-container-low transition-colors"
         >
           Check in →
         </button>
@@ -398,7 +398,7 @@ function ScannerPanel({
         <button
           type="button"
           onClick={onClose}
-          className="font-label-md text-label-md text-tertiary hover:underline"
+          className="font-label-md text-label-md text-primary hover:underline"
         >
           Close
         </button>

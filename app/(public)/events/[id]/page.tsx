@@ -346,7 +346,7 @@ function PartnerRow({
                 href={p.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-tertiary hover:underline"
+                className="text-primary hover:underline"
               >
                 {p.name}
               </a>

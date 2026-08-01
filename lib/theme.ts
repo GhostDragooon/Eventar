@@ -1,8 +1,15 @@
 /**
  * Client-side theme persistence. Three modes:
- *   - 'light'  → force light, ignores OS
+ *   - 'light'  → force light, ignores OS (THE DEFAULT)
  *   - 'dark'   → force dark, ignores OS
- *   - 'system' → follow prefers-color-scheme (the default)
+ *   - 'system' → follow prefers-color-scheme (opt-in)
+ *
+ * M2 unfreeze (2026-08-01): the default moved from 'system' to 'light'. The
+ * locked design rule is "Eventar surfaces load white for everyone; dark is an
+ * explicit user choice, never an OS inheritance." Deleting 'system' outright
+ * would have been the other way to satisfy that, but it would strip a working
+ * capability and leave /settings offering a mode that silently did nothing —
+ * so 'system' stays available and merely stops being what you get by default.
  *
  * Persisted in localStorage; applied by toggling .light/.dark classes on
  * <html>. The CSS in globals.css does the rest (class selectors override
@@ -20,13 +27,13 @@ export function isTheme(value: unknown): value is Theme {
 }
 
 export function readTheme(): Theme {
-  if (typeof window === 'undefined') return 'system';
+  if (typeof window === 'undefined') return 'light';
   // Safari "Block all cookies" and iOS private mode throw on storage access.
   try {
     const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-    return isTheme(stored) ? stored : 'system';
+    return isTheme(stored) ? stored : 'light';
   } catch {
-    return 'system';
+    return 'light';
   }
 }
 

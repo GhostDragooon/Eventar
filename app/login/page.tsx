@@ -97,7 +97,7 @@ function LoginForm() {
         </label>
         <button
           disabled={pending}
-          className="w-full inline-flex items-center justify-center gap-sm rounded-lg bg-tertiary text-on-tertiary font-label-md text-label-md py-md hover:opacity-90 transition-opacity disabled:opacity-50"
+          className="w-full inline-flex items-center justify-center gap-sm rounded-lg bg-primary text-on-primary font-label-md text-label-md py-md hover:opacity-90 transition-opacity disabled:opacity-50"
         >
           <span className="material-symbols-outlined text-[18px]" aria-hidden>mail</span>
           {pending ? 'Sending…' : 'Send magic link'}

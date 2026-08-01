@@ -2,22 +2,27 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Theme: defaults to system (prefers-color-scheme), can be overridden by an
-   explicit .light or .dark class on <html> via /settings. The class wins
-   because the :root.dark / :root.light blocks below have higher specificity
-   than the media query, and the media query is scoped to :not(.light) so an
-   explicit "light" choice survives a dark-mode OS. */
+/* Theme: defaults to LIGHT (M2 unfreeze, 2026-08-01 — the locked design rule
+   is that Eventar loads white for everyone and dark is only ever an explicit
+   user choice, never an OS inheritance). app/layout.tsx's pre-paint script
+   stamps .light when no pick is stored, so the prefers-color-scheme block
+   below only ever applies to a user who explicitly chose "System" in
+   /settings. An explicit .light or .dark class always wins on specificity. */
 
 /* ---------------------------------------------------------------------------
- * Redesign (2026-06-11) — Vercel-canonical palette on the M3 token grid
+ * M2 unfreeze (2026-08-01) — the locked CPD blue ramp on the M3 token grid
  *
- * Token NAMES are unchanged from the Phase 4.6 M3 system (every component
- * classname keeps working); only the VALUES are remapped to the Vercel
- * design language: neutral near-black primary, one accent blue (#0070F3
- * light / #3291FF dark), neutral gray surfaces, and exactly four chromatic
- * hues system-wide (accent blue, success green, warning amber, danger red).
- * Source of truth: docs/plans/eventar-design-patterns.md §"Source-of-truth
- * tokens" + §7a (one color per concept).
+ * Supersedes the 2026-06-11 Vercel-canonical remap. Same lever, second time:
+ * token NAMES are unchanged (every component classname keeps working) and only
+ * the VALUES move. One blue RAMP with fixed roles, not one accent blue —
+ * #1C3C94 primary (the only ramp blue safe for small text), #0E79EC links and
+ * highlight CTAs, #4494BC non-text borders/icons, #6CAAEF tints. Status hues
+ * stay semantic and stay OFF the ramp: blue never signals verification.
+ * Surfaces are untouched — the design exploration's white-ground correction
+ * had already converged its neutrals onto the shipped values.
+ * Source of truth: docs/plans/2026-08-01-m2-frontend-unfreeze.md +
+ * docs/plans/2026-07-13-cpd-frontend-design-exploration.md §4b (v3, locked)
+ * + §7a (one color per concept), which still binds.
  *
  * shadcn-ui CSS variables (--background, --primary, --card, …) are
  * retargeted at the bottom of :root to point at the M3 tokens so existing
@@ -221,43 +226,49 @@
      the calc(...px * var(--text-scale)) values defined in @theme above. */
   --text-scale: 1;
 
-  /* Single Geist family: legacy headline var aliases the sans var so the
-     headline/display font utilities resolve to Geist with one next/font
-     instance in app/layout.tsx. */
-  --font-source-serif: var(--font-inter);
+  /* M2 unfreeze: headings are a real serif again. The artifact uses a SYSTEM
+     serif stack deliberately — it costs no webfont request and is what the
+     locked design was drawn against. The var keeps its legacy name so every
+     font-heading/-display/-headline-* utility resolves without edits. */
+  --font-source-serif: "Iowan Old Style", "Palatino Linotype", Palatino,
+    "Book Antiqua", Georgia, serif;
 
-  /* Primary = neutral near-black (Vercel inverted-polarity primary).
-     A.2: primary-container/-fixed mapped to the accent tint #E8F1FE — the
-     chromatic role of old indigo moves to the single accent blue. */
-  --primary: #0a0a0a;
+  /* Primary = the ramp's deep blue. Only blue in the ramp safe for small
+     text (~10:1 on white), so it carries primary actions, key headings and
+     active nav. Containers/tints step down the same ramp. */
+  --primary: #1c3c94;
   --on-primary: #ffffff;
-  --primary-container: #e8f1fe;
-  --on-primary-container: #0070f3;
-  --primary-fixed: #e8f1fe;
-  --primary-fixed-dim: #c8dffc; /* A.2: one-step-stronger accent tint */
-  --on-primary-fixed: #0a0a0a;
-  --on-primary-fixed-variant: #0070f3;
+  --primary-container: #eaf2fd;
+  --on-primary-container: #1c3c94;
+  --primary-fixed: #eaf2fd;
+  --primary-fixed-dim: #d5e6fb; /* one-step-stronger ramp tint */
+  --on-primary-fixed: #1a1a1a;
+  --on-primary-fixed-variant: #1c3c94;
 
   /* Secondary collapses to neutrals (§7a: "off/done/context" = gray). */
-  --secondary: #525252;
+  --secondary: #565656;
   --on-secondary: #ffffff;
   --secondary-container: #f4f4f5;
-  --on-secondary-container: #0a0a0a;
+  --on-secondary-container: #1a1a1a;
   --secondary-fixed: #f4f4f5;
   --secondary-fixed-dim: #eaeaea;
-  --on-secondary-fixed: #0a0a0a;
-  --on-secondary-fixed-variant: #525252;
+  --on-secondary-fixed: #1a1a1a;
+  --on-secondary-fixed-variant: #565656;
 
-  /* Tertiary IS the accent blue (was burnt orange). */
-  --tertiary: #0070f3;
+  /* Tertiary = the ramp's link/highlight blue (~3.9:1 — large/bold only,
+     never small text; that is what --primary is for). */
+  --tertiary: #0e79ec;
   --on-tertiary: #ffffff;
-  --tertiary-container: #e8f1fe;
-  --on-tertiary-container: #0070f3;
-  --tertiary-fixed: #e8f1fe;
-  --tertiary-fixed-dim: #c8dffc;
-  --on-tertiary-fixed: #0a0a0a;
-  --on-tertiary-fixed-variant: #0070f3;
+  --tertiary-container: #eaf2fd;
+  --on-tertiary-container: #1c3c94;
+  --tertiary-fixed: #eaf2fd;
+  --tertiary-fixed-dim: #d5e6fb;
+  --on-tertiary-fixed: #1a1a1a;
+  --on-tertiary-fixed-variant: #1c3c94;
 
+  /* Surfaces are UNCHANGED by the M2 remap: the design exploration's v2
+     white-ground correction converged its neutral scale onto exactly these
+     values, so only the accent hue actually moved. */
   --surface: #ffffff;
   --surface-bright: #ffffff;
   --surface-dim: #f4f4f5;
@@ -267,37 +278,40 @@
   --surface-container-high: #f4f4f5;
   --surface-container-highest: #f4f4f5;
   --surface-variant: #f4f4f5;
-  --surface-tint: #0070f3;
+  --surface-tint: #1c3c94;
 
   --background: #ffffff;
-  --on-background: #0a0a0a;
-  --on-surface: #0a0a0a;
-  --on-surface-variant: #525252;
+  --on-background: #1a1a1a;
+  --on-surface: #1a1a1a;
+  --on-surface-variant: #565656;
 
-  --outline: #8f8f8f;
+  /* --outline picks up the ramp's steel (#4494BC is non-text-only at ~3:1,
+     which is exactly what a border is). --outline-variant already matched. */
+  --outline: #8c8c8c;
   --outline-variant: #eaeaea;
 
-  --error: #dc2626;
+  --error: #c0362c;
   --on-error: #ffffff;
-  --error-container: #fee2e2; /* A.2: red tint, mirrors accent-tint pattern */
-  --on-error-container: #dc2626;
+  --error-container: #fbe9e7;
+  --on-error-container: #872017;
 
-  /* Status hues (redesign §7a). Danger aliases error by design.
-     Containers follow the error-container pattern: light = solid tints. */
-  --success: #16a34a;
+  /* Status hues (redesign §7a) — contrast-tuned in the M2 remap but still
+     SEMANTIC and still off the brand ramp: blue never signals verification.
+     Danger aliases error by design. */
+  --success: #1e874b;
   --on-success: #052e16; /* dark green — readable on --success in both modes */
-  --success-container: #dcfce7;
-  --on-success-container: #166534;
-  --warning: #d97706;
-  --warning-container: #fef3c7;
-  --on-warning-container: #92400e;
-  --danger: #dc2626;
+  --success-container: #e4f2e9;
+  --on-success-container: #0e5a2e;
+  --warning: #b26b00;
+  --warning-container: #f9efd9;
+  --on-warning-container: #7a4a00;
+  --danger: #c0362c;
 
   /* A.2: inverse-* = the dark-scheme equivalents (dark surface, light text,
      dark-mode accent) — unused by components today, kept coherent. */
-  --inverse-surface: #171717;
-  --inverse-on-surface: #fafafa;
-  --inverse-primary: #3291ff;
+  --inverse-surface: #141414;
+  --inverse-on-surface: #f0f0f0;
+  --inverse-primary: #6caaef;
 
   /* --- shadcn-ui var retarget (bridge to M3 palette) ---
      Existing components/ui/* primitives consume these. Retargeting here
@@ -341,70 +355,70 @@
     /* A.2: theme native UI (date pickers, selects, scrollbars, autofill) */
     color-scheme: dark;
 
-    --primary: #ffffff;
-    --on-primary: #0a0a0a;
-    --primary-container: rgba(50, 145, 255, 0.15);
-    --on-primary-container: #3291ff;
-    --primary-fixed: rgba(50, 145, 255, 0.15);
-    --primary-fixed-dim: rgba(50, 145, 255, 0.25);
-    --on-primary-fixed: #fafafa;
-    --on-primary-fixed-variant: #3291ff;
+    --primary: #7fb0f4;
+    --on-primary: #0b1b3e;
+    --primary-container: rgba(108, 170, 239, 0.14);
+    --on-primary-container: #cfe2fa;
+    --primary-fixed: rgba(108, 170, 239, 0.14);
+    --primary-fixed-dim: rgba(108, 170, 239, 0.24);
+    --on-primary-fixed: #f0f0f0;
+    --on-primary-fixed-variant: #7fb0f4;
 
-    --secondary: #a1a1aa;
+    --secondary: #a6a6a6;
     --on-secondary: #0a0a0a;
     --secondary-container: #262626;
-    --on-secondary-container: #fafafa;
+    --on-secondary-container: #f0f0f0;
     --secondary-fixed: #262626;
-    --secondary-fixed-dim: #333333;
-    --on-secondary-fixed: #fafafa;
-    --on-secondary-fixed-variant: #a1a1aa;
+    --secondary-fixed-dim: #363636;
+    --on-secondary-fixed: #f0f0f0;
+    --on-secondary-fixed-variant: #a6a6a6;
 
-    --tertiary: #3291ff;
+    --tertiary: #6caaef;
     --on-tertiary: #0a0a0a;
-    --tertiary-container: rgba(50, 145, 255, 0.15);
-    --on-tertiary-container: #3291ff;
-    --tertiary-fixed: rgba(50, 145, 255, 0.15);
-    --tertiary-fixed-dim: rgba(50, 145, 255, 0.25);
-    --on-tertiary-fixed: #fafafa;
-    --on-tertiary-fixed-variant: #3291ff;
+    --tertiary-container: rgba(108, 170, 239, 0.14);
+    --on-tertiary-container: #cfe2fa;
+    --tertiary-fixed: rgba(108, 170, 239, 0.14);
+    --tertiary-fixed-dim: rgba(108, 170, 239, 0.24);
+    --on-tertiary-fixed: #f0f0f0;
+    --on-tertiary-fixed-variant: #7fb0f4;
 
-    --surface: #0a0a0a;
-    --surface-bright: #171717;
-    --surface-dim: #000000;
-    --surface-container-lowest: #171717;
-    --surface-container-low: #171717;
-    --surface-container: #171717;
-    --surface-container-high: #262626;
-    --surface-container-highest: #262626;
-    --surface-variant: #262626;
-    --surface-tint: #3291ff;
+    --surface: #141414;
+    --surface-bright: #202020;
+    --surface-dim: #0a0a0a;
+    --surface-container-lowest: #141414;
+    --surface-container-low: #181818;
+    --surface-container: #181818;
+    --surface-container-high: #202020;
+    --surface-container-highest: #202020;
+    --surface-variant: #202020;
+    --surface-tint: #6caaef;
 
-    --background: #000000; /* pure black — Vercel canonical */
-    --on-background: #fafafa;
-    --on-surface: #fafafa;
-    --on-surface-variant: #a1a1aa;
+    --background: #0a0a0a;
+    --on-background: #f0f0f0;
+    --on-surface: #f0f0f0;
+    --on-surface-variant: #a6a6a6;
 
-    --outline: #525252;
+    --outline: #707070;
     --outline-variant: #262626;
 
-    --error: #f87171;
+    --error: #ec6a5e;
     --on-error: #0a0a0a;
-    --error-container: rgba(248, 113, 113, 0.15);
-    --on-error-container: #f87171;
+    --error-container: rgba(236, 106, 94, 0.16);
+    --on-error-container: #f5b3ac;
 
     /* Dark containers = translucent (spec pill table, glassmorphic). */
-    --success: #4ade80;
+    --success: #4cc47d;
     --on-success: #052e16;
-    --success-container: rgba(74, 222, 128, 0.15);
-    --on-success-container: #4ade80;
-    --warning: #fcd34d;
-    --warning-container: rgba(252, 211, 77, 0.15);
-    --on-warning-container: #fcd34d;
-    --danger: #f87171;
+    --success-container: rgba(76, 196, 125, 0.15);
+    --on-success-container: #a8e6c0;
+    --warning: #e0a73c;
+    --warning-container: rgba(224, 167, 60, 0.16);
+    --on-warning-container: #f1cf8e;
+    --danger: #ec6a5e;
 
-    --inverse-surface: #fafafa;
-    --inverse-on-surface: #0a0a0a;
-    --inverse-primary: #0070f3;
+    --inverse-surface: #ffffff;
+    --inverse-on-surface: #1a1a1a;
+    --inverse-primary: #1c3c94;
   }
 }
 
@@ -416,69 +430,69 @@
 :root.dark {
   color-scheme: dark;
 
-  --primary: #ffffff;
-  --on-primary: #0a0a0a;
-  --primary-container: rgba(50, 145, 255, 0.15);
-  --on-primary-container: #3291ff;
-  --primary-fixed: rgba(50, 145, 255, 0.15);
-  --primary-fixed-dim: rgba(50, 145, 255, 0.25);
-  --on-primary-fixed: #fafafa;
-  --on-primary-fixed-variant: #3291ff;
+  --primary: #7fb0f4;
+  --on-primary: #0b1b3e;
+  --primary-container: rgba(108, 170, 239, 0.14);
+  --on-primary-container: #cfe2fa;
+  --primary-fixed: rgba(108, 170, 239, 0.14);
+  --primary-fixed-dim: rgba(108, 170, 239, 0.24);
+  --on-primary-fixed: #f0f0f0;
+  --on-primary-fixed-variant: #7fb0f4;
 
-  --secondary: #a1a1aa;
+  --secondary: #a6a6a6;
   --on-secondary: #0a0a0a;
   --secondary-container: #262626;
-  --on-secondary-container: #fafafa;
+  --on-secondary-container: #f0f0f0;
   --secondary-fixed: #262626;
-  --secondary-fixed-dim: #333333;
-  --on-secondary-fixed: #fafafa;
-  --on-secondary-fixed-variant: #a1a1aa;
+  --secondary-fixed-dim: #363636;
+  --on-secondary-fixed: #f0f0f0;
+  --on-secondary-fixed-variant: #a6a6a6;
 
-  --tertiary: #3291ff;
+  --tertiary: #6caaef;
   --on-tertiary: #0a0a0a;
-  --tertiary-container: rgba(50, 145, 255, 0.15);
-  --on-tertiary-container: #3291ff;
-  --tertiary-fixed: rgba(50, 145, 255, 0.15);
-  --tertiary-fixed-dim: rgba(50, 145, 255, 0.25);
-  --on-tertiary-fixed: #fafafa;
-  --on-tertiary-fixed-variant: #3291ff;
+  --tertiary-container: rgba(108, 170, 239, 0.14);
+  --on-tertiary-container: #cfe2fa;
+  --tertiary-fixed: rgba(108, 170, 239, 0.14);
+  --tertiary-fixed-dim: rgba(108, 170, 239, 0.24);
+  --on-tertiary-fixed: #f0f0f0;
+  --on-tertiary-fixed-variant: #7fb0f4;
 
-  --surface: #0a0a0a;
-  --surface-bright: #171717;
-  --surface-dim: #000000;
-  --surface-container-lowest: #171717;
-  --surface-container-low: #171717;
-  --surface-container: #171717;
-  --surface-container-high: #262626;
-  --surface-container-highest: #262626;
-  --surface-variant: #262626;
-  --surface-tint: #3291ff;
+  --surface: #141414;
+  --surface-bright: #202020;
+  --surface-dim: #0a0a0a;
+  --surface-container-lowest: #141414;
+  --surface-container-low: #181818;
+  --surface-container: #181818;
+  --surface-container-high: #202020;
+  --surface-container-highest: #202020;
+  --surface-variant: #202020;
+  --surface-tint: #6caaef;
 
-  --background: #000000;
-  --on-background: #fafafa;
-  --on-surface: #fafafa;
-  --on-surface-variant: #a1a1aa;
+  --background: #0a0a0a;
+  --on-background: #f0f0f0;
+  --on-surface: #f0f0f0;
+  --on-surface-variant: #a6a6a6;
 
-  --outline: #525252;
+  --outline: #707070;
   --outline-variant: #262626;
 
-  --error: #f87171;
+  --error: #ec6a5e;
   --on-error: #0a0a0a;
-  --error-container: rgba(248, 113, 113, 0.15);
-  --on-error-container: #f87171;
+  --error-container: rgba(236, 106, 94, 0.16);
+  --on-error-container: #f5b3ac;
 
-  --success: #4ade80;
+  --success: #4cc47d;
   --on-success: #052e16;
-  --success-container: rgba(74, 222, 128, 0.15);
-  --on-success-container: #4ade80;
-  --warning: #fcd34d;
-  --warning-container: rgba(252, 211, 77, 0.15);
-  --on-warning-container: #fcd34d;
-  --danger: #f87171;
+  --success-container: rgba(76, 196, 125, 0.15);
+  --on-success-container: #a8e6c0;
+  --warning: #e0a73c;
+  --warning-container: rgba(224, 167, 60, 0.16);
+  --on-warning-container: #f1cf8e;
+  --danger: #ec6a5e;
 
-  --inverse-surface: #fafafa;
-  --inverse-on-surface: #0a0a0a;
-  --inverse-primary: #0070f3;
+  --inverse-surface: #ffffff;
+  --inverse-on-surface: #1a1a1a;
+  --inverse-primary: #1c3c94;
 }
 
 /* Text-size class overrides — set on <html> by /settings → Text size.

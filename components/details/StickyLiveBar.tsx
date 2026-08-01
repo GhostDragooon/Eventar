@@ -73,7 +73,7 @@ export function StickyLiveBar({
           <Link
             href={`/events/${eventId}/checkin`}
             tabIndex={pinned ? 0 : -1}
-            className="inline-flex items-center gap-xs bg-tertiary text-on-tertiary px-md py-[6px] rounded-lg text-[12px] font-semibold hover:opacity-90 transition-opacity shrink-0"
+            className="inline-flex items-center gap-xs bg-primary text-on-primary px-md py-[6px] rounded-lg text-[12px] font-semibold hover:opacity-90 transition-opacity shrink-0"
           >
             <span className="material-symbols-outlined text-[15px]" aria-hidden>group</span>
             Open roster →
