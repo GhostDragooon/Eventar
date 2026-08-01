@@ -41,13 +41,32 @@ function percentile(sortedMs: number[], p: number): number {
 
 describe.skipIf(!process.env.RLS_TESTS)('check-in burst throughput (P2 exit gate)', () => {
   let staffId: string;
+  let staffEmail: string;
   let eventId: string;
   const registrationIds: string[] = [];
   const codes: string[] = [];
 
   beforeAll(async () => {
-    const { data: staff, error: staffErr } = await admin.from('staff').select('id').limit(1).single();
-    if (staffErr || !staff) throw new Error(`staff lookup: ${staffErr?.message}`);
+    // DEFERRED.md item 41 — grabbing "a" pre-existing staff row via an
+    // unfiltered select races against other RLS test files' concurrent
+    // staff insert/delete fixtures (intermittent events_created_by_fkey
+    // violation when that row gets deleted mid-run by another file). Own a
+    // disposable staff fixture instead, same pattern as every other RLS
+    // suite — staff has no FK to auth.users (matched by email only), so a
+    // plain insert is enough; no real auth user needed for this test.
+    staffEmail = `checkin-throughput-staff-${Date.now()}@rls-test.invalid`;
+    const { data: staff, error: staffErr } = await admin
+      .from('staff')
+      .insert({
+        email: staffEmail,
+        role: 'eventar_staff',
+        full_name: 'RLS Burst Throughput Staff',
+        organisation_id: DEFAULT_ORG,
+        status: 'active',
+      })
+      .select('id')
+      .single();
+    if (staffErr || !staff) throw new Error(`staff fixture: ${staffErr?.message}`);
     staffId = staff.id as string;
 
     const { data: event, error: eventErr } = await admin
@@ -99,6 +118,9 @@ describe.skipIf(!process.env.RLS_TESTS)('check-in burst throughput (P2 exit gate
         'rate_limits fixture',
       );
       await mustDelete(admin.from('events').delete().eq('id', eventId), 'events fixture');
+    }
+    if (staffEmail) {
+      await mustDelete(admin.from('staff').delete().eq('email', staffEmail), 'staff fixture');
     }
   }, 60_000);
 

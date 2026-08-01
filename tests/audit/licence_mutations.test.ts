@@ -198,6 +198,24 @@ describe.skipIf(!process.env.RLS_TESTS)('licence mutation functions', () => {
       expect(data).toBeNull();
       expect(error?.code).toBe('42501');
     });
+
+    // DEFERRED.md item 27 — a nonexistent p_body_id used to bubble up the raw
+    // Postgres FK-violation dump ("violates foreign key constraint
+    // practitioner_licences_body_id_fkey DETAIL: Key (body_id)=(...) is not
+    // present...") straight to the caller. Same "not found" shape as
+    // verify_licence/lapse_licence/revoke_licence's own P0002 checks.
+    it('a nonexistent p_body_id fails with a clean not-found error, not a raw FK-violation dump', async () => {
+      const bogusBodyId = '00000000-0000-0000-0000-000000000000';
+      const { data, error } = await userA.client.rpc('declare_licence', {
+        p_body_id: bogusBodyId,
+        p_licence_number: `LM-DECLARE-BADBODY-${ts}`,
+      });
+      expect(data).toBeNull();
+      expect(error).not.toBeNull();
+      expect(error?.code).toBe('P0002');
+      expect(error?.message).not.toMatch(/violates foreign key constraint/i);
+      expect(error?.message).toMatch(/not found/i);
+    });
   });
 
   describe('set_primary_licence', () => {
