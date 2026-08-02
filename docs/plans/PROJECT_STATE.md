@@ -5,12 +5,16 @@
 > **The frontend freeze is LIFTED for S-Organiser.** Ivan made the M2 unfreeze scope call, with the framing correction that the design artifact is *the real frontend*, not a mockup — the work now is fusing it with the shipped backend.
 >
 > - **Read first:** `docs/plans/2026-08-01-m2-frontend-unfreeze.md` (scope boundaries, block-architecture admission checklist, 4-stage staging, Stage 1 findings).
-> - **Shipped:** Stage 1 tokens (`046b21c`) · Stage 2 shell + Stage 3 CPD-config-front-to-back (`c291bce`) · patches (`56d5a7f`) · design audit (`c0c7105`). Gates green; 19 routes; vitest **480 passed | 120 skipped**; head `1f993fc`.
-> - **Next:** the scheduler (reminder + survey do not fire on their own) → roster licence eligibility → CPD config at event creation. All three are build gaps needing no external input.
+> - **Shipped:** Stage 1 tokens (`046b21c`) · Stage 2 shell + Stage 3 CPD-config-front-to-back (`c291bce`) · patches (`56d5a7f`) · design audit (`c0c7105`) · **Stage C scheduler** (`0f54d8a` refactor + `9658126` feat). Gates green; **20 routes** (+`/api/cron/dispatch`); vitest **508 passed \| 124 skipped**; head `9658126`.
+> - **Stage C — the loop is now self-running.** `/api/cron/dispatch` fires the 60-min reminder (with the QR pass) and the 10-min-after survey. Backtested live on the local stack end to end: 401 without the secret, both windows dispatched, second run skipped everything (no double-send), GET+Bearer path identical, soft-deleted event correctly not scanned. **`delivery: "stubbed"`** in the response — with `RESEND_API_KEY` unset nothing actually leaves the building, and the response says so rather than reading as delivered.
+>   - **Two plan corrections this produced:** (a) plan §2A.5's "reuse the existing `sendReminderForEvent`/`sendSurveyInviteForEvent`" was **not executable** — both open with `requireStaff()`, which throws without a session; the send core is now `lib/email/eventEmails.ts` and the actions are thin gates over it. (b) the plan never mentioned `events.deleted_at`; the dispatcher filters it, as `/events`, `/checkin` and `/analytics` already do.
+>   - **`queued` arm decided (plan §2A.4):** terminal under `email_log_dedup_idx`, so the dispatcher treats it as done-or-stuck, never "needs sending". Silent non-send is recoverable via the manual button; a duplicate to a practitioner is not. Proven live + by a rolled-back `DROP INDEX` showing the test is not vacuous.
+> - **Next:** roster licence eligibility (plan §3, with the §3.2 correction — it needs a `SECURITY DEFINER` function, it is NOT a free RLS read) → CPD config at event creation (reuse `set_event_cpd_config()`, don't widen the RPC whitelist). Both are build gaps needing no external input.
 > - **STILL GATED, and not by the freeze:** the CPD evaluator vs versioned `body_rules` (Q26 + Milestone C), practitioner compliance math, S-Attendee, B6 evidence/share, multi-track scheduling.
 > - **Owed:** the three-lens phase-completion protocol at the M2 phase boundary — it has NOT run for ANY M2 stage and is not claimed.
 > - **Latest handoff:** `docs/plans/handoff_02082026.md` — Stages 1–3 shipped, framing corrections, defects, and the corrections to earlier claims.
-> - **Next session:** `docs/plans/2026-08-02-m2-execution-plan.md` §2A (scheduler).
+> - **Next session:** `docs/plans/2026-08-02-m2-execution-plan.md` **§3** (Stage 4, roster licence eligibility). §2A is done.
+> - **New injection point:** `CRON_SECRET` (see `.env.example`). The dispatcher **fails closed** — unset means 503 on every request, so a misconfigured deploy can never become a public mass-mail trigger. Also note `vercel.json`'s `*/5` cadence silently degrades to once-daily on Vercel's Hobby plan, which would miss every reminder window.
 >
 > Everything below predates the unfreeze.
 
