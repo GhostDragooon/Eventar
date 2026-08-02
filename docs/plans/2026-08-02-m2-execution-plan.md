@@ -217,11 +217,39 @@ Then update `PROJECT_STATE.md`, `DEFERRED.md`, and the vault note — **after** 
 
 ---
 
-## 7. Suggested order
+## 7. Order of execution — **MVP framing (confirmed by Ivan, 2026-08-02)**
 
-1. **Stage T** (fixes a shipped, broken accessibility control)
-2. **Stage 4** (event-day blind spot; note the §3.2 correction before planning)
-3. **Stage 5** (surfaces)
-4. **M2 close-out** (§5)
+> **The goal is an MVP, not a complete product. Ship ASAP: all functionality up and running, then debugged and backtested for a stable beta.** Judge every task against "does a beta event work without it?" — not against "is it right?".
 
-Ivan's outstanding inputs are unchanged and gate none of the above: price, first internal-meeting/body-review date, D0 deploy flip, vault Sprint↔Milestone reconciliation.
+**An earlier revision of this section recommended Stage T (type scale) first. That was wrong under this goal and is superseded.** Stage T is a 47-file sweep repairing a *polish* control; no beta event fails because Text size doesn't scale. It is quality work, not ship work.
+
+### Tier 1 — actually blocks a beta
+
+| # | Item | Why it blocks | Owner |
+|---|---|---|---|
+| 1 | **D0 deploy flip** → Singapore project + Vercel + `NEXT_PUBLIC_SITE_URL` | There is no hosted URL. No real attendee can register or check in. Nothing else matters until this happens | **Ivan** (explicit go; never deploy by momentum) |
+| 2 | **Resend cutover** | `lib/resend.ts` is written and tested but every send site still lands on `lib/devEmailStub.ts`. Without cutover **nobody receives a confirmation or their QR pass**, so on-site check-in has nothing to scan | Agent, after Ivan supplies `RESEND_API_KEY` + verified domain |
+| 3 | **Reminder + survey are MANUAL today** | There is no pg_cron and no edge function. The 60-min-before reminder and 10-min-after survey are Server Actions a human triggers from `EmailSendControls` on the event page. Workable for a beta — but it MUST be an explicit run-sheet step, not a surprise on event day | Agent: document in the run sheet. Automation is post-beta |
+| 4 | **Stage 4 — roster eligibility** (§3) | A registrant with a lapsed licence checks in, the operator sees success, and the credit silently never posts. For a CPD platform that is a trust failure in the core loop | Agent |
+
+### Tier 2 — beta hardening (do before real users, not before deploy)
+
+5. **End-to-end backtest on the deployed environment** — the full loop against real systems: create → accredit → publish → register → email received → check in → credit posts → chain verifies. Not mocks.
+6. **M2 close-out three-lens protocol** (§5).
+
+### Tier 3 — after beta is stable
+
+7. **Stage T (type scale)** — with one exception below.
+8. **Stage 5** (Participants + Audit log surfaces).
+
+### The one Stage-T decision that IS cheap and should be made now
+
+The Text size setting currently promises something it does not deliver. Three options; the middle one is the MVP answer:
+
+- (a) Full sweep — 47 files. **Not MVP.**
+- (b) **Hide or remove the Text size control** until the sweep happens. ~15 minutes, removes a broken promise, ships honest. **Recommended — needs Ivan's yes, since removing a shipped control is a product call.**
+- (c) Leave it visibly broken. Cheapest, but it is a live accessibility claim that does not hold.
+
+Browser zoom still works regardless, so (b) costs users very little.
+
+Ivan's outstanding inputs, now on the critical path rather than beside it: **D0 deploy go**, **Resend key + verified domain**, price, first internal-meeting/body-review date.
