@@ -92,11 +92,13 @@ rollback;
 
 ---
 
-## 2. Stage T — type-scale remediation  ⟵ **do this first**
+## 2. Stage T — type-scale remediation  ⟵ **Tier 3, NOT first (see §7)**
 
-### 2.1 Why this outranks Stage 4
+### 2.1 What it is, and why it is deliberately deferred
 
-`/settings → Text size` (Small / Default / Large) drives `--text-scale`, and every M3 type token is `calc(<px> * var(--text-scale))`. **190 arbitrary `text-[Npx]` values across 47 files are literals and do not scale.** The accessibility control is therefore a broken promise in shipped UI — worse than not offering it. Stage 4 adds a feature; this fixes something already wrong and user-visible.
+**Do not start here.** Under the MVP-ASAP goal this is a 47-file polish sweep: no beta event fails because Text size does not scale. §7 is the authority on ordering. What follows is the analysis, kept ready for when Tier 1 and 2 are done.
+
+`/settings → Text size` (Small / Default / Large) drives `--text-scale`, and every M3 type token is `calc(<px> * var(--text-scale))`. **190 arbitrary `text-[Npx]` values across 47 files are literals and do not scale.** The accessibility control is therefore a broken promise in shipped UI. That makes it real, but not urgent: browser zoom still works, and the cheap interim answer is to hide the control (§7) rather than sweep 47 files.
 
 ### 2.2 The trap that makes this non-mechanical
 
