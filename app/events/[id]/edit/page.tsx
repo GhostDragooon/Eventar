@@ -9,6 +9,7 @@ import { updateEvent } from './updateAction';
 import DownloadQrButton from '@/components/DownloadQrButton';
 import ExportRegistrantsButton from '@/components/ExportRegistrantsButton';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { CpdAccreditationSection } from '@/components/details/CpdAccreditationSection';
 import { StaffShell } from '@/components/shell/StaffShell';
 import NewEventForm, {
   type InitialEvent,
@@ -39,7 +40,7 @@ export default async function StaffEventEditPage({
   const supabase = await supabaseServer();
   const { data: event } = await supabase
     .from('events')
-    .select('id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, latitude, longitude, description, status, max_attendees, created_by, hosted_by, organized_by, hero_image_url, registration_open_at, registration_close_at, category')
+    .select('id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, latitude, longitude, description, status, max_attendees, created_by, hosted_by, organized_by, hero_image_url, registration_open_at, registration_close_at, category, accrediting_body_id, cpd_hours')
     .eq('id', id)
     .maybeSingle();
   if (!event) notFound();
@@ -81,6 +82,31 @@ export default async function StaffEventEditPage({
     .eq('event_id', event.id);
   if (countErr) throw countErr;
 
+  // CPD accreditation inputs. Creating an event redirects HERE, so without the
+  // accreditation card on this page a brand-new event's CPD config would only
+  // be reachable by knowing to navigate on to /details. Same audited write path
+  // and same component as the details page — one mutation surface, two homes.
+  const [bodiesRes, creditsRes] = await Promise.all([
+    supabase
+      .from('accrediting_bodies')
+      .select('id, full_name, short_name')
+      .eq('status', 'active')
+      .order('short_name'),
+    supabaseAdmin()
+      .from('credit_ledger')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_id', event.id)
+      .eq('entry_type', 'credit_earned'),
+  ]);
+  // Visible, not silent (rule 12) — a swallowed failure here previously
+  // rendered an empty picker that read as "no accrediting bodies exist".
+  if (bodiesRes.error) {
+    console.error('[edit] accrediting_bodies read failed', { code: bodiesRes.error.code });
+  }
+  if (creditsRes.error) {
+    console.error('[edit] credit_ledger count failed', { code: creditsRes.error.code });
+  }
+
   const ended = new Date(event.end_time).getTime() < new Date().getTime();
   const atCapacity =
     event.max_attendees != null && (registeredCount ?? 0) >= event.max_attendees;
@@ -105,6 +131,17 @@ export default async function StaffEventEditPage({
           {formatInTz(event.start_time, event.timezone)} → {formatInTz(event.end_time, event.timezone)} ({event.timezone})
         </p>
       </header>
+
+      <div className="mb-lg">
+        <CpdAccreditationSection
+          eventId={event.id}
+          bodies={bodiesRes.data ?? []}
+          currentBodyId={event.accrediting_body_id}
+          currentHours={event.cpd_hours}
+          creditsIssued={creditsRes.count ?? 0}
+          bodiesUnavailable={Boolean(bodiesRes.error)}
+        />
+      </div>
 
       {/* Draft state: render the generalized event form pre-filled with the
           stored values (Task D.3a). The form owns its own status/completion

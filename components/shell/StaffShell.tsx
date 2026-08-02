@@ -37,9 +37,16 @@ type StaffShellBackProps =
 
 export type StaffShellProps = StaffShellBaseProps & StaffShellBackProps;
 
+// Only staff routes that render INSIDE this shell.
+//
+// "Events" used to sit here pointing at /events — which is app/(public)/events,
+// a SiteShell page. Clicking it in the staff sidebar loaded the public listing
+// and the whole sidebar vanished, which reads as the app breaking. /dashboard
+// is already the staff events list (filter tabs by lifecycle, search, sort,
+// per-event edit/delete), so the link was both broken and redundant. A
+// dedicated staff /events route can earn its place back when it exists.
 const NAV = [
   { label: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
-  { label: 'Events', href: '/events', icon: 'calendar_month' },
   { label: 'Check-in', href: '/checkin', icon: 'how_to_reg' },
   { label: 'Analytics', href: '/analytics', icon: 'bar_chart' },
 ];

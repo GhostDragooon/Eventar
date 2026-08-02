@@ -93,6 +93,10 @@ export async function setEventCpdConfig(
     return { error: 'Could not save the accreditation. Try again.' };
   }
 
+  // Both pages host this section (creating an event redirects to /edit), so
+  // both must be revalidated — otherwise a save made on one leaves the other
+  // showing stale accreditation until a hard reload.
   revalidatePath(`/events/${parsed.data.eventId}/details`);
+  revalidatePath(`/events/${parsed.data.eventId}/edit`);
   return { ok: true };
 }

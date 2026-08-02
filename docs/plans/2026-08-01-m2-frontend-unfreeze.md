@@ -50,12 +50,15 @@ Stages 1, 2 and 4 are pure Tier 2 (surfaces), the cheapest change tier, requirin
 
 Each stage is independently shippable, independently reviewable, and leaves the app green. **Not one commit — the milestone is multi-session and saying otherwise would be dishonest.**
 
-| Stage | What | Risk | Backend? |
-|---|---|---|---|
-| **1** | **Design-language fusion.** Remap `app/globals.css` token *values* to the locked blue ramp + serif headings + white-ground default. | Low — values-only | none |
-| **2** | **Shell fusion.** `StaffShell` → the locked global shell (60px top bar, 248px sidebar, section labels). | Medium — touches every staff route's chrome | none |
-| **3** | **Roster eligibility read.** The one non-gated backend gap: resolve registration → user → active licence at read time. | Medium — new query, RLS-scoped | read-only |
-| **4** | **New organiser surfaces.** Participants directory + Audit log viewer onto Stage 3's data. | Medium | reads only |
+| Stage | What | Risk | Backend? | Status |
+|---|---|---|---|---|
+| **1** | **Design-language fusion.** Remap `app/globals.css` token *values* to the locked blue ramp + serif headings + white-ground default. | Low — values-only | none | ✅ shipped `046b21c` |
+| **2** | **Shell fusion.** `StaffShell` → the locked global shell (top bar + 248px sidebar that IS the navigation). | Medium — touches every staff route's chrome | none | ✅ shipped `c291bce` |
+| **3** | **CPD accreditation, front to back.** Make the shipped CPD backend reachable: `set_event_cpd_config()` + organiser UI. **Not in the original plan** — inserted once a grep proved no UI read or wrote the CPD columns at all, which made it the highest-value gap by a distance. | Medium — new audited definer fn | write (audited) | ✅ shipped `c291bce` |
+| **4** | **Roster eligibility read.** Resolve registration → user → verified licence at read time, so the check-in roster shows whose credit will actually post. | Medium — new query, RLS-scoped | read-only | ← **next** |
+| **5** | **New organiser surfaces.** Participants directory + Audit log viewer onto Stage 4's data. | Medium | reads only | pending |
+
+> **Numbering note:** an earlier revision of this doc used "Stage 3" for the roster-eligibility read. The CPD-accreditation work took that number when it was inserted ahead of it; roster eligibility is now Stage 4 and the new surfaces Stage 5. Recorded rather than quietly renumbered, because the commit message for `c291bce` refers to "Stage 3" meaning the CPD work.
 
 ### Why Stage 1 first
 
@@ -188,12 +191,17 @@ Proven live on the local stack before any UI existed: non-staff → `42501`; hal
 
 **End-to-end proof:** through the real UI, changed the event to HKICPA / 4.5h → DB row updated → `event_cpd_config_set` audit row written with `actor_role = eventar_staff`. Gates: tsc clean · eslint 0 errors · vitest **479 passed | 120 skipped** · build clean, 19 routes. Migration applied to **local and Seoul** (filename reconciled to Seoul's recorded version `20260802022345`, per the known `apply_migration` drift trap).
 
+### Patched immediately after (2026-08-02), clearing the way for Stage 4
+
+- **The sidebar's ejecting "Events" link is gone.** It pointed at `app/(public)/events` — a `SiteShell` page — so from the staff sidebar it loaded the public listing and the sidebar vanished. `/dashboard` is already the staff events list (lifecycle filter tabs, search, sort, per-event edit/delete), so the link was both broken *and* redundant. Removed, with a regression test asserting no shell link points at `/events`. A dedicated staff events route can earn the slot back when it exists.
+- **The CPD card now also renders on `/events/[id]/edit`.** Creating an event redirects to `/edit`, so a brand-new event's accreditation was only reachable if you knew to navigate on to `/details`. Same component, same audited action; the action now revalidates both paths so a save on one never leaves the other stale.
+
 ### Still not functional — the honest list
 
-- **The sidebar's "Events" link still ejects to the public site shell** (see Stage 2). Unchanged.
-- **Check-in roster shows no licence eligibility** — an operator cannot see that a registrant's credit will not post. The read exists to be built; it is the largest remaining front↔back gap.
-- **Event creation cannot set CPD config** — only the event page can, after creation. `create_event_with_blocks`' column whitelist does not carry the two fields.
+- **Check-in roster shows no licence eligibility** — an operator cannot see that a registrant's credit will not post. This is Stage 4 and the largest remaining front↔back gap.
+- **The event *creation* form still has no CPD fields.** `create_event_with_blocks`' column whitelist omits both, so CPD is set immediately after creation on the page you land on, not during it. Acceptable because the redirect target now carries the card; worth closing when the create form is next touched.
 - 22 headings still bypass the type tokens (Stage 1).
+- The three-lens phase-completion protocol is still owed at the M2 boundary.
 
 ## Verification bar (every stage)
 

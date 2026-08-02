@@ -19,17 +19,29 @@ beforeEach(() => {
 
 const staff = { email: 'jane@company.com', role: 'organiser_member' as const };
 
-describe('StaffShell — section-tab NAV (Design Session Log)', () => {
-  it('renders the four section tabs with their routes', () => {
+describe('StaffShell — sidebar navigation', () => {
+  it('renders the staff sections with their routes', () => {
     render(
       <StaffShell staff={staff}>
         <div>page content</div>
       </StaffShell>,
     );
     expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('href', '/dashboard');
-    expect(screen.getByRole('link', { name: 'Events' })).toHaveAttribute('href', '/events');
     expect(screen.getByRole('link', { name: 'Check-in' })).toHaveAttribute('href', '/checkin');
     expect(screen.getByRole('link', { name: 'Analytics' })).toHaveAttribute('href', '/analytics');
+  });
+
+  it('does NOT link to /events — that route ejects the user out of the shell', () => {
+    // Regression guard. /events is app/(public)/events, a SiteShell page: from
+    // the staff sidebar it loaded the public listing and the sidebar vanished,
+    // which reads as the app breaking. /dashboard is the staff events list.
+    render(
+      <StaffShell staff={staff}>
+        <div>page content</div>
+      </StaffShell>,
+    );
+    const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'));
+    expect(hrefs).not.toContain('/events');
   });
 
   it('marks the current section with aria-current', () => {
