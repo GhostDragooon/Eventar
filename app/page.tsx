@@ -14,7 +14,7 @@ export default function LandingPage() {
         style={{ background: 'radial-gradient(130% 120% at 20% 0%, #10233F 0%, #0A0A0A 60%)' }}
       >
         <div aria-hidden className="absolute inset-0 opacity-[0.13]" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.5) 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
-        <div aria-hidden className="absolute top-0 left-0 right-0 h-[2px] bg-[#0070F3]" />
+        <div aria-hidden className="absolute top-0 left-0 right-0 h-[2px] bg-[#0E79EC]" />
         <div className="relative max-w-[1100px] mx-auto px-grid-margin pt-[72px] pb-[64px] text-center">
           <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-white/50 mb-md">Eventar</p>
           <h1 className="text-[44px] sm:text-[56px] font-black leading-[1.05] tracking-[-0.045em] mb-md">
@@ -39,18 +39,18 @@ export default function LandingPage() {
             <Sliver label="Register">
               <p className="text-[13px] font-semibold text-white mb-xs">Cardiology Symposium</p>
               <div className="h-[6px] rounded-full bg-white/10 overflow-hidden mb-xs" aria-hidden>
-                <div className="h-full w-[64%] rounded-full bg-[#0070F3]" />
+                <div className="h-full w-[64%] rounded-full bg-[#0E79EC]" />
               </div>
               <p className="text-[11px] text-white/50">96 / 150 registered · closes in 3 days</p>
             </Sliver>
             <Sliver label="Live door">
-              <p className="text-[24px] font-extrabold tabular-nums text-[#4ADE80] leading-none mb-xs">
+              <p className="text-[24px] font-extrabold tabular-nums text-[#4CC47D] leading-none mb-xs">
                 38<span className="text-[13px] text-white/40 font-semibold"> / 48 checked in</span>
               </p>
               <p className="text-[11px] text-white/50">QR self-scan + reception roster, live</p>
             </Sliver>
             <Sliver label="Feedback">
-              <p className="text-[24px] font-extrabold tabular-nums text-[#79B8FF] leading-none mb-xs">
+              <p className="text-[24px] font-extrabold tabular-nums text-[#7FB0F4] leading-none mb-xs">
                 73<span className="text-[13px] text-white/40 font-semibold">% responded</span>
               </p>
               <p className="text-[11px] text-white/50">5 questions · ~2 minutes · confidential</p>

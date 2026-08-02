@@ -203,6 +203,36 @@ Proven live on the local stack before any UI existed: non-staff → `42501`; hal
 - 22 headings still bypass the type tokens (Stage 1).
 - The three-lens phase-completion protocol is still owed at the M2 boundary.
 
+## Design audit — fonts, layout, global-vs-page tokens, alignment (2026-08-02)
+
+Run before Stage 4, against the `ui-ux-pro-max` Quick Reference (§1 Accessibility, §5 Layout, §6 Typography & Color). Its CLI/stack guidance is React-Native-oriented and was not applied to this Next.js web app.
+
+### Fixed now
+
+1. **Alignment regression I introduced in Stage 2.** The shell's `<main>` lost `mx-auto` in the rewrite, so on screens wider than ~1690px content sat pinned to the left of its 1440px column instead of centred beside the sidebar. Restored; verified at 1920px — 1440px main, equal 116px margins, `centred: true`.
+2. **Retired palette values still on the public home page.** Stage 1 remapped tokens, but `app/page.tsx` carries *hardcoded* hex: `#0070F3` (the retired Vercel accent) ×2, `#79B8FF` (a blue not in the ramp), `#4ADE80` (the pre-ramp success green). These sit on a deliberately dark-always marketing hero, so fixed hex is defensible — being the **old palette's** fixed hex is not. Mapped to current equivalents (`#0E79EC`, `#7FB0F4`, `#4CC47D`).
+3. **Dead code** — `isActive()` still branched on `/events` after the nav item was removed.
+
+### The structural finding — NOT fixed, needs a decision
+
+**190 arbitrary `text-[Npx]` values across 47 files bypass the type scale entirely.** Most common: `text-[11px]` ×38, `text-[16px]` ×35, `text-[18px]` ×34.
+
+This is not cosmetic. The M3 scale is defined as `calc(<px> * var(--text-scale))`, and `--text-scale` is what `/settings → Text size` (Small / Default / Large) drives. **An arbitrary `text-[16px]` is a literal — it does not scale.** So the Text size accessibility preference silently does nothing on the large majority of the app's text. A user who sets "Large" gets a handful of token-driven elements resizing and everything else staying put, which is arguably worse than no setting at all.
+
+Same root cause as Stage 1's serif finding (37 of 59 headings) and the `bg-tertiary` CTA sweep: **the token layer only reaches components that use it**, and this codebase hand-rolls type sizes at scale.
+
+Options, none of them small:
+- (a) Sweep the 190 to the nearest scale token — mechanical but touches 47 files and will shift some sizes (the scale has no 11px or 13px step).
+- (b) Extend the scale with the missing steps first, then sweep — more faithful, larger.
+- (c) Leave it and remove the Text size setting, so the app stops offering a control that mostly does nothing.
+
+Recommendation: **(b) then (a)**, as its own stage after M2 — it is a large mechanical diff that wants its own review, and doing it mid-Stage-4 would bury a roster-eligibility change inside 47 files of type churn.
+
+### Also noted, not actioned
+
+- 23 raw hex literals remain outside `app/page.tsx`, nearly all `#4ADE80` on the dark scoreboard bands (`LiveScoreboard`, `Scoreboard`, `toast`). Deliberate fixed-context colours; they want a small dark-context token set rather than a find-and-replace.
+- Material Symbols loads from Google Fonts with `display=block` — a deliberate call (an icon font with `swap` flashes raw ligature text), but it is a render-blocking external stylesheet on every route.
+
 ## Verification bar (every stage)
 
 Static gates: `pnpm exec tsc --noEmit && pnpm exec eslint . && pnpm exec vitest run && pnpm exec next build`. Running invariants: **19 routes**, vitest **470 passed | 119 skipped** at session start. Plus the three-lens phase-completion protocol before anything is called done, and live verification in a browser — the CPD MVP build's own load-bearing lesson was that every stage touching a user-facing flow found a real bug that static gates missed.

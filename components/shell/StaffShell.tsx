@@ -52,11 +52,8 @@ const NAV = [
 ];
 
 function isActive(pathname: string, href: string): boolean {
-  if (href === '/events') {
-    // The Events tab owns the public list only — /events/[id]/* staff pages
-    // belong to their entry tab context, not here.
-    return pathname === '/events';
-  }
+  // The '/events' branch that used to live here is gone with the nav item —
+  // nothing routes there from this shell any more, so it was dead code.
   if (href === '/checkin') return pathname === '/checkin' || pathname.endsWith('/checkin');
   if (href === '/analytics') return pathname === '/analytics' || pathname.endsWith('/analytics');
   return pathname === href;
@@ -158,7 +155,14 @@ export function StaffShell(props: StaffShellProps) {
 
         <div className="flex min-w-0 flex-1 flex-col">
           {/* Page canvas — only this region changes between pages. */}
-          <main id="main-content" tabIndex={-1} className="w-full max-w-[1440px] flex-1 p-grid-margin pb-xxl">
+          <main
+            id="main-content"
+            tabIndex={-1}
+            /* mx-auto: dropped in the Stage 2 rewrite, which left content pinned
+               left of a 1440px column on wide screens instead of centred in the
+               space beside the sidebar. */
+            className="w-full max-w-[1440px] flex-1 mx-auto p-grid-margin pb-xxl"
+          >
             {children}
           </main>
 
