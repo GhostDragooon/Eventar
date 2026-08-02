@@ -223,14 +223,28 @@ Then update `PROJECT_STATE.md`, `DEFERRED.md`, and the vault note — **after** 
 
 **An earlier revision of this section recommended Stage T (type scale) first. That was wrong under this goal and is superseded.** Stage T is a 47-file sweep repairing a *polish* control; no beta event fails because Text size doesn't scale. It is quality work, not ship work.
 
-### Tier 1 — actually blocks a beta
+### The distinction that governs this plan (Ivan, 2026-08-02)
 
-| # | Item | Why it blocks | Owner |
-|---|---|---|---|
-| 1 | **D0 deploy flip** → Singapore project + Vercel + `NEXT_PUBLIC_SITE_URL` | There is no hosted URL. No real attendee can register or check in. Nothing else matters until this happens | **Ivan** (explicit go; never deploy by momentum) |
-| 2 | **Resend cutover** | `lib/resend.ts` is written and tested but every send site still lands on `lib/devEmailStub.ts`. Without cutover **nobody receives a confirmation or their QR pass**, so on-site check-in has nothing to scan | Agent, after Ivan supplies `RESEND_API_KEY` + verified domain |
-| 3 | **Reminder + survey are MANUAL today** | There is no pg_cron and no edge function. The 60-min-before reminder and 10-min-after survey are Server Actions a human triggers from `EmailSendControls` on the event page. Workable for a beta — but it MUST be an explicit run-sheet step, not a surprise on event day | Agent: document in the run sheet. Automation is post-beta |
-| 4 | **Stage 4 — roster eligibility** (§3) | A registrant with a lapsed licence checks in, the operator sees success, and the credit silently never posts. For a CPD platform that is a trust failure in the core loop | Agent |
+> **"Things that require external validation can wait. The platform has to be functional. The info dependency is subject to future info injection — not a build issue."**
+
+Sort every item into exactly one of these. Do not let the second list block the first.
+
+**BUILD GAPS** — code that does not exist or does not work. **This is the job.**
+**INJECTION POINTS** — code that is complete and waiting on a value (key, domain, approval). **Not blockers. Do not report them as such.**
+
+An earlier revision of this section listed the Resend cutover and the D0 deploy as Tier-1 blockers. **Both are injection points and that framing was wrong.** Verified this session:
+
+- **Email is already wired to switch itself.** `app/(public)/events/[id]/actions.ts:194` and `app/events/[id]/details/emailActions.ts:105` both do `const sendEmail = process.env.RESEND_API_KEY ? sendEmailReal : sendEmailStub;`. Set the key and real sending is live on both paths — registration confirmation and reminder/survey. Nothing to build.
+- **Deploy** is configuration + an Ivan decision. The code is environment-agnostic (`NEXT_PUBLIC_SITE_URL` via `lib/origin.ts`).
+- **Price, meeting dates, body answers** are content, injected later.
+
+### Tier 1 — REAL build gaps in the core loop (no external input required)
+
+| # | Item | Why it is a build gap |
+|---|---|---|
+| 1 | **No scheduler for reminder + survey** | There is no pg_cron job and no edge function. The 60-min-before reminder (carrying the personal QR pass) and the 10-min-after survey invite only fire when a human clicks them in `EmailSendControls`. The loop is therefore not self-running. `email_log` already has the `queued` partial index built for exactly this poller. **Caveat carried from the Phase-9 note: a `queued` reminder/survey row is TERMINAL under `email_log_dedup_idx` — the reconciler must not treat `queued` as "needs sending"** |
+| 2 | **Stage 4 — roster eligibility** (§3) | A registrant with a lapsed licence checks in, the operator sees success, and the credit silently never posts. Trust failure in the core loop |
+| 3 | **Event creation cannot set CPD config** | `create_event_with_blocks`' column whitelist omits `accrediting_body_id` / `cpd_hours`; CPD is only settable after creation. Reuse `set_event_cpd_config()` from the create action rather than widening the RPC |
 
 ### Tier 2 — beta hardening (do before real users, not before deploy)
 
@@ -252,4 +266,6 @@ The Text size setting currently promises something it does not deliver. Three op
 
 Browser zoom still works regardless, so (b) costs users very little.
 
-Ivan's outstanding inputs, now on the critical path rather than beside it: **D0 deploy go**, **Resend key + verified domain**, price, first internal-meeting/body-review date.
+**Injection points — tracked, NOT blocking, never reported as blockers:** `RESEND_API_KEY` + verified sender domain (email switches itself the moment the key exists) · D0 deploy go + Singapore project + `NEXT_PUBLIC_SITE_URL` · price · first internal-meeting/body-review date · HKCP's answers to the 7+2 questions (which unlock Q26 and the evaluator, not the platform).
+
+**Primary goal, standing:** the platform runs end to end on its own — create → accredit → publish → register → confirmation → reminder+QR → check in → credit posts → survey → chain verifies — with every external value injectable later and nothing stubbed that could be real.
