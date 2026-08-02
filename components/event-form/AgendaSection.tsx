@@ -341,13 +341,13 @@ function TimeFields({
       </div>
       {touched && errors.endBeforeStart && (
         <p className="font-body-md text-body-md text-error flex items-center gap-xs">
-          <span className="material-symbols-outlined text-[16px]" aria-hidden>warning</span>
+          <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>warning</span>
           End must be after Start.
         </p>
       )}
       {touched && errors.envelope && !errors.endBeforeStart && (
         <p className="font-body-md text-body-md text-error flex items-center gap-xs">
-          <span className="material-symbols-outlined text-[16px]" aria-hidden>warning</span>
+          <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>warning</span>
           This block runs outside the event&apos;s start/end window.
         </p>
       )}
@@ -379,7 +379,7 @@ function BlockErrorBanner({
       role="alert"
       className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
     >
-      <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden>warning</span>
+      <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
       <span>
         Please enter a valid {missing.join(' and ')} to continue.
       </span>

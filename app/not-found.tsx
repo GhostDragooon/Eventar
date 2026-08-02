@@ -12,7 +12,7 @@ export default function NotFound() {
         <p className="text-label-md font-semibold uppercase tracking-[0.18em] text-[color:var(--on-primary-container)] mb-sm">
           404
         </p>
-        <h1 className="text-[34px] font-extrabold tracking-[-0.03em] text-on-surface mb-sm">
+        <h1 className="text-[calc(34px*var(--text-scale))] font-extrabold tracking-[-0.03em] text-on-surface mb-sm">
           This page doesn&apos;t exist.
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant mb-lg">
@@ -25,7 +25,7 @@ export default function NotFound() {
             className="inline-flex items-center gap-xs bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
           >
             Upcoming events
-            <span className="material-symbols-outlined text-[16px]" aria-hidden>arrow_forward</span>
+            <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>arrow_forward</span>
           </Link>
           <Link
             href="/"

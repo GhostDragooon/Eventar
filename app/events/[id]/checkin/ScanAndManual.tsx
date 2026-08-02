@@ -47,7 +47,7 @@ export function ScanAndManual({
       >
         <ScanPictogram />
         <span>
-          <span className="block text-[20px] font-extrabold tracking-[-0.02em]">Scan badge</span>
+          <span className="block text-[calc(20px*var(--text-scale))] font-extrabold tracking-[-0.02em]">Scan badge</span>
           <span className="block mt-xs font-body-md text-body-md text-white/75">Tap to open the camera</span>
         </span>
       </button>
@@ -76,7 +76,7 @@ export function ScanAndManual({
           spellCheck={false}
           aria-invalid={attemptedInvalid || undefined}
           aria-describedby={attemptedInvalid ? 'manual-code-error' : 'manual-code-hint'}
-          className={`mt-sm w-full rounded-lg border px-md py-sm font-mono text-[22px] uppercase tracking-[0.12em] bg-surface-container-lowest focus:outline-none focus:ring-1 ${
+          className={`mt-sm w-full rounded-lg border px-md py-sm font-mono text-[calc(22px*var(--text-scale))] uppercase tracking-[0.12em] bg-surface-container-lowest focus:outline-none focus:ring-1 ${
             attemptedInvalid
               ? 'border-danger focus:border-danger focus:ring-danger'
               : 'border-outline-variant focus:border-primary focus:ring-primary'

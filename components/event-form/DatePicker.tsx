@@ -108,7 +108,7 @@ export function DatePicker({
         <span className={selected === null ? 'font-body-md text-body-md text-outline' : 'font-body-md text-body-md text-on-surface'}>
           {selected === null ? placeholder : formatDateLong(selected)}
         </span>
-        <span className="material-symbols-outlined text-[18px] text-on-surface-variant" aria-hidden>
+        <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] text-on-surface-variant" aria-hidden>
           calendar_month
         </span>
       </button>
@@ -120,7 +120,7 @@ export function DatePicker({
           className="mt-xs w-full max-w-[360px] bg-surface-container-lowest border border-outline-variant rounded-2xl p-md"
         >
           <div className="flex items-center justify-between mb-md">
-            <span className="font-headline-sm text-[18px] text-on-surface">{monthLabel}</span>
+            <span className="font-headline-sm text-[calc(18px*var(--text-scale))] text-on-surface">{monthLabel}</span>
             <div className="flex gap-xs">
               <button
                 type="button"
@@ -128,7 +128,7 @@ export function DatePicker({
                 aria-label="Previous month"
                 className="w-8 h-8 rounded-full hover:bg-surface-container-high transition-colors flex items-center justify-center text-on-surface-variant"
               >
-                <span className="material-symbols-outlined text-[20px]" aria-hidden>chevron_left</span>
+                <span className="material-symbols-outlined text-[calc(20px*var(--text-scale))]" aria-hidden>chevron_left</span>
               </button>
               <button
                 type="button"
@@ -136,7 +136,7 @@ export function DatePicker({
                 aria-label="Next month"
                 className="w-8 h-8 rounded-full hover:bg-surface-container-high transition-colors flex items-center justify-center text-on-surface-variant"
               >
-                <span className="material-symbols-outlined text-[20px]" aria-hidden>chevron_right</span>
+                <span className="material-symbols-outlined text-[calc(20px*var(--text-scale))]" aria-hidden>chevron_right</span>
               </button>
             </div>
           </div>

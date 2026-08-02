@@ -38,7 +38,7 @@ export default function ConfirmButton({
         aria-live="polite"
         className="font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm flex items-start gap-sm m-0"
       >
-        <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden data-fill="1">check_circle</span>
+        <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden data-fill="1">check_circle</span>
         <span className="flex-1">You&apos;re checked in. See you at the event.</span>
       </p>
     );
@@ -62,7 +62,7 @@ export default function ConfirmButton({
           role="alert"
           className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm m-0"
         >
-          <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden>warning</span>
+          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
           <span>{state.message}</span>
         </p>
       )}

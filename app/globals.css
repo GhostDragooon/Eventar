@@ -139,7 +139,9 @@
   --font-title-lg: var(--font-inter), system-ui, sans-serif;
   --font-body-lg: var(--font-inter), system-ui, sans-serif;
   --font-body-md: var(--font-inter), system-ui, sans-serif;
+  --font-body-sm: var(--font-inter), system-ui, sans-serif;
   --font-label-md: var(--font-inter), system-ui, sans-serif;
+  --font-label-sm: var(--font-inter), system-ui, sans-serif;
 
   /* Type scale — mockup-verified sizes/weights/line-heights. Sizes are
      multiplied by --text-scale so /settings → Text size can scale the whole
@@ -174,10 +176,24 @@
   --text-body-md--line-height: 1.6;
   --text-body-md--font-weight: 400;
 
+  /* 13px/11px steps: the two most common arbitrary sizes in components
+     (14 and 38 occurrences). Both were already being USED as text-body-sm /
+     text-label-sm in shipped markup with no token behind them, so those
+     utilities silently resolved to nothing — defining them here fixes that
+     as well as giving the sweep a same-size target. */
+  --text-body-sm: calc(13px * var(--text-scale));
+  --text-body-sm--line-height: 1.6;
+  --text-body-sm--font-weight: 400;
+
   --text-label-md: calc(12px * var(--text-scale));
   --text-label-md--line-height: 1;
   --text-label-md--letter-spacing: 0.05em;
   --text-label-md--font-weight: 600;
+
+  --text-label-sm: calc(11px * var(--text-scale));
+  --text-label-sm--line-height: 1;
+  --text-label-sm--letter-spacing: 0.05em;
+  --text-label-sm--font-weight: 600;
 
   /* Custom spacing scale from mockups (in addition to Tailwind defaults) */
   --spacing-xs: 4px;

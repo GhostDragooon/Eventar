@@ -17,7 +17,7 @@ export function SiteShell({
     <div className="flex min-h-screen flex-col bg-background text-on-surface">
       <nav
         aria-label="Primary"
-        className="grid grid-cols-[1fr_auto_1fr] items-center gap-md border-b border-outline-variant px-grid-margin py-md text-[13px]"
+        className="grid grid-cols-[1fr_auto_1fr] items-center gap-md border-b border-outline-variant px-grid-margin py-md text-[calc(13px*var(--text-scale))]"
       >
         <div />
         <div className="flex items-center gap-lg justify-self-center">
@@ -51,7 +51,7 @@ export function SiteShell({
 
       {footer === 'brand' && (
         <footer className="w-full border-t border-outline-variant bg-surface-container-lowest py-md text-center">
-          <span className="text-[11px] text-on-surface-variant">
+          <span className="text-[calc(11px*var(--text-scale))] text-on-surface-variant">
             By <span className="font-bold text-on-surface">Eventar</span>
           </span>
         </footer>

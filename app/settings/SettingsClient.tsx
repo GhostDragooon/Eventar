@@ -130,9 +130,9 @@ function SettingsSection({
           aria-hidden
           className="w-10 h-10 rounded-full bg-primary-fixed text-primary flex items-center justify-center"
         >
-          <span className="material-symbols-outlined text-[20px]">{icon}</span>
+          <span className="material-symbols-outlined text-[calc(20px*var(--text-scale))]">{icon}</span>
         </div>
-        <h2 className="font-headline-sm text-[20px] text-on-surface">{title}</h2>
+        <h2 className="font-headline-sm text-[calc(20px*var(--text-scale))] text-on-surface">{title}</h2>
       </div>
       {children}
     </section>
@@ -176,7 +176,7 @@ function RadioCardGroup<V extends string>({
               className="sr-only"
             />
             <span
-              className={`material-symbols-outlined text-[24px] mt-[2px] shrink-0 ${
+              className={`material-symbols-outlined text-[calc(24px*var(--text-scale))] mt-[2px] shrink-0 ${
                 isSelected ? 'text-primary' : 'text-on-surface-variant'
               }`}
               aria-hidden
@@ -185,7 +185,7 @@ function RadioCardGroup<V extends string>({
               {opt.icon}
             </span>
             <div className="flex-1 min-w-0">
-              <p className={`font-title-lg text-[16px] ${isSelected ? 'text-primary' : 'text-on-surface'}`}>
+              <p className={`font-title-lg text-[calc(16px*var(--text-scale))] ${isSelected ? 'text-primary' : 'text-on-surface'}`}>
                 {opt.label}
               </p>
               <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
@@ -193,7 +193,7 @@ function RadioCardGroup<V extends string>({
               </p>
             </div>
             <span
-              className={`material-symbols-outlined text-[20px] mt-[2px] shrink-0 ${
+              className={`material-symbols-outlined text-[calc(20px*var(--text-scale))] mt-[2px] shrink-0 ${
                 isSelected ? 'text-primary' : 'text-outline'
               }`}
               aria-hidden

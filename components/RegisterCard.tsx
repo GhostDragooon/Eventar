@@ -73,7 +73,7 @@ export default function RegisterCard({ eventId, maxAttendees, currentCount, life
     return (
       <Section>
         <span className="font-label-md text-label-md px-sm py-xs rounded-full uppercase inline-flex items-center gap-sm bg-success-container text-on-success-container border border-transparent self-start">
-          <span className="material-symbols-outlined text-[14px]" data-fill="1" aria-hidden>check_circle</span>
+          <span className="material-symbols-outlined text-[calc(14px*var(--text-scale))]" data-fill="1" aria-hidden>check_circle</span>
           You&apos;re registered
         </span>
         <h2 className="font-headline-sm text-headline-sm text-on-surface m-0">
@@ -90,7 +90,7 @@ export default function RegisterCard({ eventId, maxAttendees, currentCount, life
             Alternatively, you may present the code below for manual check-in.
           </p>
         </div>
-        <p className="font-body-md text-[12px] text-on-surface-variant m-0">
+        <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant m-0">
           Need to cancel? Reply to your confirmation email.
         </p>
       </Section>
@@ -150,7 +150,7 @@ export default function RegisterCard({ eventId, maxAttendees, currentCount, life
             role="alert"
             className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
           >
-            <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden>
+            <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>
               warning
             </span>
             <span>{errorMessage}</span>

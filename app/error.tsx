@@ -23,7 +23,7 @@ export default function GlobalError({
       <p className="text-label-md font-semibold uppercase tracking-[0.18em] text-[color:var(--error)] mb-sm">
         Something broke
       </p>
-      <h1 className="text-[30px] font-extrabold tracking-[-0.03em] mb-sm">
+      <h1 className="text-[calc(30px*var(--text-scale))] font-extrabold tracking-[-0.03em] mb-sm">
         We hit an unexpected error.
       </h1>
       <p className="font-body-md text-body-md text-on-surface-variant mb-lg max-w-[440px]">
@@ -36,7 +36,7 @@ export default function GlobalError({
           onClick={reset}
           className="inline-flex items-center gap-xs bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
         >
-          <span className="material-symbols-outlined text-[16px]" aria-hidden>refresh</span>
+          <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>refresh</span>
           Try again
         </button>
         <Link

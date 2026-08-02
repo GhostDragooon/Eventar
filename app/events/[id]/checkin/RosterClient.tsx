@@ -178,7 +178,7 @@ export default function RosterClient({
             <FilterPill active={statusFilter === 'registered'} onClick={() => setStatusFilter('registered')} label={`Pending (${registeredTotal - attendedCount})`} />
           </div>
           <div className="relative w-full md:w-64">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]" aria-hidden>search</span>
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[calc(18px*var(--text-scale))]" aria-hidden>search</span>
             <input
               type="text"
               value={search}
@@ -298,7 +298,7 @@ function RosterRowItem({
       <p className="font-body-md text-body-md font-semibold text-on-surface truncate">
         {r.full_name}
       </p>
-      <code className="font-body-md text-[13px] text-on-surface-variant tabular-nums">
+      <code className="font-body-md text-[calc(13px*var(--text-scale))] text-on-surface-variant tabular-nums">
         {r.registration_code}
       </code>
       {isAttended ? (

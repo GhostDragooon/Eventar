@@ -151,7 +151,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
         <div className="min-w-0">
           <p className="text-label-md font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-xs">Event Manager</p>
           <div className="flex items-center gap-sm flex-wrap">
-            <h1 className="text-[30px] leading-[1.1] font-extrabold tracking-[-0.025em] text-on-surface">{event.title}</h1>
+            <h1 className="text-[calc(30px*var(--text-scale))] leading-[1.1] font-extrabold tracking-[-0.025em] text-on-surface">{event.title}</h1>
             {structuralLocked && <LockIcon />}
             <StatusPill lifecycle={lifecycle} />
           </div>
@@ -265,7 +265,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
 function LockIcon() {
   return (
     <span
-      className="material-symbols-outlined text-[14px] text-on-surface-variant align-middle"
+      className="material-symbols-outlined text-[calc(14px*var(--text-scale))] text-on-surface-variant align-middle"
       title="Locked since registration opened"
       aria-label="Locked since registration opened"
       role="img"
@@ -286,25 +286,25 @@ function ActionToolbar({ eventId, lifecycle }: { eventId: string; lifecycle: Lif
   return (
     <div className="flex gap-xs flex-wrap shrink-0">
       <Link href={`/events/${eventId}/edit`} className={outline}>
-        <span className="material-symbols-outlined text-[16px]" aria-hidden>edit</span>Edit
+        <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>edit</span>Edit
       </Link>
       {showRoster && (
         <Link href={`/events/${eventId}/checkin`} className={lifecycle === 'live' ? live : outline}>
-          <span className="material-symbols-outlined text-[16px]" aria-hidden>group</span>Roster
+          <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>group</span>Roster
         </Link>
       )}
       {showPublic && (
         <Link href={`/events/${eventId}`} target="_blank" rel="noreferrer" className={outline}>
-          <span className="material-symbols-outlined text-[16px]" aria-hidden>open_in_new</span>Public
+          <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>open_in_new</span>Public
         </Link>
       )}
       {canAnalytics ? (
         <Link href={`/events/${eventId}/analytics`} className={outline}>
-          <span className="material-symbols-outlined text-[16px]" aria-hidden>insights</span>Analytics
+          <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>insights</span>Analytics
         </Link>
       ) : (
         <span className={`${base} border-outline-variant text-on-surface-variant opacity-50 cursor-not-allowed`} title="Available after the event completes">
-          <span className="material-symbols-outlined text-[16px]" aria-hidden>insights</span>Analytics
+          <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>insights</span>Analytics
         </span>
       )}
     </div>

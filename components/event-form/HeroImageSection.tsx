@@ -115,7 +115,7 @@ export function HeroImageSection({ value, onChange, eventId }: Props) {
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
         >
-          <span className="material-symbols-outlined text-[18px] mr-xs" aria-hidden>
+          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mr-xs" aria-hidden>
             image
           </span>
           {uploading ? 'Uploading…' : 'Upload hero image'}

@@ -41,9 +41,9 @@ export function Scoreboard({
       style={{ background: 'radial-gradient(120% 140% at 0% 0%, #123420 0%, #0A0A0A 55%)' }}
     >
       <div className="flex items-center justify-between mb-md">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/50">Status</p>
+        <p className="text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-[0.18em] text-white/50">Status</p>
         <span
-          className={`inline-flex items-center gap-xs px-sm py-[2px] rounded-full border text-[11px] font-bold uppercase tracking-[0.12em] ${
+          className={`inline-flex items-center gap-xs px-sm py-[2px] rounded-full border text-[calc(11px*var(--text-scale))] font-bold uppercase tracking-[0.12em] ${
             isLive ? 'border-[#4ADE80] text-[#4ADE80] live-pill-pulse' : 'border-white/25 text-white/70'
           }`}
         >
@@ -54,7 +54,7 @@ export function Scoreboard({
 
       {/* Biggest element on the page: the start countdown. */}
       <p
-        className="text-[44px] leading-none font-extrabold tracking-[-0.03em] tabular-nums mb-lg"
+        className="text-[calc(44px*var(--text-scale))] leading-none font-extrabold tracking-[-0.03em] tabular-nums mb-lg"
         aria-live="polite"
       >
         {countdown}
@@ -62,12 +62,12 @@ export function Scoreboard({
 
       <div className="flex flex-wrap items-end justify-between gap-md">
         <p className="leading-none">
-          <span className={`text-[34px] font-extrabold tracking-[-0.02em] tabular-nums ${isLive ? 'text-[#4ADE80]' : 'text-white'}`}>
+          <span className={`text-[calc(34px*var(--text-scale))] font-extrabold tracking-[-0.02em] tabular-nums ${isLive ? 'text-[#4ADE80]' : 'text-white'}`}>
             {attended}
           </span>
           <span className="text-body-md text-white/40"> / {registered} checked in</span>
         </p>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">
+        <p className="text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-[0.14em] text-white/50">
           Attendance · {isLive ? 'live' : 'pending'}
         </p>
       </div>

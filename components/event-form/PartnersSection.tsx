@@ -77,7 +77,7 @@ export function PartnersSection({ label, emptyHint, value, onChange }: Props) {
             aria-label={`Remove ${label} ${i + 1}`}
             className="self-end sm:self-center"
           >
-            <span className="material-symbols-outlined text-[18px]" aria-hidden>
+            <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>
               close
             </span>
           </Button>
@@ -86,7 +86,7 @@ export function PartnersSection({ label, emptyHint, value, onChange }: Props) {
 
       {value.length < PARTNER_MAX && (
         <Button type="button" variant="outline" size="sm" onClick={add}>
-          <span className="material-symbols-outlined text-[18px] mr-xs" aria-hidden>
+          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mr-xs" aria-hidden>
             add
           </span>
           Add {label.toLowerCase().replace(/^\w/, () => label[0]!.toLowerCase()).replace(/s$/, '')}

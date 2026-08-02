@@ -83,7 +83,7 @@ export function EventsListClient({ events }: { events: PublicEventCard[] }) {
                   setCat(c.key);
                 }
               }}
-              className={`relative shrink-0 pb-md pt-xs cursor-pointer text-[14px] font-semibold transition-colors ${
+              className={`relative shrink-0 pb-md pt-xs cursor-pointer text-[calc(14px*var(--text-scale))] font-semibold transition-colors ${
                 active ? 'text-on-surface' : 'text-on-surface-variant hover:text-on-surface'
               }`}
             >
@@ -113,13 +113,13 @@ export function EventsListClient({ events }: { events: PublicEventCard[] }) {
               <article className="flex items-stretch gap-md bg-surface-container-lowest border border-outline-variant rounded-[16px] p-md">
                 {/* Date block */}
                 <div className="flex flex-col items-center justify-center w-[64px] shrink-0 rounded-[12px] bg-surface-container-low border border-outline-variant py-sm" aria-hidden>
-                  <span className="text-[22px] font-extrabold tabular-nums leading-none text-on-surface">{e.day}</span>
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant mt-[2px]">{e.month}</span>
+                  <span className="text-[calc(22px*var(--text-scale))] font-extrabold tabular-nums leading-none text-on-surface">{e.day}</span>
+                  <span className="text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-wider text-on-surface-variant mt-[2px]">{e.month}</span>
                 </div>
 
                 <div className="flex-1 min-w-0">
                   {e.category && (
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-[2px]">
+                    <p className="text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-[2px]">
                       {CATEGORIES.find((c) => c.key === e.category)?.label ?? ''}
                     </p>
                   )}
@@ -136,15 +136,15 @@ export function EventsListClient({ events }: { events: PublicEventCard[] }) {
 
                 <div className="flex flex-col items-end justify-between shrink-0 gap-sm">
                   {e.lifecycle === 'registering' ? (
-                    <span className="inline-flex items-center gap-xs px-sm py-[3px] rounded-full text-[11px] font-semibold uppercase tracking-wide bg-success-container text-on-success-container">
+                    <span className="inline-flex items-center gap-xs px-sm py-[3px] rounded-full text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-wide bg-success-container text-on-success-container">
                       <span className="w-[6px] h-[6px] rounded-full bg-[color:var(--success)]" aria-hidden />Registering
                     </span>
                   ) : e.lifecycle === 'live' ? (
-                    <span className="inline-flex items-center gap-xs px-sm py-[3px] rounded-full text-[11px] font-semibold uppercase tracking-wide bg-success-container text-on-success-container">
+                    <span className="inline-flex items-center gap-xs px-sm py-[3px] rounded-full text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-wide bg-success-container text-on-success-container">
                       <span className="w-[6px] h-[6px] rounded-full bg-[color:var(--success)]" aria-hidden />Live
                     </span>
                   ) : (
-                    <span className="inline-flex items-center px-sm py-[3px] rounded-full text-[11px] font-semibold uppercase tracking-wide bg-surface-container-high text-on-surface-variant">
+                    <span className="inline-flex items-center px-sm py-[3px] rounded-full text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-wide bg-surface-container-high text-on-surface-variant">
                       Starts soon
                     </span>
                   )}
@@ -153,7 +153,7 @@ export function EventsListClient({ events }: { events: PublicEventCard[] }) {
                     className="inline-flex items-center gap-xs px-md py-sm rounded-lg bg-primary text-on-primary font-label-md text-label-md hover:opacity-90 transition-opacity"
                   >
                     View
-                    <span className="material-symbols-outlined text-[15px]" aria-hidden>arrow_forward</span>
+                    <span className="material-symbols-outlined text-[calc(15px*var(--text-scale))]" aria-hidden>arrow_forward</span>
                   </Link>
                 </div>
               </article>

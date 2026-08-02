@@ -102,13 +102,13 @@ export default function SurveyForm({
           <h1 className="font-headline-md text-headline-md text-primary mb-sm">{eventTitle}</h1>
           <div className="font-body-md text-body-md text-on-surface-variant mb-md space-y-1">
             <p className="flex items-start gap-xs">
-              <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden>
+              <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>
                 schedule
               </span>
               <span>{formatInTz(eventStartTime, eventTimezone)}</span>
             </p>
             <p className="flex items-start gap-xs">
-              <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden>
+              <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>
                 location_on
               </span>
               <span>{eventVenueName}</span>
@@ -142,7 +142,7 @@ export default function SurveyForm({
                   aria-hidden
                   className="inline-flex items-center justify-center w-14 h-14 bg-on-primary/10 rounded-full"
                 >
-                  <span className="material-symbols-outlined text-[28px]" data-fill="1">
+                  <span className="material-symbols-outlined text-[calc(28px*var(--text-scale))]" data-fill="1">
                     check_circle
                   </span>
                 </div>
@@ -341,7 +341,7 @@ export default function SurveyForm({
                     role="alert"
                     className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
                   >
-                    <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden>
+                    <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>
                       warning
                     </span>
                     <span>{state.message}</span>

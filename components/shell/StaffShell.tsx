@@ -67,13 +67,13 @@ function NavLink({ href, label, icon, active }: { href: string; label: string; i
       // whitespace-nowrap: on the mobile horizontal strip the flex children
       // shrink, and "Check-in" wrapped to two lines mid-word. The strip
       // scrolls, so refusing to wrap is the correct trade.
-      className={`flex shrink-0 items-center gap-sm whitespace-nowrap rounded-lg px-sm py-sm text-[13px] font-medium transition-colors ${
+      className={`flex shrink-0 items-center gap-sm whitespace-nowrap rounded-lg px-sm py-sm text-[calc(13px*var(--text-scale))] font-medium transition-colors ${
         active
           ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold'
           : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
       }`}
     >
-      <span className="material-symbols-outlined text-[18px]" aria-hidden>
+      <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>
         {icon}
       </span>
       {label}
@@ -93,7 +93,7 @@ export function StaffShell(props: StaffShellProps) {
           Visually hidden until focused. */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-md focus:top-md focus:z-50 focus:rounded-lg focus:bg-primary focus:px-md focus:py-sm focus:text-[13px] focus:font-semibold focus:text-on-primary"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-md focus:top-md focus:z-50 focus:rounded-lg focus:bg-primary focus:px-md focus:py-sm focus:text-[calc(13px*var(--text-scale))] focus:font-semibold focus:text-on-primary"
       >
         Skip to content
       </a>
@@ -105,7 +105,7 @@ export function StaffShell(props: StaffShellProps) {
           {backHref && backLabel && (
             <Link
               href={backHref}
-              className="truncate text-[13px] text-on-surface-variant transition-colors hover:text-on-surface"
+              className="truncate text-[calc(13px*var(--text-scale))] text-on-surface-variant transition-colors hover:text-on-surface"
             >
               <span aria-hidden>← </span>
               Back to {backLabel}
@@ -117,7 +117,7 @@ export function StaffShell(props: StaffShellProps) {
             sidebar owning navigation, a second link to the same destination up
             here was a duplicate nav entry (and made the accessible name
             "Settings" ambiguous for anything querying by role+name). */}
-        <div className="flex shrink-0 items-center gap-sm text-[13px]">
+        <div className="flex shrink-0 items-center gap-sm text-[calc(13px*var(--text-scale))]">
           <span className="hidden max-w-[220px] truncate text-on-surface-variant sm:inline" title={staff.email}>
             {staff.email}
           </span>
@@ -168,7 +168,7 @@ export function StaffShell(props: StaffShellProps) {
 
           {/* Brand footer band — the only place the wordmark lives. */}
           <footer className="w-full border-t border-outline-variant bg-surface-container-lowest py-md text-center">
-            <span className="text-[11px] text-on-surface-variant">
+            <span className="text-[calc(11px*var(--text-scale))] text-on-surface-variant">
               By <span className="font-bold text-on-surface">Eventar</span>
             </span>
           </footer>

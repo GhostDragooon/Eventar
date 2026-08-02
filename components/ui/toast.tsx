@@ -54,11 +54,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           <div
             key={t.id}
             role="status"
-            className="pointer-events-auto flex items-center gap-sm w-full rounded-[12px] bg-[#0A0A0A] text-white shadow-lg px-md py-sm text-[13px] font-medium"
+            className="pointer-events-auto flex items-center gap-sm w-full rounded-[12px] bg-[#0A0A0A] text-white shadow-lg px-md py-sm text-[calc(13px*var(--text-scale))] font-medium"
           >
             <span
               aria-hidden
-              className={`material-symbols-outlined text-[18px] shrink-0 ${
+              className={`material-symbols-outlined text-[calc(18px*var(--text-scale))] shrink-0 ${
                 t.tone === 'success' ? 'text-[#4ADE80]' : t.tone === 'error' ? 'text-[#F87171]' : 'text-white/60'
               }`}
             >
@@ -71,7 +71,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               aria-label="Dismiss notification"
               className="shrink-0 text-white/50 hover:text-white transition-colors"
             >
-              <span className="material-symbols-outlined text-[16px]" aria-hidden>close</span>
+              <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>close</span>
             </button>
           </div>
         ))}

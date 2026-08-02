@@ -85,7 +85,7 @@ export function FeedbackSection({
             href={`/events/${eventId}/analytics`}
             className="flex items-center gap-sm bg-primary text-on-primary px-lg py-sm rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity"
           >
-            <span className="material-symbols-outlined text-[18px]" aria-hidden>
+            <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>
               insights
             </span>
             View full analytics

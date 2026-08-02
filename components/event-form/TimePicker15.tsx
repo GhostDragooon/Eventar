@@ -126,7 +126,7 @@ export function TimePicker15({
         <span className={value === null ? 'font-body-md text-body-md text-outline' : 'font-body-md text-body-md text-on-surface'}>
           {value === null ? placeholder : formatMinutes12h(value)}
         </span>
-        <span className="material-symbols-outlined text-[18px] text-on-surface-variant" aria-hidden>
+        <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] text-on-surface-variant" aria-hidden>
           schedule
         </span>
       </button>

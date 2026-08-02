@@ -59,13 +59,13 @@ export function EmailSendControls({
       <div className="flex gap-sm flex-wrap">
         {showReminder && (
           <button type="button" onClick={() => requestSend('reminder')} disabled={pending} className={btn}>
-            <span className="material-symbols-outlined text-[16px]" aria-hidden>notifications</span>
+            <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>notifications</span>
             {active === 'reminder' && pending ? 'Sending…' : 'Send reminders now'}
           </button>
         )}
         {showSurvey && (
           <button type="button" onClick={() => requestSend('survey')} disabled={pending} className={btn}>
-            <span className="material-symbols-outlined text-[16px]" aria-hidden>reviews</span>
+            <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>reviews</span>
             {active === 'survey' && pending ? 'Sending…' : 'Send survey invites'}
           </button>
         )}

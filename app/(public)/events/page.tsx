@@ -62,7 +62,7 @@ export default async function PublicEventsPage() {
       <div className="max-w-[860px] mx-auto px-grid-margin py-xl">
         <header className="text-center mb-lg">
           <p className="text-label-md font-semibold uppercase tracking-[0.18em] text-[color:var(--on-primary-container)] mb-xs">Events</p>
-          <h1 className="text-[34px] font-extrabold tracking-[-0.03em] text-on-surface mb-xs">Upcoming events</h1>
+          <h1 className="text-[calc(34px*var(--text-scale))] font-extrabold tracking-[-0.03em] text-on-surface mb-xs">Upcoming events</h1>
           <p className="font-body-md text-body-md text-on-surface-variant">
             Open programmes across the professions — register in under a minute.
           </p>

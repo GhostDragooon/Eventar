@@ -233,7 +233,7 @@ function EmptyState({
   return (
     <div className="text-center space-y-sm">
       <div className="inline-flex items-center justify-center w-16 h-16 bg-secondary-container text-on-secondary-container rounded-full mb-sm" aria-hidden>
-        <span className="material-symbols-outlined text-[32px]">{icon}</span>
+        <span className="material-symbols-outlined text-[calc(32px*var(--text-scale))]">{icon}</span>
       </div>
       <h1 className="font-headline-sm text-headline-sm text-on-surface">{title}</h1>
       <p className="font-body-md text-body-md text-on-surface-variant max-w-sm mx-auto">

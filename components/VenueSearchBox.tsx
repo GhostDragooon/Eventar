@@ -98,7 +98,7 @@ export default function VenueSearchBox({ onSelect }: Props) {
                 className="w-full text-left px-md py-sm hover:bg-surface-container-low transition-colors"
               >
                 <div className="font-body-md text-body-md font-semibold text-on-surface">{v.venue_name}</div>
-                <div className="font-body-md text-[12px] text-on-surface-variant mt-[2px] truncate">
+                <div className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant mt-[2px] truncate">
                   {v.venue_address || `${v.city}${v.region ? `, ${v.region}` : ''}, ${v.country}`}
                 </div>
               </button>

@@ -231,7 +231,7 @@ export function DashboardWorkstation({
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-md mb-lg">
         <div>
           <p className="text-label-md font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-xs">Dashboard</p>
-          <h1 className="text-[34px] leading-[1.1] font-extrabold tracking-[-0.03em] text-on-surface">
+          <h1 className="text-[calc(34px*var(--text-scale))] leading-[1.1] font-extrabold tracking-[-0.03em] text-on-surface">
             Good {greeting}, {greetingName || 'there'}
           </h1>
           <p className="font-body-md text-body-md text-on-surface-variant mt-xs">{summary}</p>
@@ -240,7 +240,7 @@ export function DashboardWorkstation({
           href="/events/new"
           className="inline-flex items-center gap-sm bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity shrink-0"
         >
-          <span className="material-symbols-outlined text-[18px]" aria-hidden>add</span>
+          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>add</span>
           New event
         </Link>
       </header>
@@ -254,7 +254,7 @@ export function DashboardWorkstation({
 
       <div className="flex flex-col sm:flex-row gap-sm mb-md">
         <div className="relative flex-1">
-          <span className="material-symbols-outlined text-[18px] absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none" aria-hidden>search</span>
+          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none" aria-hidden>search</span>
           <input
             type="text" value={query} onChange={(e) => setQuery(e.target.value)}
             placeholder="Search events" aria-label="Search events"
@@ -262,7 +262,7 @@ export function DashboardWorkstation({
           />
         </div>
         <label className="inline-flex items-center gap-sm bg-surface-container-lowest border border-outline-variant rounded-lg px-md py-sm shrink-0">
-          <span className="material-symbols-outlined text-[18px] text-on-surface-variant" aria-hidden>swap_vert</span>
+          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] text-on-surface-variant" aria-hidden>swap_vert</span>
           <span className="font-label-md text-label-md text-on-surface-variant uppercase">Sort</span>
           <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} aria-label="Sort events" className="bg-transparent font-label-md text-label-md text-on-surface focus:outline-none cursor-pointer">
             {SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
@@ -279,7 +279,7 @@ export function DashboardWorkstation({
             <button key={f.key} type="button" onClick={() => { setFilter(f.key); setSelected(new Set()); }}
               className={`relative shrink-0 pb-md pt-xs font-label-md text-label-md transition-colors ${active ? 'text-on-surface' : 'text-on-surface-variant hover:text-on-surface'}`}>
               {f.label}
-              <span className={`ml-xs inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[11px] font-semibold ${active ? 'bg-[color:var(--on-primary-container)] text-white' : 'bg-surface-container-high text-on-surface-variant'}`}>{n}</span>
+              <span className={`ml-xs inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[calc(11px*var(--text-scale))] font-semibold ${active ? 'bg-[color:var(--on-primary-container)] text-white' : 'bg-surface-container-high text-on-surface-variant'}`}>{n}</span>
               {active && <span className="absolute left-0 right-0 -bottom-px h-[2px] bg-[color:var(--on-primary-container)] rounded-full" aria-hidden />}
             </button>
           );
@@ -291,19 +291,19 @@ export function DashboardWorkstation({
           <span className="font-label-md text-label-md text-on-surface font-semibold">{selected.size} selected</span>
           <div className="flex items-center gap-xs flex-wrap">
             <button type="button" onClick={exportCsv} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-lg bg-surface-container-lowest border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50">
-              <span className="material-symbols-outlined text-[16px]" aria-hidden>download</span>Export CSV
+              <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>download</span>Export CSV
             </button>
             {inBin ? (
               <button type="button" onClick={() => runBulk('restore')} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-lg bg-surface-container-lowest border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50">
-                <span className="material-symbols-outlined text-[16px]" aria-hidden>restore_from_trash</span>Restore
+                <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>restore_from_trash</span>Restore
               </button>
             ) : (
               <>
                 <button type="button" onClick={() => runBulk('archive')} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-lg bg-surface-container-lowest border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50">
-                  <span className="material-symbols-outlined text-[16px]" aria-hidden>archive</span>Archive
+                  <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>archive</span>Archive
                 </button>
                 <button type="button" onClick={() => runBulk('cancel')} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-lg border border-[color:var(--error)] font-label-md text-label-md text-[color:var(--error)] hover:bg-error-container transition-colors disabled:opacity-50">
-                  <span className="material-symbols-outlined text-[16px]" aria-hidden>block</span>Cancel
+                  <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>block</span>Cancel
                 </button>
               </>
             )}
@@ -319,7 +319,7 @@ export function DashboardWorkstation({
           </p>
           {events.length === 0 && (
             <Link href="/events/new" className="inline-flex items-center gap-sm mt-md bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity">
-              <span className="material-symbols-outlined text-[18px]" aria-hidden>add</span>Create your first event
+              <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>add</span>Create your first event
             </Link>
           )}
         </div>
@@ -348,7 +348,7 @@ function Metric({ label, value, prefix, tone }: { label: string; value: number; 
   return (
     <div className="bg-[color:var(--surface-container-high)] rounded-[14px] p-md">
       <p className="font-label-md text-label-md text-on-surface-variant leading-snug mb-sm normal-case tracking-normal">{label}</p>
-      <p className={`text-[30px] leading-none font-extrabold tracking-[-0.02em] tabular-nums ${color}`}>{prefix}{value}</p>
+      <p className={`text-[calc(30px*var(--text-scale))] leading-none font-extrabold tracking-[-0.02em] tabular-nums ${color}`}>{prefix}{value}</p>
     </div>
   );
 }
@@ -377,18 +377,18 @@ function EventCard({ e, selected, onToggle, onDelete, onRestore, inBin, pending 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-sm flex-wrap mb-xs">
             <Link href={`/events/${e.id}/details`} className="font-title-lg text-title-lg font-semibold text-on-surface hover:text-[color:var(--on-primary-container)] transition-colors truncate">{e.title}</Link>
-            <span className={`inline-flex items-center gap-xs px-sm py-[3px] rounded-full text-[11px] font-semibold uppercase tracking-wide ${pill.cls}`}>
+            <span className={`inline-flex items-center gap-xs px-sm py-[3px] rounded-full text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-wide ${pill.cls}`}>
               <span className={`w-[6px] h-[6px] rounded-full ${pill.dot}`} aria-hidden />{pill.label}
             </span>
             {e.category && CATEGORY_LABEL[e.category] && (
-              <span className="inline-flex items-center px-sm py-[3px] rounded-full text-[11px] font-medium bg-surface-container-high text-on-surface-variant">{CATEGORY_LABEL[e.category]}</span>
+              <span className="inline-flex items-center px-sm py-[3px] rounded-full text-[calc(11px*var(--text-scale))] font-medium bg-surface-container-high text-on-surface-variant">{CATEGORY_LABEL[e.category]}</span>
             )}
           </div>
           {e.description && <p className="font-body-md text-body-md text-on-surface-variant line-clamp-1 mb-sm">{e.description}</p>}
           <div className="flex items-center gap-md flex-wrap font-label-md text-label-md text-on-surface-variant normal-case tracking-normal">
-            <span className="inline-flex items-center gap-xs"><span className="material-symbols-outlined text-[16px]" aria-hidden>calendar_today</span>{e.dateLabel}</span>
-            <span className="inline-flex items-center gap-xs"><span className="material-symbols-outlined text-[16px]" aria-hidden>schedule</span>{e.timeLabel}</span>
-            {e.venueName && <span className="inline-flex items-center gap-xs min-w-0"><span className="material-symbols-outlined text-[16px]" aria-hidden>location_on</span><span className="truncate">{e.venueName}</span></span>}
+            <span className="inline-flex items-center gap-xs"><span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>calendar_today</span>{e.dateLabel}</span>
+            <span className="inline-flex items-center gap-xs"><span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>schedule</span>{e.timeLabel}</span>
+            {e.venueName && <span className="inline-flex items-center gap-xs min-w-0"><span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>location_on</span><span className="truncate">{e.venueName}</span></span>}
           </div>
         </div>
       </div>
@@ -396,7 +396,7 @@ function EventCard({ e, selected, onToggle, onDelete, onRestore, inBin, pending 
       <div className="flex items-center justify-between sm:justify-end gap-md px-md pb-md sm:py-md sm:pr-md sm:pl-0 shrink-0">
         <div className="text-right min-w-[140px]">
           <p className="leading-none">
-            <span className="text-[26px] font-extrabold tracking-[-0.02em] tabular-nums text-[color:var(--on-primary-container)]">{e.registered}</span>
+            <span className="text-[calc(26px*var(--text-scale))] font-extrabold tracking-[-0.02em] tabular-nums text-[color:var(--on-primary-container)]">{e.registered}</span>
             {cap != null && <span className="text-body-md text-on-surface-variant"> / {cap}</span>}
           </p>
           {pct != null && (
@@ -417,15 +417,15 @@ function EventCard({ e, selected, onToggle, onDelete, onRestore, inBin, pending 
         <div className="flex flex-col gap-xs w-[116px] shrink-0">
           {inBin ? (
             <button type="button" onClick={onRestore} disabled={pending} className="w-full inline-flex items-center justify-center gap-xs px-sm py-sm rounded-lg border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50">
-              <span className="material-symbols-outlined text-[16px]" aria-hidden>restore_from_trash</span>Restore
+              <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>restore_from_trash</span>Restore
             </button>
           ) : (
             <>
               <Link href={isCompleted ? `/events/${e.id}/analytics` : `/events/${e.id}/edit`} className="w-full inline-flex items-center justify-center gap-xs px-sm py-sm rounded-lg border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                <span className="material-symbols-outlined text-[16px]" aria-hidden>{isCompleted ? 'insights' : 'edit'}</span>{isCompleted ? 'Analytics' : 'Edit'}
+                <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>{isCompleted ? 'insights' : 'edit'}</span>{isCompleted ? 'Analytics' : 'Edit'}
               </Link>
               <button type="button" onClick={onDelete} disabled={pending} className="w-full inline-flex items-center justify-center gap-xs px-sm py-sm rounded-lg border border-[color:var(--error)] font-label-md text-label-md text-[color:var(--error)] hover:bg-error-container transition-colors disabled:opacity-50">
-                <span className="material-symbols-outlined text-[16px]" aria-hidden>delete</span>Delete
+                <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>delete</span>Delete
               </button>
             </>
           )}

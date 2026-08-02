@@ -126,7 +126,7 @@ export function AttendanceSection({
 function SplitRow({ n, of, unit, label, strong }: { n: number; of?: number; unit: string; label: string; strong?: boolean }) {
   return (
     <div className="flex items-baseline gap-sm border border-outline-variant rounded-[12px] px-md py-sm">
-      <span className={`font-extrabold tabular-nums tracking-[-0.02em] ${strong ? 'text-[26px] text-[color:var(--success)]' : 'text-[20px] text-on-surface'}`} style={{ lineHeight: 1 }}>
+      <span className={`font-extrabold tabular-nums tracking-[-0.02em] ${strong ? 'text-[calc(26px*var(--text-scale))] text-[color:var(--success)]' : 'text-[calc(20px*var(--text-scale))] text-on-surface'}`} style={{ lineHeight: 1 }}>
         {n}
       </span>
       {of != null && <span className="text-body-md text-on-surface-variant">/ {of}</span>}

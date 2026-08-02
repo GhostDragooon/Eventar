@@ -38,13 +38,13 @@ export function Slice({
     >
       <div className="w-full md:w-1/3 flex items-start gap-sm">
         <div className={`w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 ${iconBgClasses[iconBg]}`}>
-          <span className="material-symbols-outlined text-[18px]" aria-hidden>
+          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>
             {icon}
           </span>
         </div>
         <div className="min-w-0">
-          <h2 className="text-[15px] font-bold tracking-[-0.01em] text-on-surface leading-tight pt-1">{title}</h2>
-          <p className="text-[12px] text-on-surface-variant mt-[2px] pr-md leading-snug">{prompt}</p>
+          <h2 className="text-[calc(15px*var(--text-scale))] font-bold tracking-[-0.01em] text-on-surface leading-tight pt-1">{title}</h2>
+          <p className="text-[calc(12px*var(--text-scale))] text-on-surface-variant mt-[2px] pr-md leading-snug">{prompt}</p>
         </div>
       </div>
       <div className="w-full md:w-2/3 flex items-center gap-xl">{children}</div>

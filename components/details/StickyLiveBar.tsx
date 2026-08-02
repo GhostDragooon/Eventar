@@ -63,19 +63,19 @@ export function StickyLiveBar({
         aria-hidden={!pinned}
       >
         <div className="flex items-center gap-md h-[44px] px-grid-margin bg-[#0A0A0A] text-white shadow-md">
-          <span className="live-pill-pulse inline-flex items-center gap-xs px-sm py-[2px] rounded-full border border-[#4ADE80] text-[#4ADE80] text-[11px] font-bold uppercase tracking-[0.12em]">
+          <span className="live-pill-pulse inline-flex items-center gap-xs px-sm py-[2px] rounded-full border border-[#4ADE80] text-[#4ADE80] text-[calc(11px*var(--text-scale))] font-bold uppercase tracking-[0.12em]">
             <span aria-hidden>●</span>Live
           </span>
-          <span className="flex-1 min-w-0 truncate text-[13px] font-semibold">{title}</span>
-          <span className="hidden sm:inline text-[12px] tabular-nums text-white/70">
+          <span className="flex-1 min-w-0 truncate text-[calc(13px*var(--text-scale))] font-semibold">{title}</span>
+          <span className="hidden sm:inline text-[calc(12px*var(--text-scale))] tabular-nums text-white/70">
             {fmtDur(now - startMs)} elapsed · {fmtDur(endMs - now)} to wrap
           </span>
           <Link
             href={`/events/${eventId}/checkin`}
             tabIndex={pinned ? 0 : -1}
-            className="inline-flex items-center gap-xs bg-primary text-on-primary px-md py-[6px] rounded-lg text-[12px] font-semibold hover:opacity-90 transition-opacity shrink-0"
+            className="inline-flex items-center gap-xs bg-primary text-on-primary px-md py-[6px] rounded-lg text-[calc(12px*var(--text-scale))] font-semibold hover:opacity-90 transition-opacity shrink-0"
           >
-            <span className="material-symbols-outlined text-[15px]" aria-hidden>group</span>
+            <span className="material-symbols-outlined text-[calc(15px*var(--text-scale))]" aria-hidden>group</span>
             Open roster →
           </Link>
         </div>

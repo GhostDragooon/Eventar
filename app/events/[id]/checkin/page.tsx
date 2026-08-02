@@ -90,12 +90,12 @@ export default async function StaffCheckinPage({
         </h1>
         <div className="flex flex-wrap items-center gap-md text-on-surface-variant">
           <p className="font-body-md text-body-md flex items-center gap-xs">
-            <span className="material-symbols-outlined text-[18px]" aria-hidden>schedule</span>
+            <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>schedule</span>
             {formatInTz(event.start_time, event.timezone)} → {formatInTz(event.end_time, event.timezone)} ({event.timezone})
           </p>
           {event.venue_name && (
             <p className="font-body-md text-body-md flex items-center gap-xs">
-              <span className="material-symbols-outlined text-[18px]" aria-hidden>location_on</span>
+              <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>location_on</span>
               {event.venue_name}
             </p>
           )}

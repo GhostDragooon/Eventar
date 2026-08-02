@@ -477,7 +477,7 @@ export default function NewEventForm(props: Props) {
             <DateTimeSection value={datetime} onChange={(p) => setDatetime({ ...datetime, ...p })} />
             <div>
               <CapacityField value={basics} onChange={(p) => setBasics({ ...basics, ...p })} />
-              <p className="font-body-md text-[12px] text-on-surface-variant mt-xs">
+              <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant mt-xs">
                 Leave blank for unlimited — registration then closes only on the close date.
               </p>
             </div>
@@ -541,7 +541,7 @@ export default function NewEventForm(props: Props) {
               ? new Date(`${regClose.date}T${formatMinutes24h(regClose.minutes)}:00`).toISOString() : null;
             const w = registrationWindow(openIso, closeIso);
             if (!w) return (
-              <p className="font-body-md text-[12px] text-on-surface-variant">
+              <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant">
                 Leave blank to open at publish and close when check-in starts (60 min before the event).
               </p>
             );
@@ -613,7 +613,7 @@ export default function NewEventForm(props: Props) {
           role="alert"
           className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
         >
-          <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden>warning</span>
+          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
           <span className="flex-1">{err}</span>
         </p>
       )}
@@ -624,7 +624,7 @@ export default function NewEventForm(props: Props) {
           data-testid="save-confirmation"
           className="font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm flex items-start gap-sm"
         >
-          <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden data-fill="1">check_circle</span>
+          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden data-fill="1">check_circle</span>
           <span className="flex-1">Saved.</span>
         </p>
       )}
@@ -653,7 +653,7 @@ function FormSection({
 }) {
   return (
     <section ref={ref} className="space-y-md scroll-mt-grid-margin">
-      <h2 className="font-headline-sm text-[20px] text-on-surface flex items-baseline gap-sm">
+      <h2 className="font-headline-sm text-[calc(20px*var(--text-scale))] text-on-surface flex items-baseline gap-sm">
         <span className="text-primary font-bold">{number} ·</span>
         <span>{title}</span>
         {optional && (

@@ -230,10 +230,10 @@ function PassView({
             <p className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-xs m-0">
               Manual check-in code
             </p>
-            <code className="font-mono font-extrabold text-[26px] tracking-[0.14em] text-[color:var(--on-primary-container)]">
+            <code className="font-mono font-extrabold text-[calc(26px*var(--text-scale))] tracking-[0.14em] text-[color:var(--on-primary-container)]">
               {code}
             </code>
-            <p className="font-body-md text-[12px] text-on-surface-variant mt-xs m-0">
+            <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant mt-xs m-0">
               If the QR won&apos;t scan, give reception this code instead.
             </p>
           </div>
@@ -280,7 +280,7 @@ function CheckedInView({
           className="inline-flex items-center justify-center w-[72px] h-[72px] rounded-full bg-[color:var(--success)] text-white shadow-[0_0_0_8px_rgba(22,163,74,0.15)]"
           aria-hidden
         >
-          <span className="material-symbols-outlined text-[40px]">check</span>
+          <span className="material-symbols-outlined text-[calc(40px*var(--text-scale))]">check</span>
         </span>
         <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">You&apos;re checked in.</h1>
         {(checkInAt || via) && (

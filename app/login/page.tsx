@@ -99,16 +99,16 @@ function LoginForm() {
           disabled={pending}
           className="w-full inline-flex items-center justify-center gap-sm rounded-lg bg-primary text-on-primary font-label-md text-label-md py-md hover:opacity-90 transition-opacity disabled:opacity-50"
         >
-          <span className="material-symbols-outlined text-[18px]" aria-hidden>mail</span>
+          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>mail</span>
           {pending ? 'Sending…' : 'Send magic link'}
         </button>
-        <p className="font-body-md text-[12px] text-on-surface-variant text-center m-0">
+        <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant text-center m-0">
           The link expires after 15 minutes and works once.
         </p>
 
         {msg && (
           <p className="font-body-md text-body-md text-on-surface bg-secondary-container border border-secondary-container rounded-lg px-md py-sm flex items-start gap-sm">
-            <span className="material-symbols-outlined text-primary text-[18px] mt-[2px]" aria-hidden>
+            <span className="material-symbols-outlined text-primary text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>
               mark_email_read
             </span>
             <span>{msg}</span>
@@ -119,7 +119,7 @@ function LoginForm() {
             role="alert"
             className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
           >
-            <span className="material-symbols-outlined text-[18px] mt-[2px]" aria-hidden>warning</span>
+            <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
             <span>{err}</span>
           </p>
         )}
@@ -131,7 +131,7 @@ function LoginForm() {
         <summary className="cursor-pointer font-body-md text-body-md text-[color:var(--on-primary-container)] hover:underline list-none">
           Trouble signing in?
         </summary>
-        <ul className="mt-sm font-body-md text-[13px] text-on-surface-variant leading-relaxed list-disc pl-lg flex flex-col gap-xs">
+        <ul className="mt-sm font-body-md text-[calc(13px*var(--text-scale))] text-on-surface-variant leading-relaxed list-disc pl-lg flex flex-col gap-xs">
           <li>Links expire after 15 minutes and work once — request a fresh one above.</li>
           <li>Check spam, and make sure you opened the newest email.</li>
           <li>Only staff emails can sign in. If yours isn&apos;t on the list, ask an admin to add you.</li>

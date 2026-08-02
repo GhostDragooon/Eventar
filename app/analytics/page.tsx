@@ -67,7 +67,7 @@ export default async function AnalyticsIndexPage() {
     <StaffShell staff={{ email: staff.email, role: staff.role }}>
       <header className="mb-lg">
         <p className="text-label-md font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-xs">Analytics</p>
-        <h1 className="text-[30px] leading-[1.1] font-extrabold tracking-[-0.025em] text-on-surface">Pick a completed event to review</h1>
+        <h1 className="text-[calc(30px*var(--text-scale))] leading-[1.1] font-extrabold tracking-[-0.025em] text-on-surface">Pick a completed event to review</h1>
         <p className="font-body-md text-body-md text-on-surface-variant mt-xs">{completed.length} completed event{completed.length === 1 ? '' : 's'}</p>
       </header>
 
@@ -92,14 +92,14 @@ export default async function AnalyticsIndexPage() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="leading-none">
-                    <span className="text-[24px] font-extrabold tracking-[-0.02em] tabular-nums text-on-surface">{e.attended}</span>
+                    <span className="text-[calc(24px*var(--text-scale))] font-extrabold tracking-[-0.02em] tabular-nums text-on-surface">{e.attended}</span>
                     <span className="text-body-md text-on-surface-variant"> / {e.registered} attended</span>
                   </p>
                   <p className="font-label-md text-label-md text-[color:var(--on-primary-container)] font-semibold normal-case tracking-normal mt-[2px]">
                     {e.responses} response{e.responses === 1 ? '' : 's'}
                   </p>
                 </div>
-                <span className="material-symbols-outlined text-[18px] text-on-surface-variant shrink-0" aria-hidden>insights</span>
+                <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] text-on-surface-variant shrink-0" aria-hidden>insights</span>
               </Link>
             </li>
           ))}

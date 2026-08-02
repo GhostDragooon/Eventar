@@ -41,7 +41,7 @@ export function BarDistributionSlice({
     // distribution-bars share a single accent ramp across Q1/Q3/Q5/Q2.
     return (
       <div key={d.slug} className="space-y-[3px]">
-        <div className={`flex justify-between text-[12px] font-semibold tabular-nums ${isWinner ? strongText : 'text-on-surface-variant'}`}>
+        <div className={`flex justify-between text-[calc(12px*var(--text-scale))] font-semibold tabular-nums ${isWinner ? strongText : 'text-on-surface-variant'}`}>
           <span className="truncate pr-sm">{d.label}</span>
           <span>{d.pct}%</span>
         </div>
@@ -60,7 +60,7 @@ export function BarDistributionSlice({
       <div className={layout === 'grid' ? 'grid grid-cols-2 gap-x-xl gap-y-sm flex-grow' : 'flex-grow space-y-sm'}>
         {bars}
         {caption && (
-          <p className="text-[11px] italic text-on-surface-variant mt-xs">{caption}</p>
+          <p className="text-[calc(11px*var(--text-scale))] italic text-on-surface-variant mt-xs">{caption}</p>
         )}
       </div>
       {priorityPill && (

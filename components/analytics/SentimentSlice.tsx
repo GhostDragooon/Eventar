@@ -89,7 +89,7 @@ export function SentimentSlice({
           </div>
           <div className="flex flex-wrap gap-md">
             {SLUG_ORDER.map((slug) => (
-              <div key={slug} className="text-[11px] flex items-center gap-1">
+              <div key={slug} className="text-[calc(11px*var(--text-scale))] flex items-center gap-1">
                 <span
                   className="inline-block w-2 h-2 rounded-sm bg-[color:var(--success)]"
                   style={{ opacity: SLUG_OPACITY[slug] }}
