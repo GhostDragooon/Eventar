@@ -5,10 +5,12 @@
 > **The frontend freeze is LIFTED for S-Organiser.** Ivan made the M2 unfreeze scope call, with the framing correction that the design artifact is *the real frontend*, not a mockup — the work now is fusing it with the shipped backend.
 >
 > - **Read first:** `docs/plans/2026-08-01-m2-frontend-unfreeze.md` (scope boundaries, block-architecture admission checklist, 4-stage staging, Stage 1 findings).
-> - **Shipped:** Stage 1 — design-language fusion onto the locked blue ramp (`046b21c`). Gates green; 19 routes; vitest 471 passed | 120 skipped.
-> - **Next:** Stage 2 (shell fusion), Stage 3 (roster licence-eligibility read — the one non-gated backend gap), Stage 4 (Participants + Audit log surfaces).
+> - **Shipped:** Stage 1 tokens (`046b21c`) · Stage 2 shell + Stage 3 CPD-config-front-to-back (`c291bce`) · patches (`56d5a7f`) · design audit (`c0c7105`). Gates green; 19 routes; vitest **480 passed | 120 skipped**; head `1f993fc`.
+> - **Next:** the scheduler (reminder + survey do not fire on their own) → roster licence eligibility → CPD config at event creation. All three are build gaps needing no external input.
 > - **STILL GATED, and not by the freeze:** the CPD evaluator vs versioned `body_rules` (Q26 + Milestone C), practitioner compliance math, S-Attendee, B6 evidence/share, multi-track scheduling.
-> - **Owed:** the three-lens phase-completion protocol at the M2 phase boundary — it has NOT run for Stage 1 and is not claimed.
+> - **Owed:** the three-lens phase-completion protocol at the M2 phase boundary — it has NOT run for ANY M2 stage and is not claimed.
+> - **Latest handoff:** `docs/plans/handoff_02082026.md` — Stages 1–3 shipped, framing corrections, defects, and the corrections to earlier claims.
+> - **Next session:** `docs/plans/2026-08-02-m2-execution-plan.md` §2A (scheduler).
 >
 > Everything below predates the unfreeze.
 
