@@ -233,6 +233,12 @@ Recommendation: **(b) then (a)**, as its own stage after M2 — it is a large me
 - 23 raw hex literals remain outside `app/page.tsx`, nearly all `#4ADE80` on the dark scoreboard bands (`LiveScoreboard`, `Scoreboard`, `toast`). Deliberate fixed-context colours; they want a small dark-context token set rather than a find-and-replace.
 - Material Symbols loads from Google Fonts with `display=block` — a deliberate call (an icon font with `swap` flashes raw ligature text), but it is a render-blocking external stylesheet on every route.
 
+## ▶ Execution plan for the remaining work
+
+`docs/plans/2026-08-02-m2-execution-plan.md` — task-by-task, written for agents with no memory of these sessions. Contains the environment/auth harness, per-stage tasks with verification, roadblock tables, and the accumulated landmines.
+
+**It carries one correction to this doc:** Stage 4 (roster eligibility) was recorded here as a cross-block RLS-scoped read needing no block-contract change. Verified against the live schema, that is **wrong** — `registrations` has no `user_id`, `public.users` has no email, email lives only in `auth.users` (unreadable from the TS layer), and `practitioner_licences` has **no organiser read policy**. The chain requires a `SECURITY DEFINER` function, so Stage 4 *is* a block-contract change. See §3.2 there.
+
 ## Verification bar (every stage)
 
 Static gates: `pnpm exec tsc --noEmit && pnpm exec eslint . && pnpm exec vitest run && pnpm exec next build`. Running invariants: **19 routes**, vitest **470 passed | 119 skipped** at session start. Plus the three-lens phase-completion protocol before anything is called done, and live verification in a browser — the CPD MVP build's own load-bearing lesson was that every stage touching a user-facing flow found a real bug that static gates missed.
