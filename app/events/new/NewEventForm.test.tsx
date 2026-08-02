@@ -283,11 +283,21 @@ describe('NewEventForm — edit mode prefill', () => {
     await screen.findByTestId('save-confirmation');
 
     // Second click: confirmation should vanish at the start of the next
-    // onSubmit (so the user sees the click registered). Wait for the button
-    // to re-enable after the first transition completes before clicking again.
-    const button = await screen.findByRole('button', { name: /save changes/i });
+    // onSubmit (so the user sees the click registered).
+    //
+    // This is the fix for the long-tracked flake in this file. The previous
+    // version used `await findByRole(...)` and a comment claiming it waited
+    // for the button to re-enable — it does not. findByRole resolves as soon
+    // as a MATCHING ELEMENT EXISTS, and the button exists the whole time; it
+    // is merely `disabled={pending}` while the first useTransition settles.
+    // So under load the second click landed on a disabled button, onSubmit
+    // never ran, the confirmation never cleared, and the synchronous assert
+    // below failed. Waiting on the ENABLED state is the real precondition,
+    // and the clear is async, so it needs waitFor too.
+    const button = screen.getByRole('button', { name: /save changes/i });
+    await waitFor(() => expect(button).toBeEnabled());
     fireEvent.click(button);
-    expect(screen.queryByTestId('save-confirmation')).toBeNull();
+    await waitFor(() => expect(screen.queryByTestId('save-confirmation')).toBeNull());
   });
 
   it('surfaces the submit error and does not refresh on failure', async () => {

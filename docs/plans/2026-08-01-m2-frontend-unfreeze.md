@@ -124,6 +124,77 @@ Theme behaviour proven on a genuinely dark OS — no stored pick → white; expl
 
 **Not claimed:** the three-lens phase-completion protocol has **not** run. That is a phase-boundary obligation, owed when M2's four stages are complete, not per-commit; and no review subagents were dispatched, per this session's standing instruction not to use them unless asked.
 
+## Stage 2 — BUILT, full-stack reviewed, awaiting Ivan's go to commit
+
+Shell fusion: the three-column top NAV becomes a persistent top bar + persistent 248px sidebar, where the sidebar IS the navigation. Diff is deliberately tiny — `components/shell/StaffShell.tsx` plus two test files. **No server, DB, RLS, Server Action or auth code is touched**, which is what "surfaces are the cheapest change tier" is supposed to mean in practice.
+
+Gates: tsc clean · eslint 0 errors (5 pre-existing) · vitest **472 passed | 120 skipped** · build clean, **19 routes**. Verified live against the **local Supabase stack** as a real signed-in staff user (magic-link flow through Mailpit), desktop + mobile + light + dark.
+
+### What was deliberately NOT built
+
+The artifact's shell shows a workspace switcher, a venue-status pill, a notification bell and ⌘K search. None were built: staff belong to exactly one organisation, there is no venue-link subsystem, no needs-attention queue, and no search backend. **Each would have rendered convincing chrome for a capability that does not exist** — and a shell that lies about the product is worse than a plain one. They land with the surfaces that make them real. Same reasoning for the sidebar's contents: it lists only routes that exist, because Participants/Accreditation/Communications/Reports would have been links to 404s.
+
+### Five defects found and fixed during the review
+
+| # | Found by | Defect | Fix |
+|---|---|---|---|
+| 1 | Full-suite run | **The long-tracked `NewEventForm` flake — root-caused and fixed.** The test's own comment claimed it waited for the submit button to re-enable; `findByRole` does no such thing — it resolves as soon as the element *exists*, and the button exists throughout, merely `disabled={pending}` mid-transition. Under load the second click hit a dead button. Adding a test elsewhere shifted timing enough to make it **fail deterministically**. | Wait on the *enabled* state, assert the clear with `waitFor`. Two consecutive clean full runs. Closes an item tracked across **7 occurrences**. |
+| 2 | Live, mobile | "Check-in" wrapped mid-word to two lines in the mobile nav strip. | `whitespace-nowrap` + `shrink-0`; the strip already scrolls. |
+| 3 | Live, desktop | **Settings rendered at y≈1459px — off-screen.** Pinning it to the "bottom of the sidebar" pinned it to the bottom of the *page*, since the aside grew to full document height. | Sidebar is now `sticky` at viewport height, so every nav item stays visible at any scroll position. |
+| 4 | Live + test | On `/settings` **no sidebar item was active**, so the nav read as broken — Settings was reachable only via a top-bar gear. | Settings added to the sidebar foot; the top-bar gear removed (two links to one destination is a duplicate nav entry and made the accessible name ambiguous). New regression test pins `aria-current`. |
+| 5 | A11y audit | `aria-label="Primary"` sat on the `<aside>` — a *complementary* landmark — leaving the real navigation landmark anonymous. Introduced by this stage. | Moved to `<nav>`. Verified live: exactly one nav landmark, labelled, 5 links. |
+
+Also added, because the sidebar made it materially worse rather than because it was in scope: a **skip link** (WCAG 2.4.1). Five nav links now precede page content on every staff route; without it a keyboard user tabs the whole nav on every navigation. Verified visible-on-focus.
+
+### Open findings NOT fixed — these need Ivan's call
+
+1. **The sidebar's "Events" link ejects the user out of the staff shell.** `/events` is `app/(public)/events/page.tsx` and renders `SiteShell`, not `StaffShell` — so clicking Events in the staff sidebar loads the *public* events list and the entire sidebar vanishes. This is pre-existing (the old top nav pointed there too) but far more jarring now that navigation lives in a persistent sidebar: it reads as the app breaking. Fixing it properly means a **staff events list inside the shell**, which is Stage 4 scope, not a nav tweak. Flagged rather than patched.
+2. **The top bar is sparse on root pages** — page context on the left is empty when a page passes no `backHref`, leaving just an email on the right. Honest (nothing fabricated to fill it) but thin; Stage 4's surfaces are what legitimately populate it.
+3. **`staff.role` is accepted by the shell and never used.** Pre-existing dead prop. The artifact shows a role badge; that is real data and would be a genuine use, but it is a design decision, not a cleanup.
+4. **22 headings still bypass the type tokens** (carried from Stage 1) — the serif reaches 37 of 59. Belongs with the component pass.
+
+## Stage 3 — the CPD backend becomes reachable (2026-08-02)
+
+**The hole this closes is the headline of the whole unfreeze.** A grep of `app/` + `components/` + `lib/` for `accrediting_body_id` / `cpd_hours` returned **nothing**. Eventar is a CPD platform in which no organiser could make an event CPD-accredited through the product: `award_attendance_credit()`, the freeze trigger, `credit_ledger` and the whole issuance path were live, tested and **unreachable**. Every credit that has ever existed was written by a seed script.
+
+Front↔back mapping as found:
+
+| Backend capability | Frontend before | Now |
+|---|---|---|
+| `events.accrediting_body_id` / `cpd_hours` | **nothing reads or writes them** | organiser sets them on the event page |
+| `award_attendance_credit()` (fires on check-in) | wired, but only ever on seeded events | fires on events an organiser accredited |
+| `freeze_cpd_config_if_credited()` (Stage 8) | **no live caller could reach it** | reached; surfaced as a locked form with the reason |
+| `credit_ledger` | invisible | issued-credit count on the event page |
+| `accrediting_bodies` (6 active) | invisible | the picker |
+
+### Why a definer function rather than re-granting the columns
+
+The 2026-07-25 review (HIGH-1b) revoked UPDATE on exactly these two columns from `authenticated`, because an organiser could otherwise PATCH their own event to bind **any** body with **any** hours and mint permanent, regulator-facing credits that body never authorised. Re-granting would have reopened that verbatim. Instead `set_event_cpd_config()` follows the block-architecture rule for trusted mutations: SECURITY DEFINER, role-gated (`organiser_admin`/`eventar_staff` — `organiser_member` excluded), **owner-exclusive check inside the body** (a definer bypasses RLS, so ownership must be re-checked or any admin could accredit any tenant's event), active-body check, the existing `<= 24` ceiling, freeze trigger left to fire, audit written last.
+
+**It does not establish that the body approved anything.** An organiser still self-asserts. This makes the act role-gated, bounded, audited and reversible-until-credited instead of impossible. The approval workflow is B3 / Milestone C.
+
+Proven live on the local stack before any UI existed: non-staff → `42501`; half-config → `22023`; 999 hours → `23514`; unknown/inactive body → `P0002`; positive write + audit row; clearing works.
+
+### Correction to a prior migration's comment
+
+`20260725144446`'s comment asserts the organiser edit path is "the `update_event_with_blocks` **SECURITY DEFINER** RPC (runs as the owner)". Verified live: both `create_event_with_blocks` and `update_event_with_blocks` are **SECURITY INVOKER**. Its conclusion still holds — but because the migration re-granted column-level UPDATE on every *other* column, not because of definer rights. Trusting that comment would lead the next session to build a broken feature.
+
+### Four defects found by live verification
+
+1. **Wrong column name** (`name` vs `full_name`) made the bodies query fail — **and my own "degrade gracefully" swallow hid it**, rendering an empty dropdown that looked exactly like "this deployment has no accrediting bodies." Rule 12 violation in my own error handling. Now logged (code only, no PII) and surfaced as an explicit failure state that disables the form.
+2. **An event bound to a non-`active` body silently displayed as "Not accredited"** and would have had its accreditation cleared on the next save. Real on the seeded data — it is bound to HKAM, which is `deferred`. The current binding is now shown as its own option.
+3. **Pre-hydration clicks did a native GET**, leaking every field into the URL as a query string and silently doing nothing. Rewired to `useActionState` + `<form action={…}>` so submission works with or without client JS.
+4. One false alarm worth recording: a fiber-key probe suggested the component had not hydrated. It had — the countdown was ticking. The probe was the unreliable instrument, and "fixing" the non-bug would have been wasted work.
+
+**End-to-end proof:** through the real UI, changed the event to HKICPA / 4.5h → DB row updated → `event_cpd_config_set` audit row written with `actor_role = eventar_staff`. Gates: tsc clean · eslint 0 errors · vitest **479 passed | 120 skipped** · build clean, 19 routes. Migration applied to **local and Seoul** (filename reconciled to Seoul's recorded version `20260802022345`, per the known `apply_migration` drift trap).
+
+### Still not functional — the honest list
+
+- **The sidebar's "Events" link still ejects to the public site shell** (see Stage 2). Unchanged.
+- **Check-in roster shows no licence eligibility** — an operator cannot see that a registrant's credit will not post. The read exists to be built; it is the largest remaining front↔back gap.
+- **Event creation cannot set CPD config** — only the event page can, after creation. `create_event_with_blocks`' column whitelist does not carry the two fields.
+- 22 headings still bypass the type tokens (Stage 1).
+
 ## Verification bar (every stage)
 
 Static gates: `pnpm exec tsc --noEmit && pnpm exec eslint . && pnpm exec vitest run && pnpm exec next build`. Running invariants: **19 routes**, vitest **470 passed | 119 skipped** at session start. Plus the three-lens phase-completion protocol before anything is called done, and live verification in a browser — the CPD MVP build's own load-bearing lesson was that every stage touching a user-facing flow found a real bug that static gates missed.

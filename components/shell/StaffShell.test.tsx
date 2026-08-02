@@ -80,7 +80,11 @@ describe('StaffShell — section-tab NAV (Design Session Log)', () => {
     expect(screen.queryByRole('link', { name: /back to/i })).toBeNull();
   });
 
-  it('renders the staff email + settings link in the right cluster', () => {
+  it('shows the staff email in the top bar and Settings in the sidebar', () => {
+    // M2 Stage 2: the sidebar owns navigation, so Settings lives there and the
+    // top bar carries identity only. getByRole (not queryAll) also pins that
+    // there is exactly ONE link to /settings — a second one up top made the
+    // accessible name ambiguous and is the reason the gear icon was removed.
     render(
       <StaffShell staff={staff}>
         <div>page content</div>
@@ -88,6 +92,19 @@ describe('StaffShell — section-tab NAV (Design Session Log)', () => {
     );
     expect(screen.getByText('jane@company.com')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /settings/i })).toHaveAttribute('href', '/settings');
+  });
+
+  it('marks Settings active when on /settings, so the sidebar is never blank', () => {
+    // Regression guard: /settings is not one of the four sections, so before
+    // Settings was added to the sidebar NO nav item was active on that page
+    // and the nav read as broken.
+    mockPathname = '/settings';
+    render(
+      <StaffShell staff={staff}>
+        <div>page content</div>
+      </StaffShell>,
+    );
+    expect(screen.getByRole('link', { name: /settings/i })).toHaveAttribute('aria-current', 'page');
   });
 
   it('renders page children', () => {
