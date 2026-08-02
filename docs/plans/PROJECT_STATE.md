@@ -14,7 +14,8 @@
 > - **Owed:** the three-lens phase-completion protocol at the M2 phase boundary — it has NOT run for ANY M2 stage and is not claimed.
 > - **Latest handoff:** `docs/plans/handoff_02082026.md` — Stages 1–3 shipped, framing corrections, defects, and the corrections to earlier claims.
 > - **Next session:** `docs/plans/2026-08-02-m2-execution-plan.md` **§3** (Stage 4, roster licence eligibility). §2A is done.
-> - **New injection point:** `CRON_SECRET` (see `.env.example`). The dispatcher **fails closed** — unset means 503 on every request, so a misconfigured deploy can never become a public mass-mail trigger. Also note `vercel.json`'s `*/5` cadence silently degrades to once-daily on Vercel's Hobby plan, which would miss every reminder window.
+> - **New injection point:** `CRON_SECRET` (see `.env.example`). The dispatcher **fails closed** — unset means 503 on every request, so a misconfigured deploy can never become a public mass-mail trigger.
+> - **No trigger file ships yet** (Ivan, 2026-08-03: "we don't touch Vercel yet"). `vercel.json` was added then reverted (`72cda80`); the endpoint is driven by `curl` locally. Re-add a trigger at deploy time — one file, no dispatch-logic change. Caveat for whenever that happens: Vercel's Hobby plan caps crons at once-daily, which would miss every reminder window.
 >
 > Everything below predates the unfreeze.
 
