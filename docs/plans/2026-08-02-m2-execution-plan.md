@@ -135,6 +135,65 @@ Observed arbitrary values, by frequency:
 
 ---
 
+## 2A. Stage C — make the loop self-running (scheduler)  ⟵ **START HERE (Tier 1 #1)**
+
+### 2A.1 The gap
+
+The 60-min-before **reminder carries the personal QR pass people scan at the door**, and the 10-min-after **survey invite** closes the feedback loop. Neither fires on its own — both are Server Actions a human clicks in `app/events/[id]/details/EmailSendControls.tsx`. Until this exists the platform cannot run an event unattended, which is the difference between "an operator drives the app" and "the platform runs the event."
+
+### 2A.2 Ground truth (verified 2026-08-02 — do not re-derive)
+
+`public.email_log` columns: `id, purpose, event_id, registration_id, recipient_email, status, sent_at, error, created_at`.
+
+Indexes:
+- `email_log_queued_idx` — `btree(status) WHERE status = 'queued'` — built for exactly this poller.
+- `email_log_dedup_idx` — **UNIQUE** `btree(event_id, registration_id, purpose) WHERE registration_id IS NOT NULL`.
+
+Extensions on the local stack: **`pg_cron` available but NOT installed**; **`pg_net` installed (0.20.0)**.
+
+Sending already switches itself on `RESEND_API_KEY` (§7) — the dispatcher must call the same switch, never `sendEmailReal` directly, or local runs will try to send real mail.
+
+### 2A.3 Architecture — decouple the dispatcher from its trigger
+
+Build **`/api/cron/dispatch`** (a Route Handler, guarded by a shared secret in a header, compared with a timing-safe equality). `/api/*` is the block map's designated home for "cron callbacks + external integration", so this fits without a block-contract change.
+
+The trigger stays pluggable and is an **injection point, not a build gap**: pg_cron + pg_net, Vercel Cron, or plain `curl` in a terminal all hit the same endpoint. **Build the endpoint and the dispatch logic; do not block on choosing a trigger.**
+
+### 2A.4 The trap that will cause duplicate emails — read twice
+
+`email_log_dedup_idx` is UNIQUE on `(event_id, registration_id, purpose)`. Therefore **there can only ever be ONE row per recipient per purpose per event**, and a `queued` row cannot be replaced by inserting another.
+
+Combined with Hard Rule 2 (**insert `email_log` FIRST, send SECOND**), that gives the insert itself as the concurrency lock: a second dispatcher racing the first gets `23505` and must **skip, not retry**.
+
+But it also creates the carried Phase-9 caveat, recorded in `PROJECT_STATE.md`:
+
+> a `queued` reminder/survey `email_log` row is **terminal** under `email_log_dedup_idx` — cron reconciliation **must not** treat `queued` as "needs sending."
+
+**This is a genuine decision, not a detail. Do not guess.** A `queued` row is ambiguous: it means "an attempt was initiated", which may mean the process died before sending, OR that it sent and the status update failed. Treating `queued` as "send it" risks **double-sending to a real person**; treating it as "done" risks a silent non-send.
+
+Required approach: pick the arm deliberately, write it down, and **prove it with a test that kills the process between insert and send**. Recommended default — treat `queued` as *needs human attention*: surface it in the send log with a manual retry (the UI already has one), and have the dispatcher skip it. Silent non-send is recoverable; a duplicate to a practitioner is not.
+
+### 2A.5 Tasks
+
+- **C1** — `lib/cron/dispatchDue.ts`: pure selection logic. Given `now`, return the events whose reminder window (`start − 60min`) or survey window (`end + 10min`) has opened. **Pure function, no I/O — unit-test it hard** (boundaries, timezone, already-sent, cancelled/draft events, events with no registrations).
+- **C2** — `/api/cron/dispatch` Route Handler: shared-secret guard (timing-safe), calls C1, then reuses the EXISTING `sendReminderForEvent` / `sendSurveyInviteForEvent` actions rather than re-implementing sending. Returns a per-event summary. **Never logs PII — UUIDs and counts only (Hard Rule 10).**
+- **C3** — Idempotency proof: two concurrent dispatch calls for the same event produce exactly one email per registration. Assert the loser sees `23505` and skips.
+- **C4** — Decide and document the `queued` arm (§2A.4) with its test.
+- **C5** — Trigger wiring, last and smallest: a `supabase/migrations/*` enabling `pg_cron` + a job hitting the endpoint, OR a `vercel.json` cron entry. Keep it in one file so swapping triggers is a one-file change.
+
+### 2A.6 Roadblocks
+
+| Roadblock | Mitigation |
+|---|---|
+| Timezones — events store `timezone`; "60 min before" must be absolute | Compute in UTC from `start_time` (timestamptz); never derive windows from wall-clock strings. `lib/tz.ts` already exists |
+| Dispatcher runs while `RESEND_API_KEY` is unset | Fine — the switch stubs it. But assert the log distinguishes "stubbed" from "sent" so a local green run is not mistaken for delivery |
+| A long dispatch exceeding the platform's function timeout | Cap work per invocation (batch N events), return a "more pending" flag, let the next tick continue. Do not build a queue |
+| pg_net calling `localhost` from inside the DB container | Locally, trigger with `curl` instead; this is exactly why the trigger is decoupled |
+| Re-sending to a cancelled event or an unregistered person | Selection logic filters on event status and registration status — cover both in C1's tests |
+
+
+---
+
 ## 3. Stage 4 — roster licence eligibility
 
 ### 3.1 The goal
@@ -244,7 +303,7 @@ An earlier revision of this section listed the Resend cutover and the D0 deploy 
 
 | # | Item | Why it is a build gap |
 |---|---|---|
-| 1 | **No scheduler for reminder + survey** | There is no pg_cron job and no edge function. The 60-min-before reminder (carrying the personal QR pass) and the 10-min-after survey invite only fire when a human clicks them in `EmailSendControls`. The loop is therefore not self-running. `email_log` already has the `queued` partial index built for exactly this poller. **Caveat carried from the Phase-9 note: a `queued` reminder/survey row is TERMINAL under `email_log_dedup_idx` — the reconciler must not treat `queued` as "needs sending"** |
+| 1 | **No scheduler for reminder + survey** — full task breakdown in **§2A** | There is no pg_cron job and no edge function. The 60-min-before reminder (carrying the personal QR pass) and the 10-min-after survey invite only fire when a human clicks them in `EmailSendControls`. The loop is therefore not self-running. `email_log` already has the `queued` partial index built for exactly this poller. **Caveat carried from the Phase-9 note: a `queued` reminder/survey row is TERMINAL under `email_log_dedup_idx` — the reconciler must not treat `queued` as "needs sending"** |
 | 2 | **Stage 4 — roster eligibility** (§3) | A registrant with a lapsed licence checks in, the operator sees success, and the credit silently never posts. Trust failure in the core loop |
 | 3 | **Event creation cannot set CPD config** | `create_event_with_blocks`' column whitelist omits `accrediting_body_id` / `cpd_hours`; CPD is only settable after creation. Reuse `set_event_cpd_config()` from the create action rather than widening the RPC |
 
