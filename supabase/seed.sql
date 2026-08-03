@@ -38,27 +38,42 @@ grant  delete                  on public.practitioner_licences to service_role;
 -- footgun that migration closes.
 revoke update                                     on public.staff from anon, authenticated, service_role;
 grant  update (email, full_name, organisation_id, status) on public.staff to authenticated, service_role;
--- events.accrediting_body_id / cpd_hours are the credit-minting columns
--- (migration 20260725144446, review finding HIGH-1): events_organizer_update_own
--- lets an organiser UPDATE their own event with no column restriction, so a
--- table-level UPDATE grant means they can bind the event to ANY accrediting body
--- and every registrant with a verified licence there earns a permanent credit
--- that body never authorised. The blanket grant above re-granted table UPDATE on
--- events, silently re-opening it — caught by a local `db reset` immediately after
--- the migration landed, which is exactly what this block exists to prevent.
--- anon is excluded from the grant-back: it has no UPDATE policy on events, so its
--- grant was always inert. service_role is deliberately NOT revoked (mirrors the
--- migration, which only revokes anon+authenticated): it is the trusted
--- server-side configuration path — seed-demo.ts sets accrediting_body_id/
--- cpd_hours through it, and the dashboard/edit admin actions use it too.
--- Revoking service_role here broke `seed-demo.ts` with a 42501 on first run.
-revoke update on public.events from anon, authenticated;
-grant  update (
+-- Four events columns are definer-only for the app roles:
+--   · accrediting_body_id / cpd_hours — the credit-minting columns (migration
+--     20260725144446, review finding HIGH-1). events_organizer_update_own lets
+--     an organiser write their own event with no column restriction, so a table
+--     grant means they can bind the event to ANY accrediting body and every
+--     registrant with a verified licence there earns a permanent credit that
+--     body never authorised. Written only by set_event_cpd_config().
+--   · status / published_at — the publish fact (migration 20260802182411).
+--     Written only by publish_event(), so every publish lands in the audit
+--     chain; create_event_with_blocks routes a create-time publish through it.
+-- INSERT is locked as well as UPDATE: the 2026-07-25 migration closed UPDATE
+-- only, leaving the same hole reachable by POSTing a brand-new row.
+-- The blanket grant above re-granted table INSERT+UPDATE on events, silently
+-- re-opening both — caught by a local `db reset` immediately after the 07-25
+-- migration landed, which is exactly what this block exists to prevent.
+-- anon is excluded from the grant-back: it has no write policy on events, so
+-- its grant was always inert. service_role is deliberately NOT revoked (mirrors
+-- the migrations, which only revoke anon+authenticated): it is the trusted
+-- server-side path — seed-demo.ts sets accrediting_body_id/cpd_hours through it,
+-- the dashboard's bulk cancel sets status through it, and the edit admin actions
+-- use it too. Revoking service_role here broke `seed-demo.ts` with a 42501 on
+-- first run.
+revoke insert, update on public.events from anon, authenticated;
+grant  insert (
   id, title, topic, start_time, end_time, timezone, description, poster_path,
-  max_attendees, status, created_by, created_at, updated_at, venue_name,
+  max_attendees, created_by, created_at, updated_at, venue_name,
   venue_address, city, region, country, latitude, longitude,
   registration_close_at, hosted_by, organized_by, hero_image_url, category,
-  deleted_at, checkin_modes, registration_open_at, organisation_id, published_at
+  deleted_at, checkin_modes, registration_open_at, organisation_id
+) on public.events to authenticated;
+grant  update (
+  id, title, topic, start_time, end_time, timezone, description, poster_path,
+  max_attendees, created_by, created_at, updated_at, venue_name,
+  venue_address, city, region, country, latitude, longitude,
+  registration_close_at, hosted_by, organized_by, hero_image_url, category,
+  deleted_at, checkin_modes, registration_open_at, organisation_id
 ) on public.events to authenticated;
 --
 -- Re-assert the email_log / rate_limits lock (migration 20260803090000, found by
