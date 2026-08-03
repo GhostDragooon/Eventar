@@ -41,10 +41,6 @@ describe.skipIf(!process.env.RLS_TESTS)('audited-table write guard (service_role
   for (const table of ['credit_ledger', 'audit_events'] as const) {
     describe(`${table} — permanent append-only`, () => {
       it('service_role is denied INSERT/UPDATE/DELETE with 42501 (BYPASSRLS: only the grant blocks it)', async () => {
-        const { count: before } = await admin
-          .from(table)
-          .select('*', { count: 'exact', head: true });
-
         const ins = await admin.from(table).insert({ id: BOGUS });
         expect(ins.error?.code, `${table}: service_role INSERT must be 42501`).toBe(PERMISSION_DENIED);
 
@@ -54,10 +50,19 @@ describe.skipIf(!process.env.RLS_TESTS)('audited-table write guard (service_role
         const del = await admin.from(table).delete().eq('id', BOGUS);
         expect(del.error?.code, `${table}: service_role DELETE must be 42501`).toBe(PERMISSION_DENIED);
 
-        const { count: after } = await admin
-          .from(table)
-          .select('*', { count: 'exact', head: true });
-        expect(after, `${table}: row count must be unchanged by the denied writes`).toBe(before);
+        // Belt-and-braces on top of the 42501 assertions: the attempted row
+        // must genuinely not be there. Asserted on the KNOWN id rather than on
+        // a global row count — audit_events is written by every audited action
+        // in the product, so a total-count snapshot is only stable when nothing
+        // else writes between the two reads. Under vitest's parallel workers
+        // that is not true (self_check_in / session_revocation legitimately
+        // append audit rows in other files), which made the count assertion
+        // flake as soon as the suite grew an 18th file. The id check tests the
+        // same thing more precisely and cannot be perturbed by a concurrent
+        // writer: a count can also stay equal if one row lands while another
+        // is removed, which this cannot miss.
+        const { data: leaked } = await admin.from(table).select('id').eq('id', BOGUS);
+        expect(leaked, `${table}: the denied writes must not have created a row`).toEqual([]);
       }, 30_000);
 
       it('anon and authenticated are denied direct INSERT with 42501', async () => {

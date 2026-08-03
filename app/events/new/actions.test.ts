@@ -56,6 +56,38 @@ describe('eventInputSchema', () => {
     expect(r.success).toBe(true);
     if (r.success) expect(r.data.max_attendees).toBe(50);
   });
+
+  // Check-in modes. The default has to match events.checkin_modes' column
+  // default exactly, because every pre-existing caller (seed scripts, the
+  // RLS fixtures, older tests) omits the key — if Zod's default drifted from
+  // the column's, a no-edit Save would silently change how the door works.
+  it('defaults checkin_modes to staff-only when the key is absent', () => {
+    const r = eventInputSchema.safeParse(validEvent);
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.checkin_modes).toEqual({ staff: true, self_serve: false });
+  });
+  it('accepts self-serve check-in enabled', () => {
+    const r = eventInputSchema.safeParse({
+      ...validEvent,
+      checkin_modes: { staff: true, self_serve: true },
+    });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.checkin_modes.self_serve).toBe(true);
+  });
+  it('rejects a non-boolean self_serve', () => {
+    // The confirm page tests `checkin_modes?.self_serve === true`, so a
+    // truthy-but-not-true value ("yes") would read as OFF forever with no
+    // error anywhere — rule 12. Layer 2 rejects it; the DB CHECK is layer 3.
+    const r = eventInputSchema.safeParse({
+      ...validEvent,
+      checkin_modes: { staff: true, self_serve: 'yes' },
+    });
+    expect(r.success).toBe(false);
+  });
+  it('rejects a checkin_modes object missing self_serve', () => {
+    const r = eventInputSchema.safeParse({ ...validEvent, checkin_modes: { staff: true } });
+    expect(r.success).toBe(false);
+  });
 });
 
 describe('blockInputSchema', () => {

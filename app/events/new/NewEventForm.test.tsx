@@ -353,14 +353,16 @@ describe('NewEventForm — D.3b linear layout', () => {
     );
     const headings = screen.getAllByRole('heading', { level: 2 }).map(h => h.textContent ?? '');
     // Editor v4 (locked 2026-06-20): 1 Hero image · 2 Basics · 3 Date & venue
-    // · 4 Agenda · 5 Registration period.
+    // · 4 Agenda · 5 Registration period. 6 Check-in added 2026-08-03 — the
+    // self-serve flag existed in the DB from the start but no surface wrote it.
     const numbered = headings.filter(t => /^\s*\d\s*·/.test(t));
-    expect(numbered).toHaveLength(5);
+    expect(numbered).toHaveLength(6);
     expect(numbered[0]).toMatch(/1\s*·\s*Hero\s*image/);
     expect(numbered[1]).toMatch(/2\s*·\s*Basics/);
     expect(numbered[2]).toMatch(/3\s*·\s*Date\s*&\s*venue/);
     expect(numbered[3]).toMatch(/4\s*·\s*Agenda/);
     expect(numbered[4]).toMatch(/5\s*·\s*Registration\s*period/);
+    expect(numbered[5]).toMatch(/6\s*·\s*Check-in/);
   });
 
   it('marks the Agenda section as optional in the heading', () => {
@@ -546,5 +548,70 @@ describe('NewEventForm — D.3b action row (Cancel · Save & Preview · Save)', 
     await waitFor(() => expect(screen.getByText(/rpc blew up/)).toBeInTheDocument());
     expect(openSpy).not.toHaveBeenCalled();
     openSpy.mockRestore();
+  });
+});
+
+describe('NewEventForm — check-in mode (self-serve)', () => {
+  type SubmitPayload = Parameters<NonNullable<React.ComponentProps<typeof NewEventForm>['submit']>>[0];
+
+  it('defaults a new event to staff-only check-in', async () => {
+    const submit = vi.fn<(p: SubmitPayload) => Promise<{ ok: true }>>(async () => ({ ok: true }));
+    render(<NewEventForm mode="create" submit={submit} />);
+
+    const toggle = screen.getByRole('checkbox', { name: /check themselves in/i });
+    expect(toggle).not.toBeChecked();
+  });
+
+  it('sends self_serve: true once the organiser turns the toggle on', async () => {
+    const submit = vi.fn<(p: SubmitPayload) => Promise<{ ok: true }>>(async () => ({ ok: true }));
+    render(
+      <NewEventForm
+        mode="edit"
+        eventId="11111111-2222-4333-8444-555555555555"
+        initialEvent={initialEvent}
+        initialBlocks={initialBlocks}
+        submit={submit}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /check themselves in/i }));
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+
+    await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
+    // `staff` is sent constant-true, not toggled: nothing in the product reads
+    // it, so offering it as a control would be fabricated chrome.
+    expect(submit.mock.calls[0]![0].event.checkin_modes)
+      .toEqual({ staff: true, self_serve: true });
+  });
+
+  it('round-trips an already-enabled event through a no-edit Save', async () => {
+    // Same silent-data-loss class as the block-notes regression above: the
+    // RPCs are full-replace, so a prefill that forgot this field would turn
+    // self-serve OFF on every organiser who saved an unrelated typo fix.
+    const submit = vi.fn<(p: SubmitPayload) => Promise<{ ok: true }>>(async () => ({ ok: true }));
+    render(
+      <NewEventForm
+        mode="edit"
+        eventId="11111111-2222-4333-8444-555555555555"
+        initialEvent={{ ...initialEvent, checkin_modes: { staff: true, self_serve: true } }}
+        initialBlocks={initialBlocks}
+        submit={submit}
+      />,
+    );
+
+    expect(screen.getByRole('checkbox', { name: /check themselves in/i })).toBeChecked();
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+
+    await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
+    expect(submit.mock.calls[0]![0].event.checkin_modes)
+      .toEqual({ staff: true, self_serve: true });
+  });
+
+  it('tells the organiser what self-serve actually does, not just that it is on', () => {
+    render(<NewEventForm mode="create" submit={vi.fn(async () => ({ ok: true as const }))} />);
+    // Consequence-bearing copy: the pass page gains a button, staff scanning
+    // is unaffected, and on an accredited event this posts credit unattended.
+    expect(screen.getByText(/reception/i)).toBeInTheDocument();
+    expect(screen.getByText(/credit/i)).toBeInTheDocument();
   });
 });

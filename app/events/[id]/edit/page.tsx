@@ -40,7 +40,7 @@ export default async function StaffEventEditPage({
   const supabase = await supabaseServer();
   const { data: event } = await supabase
     .from('events')
-    .select('id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, latitude, longitude, description, status, max_attendees, created_by, hosted_by, organized_by, hero_image_url, registration_open_at, registration_close_at, category, accrediting_body_id, cpd_hours')
+    .select('id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, latitude, longitude, description, status, max_attendees, created_by, hosted_by, organized_by, hero_image_url, registration_open_at, registration_close_at, category, checkin_modes, accrediting_body_id, cpd_hours')
     .eq('id', id)
     .maybeSingle();
   if (!event) notFound();
@@ -458,6 +458,16 @@ function DraftEditFormPanel({
     category: (() => {
       const v = (event as unknown as { category?: unknown }).category;
       return typeof v === 'string' ? v : null;
+    })(),
+    // Check-in mode. Load-bearing prefill, not decoration: the form re-emits
+    // the complete checkin_modes object on every save, so omitting it here
+    // would turn self-serve OFF for any organiser who saved an unrelated typo
+    // fix — the same rule-12 silent-loss pattern as block `notes` below.
+    checkin_modes: (() => {
+      const v = (event as unknown as { checkin_modes?: unknown }).checkin_modes;
+      return v && typeof v === 'object' && !Array.isArray(v)
+        ? (v as { staff?: boolean; self_serve?: boolean })
+        : null;
     })(),
   };
 

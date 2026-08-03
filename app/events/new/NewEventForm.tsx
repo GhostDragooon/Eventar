@@ -76,6 +76,10 @@ export type InitialEvent = {
   registration_open_at?: string | null;
   registration_close_at?: string | null;
   category?: string | null;
+  // jsonb {staff, self_serve}. Kept loose at the boundary (the column has no
+  // TS type of its own) but always present on a real row — the DB default is
+  // NOT NULL {"staff": true, "self_serve": false}.
+  checkin_modes?: { staff?: boolean; self_serve?: boolean } | null;
 };
 
 /**
@@ -220,6 +224,13 @@ export default function NewEventForm(props: Props) {
     initialEvent?.hero_image_url ?? '',
   );
   const [category, setCategory] = useState<string>(initialEvent?.category ?? '');
+  // Self-serve check-in. `=== true` deliberately, matching the read side in
+  // app/(public)/checkin/confirm/page.tsx — anything else is OFF, so a
+  // malformed row can never render as enabled on one side and disabled on the
+  // other.
+  const [selfServe, setSelfServe] = useState<boolean>(
+    initialEvent?.checkin_modes?.self_serve === true,
+  );
   // Registration window (editor v4) — date + minutes pairs, encoded to ISO at
   // submit exactly like the event date/time pair.
   const [regOpen, setRegOpen] = useState<{ date: string; minutes: number | null }>(() => {
@@ -325,6 +336,10 @@ export default function NewEventForm(props: Props) {
       registration_open_at:  openIso,
       registration_close_at: closeIso,
       category: category || undefined,
+      // `staff` is constant-true, not a control: nothing in the product reads
+      // it (mark_attended has no flag check), so a toggle for it would be
+      // fabricated chrome. True is the accurate description of reality.
+      checkin_modes: { staff: true, self_serve: selfServe },
     };
     const blocksPayload = blocks.map((b, i) => ({
       start_time: new Date(`${datetime.date}T${b.start}:00`).toISOString(),
@@ -403,6 +418,7 @@ export default function NewEventForm(props: Props) {
           { n: '3', label: 'Date & venue',        complete: v2 && v3 },
           { n: '4', label: 'Agenda',              complete: v4, optional: true },
           { n: '5', label: 'Registration period', complete: true, optional: true },
+          { n: '6', label: 'Check-in',            complete: true, optional: true },
         ]}
       />
 
@@ -552,6 +568,39 @@ export default function NewEventForm(props: Props) {
             );
           })()}
         </div>
+      </FormSection>
+
+      {/* 6 · Check-in — the self-serve flag has existed on events.checkin_modes
+          since 20260701222914 but no surface ever wrote it, so every event
+          created through the product was staff-only and the attendee's pass
+          read "Self check-in isn't enabled — please see reception."
+          Only self_serve is offered: `staff` is inert (mark_attended has no
+          flag check), and a control that changes nothing is worse than none. */}
+      <FormSection number="6" title="Check-in" optional>
+        <label className="flex items-start gap-sm max-w-prose cursor-pointer">
+          <input
+            type="checkbox"
+            checked={selfServe}
+            onChange={(e) => setSelfServe(e.target.checked)}
+            className="mt-[3px] w-[18px] h-[18px] shrink-0 accent-[color:var(--on-primary-container)] cursor-pointer"
+          />
+          <span>
+            <span className="block font-body-lg text-body-lg text-on-surface">
+              Let attendees check themselves in
+            </span>
+            {/* Copy states the consequence, not the state (§3.3 discipline):
+                what appears, what stays unchanged, and the one non-obvious
+                effect an organiser would not guess. */}
+            <span className="block font-body-md text-body-md text-on-surface-variant mt-xs">
+              Their pass page gets a &ldquo;Confirm I&rsquo;m here&rdquo; button. Leave this off and the
+              pass tells them to see reception instead. Staff scanning at the door keeps working
+              either way.
+            </span>
+            <span className="block font-body-md text-body-md text-on-surface-variant mt-xs">
+              On a CPD-accredited event this posts attendance credit with no staff member present.
+            </span>
+          </span>
+        </label>
       </FormSection>
 
       {/* Bottom action row — Cancel · Save & Preview (edit-only) · Save.
