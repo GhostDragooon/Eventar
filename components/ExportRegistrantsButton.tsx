@@ -48,7 +48,10 @@ export default function ExportRegistrantsButton({
         {isLoading ? 'Preparing…' : 'Export registrants (CSV)'}
       </Button>
       {errorMessage && (
-        <p className="text-sm text-red-700">⚠ {errorMessage}</p>
+        <p role="alert" className="flex items-start gap-xs text-sm text-danger">
+          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
+          {errorMessage}
+        </p>
       )}
     </div>
   );

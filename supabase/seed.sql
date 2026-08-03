@@ -60,6 +60,17 @@ grant  update (
   registration_close_at, hosted_by, organized_by, hero_image_url, category,
   deleted_at, checkin_modes, registration_open_at, organisation_id, published_at
 ) on public.events to authenticated;
+--
+-- Re-assert the email_log / rate_limits lock (migration 20260803090000, found by
+-- the 2026-08-03 backend review). Both tables are written only by the service
+-- role and have RLS enabled with ZERO policies, so RLS alone already denies the
+-- API roles — but email_log holds recipient_email (PII, Hard Rule 10), and the
+-- blanket grant above hands anon/authenticated a table-level SELECT, leaving RLS
+-- as the single control. Same failure shape as the events block above: without
+-- this, every `db reset` — and therefore CI replay-from-zero and the future
+-- Singapore provisioning — would produce a database with the PII grant re-opened.
+revoke all on table public.email_log from anon, authenticated;
+revoke all on table public.rate_limits from anon, authenticated;
 -- ─────────────────────────────────────────────────────────────────────────────
 --
 -- For production / pre-seeded projects: skip this file (the live Seoul project

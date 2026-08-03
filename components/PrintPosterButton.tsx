@@ -5,7 +5,7 @@ export default function PrintPosterButton() {
     <button
       type="button"
       onClick={() => window.print()}
-      className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-gray-50"
+      className="rounded-lg border border-outline-variant px-md py-sm text-sm font-medium text-on-surface hover:bg-surface-container-high transition-colors"
     >
       Print poster
     </button>

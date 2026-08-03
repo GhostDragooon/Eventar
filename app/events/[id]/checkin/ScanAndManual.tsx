@@ -71,7 +71,7 @@ export function ScanAndManual({
             setValue(e.target.value);
             if (attemptedInvalid) setAttemptedInvalid(false);
           }}
-          placeholder="WK-XXXX"
+          placeholder="WK-XXXXXX"
           autoComplete="off"
           spellCheck={false}
           aria-invalid={attemptedInvalid || undefined}
@@ -88,14 +88,14 @@ export function ScanAndManual({
             role="alert"
             className="mt-xs font-label-md text-label-md text-danger"
           >
-            Enter a valid WK-XXXX code (no 0, O, 1, I, or L).
+            Enter a valid WK- code (no 0, O, 1, I, or L).
           </p>
         ) : (
           <p
             id="manual-code-hint"
             className="mt-xs font-label-md text-label-md text-on-surface-variant"
           >
-            Format: WK-XXXX (no 0, O, 1, I, or L).
+            Format: WK- plus 6 characters (no 0, O, 1, I, or L).
           </p>
         )}
         <button

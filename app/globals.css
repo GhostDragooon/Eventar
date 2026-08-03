@@ -195,6 +195,33 @@
   --text-label-sm--letter-spacing: 0.05em;
   --text-label-sm--font-weight: 600;
 
+  /* Tailwind's OWN default size scale, overridden to respect --text-scale.
+     24 uses of text-xs/sm/base/... survive across the app — including every
+     ui/ primitive (button, input, textarea) — and they are rem literals, so
+     /settings → Text size left every form control unscaled. Overriding the
+     defaults here fixes all of them at once instead of editing 24 call sites,
+     and keeps each size paired with its own line-height (a per-site rewrite
+     to text-[calc(...)] would silently drop Tailwind's paired leading).
+     Line-heights are the unitless equivalents of Tailwind's defaults, so they
+     scale with the font size instead of pinning it: e.g. sm was 0.875rem/1.25rem
+     → 14px * 1.4286. Values at scale 1 are byte-identical to Tailwind's. */
+  --text-xs: calc(12px * var(--text-scale));
+  --text-xs--line-height: 1.3333;
+  --text-sm: calc(14px * var(--text-scale));
+  --text-sm--line-height: 1.4286;
+  --text-base: calc(16px * var(--text-scale));
+  --text-base--line-height: 1.5;
+  --text-lg: calc(18px * var(--text-scale));
+  --text-lg--line-height: 1.5556;
+  --text-xl: calc(20px * var(--text-scale));
+  --text-xl--line-height: 1.4;
+  --text-2xl: calc(24px * var(--text-scale));
+  --text-2xl--line-height: 1.3333;
+  --text-3xl: calc(30px * var(--text-scale));
+  --text-3xl--line-height: 1.2;
+  --text-4xl: calc(36px * var(--text-scale));
+  --text-4xl--line-height: 1.1111;
+
   /* Custom spacing scale from mockups (in addition to Tailwind defaults) */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
