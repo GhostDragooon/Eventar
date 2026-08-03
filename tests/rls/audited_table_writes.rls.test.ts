@@ -41,9 +41,12 @@ describe.skipIf(!process.env.RLS_TESTS)('audited-table write guard (service_role
   for (const table of ['credit_ledger', 'audit_events'] as const) {
     describe(`${table} — permanent append-only`, () => {
       it('service_role is denied INSERT/UPDATE/DELETE with 42501 (BYPASSRLS: only the grant blocks it)', async () => {
-        const { count: before } = await admin
-          .from(table)
-          .select('*', { count: 'exact', head: true });
+        // Scoped to the BOGUS row itself, not a table-wide count: every other
+        // audited-mutation test in the suite also writes to this table, so a
+        // global count legitimately drifts when the full `pnpm test:rls` suite
+        // runs all files concurrently, producing a spurious failure here.
+        const { data: before } = await admin.from(table).select('id').eq('id', BOGUS);
+        expect(before, `${table}: BOGUS row must not exist before the denied writes`).toHaveLength(0);
 
         const ins = await admin.from(table).insert({ id: BOGUS });
         expect(ins.error?.code, `${table}: service_role INSERT must be 42501`).toBe(PERMISSION_DENIED);
@@ -54,10 +57,8 @@ describe.skipIf(!process.env.RLS_TESTS)('audited-table write guard (service_role
         const del = await admin.from(table).delete().eq('id', BOGUS);
         expect(del.error?.code, `${table}: service_role DELETE must be 42501`).toBe(PERMISSION_DENIED);
 
-        const { count: after } = await admin
-          .from(table)
-          .select('*', { count: 'exact', head: true });
-        expect(after, `${table}: row count must be unchanged by the denied writes`).toBe(before);
+        const { data: after } = await admin.from(table).select('id').eq('id', BOGUS);
+        expect(after, `${table}: BOGUS row must still not exist after the denied writes`).toHaveLength(0);
       }, 30_000);
 
       it('anon and authenticated are denied direct INSERT with 42501', async () => {

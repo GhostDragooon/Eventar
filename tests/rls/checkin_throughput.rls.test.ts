@@ -22,6 +22,7 @@ const BATCH_SIZE = 20;
 // these 200 calls uses a VALID code and shares this one IP, simulating the
 // exact venue-NAT scenario the per-event (not per-IP) limit exists for.
 const SHARED_VENUE_IP = '203.0.113.20';
+const STAFF_EMAIL = 'checkinthroughput-fixture@rls-test.invalid';
 
 function codeForIndex(i: number): string {
   // 6-char valid-alphabet suffix, deterministic per index, no collisions
@@ -46,8 +47,24 @@ describe.skipIf(!process.env.RLS_TESTS)('check-in burst throughput (P2 exit gate
   const codes: string[] = [];
 
   beforeAll(async () => {
-    const { data: staff, error: staffErr } = await admin.from('staff').select('id').limit(1).single();
-    if (staffErr || !staff) throw new Error(`staff lookup: ${staffErr?.message}`);
+    // Dedicated staff fixture, purely as a valid FK target for
+    // events.created_by. Previously this borrowed an arbitrary shared staff
+    // row (`.limit(1).single()`, no ORDER BY), which under the full
+    // concurrent `pnpm test:rls` suite could nondeterministically grab a
+    // transient fixture row owned by a different RLS file — this file owns
+    // its own row instead.
+    const { data: staff, error: staffErr } = await admin
+      .from('staff')
+      .insert({
+        email: STAFF_EMAIL,
+        role: 'organiser_member',
+        full_name: 'RLS Test Staff (checkin_throughput fixture)',
+        organisation_id: DEFAULT_ORG,
+        status: 'active',
+      })
+      .select('id')
+      .single();
+    if (staffErr || !staff) throw new Error(`staff fixture: ${staffErr?.message}`);
     staffId = staff.id as string;
 
     const { data: event, error: eventErr } = await admin
@@ -100,6 +117,7 @@ describe.skipIf(!process.env.RLS_TESTS)('check-in burst throughput (P2 exit gate
       );
       await mustDelete(admin.from('events').delete().eq('id', eventId), 'events fixture');
     }
+    await mustDelete(admin.from('staff').delete().eq('email', STAFF_EMAIL), 'staff fixture');
   }, 60_000);
 
   it('200 concurrent self_check_in calls on one event: all succeed, P99 < 2s, chain stays valid', async () => {

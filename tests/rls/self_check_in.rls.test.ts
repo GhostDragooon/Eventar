@@ -18,6 +18,7 @@ const DEFAULT_ORG = '00000000-0000-0000-0000-000000000001';
 const ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
 // RFC 5737 TEST-NET-3 — reserved for documentation/testing, safe fake IPs.
 const FAKE_IP = '203.0.113.10';
+const STAFF_EMAIL = 'selfcheckin-fixture@rls-test.invalid';
 
 function code(suffix: string): string {
   return `WK-${suffix}`;
@@ -89,10 +90,23 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
   }
 
   beforeAll(async () => {
-    // Reuse the one live staff row purely as a valid FK target for
-    // events.created_by — no staff data is mutated.
-    const { data, error } = await admin.from('staff').select('id').limit(1).single();
-    if (error || !data) throw new Error(`staff lookup: ${error?.message}`);
+    // Dedicated staff fixture, purely as a valid FK target for
+    // events.created_by. Previously this borrowed an arbitrary shared staff
+    // row (`.limit(1).single()`), which raced against other RLS files'
+    // staff-fixture insert/delete under the full concurrent `pnpm test:rls`
+    // suite — this file owns its own row instead.
+    const { data, error } = await admin
+      .from('staff')
+      .insert({
+        email: STAFF_EMAIL,
+        role: 'organiser_member',
+        full_name: 'RLS Test Staff (self_check_in fixture)',
+        organisation_id: DEFAULT_ORG,
+        status: 'active',
+      })
+      .select('id')
+      .single();
+    if (error || !data) throw new Error(`staff fixture: ${error?.message}`);
     staffId = data.id as string;
   }, 60_000);
 
@@ -120,6 +134,7 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
     if (rateLimitKeys.length > 0) {
       await mustDelete(admin.from('rate_limits').delete().in('key', rateLimitKeys), 'rate_limits fixture');
     }
+    await mustDelete(admin.from('staff').delete().eq('email', STAFF_EMAIL), 'staff fixture');
   }, 60_000);
 
   // ---- 1. valid, not-yet-attended code succeeds ----
