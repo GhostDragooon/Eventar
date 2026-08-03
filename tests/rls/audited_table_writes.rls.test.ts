@@ -41,6 +41,13 @@ describe.skipIf(!process.env.RLS_TESTS)('audited-table write guard (service_role
   for (const table of ['credit_ledger', 'audit_events'] as const) {
     describe(`${table} — permanent append-only`, () => {
       it('service_role is denied INSERT/UPDATE/DELETE with 42501 (BYPASSRLS: only the grant blocks it)', async () => {
+        // Pre-check, so the post-check below actually means something: if a
+        // previous crashed run had left BOGUS behind, "the row is absent
+        // afterwards" would be vacuously true and the guard could regress
+        // unnoticed. Scoped to the id for the same reason as the post-check.
+        const { data: before } = await admin.from(table).select('id').eq('id', BOGUS);
+        expect(before, `${table}: BOGUS row must not exist before the denied writes`).toHaveLength(0);
+
         const ins = await admin.from(table).insert({ id: BOGUS });
         expect(ins.error?.code, `${table}: service_role INSERT must be 42501`).toBe(PERMISSION_DENIED);
 
