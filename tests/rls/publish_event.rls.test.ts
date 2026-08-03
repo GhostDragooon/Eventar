@@ -177,7 +177,182 @@ describe.skipIf(!process.env.RLS_TESTS)('publish_event RLS + audit', () => {
     expect(error?.code).toBe('42501');
   });
 
-  // ---- 5. audit chain stays valid after all the above ----
+  // ---- 5. create-time publish routes through the same audited path ----
+  //
+  // The create form's "Publish Event" button reaches create_event_with_blocks
+  // with status='published', NOT publish_event(). Before 2026-08-03 that wrote
+  // status='published' with published_at NULL and zero audit rows — a second,
+  // unaudited publish path into the regulator-facing chain. These two tests
+  // pin the invariant that matters: a published event is an audited event, no
+  // matter which entry point created it.
+  async function createViaRpc(status: 'draft' | 'published'): Promise<string> {
+    const start = new Date(Date.now() + 86_400_000);
+    const end = new Date(Date.now() + 90_000_000);
+    const { data, error } = await owner.client.rpc('create_event_with_blocks', {
+      event_input: {
+        title: 'create_event_with_blocks RLS fixture — DELETE ME',
+        start_time: start.toISOString(),
+        end_time: end.toISOString(),
+        timezone: 'Asia/Hong_Kong',
+        venue_name: 'Test Venue',
+        city: 'Hong Kong',
+        country: 'HK',
+        latitude: 22.3,
+        longitude: 114.2,
+        status,
+      },
+      blocks_input: [],
+    });
+    if (error) throw new Error(`create_event_with_blocks(${status}): ${error.message}`);
+    eventIds.push(data as string);
+    return data as string;
+  }
+
+  it('creating an event as published sets published_at and writes the audit row', async () => {
+    const eventId = await createViaRpc('published');
+
+    const { data: event } = await admin
+      .from('events')
+      .select('status, published_at, created_by')
+      .eq('id', eventId)
+      .single();
+    expect(event?.status).toBe('published');
+    expect(event?.created_by).toBe(ownerStaffId);
+    expect(event?.published_at).not.toBeNull();
+
+    const { data: auditRows } = await admin
+      .from('audit_events')
+      .select('event_type, actor_role, payload')
+      .eq('subject_id', eventId)
+      .eq('event_type', 'event_published');
+    expect(auditRows).toHaveLength(1);
+    expect(auditRows?.[0]?.actor_role).toBe('organiser_member');
+    expect((auditRows?.[0]?.payload as { attestation_status?: string })?.attestation_status).toBe(
+      'organiser_attested',
+    );
+  });
+
+  it('creating an event as a draft publishes nothing and audits nothing', async () => {
+    const eventId = await createViaRpc('draft');
+
+    const { data: event } = await admin
+      .from('events')
+      .select('status, published_at')
+      .eq('id', eventId)
+      .single();
+    expect(event?.status).toBe('draft');
+    expect(event?.published_at).toBeNull();
+
+    const { data: auditRows } = await admin
+      .from('audit_events')
+      .select('id')
+      .eq('subject_id', eventId)
+      .eq('event_type', 'event_published');
+    expect(auditRows).toHaveLength(0);
+  });
+
+  // ---- 6. status/published_at are definer-only (migration 20260802182411) ----
+  //
+  // Routing the create form through publish_event() only closes the audit hole
+  // if `status` stops being a plain writable column: events_organizer_update_own
+  // is `for update to authenticated using (created_by = current_staff_id())`
+  // with no column restriction, so a table-level grant let an organiser publish
+  // their own event straight through PostgREST with no audit row and no
+  // published_at. Closed at the GRANT layer, same logic as the CPD config
+  // columns (Hard Rule 11: RLS is not the control here).
+  //
+  // Every denial asserts 42501 specifically — a bare "an error occurred" would
+  // also match an RLS no-op or a NOT NULL rejection, which prove nothing about
+  // the grant.
+  it('denies an authenticated organiser a direct write to status or published_at', async () => {
+    const eventId = await makeEventFixture('draft');
+
+    const { error: statusErr } = await owner.client
+      .from('events')
+      .update({ status: 'published' })
+      .eq('id', eventId);
+    expect(statusErr?.code).toBe('42501');
+
+    const { error: publishedAtErr } = await owner.client
+      .from('events')
+      .update({ published_at: new Date().toISOString() })
+      .eq('id', eventId);
+    expect(publishedAtErr?.code).toBe('42501');
+
+    const { data: event } = await admin
+      .from('events')
+      .select('status, published_at')
+      .eq('id', eventId)
+      .single();
+    expect(event?.status).toBe('draft');
+    expect(event?.published_at).toBeNull();
+  });
+
+  it('denies a direct INSERT that names status, but still allows a plain draft INSERT', async () => {
+    const base = {
+      title: 'publish_event RLS fixture — DELETE ME',
+      start_time: new Date(Date.now() + 86_400_000).toISOString(),
+      end_time: new Date(Date.now() + 90_000_000).toISOString(),
+      timezone: 'Asia/Hong_Kong',
+      created_by: ownerStaffId,
+      venue_name: 'Test Venue',
+      city: 'Hong Kong',
+      country: 'HK',
+      latitude: 22.3,
+      longitude: 114.2,
+      organisation_id: DEFAULT_ORG,
+    };
+
+    const { error: withStatus } = await owner.client
+      .from('events')
+      .insert({ ...base, status: 'published' });
+    expect(withStatus?.code).toBe('42501');
+
+    // No over-revoke: the same row without `status` inserts fine and lands as a
+    // draft (the column default), which is what create_event_with_blocks relies on.
+    const { data, error } = await owner.client.from('events').insert(base).select('id, status').single();
+    expect(error).toBeNull();
+    expect(data?.status).toBe('draft');
+    eventIds.push(data!.id as string);
+  });
+
+  it('update_event_with_blocks edits the event but cannot change its lifecycle', async () => {
+    const eventId = await makeEventFixture('draft');
+    const { error: publishErr } = await owner.client.rpc('publish_event', { p_event_id: eventId });
+    expect(publishErr).toBeNull();
+
+    // A `status` key in the payload used to reach `status = coalesce(...)` in the
+    // RPC's SET list. Sending 'draft' here would have silently DEMOTED a
+    // published event with no audit trace; it is now ignored.
+    const { error } = await owner.client.rpc('update_event_with_blocks', {
+      event_id_input: eventId,
+      event_input: {
+        title: 'publish_event RLS fixture — DELETE ME (edited)',
+        start_time: new Date(Date.now() + 86_400_000).toISOString(),
+        end_time: new Date(Date.now() + 90_000_000).toISOString(),
+        timezone: 'Asia/Hong_Kong',
+        venue_name: 'Edited Venue',
+        city: 'Hong Kong',
+        country: 'HK',
+        latitude: 22.3,
+        longitude: 114.2,
+        status: 'draft',
+      },
+      blocks_input: [],
+    });
+    expect(error).toBeNull();
+
+    const { data: event } = await admin
+      .from('events')
+      .select('status, published_at, venue_name')
+      .eq('id', eventId)
+      .single();
+    expect(event?.venue_name).toBe('Edited Venue'); // the edit itself landed
+    expect(event?.status).toBe('published');        // lifecycle untouched
+    expect(event?.published_at).not.toBeNull();
+  });
+
+  // ---- 7. audit chain stays valid after all the above ----
   it('verify_audit_chain reports zero broken links after fixture inserts', async () => {
     const { data, error } = await admin.rpc('verify_audit_chain');
     expect(error).toBeNull();

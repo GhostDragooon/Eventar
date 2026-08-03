@@ -36,6 +36,12 @@ function blockFitsEnvelope(block: BlockInput, event: { start_time: string; end_t
 // Status the caller is asking for. Defaults to 'draft' so older call sites
 // (and the test suite) keep working unchanged. Validated against an explicit
 // enum so an unknown value can never reach the RPC.
+//
+// 'published' does NOT land in the insert: create_event_with_blocks creates the
+// row as a draft and then calls publish_event() (SECURITY DEFINER, audited,
+// sets published_at) in the same transaction — migration 20260802182411. Before
+// that, this action wrote status='published' straight into the row, leaving
+// published_at NULL and no event_published row in the audit chain.
 const statusSchema = z.enum(['draft', 'published']).default('draft');
 
 // createEvent returns { error } on validation/DB failure, or redirects on success (never returns).
@@ -78,7 +84,16 @@ export async function createEvent(input: {
     blocks_input: blockParse.data,
   });
 
-  if (error) return { error: error.message };
+  // A publish that the caller isn't allowed to make raises 42501 inside
+  // publish_event and rolls the whole create back — nothing is saved, so say
+  // that rather than leaking the raw require_active_staff message. Same
+  // treatment publishEvent gives the identical gate (edit/actions.ts).
+  if (error) {
+    if (statusParse.data === 'published' && error.code === '42501') {
+      return { error: 'Cannot publish: this account is not allowed to publish events. Nothing was saved — use "Save as draft".' };
+    }
+    return { error: error.message };
+  }
   if (!data || typeof data !== 'string') return { error: 'no id returned' };
 
   revalidatePath('/dashboard');
