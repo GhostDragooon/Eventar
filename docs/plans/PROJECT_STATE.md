@@ -21,6 +21,7 @@
 > - **Dead code found, not deleted:** `components/ui/{select,accordion,toggle}.tsx` have 0 importers; `lib/{withSecurity,abuseTier,attendeeAuth}.ts` remain unwired substrate; `users.locale` and `users.display_language` are both unread.
 > - **STILL GATED, not by the freeze:** the CPD evaluator vs versioned `body_rules` (Q26 + Stage 9), practitioner compliance math, S-Attendee, evidence/share, multi-track scheduling.
 > - **Read next:** `docs/plans/STAGES.md` (vocabulary) → `docs/plans/2026-08-03-stage-7-plan.md` (current work) → `docs/plans/2026-08-03-post-m2-execution-map.md` (what follows).
+> - **Latest handoff:** `docs/plans/handoff_03082026.md` — Stage 6 close, the Stage 7 review, the vocabulary change, and the honest limits of the closed-loop verification.
 >
 > Everything below predates the unfreeze.
 
