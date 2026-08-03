@@ -207,6 +207,35 @@ describe('updateEvent', () => {
     });
   });
 
+  it('forwards an enabled self-serve check-in mode to the RPC', async () => {
+    const result = await updateEvent(eventId, {
+      event: { ...validEvent, checkin_modes: { staff: true, self_serve: true } },
+      blocks: [],
+    });
+    expect(result).toEqual({ ok: true });
+    const eventInput = rpcCalls[0].params.event_input as Record<string, unknown>;
+    expect(eventInput.checkin_modes).toEqual({ staff: true, self_serve: true });
+  });
+
+  it('sends the staff-only default when the payload omits checkin_modes', async () => {
+    // Zod fills it, so event_input always carries the key. That matters because
+    // this RPC is full-replace: a missing key would land as SQL NULL on a NOT
+    // NULL column. The RPC coalesces to the current value as a second guard.
+    const result = await updateEvent(eventId, { event: validEvent, blocks: [] });
+    expect(result).toEqual({ ok: true });
+    const eventInput = rpcCalls[0].params.event_input as Record<string, unknown>;
+    expect(eventInput.checkin_modes).toEqual({ staff: true, self_serve: false });
+  });
+
+  it('rejects a malformed checkin_modes without calling the RPC', async () => {
+    const result = await updateEvent(eventId, {
+      event: { ...validEvent, checkin_modes: { staff: true, self_serve: 'yes' } },
+      blocks: [],
+    });
+    expect(result).not.toEqual({ ok: true });
+    expect(rpcCalls).toHaveLength(0);
+  });
+
   it('sends an empty array (never null) when the event has no blocks', async () => {
     const result = await updateEvent(eventId, { event: validEvent, blocks: [] });
     expect(result).toEqual({ ok: true });

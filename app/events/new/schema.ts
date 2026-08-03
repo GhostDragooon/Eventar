@@ -74,6 +74,17 @@ export const eventInputSchema = z.object({
   registration_open_at:  z.string().datetime().optional(),
   registration_close_at: z.string().datetime().optional(),
   category: z.enum(['life_sciences', 'engineering', 'finance', 'technology']).optional(),
+  // How attendance is captured at the door. `self_serve` is the only half the
+  // form offers: nothing reads `staff` (mark_attended has no flag check), so a
+  // staff toggle would be a control that does nothing — the form sends
+  // `staff: true` constant, which is the accurate description of reality.
+  //
+  // The default MUST match events.checkin_modes' column default. Both event
+  // RPCs are full-replace, so a drift between the two defaults would silently
+  // change how the door works on a no-edit Save.
+  checkin_modes: z
+    .object({ staff: z.boolean(), self_serve: z.boolean() })
+    .default({ staff: true, self_serve: false }),
 })
 .refine(d => new Date(d.end_time) > new Date(d.start_time), {
   message: 'End time must be after start time', path: ['end_time'],
