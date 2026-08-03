@@ -1,21 +1,26 @@
 # Project State — Eventar
 
-> ## ⬆️ CURRENT PHASE (2026-08-01) — M2 FRONTEND UNFREEZE, Stage 1 of 4 shipped
+> ## ⬆️ CURRENT — STAGE 7 (hardening & pre-flight). Stage 6 shipped.
 >
-> **The frontend freeze is LIFTED for S-Organiser.** Ivan made the M2 unfreeze scope call, with the framing correction that the design artifact is *the real frontend*, not a mockup — the work now is fusing it with the shipped backend.
+> **📛 Terminology is now Stage 1–13 only. `docs/plans/STAGES.md` is the authority.** M1–M4, Sprint 0–5, Milestone A–E and Phase 7/8/9 are **retired** — four overlapping axes, and two different things were both called "M2" (the CPD engine *and* the frontend unfreeze). Translate old names with the table in STAGES.md; historical handoffs keep their original wording deliberately.
 >
-> - **Read first:** `docs/plans/2026-08-01-m2-frontend-unfreeze.md` (scope boundaries, block-architecture admission checklist, 4-stage staging, Stage 1 findings).
-> - **Shipped:** Stage 1 tokens (`046b21c`) · Stage 2 shell + Stage 3 CPD-config-front-to-back (`c291bce`) · patches (`56d5a7f`) · design audit (`c0c7105`) · **Stage C scheduler** (`0f54d8a` refactor + `9658126` feat). Gates green; **20 routes** (+`/api/cron/dispatch`); vitest **508 passed \| 124 skipped**; head `9658126`.
-> - **Stage C — the loop is now self-running.** `/api/cron/dispatch` fires the 60-min reminder (with the QR pass) and the 10-min-after survey. Backtested live on the local stack end to end: 401 without the secret, both windows dispatched, second run skipped everything (no double-send), GET+Bearer path identical, soft-deleted event correctly not scanned. **`delivery: "stubbed"`** in the response — with `RESEND_API_KEY` unset nothing actually leaves the building, and the response says so rather than reading as delivered.
->   - **Two plan corrections this produced:** (a) plan §2A.5's "reuse the existing `sendReminderForEvent`/`sendSurveyInviteForEvent`" was **not executable** — both open with `requireStaff()`, which throws without a session; the send core is now `lib/email/eventEmails.ts` and the actions are thin gates over it. (b) the plan never mentioned `events.deleted_at`; the dispatcher filters it, as `/events`, `/checkin` and `/analytics` already do.
->   - **`queued` arm decided (plan §2A.4):** terminal under `email_log_dedup_idx`, so the dispatcher treats it as done-or-stuck, never "needs sending". Silent non-send is recoverable via the manual button; a duplicate to a practitioner is not. Proven live + by a rolled-back `DROP INDEX` showing the test is not vacuous.
-> - **Next:** roster licence eligibility (plan §3, with the §3.2 correction — it needs a `SECURITY DEFINER` function, it is NOT a free RLS read) → CPD config at event creation (reuse `set_event_cpd_config()`, don't widen the RPC whitelist). Both are build gaps needing no external input.
-> - **STILL GATED, and not by the freeze:** the CPD evaluator vs versioned `body_rules` (Q26 + Milestone C), practitioner compliance math, S-Attendee, B6 evidence/share, multi-track scheduling.
-> - **Owed:** the three-lens phase-completion protocol at the M2 phase boundary — it has NOT run for ANY M2 stage and is not claimed.
-> - **Latest handoff:** `docs/plans/handoff_02082026.md` — Stages 1–3 shipped, framing corrections, defects, and the corrections to earlier claims.
-> - **Next session:** `docs/plans/2026-08-02-m2-execution-plan.md` **§3** (Stage 4, roster licence eligibility). §2A is done.
-> - **New injection point:** `CRON_SECRET` (see `.env.example`). The dispatcher **fails closed** — unset means 503 on every request, so a misconfigured deploy can never become a public mass-mail trigger.
-> - **No trigger file ships yet** (Ivan, 2026-08-03: "we don't touch Vercel yet"). `vercel.json` was added then reverted (`72cda80`); the endpoint is driven by `curl` locally. Re-add a trigger at deploy time — one file, no dispatch-logic change. Caveat for whenever that happens: Vercel's Hobby plan caps crons at once-daily, which would miss every reminder window.
+> **Stage 6 (organiser frontend & scheduler) is shipped.** The frontend freeze is lifted for S-Organiser; the design artifact was always *the real frontend*, not a mockup, and it is now fused with the shipped backend.
+>
+> **Gates:** tsc clean · eslint 0 errors (5 pre-existing `devEmailStub` warnings) · vitest **508 passed \| 124 skipped** · `next build` clean, **20 routes** (+`/api/cron/dispatch`) · both hash chains valid.
+>
+> ### Stage 6 — shipped
+> Tokens (`046b21c`) · staff shell + CPD config front-to-back (`c291bce`) · patches (`56d5a7f`) · design audit (`c0c7105`) · **scheduler** (`0f54d8a` + `9658126`) · **Text size actually scaling** (`ddc144e` + `d240e88`).
+> - **The loop is self-running.** `/api/cron/dispatch` fires the 60-min reminder (carrying the QR pass) and the 10-min-after survey. Backtested live end to end. **`delivery: "stubbed"`** in the response — with `RESEND_API_KEY` unset nothing leaves the building and the response says so rather than reading as delivered.
+> - **`queued` is TERMINAL** under `email_log_dedup_idx`, so the dispatcher treats it as done-or-stuck, never "needs sending". A silent non-send is recoverable via the manual button; a duplicate to a practitioner is not. Proven live, and proven non-vacuous by a rolled-back `DROP INDEX`.
+> - **Two corrections the build produced:** the plan's "reuse `sendReminderForEvent`/`sendSurveyInviteForEvent`" was **not executable** (both open with `requireStaff()`, which throws without a session) → send core extracted to `lib/email/eventEmails.ts`; and the plan never mentioned `events.deleted_at`, which the dispatcher must filter.
+> - **`CRON_SECRET` is a new injection point** (`.env.example`). The dispatcher **fails closed** — unset means 503 on every request, so a misconfigured deploy can never become a public mass-mail trigger. **No trigger file ships yet** (Ivan, 2026-08-03: "we don't touch Vercel yet"); `vercel.json` was added then reverted (`72cda80`). Re-add at deploy time — one file, no dispatch-logic change. Vercel's Hobby plan caps crons at once-daily, which would miss every reminder window.
+>
+> ### Stage 7 — in progress
+> Full backend + frontend review done (`d240e88`). **Backend verified sound**: 30/30 definer functions pin `search_path` · RLS on all 18 tables · Hard Rule 11 posture exact · events/staff column locks holding · Hard Rule 3 on every staff action · no silent-failure swallows. Fixed: `email_log`/`rate_limits` PII grants (RLS was the *only* control in front of `recipient_email`), `handle_new_user` EXECUTE, plus `seed.sql` re-assertion so a `db reset` cannot re-open them. **Frontend**: Text size now reaches Tailwind's own default sizes (every `ui/` primitive was unscaled), door UI advertised a 4-char code when codes are 6, two §7a colour violations, emoji-as-status-icon. No horizontal overflow or sub-44px targets at 375/1280.
+> - **Still open in Stage 7:** roster licence eligibility (needs a `SECURITY DEFINER` function — it is **not** a free RLS read) · CPD config at event creation · the two background fixes (unaudited publish path; check-in mode unreachable) · **`DEFERRED` item 56, whose trigger has FIRED** · the three-lens phase-completion protocol, which has **not** run for any Stage 6 work and is not claimed.
+> - **Dead code found, not deleted:** `components/ui/{select,accordion,toggle}.tsx` have 0 importers; `lib/{withSecurity,abuseTier,attendeeAuth}.ts` remain unwired substrate; `users.locale` and `users.display_language` are both unread.
+> - **STILL GATED, not by the freeze:** the CPD evaluator vs versioned `body_rules` (Q26 + Stage 9), practitioner compliance math, S-Attendee, evidence/share, multi-track scheduling.
+> - **Read next:** `docs/plans/STAGES.md` (vocabulary) → `docs/plans/2026-08-03-stage-7-plan.md` (current work) → `docs/plans/2026-08-03-post-m2-execution-map.md` (what follows).
 >
 > Everything below predates the unfreeze.
 

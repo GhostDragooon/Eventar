@@ -1,5 +1,8 @@
 # Post-M2 execution map (2026-08-03)
 
+> **⚠️ VOCABULARY SUPERSEDED 2026-08-03.** This doc predates `docs/plans/STAGES.md`, which is now the authority: Stage 1–13 only, no M-numbers, no Sprints, no Milestone letters. Its N0–N7 sequence maps to Stage 7 → 8 → 9 → 10 → 11 → 12. The naming collision it documents is exactly why STAGES.md exists.
+
+
 _What happens after the M2 frontend unfreeze, sequenced by what is actually executable rather than by milestone number. Companion to `roadmap-to-mvp.md` (the spine) and `2026-07-12-program-plan-A-to-E.md` (per-phase scope/spec/exit)._
 
 > **Goal restated (Ivan, 2026-08-02/03):** ship ASAP — all functionality up and running, then debugged and backtested for a stable beta. Judge every item against *"does a beta event fail without it?"* Sort everything into **BUILD GAPS** (code that doesn't exist or doesn't work — this is the job) and **INJECTION POINTS** (code complete, waiting on a value). Never report the second as a blocker.
