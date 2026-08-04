@@ -17,11 +17,22 @@
 // here, so unlike tests/cpd/attendance_issuance.rls.test.ts nothing becomes
 // permanently undeletable and afterAll cleans up fully.
 //
-// Gated: only runs under `pnpm test:rls` (RLS_TESTS=1).
+// Gated: runs under `pnpm test:rls` (RLS_TESTS=1). This file is named
+// explicitly in that script rather than picked up by a `tests/cpd` glob — its
+// two siblings (attendance_issuance, event_freeze_trigger) each leave permanent
+// credit_ledger rows behind, and the run sheet forbids growing a
+// regulator-facing table with test data on every gate run. They stay ungated
+// until Supabase branch-based CI makes a throwaway database per run possible
+// (tracked in docs/DEFERRED.md). This file issues no credit and cleans up in
+// full, so it costs nothing to run every time.
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { admin, createTestUser, deleteTestUser, type TestUser } from '../helpers/clients';
 
 const AUTH_TABLE = 'organisation_body_authorisations';
+// The tenancy root every event defaulted into before 20260804030000, and the
+// organisation that holds every authorisation that exists — which is what made
+// hopping into it a complete bypass rather than a lateral move.
+const DEFAULT_ORG_ID = '00000000-0000-0000-0000-000000000001';
 
 describe.skipIf(!process.env.RLS_TESTS)('organisation↔body authorisation (DEFERRED 56)', () => {
   let orgId: string;
@@ -108,6 +119,9 @@ describe.skipIf(!process.env.RLS_TESTS)('organisation↔body authorisation (DEFE
 
   afterAll(async () => {
     await admin.from(AUTH_TABLE).delete().eq('organisation_id', orgId);
+    // The hop test seeds one against the real default org — that row would
+    // otherwise be permanent residue in a live registry table.
+    await admin.from(AUTH_TABLE).delete().eq('organisation_id', DEFAULT_ORG_ID).eq('body_id', bodyId);
     await admin.from('events').delete().eq('id', eventId);
     await admin.from('staff').delete().eq('id', ownerStaffId);
     await admin.from('accrediting_bodies').delete().eq('id', bodyId);
@@ -212,6 +226,45 @@ describe.skipIf(!process.env.RLS_TESTS)('organisation↔body authorisation (DEFE
     const { error } = await owner.client
       .from(AUTH_TABLE)
       .insert({ organisation_id: orgId, body_id: bodyId, status: 'active' });
+    expect(error?.code).toBe('42501');
+  });
+
+  // The gate reads the EVENT's organisation_id, so that column is part of the
+  // gate's trust boundary. While `authenticated` held column UPDATE on it — and
+  // events_organizer_update_own constrains only created_by — the whole model was
+  // bypassable in two statements: PATCH the event into the default organisation
+  // (which holds every authorisation there is), then accredit. No Server Action
+  // involved. Found by the Stage 7 three-lens review; closed by 20260804030000.
+  it('denies an organiser moving their own event between organisations (42501)', async () => {
+    const { error } = await owner.client
+      .from('events')
+      .update({ organisation_id: otherOrgId })
+      .eq('id', eventId);
+    expect(error?.code).toBe('42501');
+  });
+
+  it('leaves the event in its own organisation after the attempt', async () => {
+    const { data } = await admin.from('events').select('organisation_id').eq('id', eventId).single();
+    expect(data?.organisation_id).toBe(orgId);
+  });
+
+  it('cannot reach an unauthorised body by hopping organisations', async () => {
+    // The end-to-end exploit as one journey. The hop must be worth making for
+    // this to test anything: the DESTINATION org is authorised for the body and
+    // the organiser's own is not, which is exactly the real shape (the default
+    // organisation holds every authorisation that exists).
+    await admin.from(AUTH_TABLE).delete().eq('organisation_id', orgId);
+    await admin.from(AUTH_TABLE)
+      .insert({ organisation_id: DEFAULT_ORG_ID, body_id: bodyId, status: 'active' });
+
+    await owner.client.from('events')
+      .update({ organisation_id: DEFAULT_ORG_ID }).eq('id', eventId);
+
+    const { error } = await owner.client.rpc('set_event_cpd_config', {
+      p_event_id: eventId,
+      p_body_id: bodyId,
+      p_cpd_hours: 3,
+    });
     expect(error?.code).toBe('42501');
   });
 

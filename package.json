@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:rls": "RLS_TESTS=1 vitest run tests/rls tests/audit"
+    "test:rls": "RLS_TESTS=1 vitest run tests/rls tests/audit tests/cpd/organisation_body_authorisation.rls.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

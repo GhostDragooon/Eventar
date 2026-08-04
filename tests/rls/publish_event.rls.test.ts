@@ -300,7 +300,10 @@ describe.skipIf(!process.env.RLS_TESTS)('publish_event RLS + audit', () => {
       country: 'HK',
       latitude: 22.3,
       longitude: 114.2,
-      organisation_id: DEFAULT_ORG,
+      // organisation_id is deliberately absent: 20260804030000 revoked it from
+      // authenticated (naming it here now returns 42501 for the wrong reason)
+      // and the set_event_organisation trigger derives it instead. Asserted
+      // below rather than supplied.
     };
 
     const { error: withStatus } = await owner.client
@@ -308,11 +311,21 @@ describe.skipIf(!process.env.RLS_TESTS)('publish_event RLS + audit', () => {
       .insert({ ...base, status: 'published' });
     expect(withStatus?.code).toBe('42501');
 
-    // No over-revoke: the same row without `status` inserts fine and lands as a
-    // draft (the column default), which is what create_event_with_blocks relies on.
-    const { data, error } = await owner.client.from('events').insert(base).select('id, status').single();
+    const { error: withOrg } = await owner.client
+      .from('events')
+      .insert({ ...base, organisation_id: DEFAULT_ORG });
+    expect(withOrg?.code).toBe('42501');
+
+    // No over-revoke: the same row without either locked column inserts fine and
+    // lands as a draft (the column default), which is what
+    // create_event_with_blocks relies on.
+    const { data, error } = await owner.client
+      .from('events').insert(base).select('id, status, organisation_id').single();
     expect(error).toBeNull();
     expect(data?.status).toBe('draft');
+    // The trigger, not the caller, decided the tenancy — derived from the
+    // creating staff row.
+    expect(data?.organisation_id).toBe(DEFAULT_ORG);
     eventIds.push(data!.id as string);
   });
 

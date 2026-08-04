@@ -60,21 +60,36 @@ grant  update (email, full_name, organisation_id, status) on public.staff to aut
 -- the dashboard's bulk cancel sets status through it, and the edit admin actions
 -- use it too. Revoking service_role here broke `seed-demo.ts` with a 42501 on
 -- first run.
+--   · organisation_id — the tenancy root (migration 20260804030000). It was
+--     writable by authenticated while events_organizer_update_own constrains
+--     only created_by, so an organiser could PATCH their own event into the
+--     default organisation — which holds every body authorisation — and then
+--     self-accredit, walking straight around the DEFERRED-56 gate. Nothing in
+--     app/, lib/ or scripts/ ever writes it; the set_event_organisation
+--     BEFORE INSERT trigger is its only writer.
 revoke insert, update on public.events from anon, authenticated;
 grant  insert (
   id, title, topic, start_time, end_time, timezone, description, poster_path,
   max_attendees, created_by, created_at, updated_at, venue_name,
   venue_address, city, region, country, latitude, longitude,
   registration_close_at, hosted_by, organized_by, hero_image_url, category,
-  deleted_at, checkin_modes, registration_open_at, organisation_id
+  deleted_at, checkin_modes, registration_open_at
 ) on public.events to authenticated;
 grant  update (
   id, title, topic, start_time, end_time, timezone, description, poster_path,
   max_attendees, created_by, created_at, updated_at, venue_name,
   venue_address, city, region, country, latitude, longitude,
   registration_close_at, hosted_by, organized_by, hero_image_url, category,
-  deleted_at, checkin_modes, registration_open_at, organisation_id
+  deleted_at, checkin_modes, registration_open_at
 ) on public.events to authenticated;
+-- organisation_body_authorisations (migration 20260804000000) — the registry
+-- allow-list deciding which organisation may claim which accrediting body.
+-- Writable ONLY service-role-side until the Stage 10 approval workflow; if the
+-- blanket grant above stands, an organiser can authorise their own organisation
+-- and the DEFERRED-56 gate becomes decorative. Read stays org-scoped via RLS.
+revoke insert, update, delete on public.organisation_body_authorisations
+  from anon, authenticated;
+revoke select on public.organisation_body_authorisations from anon;
 --
 -- Re-assert the email_log / rate_limits lock (migration 20260803090000, found by
 -- the 2026-08-03 backend review). Both tables are written only by the service
