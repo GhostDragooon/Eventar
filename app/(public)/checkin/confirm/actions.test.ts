@@ -39,7 +39,8 @@ describe('selfCheckIn — result code to attendee copy', () => {
   // Before DEFERRED 57 these all fell through to "This registration is no
   // longer valid", which is actively false for an attendee who is simply early.
   it.each([
-    ['not_open', /isn't open yet/i],
+    ['not_open_yet', /isn't open yet/i],
+    ['closed', /has closed/i],
     ['self_serve_off', /see reception/i],
     ['cancelled', /cancelled/i],
     ['unavailable', /isn't accepting check-ins/i],
@@ -53,7 +54,7 @@ describe('selfCheckIn — result code to attendee copy', () => {
   });
 
   it('never awards a credit on a refusal', async () => {
-    for (const code of ['not_open', 'self_serve_off', 'cancelled', 'unavailable']) {
+    for (const code of ['not_open_yet', 'closed', 'self_serve_off', 'cancelled', 'unavailable']) {
       resolvesTo(code);
       await selfCheckIn(CODE);
     }
@@ -62,7 +63,7 @@ describe('selfCheckIn — result code to attendee copy', () => {
 
   it('gives every refusal a distinct message', async () => {
     const seen: string[] = [];
-    for (const code of ['not_open', 'self_serve_off', 'cancelled', 'unavailable', 'already', 'rate_limited']) {
+    for (const code of ['not_open_yet', 'closed', 'self_serve_off', 'cancelled', 'unavailable', 'already', 'rate_limited']) {
       resolvesTo(code);
       const res = await selfCheckIn(CODE);
       seen.push((res as { error: string }).error);

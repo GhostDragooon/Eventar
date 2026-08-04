@@ -23,6 +23,20 @@ type RosterRow = {
 
 type Toast = { kind: 'ok' | 'err'; message: string };
 
+// What each eligibility value means AT THE DOOR. Only the exceptions appear —
+// 'eligible' and 'not_cpd' render nothing, because a marker on every row of a
+// non-CPD event is noise that implies a fixable problem.
+//
+// Deliberately about the CREDIT, never about the person: an operator learns
+// "this attendance won't post a credit", not which body anyone is licensed
+// with. That distinction is the whole reason the RPC returns an enum instead
+// of licence rows (Hard Rule 10).
+const ELIGIBILITY_NOTE: Record<string, string> = {
+  no_licence: 'No verified licence with this event’s accrediting body — checking in won’t post a CPD credit.',
+  no_account: 'No practitioner account for this email — checking in won’t post a CPD credit.',
+  cancelled: 'Registration cancelled — this attendee can’t be checked in.',
+};
+
 // "Recent" window for the accent-fading roster row state (§ E.4 row states).
 // 5 minutes balances "still feels fresh" against "the tablet isn't a party
 // trick" — a longer window dilutes the affordance.
@@ -34,6 +48,8 @@ export default function RosterClient({
   eventStartTime,
   lifecycle,
   initialRoster,
+  eligibility,
+  eligibilityUnavailable,
   maxAttendees: _maxAttendees,
   speakerNames,
   initialSpeakerCheckins,
@@ -43,6 +59,9 @@ export default function RosterClient({
   eventStartTime: string;
   lifecycle: Lifecycle;
   initialRoster: RosterRow[];
+  /** registration_id → eligibility enum from event_registration_eligibility. */
+  eligibility: Record<string, string>;
+  eligibilityUnavailable: boolean;
   /**
    * Capacity, currently unused — the Scoreboard renders attended/registered.
    * Kept on the prop contract so the page can pass it without divergence; a
@@ -169,6 +188,13 @@ export default function RosterClient({
         />
       )}
 
+      {eligibilityUnavailable && (
+        <p className="mb-md rounded-lg bg-warning-container px-md py-sm font-body-md text-body-md text-on-warning-container">
+          CPD eligibility couldn&rsquo;t be checked just now, so this roster isn&rsquo;t showing which attendees will
+          earn a credit. Check-in still works normally and credits post as usual &mdash; only the warnings are missing.
+        </p>
+      )}
+
       {/* Roster — restyled rows with three states (recent / checked / default) */}
       <section className="bg-surface-container-lowest rounded-[20px] border border-outline-variant p-md overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-md border-b border-outline-variant pb-sm mb-sm">
@@ -208,6 +234,7 @@ export default function RosterClient({
                   <RosterRowItem
                     key={r.id}
                     row={r}
+          eligibility={eligibility[r.id]}
                     nowMs={nowMs}
                     eventTimezone={eventTimezone}
                     onMark={() => handleMark(r.registration_code, 'manual')}
@@ -267,11 +294,13 @@ function FilterPill({
 
 function RosterRowItem({
   row: r,
+  eligibility,
   nowMs,
   eventTimezone,
   onMark,
 }: {
   row: RosterRow;
+  eligibility?: string;
   nowMs: number;
   eventTimezone: string;
   onMark: () => void;
@@ -295,9 +324,22 @@ function RosterRowItem({
       data-row-state={isRecent ? 'recent' : isAttended ? 'checked' : 'default'}
       className={`grid grid-cols-[minmax(0,1fr)_110px_150px_90px] gap-md items-center py-sm px-sm transition-colors ${rowBg}`}
     >
-      <p className="font-body-md text-body-md font-semibold text-on-surface truncate">
-        {r.full_name}
-      </p>
+      <div className="min-w-0">
+        <p className="font-body-md text-body-md font-semibold text-on-surface truncate">
+          {r.full_name}
+        </p>
+        {eligibility && ELIGIBILITY_NOTE[eligibility] && (
+          <p className="mt-[2px] flex items-start gap-xs font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant">
+            <span
+              className="material-symbols-outlined text-[calc(14px*var(--text-scale))] leading-none mt-[2px]"
+              aria-hidden
+            >
+              error
+            </span>
+            <span>{ELIGIBILITY_NOTE[eligibility]}</span>
+          </p>
+        )}
+      </div>
       <code className="font-body-md text-[calc(13px*var(--text-scale))] text-on-surface-variant tabular-nums">
         {r.registration_code}
       </code>

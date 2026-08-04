@@ -259,7 +259,9 @@ begin
   end if;
   -- The SET list is what the column-privilege check reads. `status` must not
   -- appear on the left of an assignment in the UPDATE.
-  if update_src like '%status         =%' or update_src like '%status =%' then
+  -- Whitespace-insensitive: `status=`, `status  =` and `status\n=` all slipped
+  -- past the original two LIKE patterns (2026-08-04 review, LOW 11).
+  if update_src ~ 'status[[:space:]]*=' then
     raise exception 'update_event_with_blocks still assigns status — every organiser edit would 42501';
   end if;
   if has_column_privilege('authenticated','public.events','status','UPDATE')

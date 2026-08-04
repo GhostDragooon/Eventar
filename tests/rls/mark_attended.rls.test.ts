@@ -41,7 +41,10 @@ describe.skipIf(!process.env.RLS_TESTS)('mark_attended RLS + audit', () => {
   const rateLimitKeys: string[] = [];
   const staffEmails: string[] = [];
 
-  async function makeEventFixture(): Promise<string> {
+  async function makeEventFixture(
+    opts: { status?: 'draft' | 'published' | 'cancelled'; deleted?: boolean } = {},
+  ): Promise<string> {
+    const { status = 'published', deleted = false } = opts;
     const { data, error } = await admin
       .from('events')
       .insert({
@@ -55,7 +58,8 @@ describe.skipIf(!process.env.RLS_TESTS)('mark_attended RLS + audit', () => {
         country: 'HK',
         latitude: 22.3,
         longitude: 114.2,
-        status: 'published',
+        status,
+        deleted_at: deleted ? new Date().toISOString() : null,
         organisation_id: DEFAULT_ORG,
       })
       .select('id')
@@ -73,7 +77,7 @@ describe.skipIf(!process.env.RLS_TESTS)('mark_attended RLS + audit', () => {
   async function makeRegistrationFixture(
     eventId: string,
     registrationCode: string,
-    status: 'registered' | 'attended' = 'registered',
+    status: 'registered' | 'attended' | 'cancelled' = 'registered',
   ): Promise<string> {
     const { data, error } = await admin
       .from('registrations')
@@ -279,4 +283,71 @@ describe.skipIf(!process.env.RLS_TESTS)('mark_attended RLS + audit', () => {
     const invalid = rows.filter((r) => !r.link_valid || !r.content_valid);
     expect(invalid).toHaveLength(0);
   }, 60_000);
+  // ---- lifecycle guards (2026-08-04 three-lens review, CRITICAL 2) ----
+  //
+  // DEFERRED 57 tightened self_check_in and left THIS door on the old
+  // `status <> 'attended'` predicate. The two then disagreed about the same
+  // person in the same second — and this is the door that mints CPD credit.
+  // The review proved the full money path end to end on a cancelled
+  // registration: mark_attended -> ok, award_attendance_credit -> issued, a
+  // real credit_earned/attendance_verified row.
+  //
+  // HONESTY NOTE: these cases were written AFTER 20260804030000 had already
+  // landed, so they were never watched failing here — the red evidence is the
+  // review's live reproduction, not this file's history. Treat them as
+  // regression cover, not as TDD-derived design.
+  describe('lifecycle guards', () => {
+    it('refuses a cancelled registration and leaves it cancelled', async () => {
+      const eventId = await makeEventFixture();
+      const regCode = code('MA200');
+      await makeRegistrationFixture(eventId, regCode, 'cancelled');
+
+      const { data, error } = await owner.client.rpc('mark_attended', {
+        p_code: regCode,
+        p_method: 'qr',
+      });
+      expect(error).toBeNull();
+      const row = Array.isArray(data) ? data[0] : data;
+      expect(row.result).toBe('cancelled');
+
+      const { data: reg } = await admin
+        .from('registrations')
+        .select('status')
+        .eq('registration_code', regCode)
+        .single();
+      expect(reg?.status).toBe('cancelled');
+    });
+
+    it('refuses a soft-deleted event', async () => {
+      const eventId = await makeEventFixture({ deleted: true });
+      const regCode = code('MA201');
+      await makeRegistrationFixture(eventId, regCode);
+
+      const { data } = await owner.client.rpc('mark_attended', { p_code: regCode, p_method: 'qr' });
+      const row = Array.isArray(data) ? data[0] : data;
+      expect(row.result).toBe('unavailable');
+    });
+
+    it('refuses an unpublished event', async () => {
+      const eventId = await makeEventFixture({ status: 'draft' });
+      const regCode = code('MA202');
+      await makeRegistrationFixture(eventId, regCode);
+
+      const { data } = await owner.client.rpc('mark_attended', { p_code: regCode, p_method: 'qr' });
+      const row = Array.isArray(data) ? data[0] : data;
+      expect(row.result).toBe('unavailable');
+    });
+
+    it('still checks in a normal registration on a live published event', async () => {
+      // The control. A guard suite that only asserts refusals passes happily
+      // against an implementation that refuses everything.
+      const eventId = await makeEventFixture();
+      const regCode = code('MA203');
+      await makeRegistrationFixture(eventId, regCode);
+
+      const { data } = await owner.client.rpc('mark_attended', { p_code: regCode, p_method: 'qr' });
+      const row = Array.isArray(data) ? data[0] : data;
+      expect(row.result).toBe('ok');
+    });
+  });
 });

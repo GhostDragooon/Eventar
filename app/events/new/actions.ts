@@ -44,12 +44,30 @@ function blockFitsEnvelope(block: BlockInput, event: { start_time: string; end_t
 // published_at NULL and no event_published row in the audit chain.
 const statusSchema = z.enum(['draft', 'published']).default('draft');
 
-// createEvent returns { error } on validation/DB failure, or redirects on success (never returns).
+// Optional CPD accreditation from the create form. Both-or-neither mirrors
+// set_event_cpd_config's own rule: a body with no hours (or hours with no body)
+// is a half-configured event that award_attendance_credit silently skips, so
+// the organiser would believe it was accredited and no credit would ever post.
+const cpdSchema = z
+  .object({
+    bodyId: z.string().uuid().nullable().optional(),
+    hours: z.number().positive().max(24).nullable().optional(),
+  })
+  .refine((d) => !d.bodyId === !d.hours, {
+    message: 'Accrediting body and CPD hours must be set together',
+  })
+  .optional();
+
+// createEvent returns { error } on validation/DB failure, or redirects on
+// success (never returns). `eventId` is present only in the one partial-success
+// case: the event saved but its accreditation did not, so the caller can link
+// the user straight to the event instead of stranding them.
 export async function createEvent(input: {
   event: unknown;
   blocks: unknown;
   status?: unknown;
-}): Promise<{ error: string }> {
+  cpd?: unknown;
+}): Promise<{ error: string; eventId?: string }> {
   const staff = await requireStaff();
 
   const statusParse = statusSchema.safeParse(input.status);
@@ -90,11 +108,48 @@ export async function createEvent(input: {
   // treatment publishEvent gives the identical gate (edit/actions.ts).
   if (error) {
     if (statusParse.data === 'published' && error.code === '42501') {
-      return { error: 'Cannot publish: this account is not allowed to publish events. Nothing was saved — use "Save as draft".' };
+      return { error: 'Cannot publish: this account is not allowed to publish events. Nothing was saved — use "Save Draft".' };
     }
     return { error: error.message };
   }
   if (!data || typeof data !== 'string') return { error: 'no id returned' };
+
+  // CPD accreditation, if the organiser set it on the create form. Routed
+  // through set_event_cpd_config — the SAME audited definer the /edit and
+  // /details cards use — and deliberately NOT by widening
+  // create_event_with_blocks' column whitelist: accrediting_body_id and
+  // cpd_hours were revoked from every app role in July precisely so an
+  // organiser cannot write them directly, and INSERT was closed too in
+  // 20260802182411 after a review found a new event could be POSTed
+  // pre-accredited.
+  //
+  // Sequenced after the create rather than inside it: the definer needs the
+  // event to exist and to be owned by the caller. The event is therefore
+  // created even if accreditation is refused — which is the right failure
+  // shape (the organiser keeps their work) as long as we SAY SO rather than
+  // redirecting as though everything succeeded (rule 12).
+  const cpd = cpdSchema.safeParse(input.cpd);
+  if (cpd.success && cpd.data && cpd.data.bodyId) {
+    const { error: cpdErr } = await supabase.rpc('set_event_cpd_config', {
+      p_event_id: data,
+      p_body_id: cpd.data.bodyId,
+      p_cpd_hours: cpd.data.hours,
+    });
+    if (cpdErr) {
+      const reason =
+        cpdErr.code === '42501' && cpdErr.details === 'not_authorised_for_body'
+          ? 'your organisation isn’t authorised by that accrediting body'
+          : cpdErr.code === '42501'
+            ? 'this account can’t set accreditation'
+            : cpdErr.code === '23514'
+              ? 'CPD hours must be between 0 and 24'
+              : 'the accreditation could not be saved';
+      return {
+        error: `The event was saved, but ${reason}. Open it and set the accreditation there.`,
+        eventId: data,
+      };
+    }
+  }
 
   revalidatePath('/dashboard');
   redirect(`/events/${data}/edit`);

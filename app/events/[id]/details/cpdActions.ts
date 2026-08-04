@@ -89,7 +89,20 @@ export async function setEventCpdConfig(
     }
     if (error.code === '23514') return { error: 'CPD hours must be between 0 and 24.' };
     if (error.code === 'P0002') return { error: 'That accrediting body is not available.' };
-    if (error.code === '42501') return { error: 'Only the event owner can set its accreditation.' };
+    // Two causes raise 42501, and they need opposite remedies. Without the
+    // discriminator an organiser who IS the owner was told they weren't, and
+    // went looking for a colleague instead of for the accrediting body.
+    // `detail` is set by set_event_cpd_config (20260804040000) and surfaced by
+    // PostgREST as `details`.
+    if (error.code === '42501') {
+      if (error.details === 'not_authorised_for_body') {
+        return {
+          error:
+            'Your organisation isn’t authorised by that accrediting body, so its events can’t be marked as accredited by them. This is arranged with the body directly.',
+        };
+      }
+      return { error: 'Only the event owner can set its accreditation.' };
+    }
     return { error: 'Could not save the accreditation. Try again.' };
   }
 

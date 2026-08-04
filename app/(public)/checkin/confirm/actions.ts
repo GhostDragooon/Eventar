@@ -52,8 +52,13 @@ export async function selfCheckIn(
     // find a staff member, or stop trying. Collapsing them into the generic
     // default told an attendee their registration was invalid when it was
     // perfectly valid and merely early.
-    case 'not_open':
+    case 'not_open_yet':
       return { error: "Check-in isn't open yet. It opens an hour before the event starts." };
+    case 'closed':
+      // Distinct from not_open_yet on purpose: telling someone who arrived
+      // late to "wait" sends them to a moment that has already passed, and
+      // nothing would ever correct them.
+      return { error: 'Check-in for this event has closed. Please see a member of staff.' };
     case 'self_serve_off':
       return { error: "Self check-in isn't enabled for this event — please see reception." };
     case 'cancelled':

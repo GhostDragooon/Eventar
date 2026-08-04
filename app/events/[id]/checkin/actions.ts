@@ -83,6 +83,14 @@ export async function markAttended(
       return { error: 'Already attended.', alreadyAttendedAt: row.check_in_at ?? undefined };
     case 'rate_limited':
       return { error: 'Too many attempts. Please try again in a moment.' };
+    // Added with the staff door's lifecycle guards (20260804030000). Before
+    // those, a cancelled registration was checked in and earned a real CPD
+    // credit; now it is refused, and the operator needs to know WHY so they can
+    // act — "Code not recognised" would send them to re-scan a valid badge.
+    case 'cancelled':
+      return { error: 'This registration was cancelled — it can’t be checked in. Re-register the attendee first.' };
+    case 'unavailable':
+      return { error: 'This event isn’t accepting check-ins (it isn’t published, or it was deleted).' };
     default:
       return { error: 'Code not recognised.' };
   }

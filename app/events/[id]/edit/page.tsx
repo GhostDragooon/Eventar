@@ -10,6 +10,7 @@ import DownloadQrButton from '@/components/DownloadQrButton';
 import ExportRegistrantsButton from '@/components/ExportRegistrantsButton';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { CpdAccreditationSection } from '@/components/details/CpdAccreditationSection';
+import { listAuthorisedBodies } from '@/lib/cpd/authorisedBodies';
 import { StaffShell } from '@/components/shell/StaffShell';
 import NewEventForm, {
   type InitialEvent,
@@ -40,7 +41,7 @@ export default async function StaffEventEditPage({
   const supabase = await supabaseServer();
   const { data: event } = await supabase
     .from('events')
-    .select('id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, latitude, longitude, description, status, max_attendees, created_by, hosted_by, organized_by, hero_image_url, registration_open_at, registration_close_at, category, checkin_modes, accrediting_body_id, cpd_hours')
+    .select('id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, latitude, longitude, description, status, max_attendees, created_by, hosted_by, organized_by, hero_image_url, registration_open_at, registration_close_at, category, checkin_modes, accrediting_body_id, cpd_hours, organisation_id')
     .eq('id', id)
     .maybeSingle();
   if (!event) notFound();
@@ -86,23 +87,17 @@ export default async function StaffEventEditPage({
   // accreditation card on this page a brand-new event's CPD config would only
   // be reachable by knowing to navigate on to /details. Same audited write path
   // and same component as the details page — one mutation surface, two homes.
-  const [bodiesRes, creditsRes] = await Promise.all([
-    supabase
-      .from('accrediting_bodies')
-      .select('id, full_name, short_name')
-      .eq('status', 'active')
-      .order('short_name'),
+  // Only bodies this organisation may actually claim (DEFERRED 56). Offering
+  // every active body meant most choices failed at save, AFTER the organiser
+  // had picked one and typed the hours.
+  const [authorised, creditsRes] = await Promise.all([
+    listAuthorisedBodies(event.organisation_id as string),
     supabaseAdmin()
       .from('credit_ledger')
       .select('id', { count: 'exact', head: true })
       .eq('event_id', event.id)
       .eq('entry_type', 'credit_earned'),
   ]);
-  // Visible, not silent (rule 12) — a swallowed failure here previously
-  // rendered an empty picker that read as "no accrediting bodies exist".
-  if (bodiesRes.error) {
-    console.error('[edit] accrediting_bodies read failed', { code: bodiesRes.error.code });
-  }
   if (creditsRes.error) {
     console.error('[edit] credit_ledger count failed', { code: creditsRes.error.code });
   }
@@ -135,11 +130,12 @@ export default async function StaffEventEditPage({
       <div className="mb-lg">
         <CpdAccreditationSection
           eventId={event.id}
-          bodies={bodiesRes.data ?? []}
+          bodies={authorised.bodies}
           currentBodyId={event.accrediting_body_id}
           currentHours={event.cpd_hours}
           creditsIssued={creditsRes.count ?? 0}
-          bodiesUnavailable={Boolean(bodiesRes.error)}
+          bodiesUnavailable={authorised.unavailable}
+          noAuthorisedBodies={!authorised.unavailable && authorised.bodies.length === 0}
         />
       </div>
 

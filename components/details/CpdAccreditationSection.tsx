@@ -14,6 +14,13 @@ export type CpdAccreditationSectionProps = {
   creditsIssued: number;
   /** The bodies lookup failed. Distinct from "there are none" — see below. */
   bodiesUnavailable?: boolean;
+  /**
+   * The lookup succeeded and this organisation is authorised by no body yet.
+   * A third state, deliberately not folded into `bodiesUnavailable`: that one
+   * means "try again", this one means "there is nothing to try" and the remedy
+   * is out-of-band (DEFERRED 56).
+   */
+  noAuthorisedBodies?: boolean;
 };
 
 export function CpdAccreditationSection({
@@ -23,6 +30,7 @@ export function CpdAccreditationSection({
   currentHours,
   creditsIssued,
   bodiesUnavailable = false,
+  noAuthorisedBodies = false,
 }: CpdAccreditationSectionProps) {
   const [bodyId, setBodyId] = useState(currentBodyId ?? '');
   const [hours, setHours] = useState(currentHours != null ? String(currentHours) : '');
@@ -68,6 +76,14 @@ export function CpdAccreditationSection({
         <p className="mt-md rounded-lg bg-error-container px-md py-sm text-body-md text-on-error-container">
           The list of accrediting bodies could not be loaded, so accreditation can&rsquo;t be changed right now. Existing
           accreditation is unaffected. Reload to try again.
+        </p>
+      )}
+
+      {noAuthorisedBodies && !bodiesUnavailable && (
+        <p className="mt-md rounded-lg bg-warning-container px-md py-sm text-body-md text-on-warning-container">
+          Your organisation isn&rsquo;t yet authorised by any accrediting body, so events can&rsquo;t be marked as
+          CPD-accredited. This is arranged with the body directly &mdash; reloading won&rsquo;t change it. Existing
+          accreditation is unaffected.
         </p>
       )}
 

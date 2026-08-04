@@ -64,6 +64,21 @@ export default async function StaffCheckinPage({
       .eq('event_id', id),
   ]);
 
+  // Read-time CPD eligibility (Stage 7). Definer RPC: every hop of the identity
+  // chain (registration email → auth.users → verified licence) is invisible to
+  // an organiser's session, so this cannot be a join above. Returns
+  // registration_id + enum only — no PII.
+  // Non-fatal: the roster is the operating surface at a live door and must
+  // render even if this read fails. Visible, not silent (rule 12).
+  const eligRes = await supabase.rpc('event_registration_eligibility', { p_event_id: id });
+  if (eligRes.error) {
+    console.error('[checkin] eligibility read failed', { code: eligRes.error.code });
+  }
+  const eligibility: Record<string, string> = Object.fromEntries(
+    ((eligRes.data ?? []) as { registration_id: string; eligibility: string }[])
+      .map((e) => [e.registration_id, e.eligibility]),
+  );
+
   if (rosterRes.error) throw rosterRes.error;
   if (blocksRes.error) throw blocksRes.error;
   if (checkinsRes.error) throw checkinsRes.error;
@@ -108,6 +123,8 @@ export default async function StaffCheckinPage({
         eventStartTime={event.start_time}
         lifecycle={lifecycle}
         initialRoster={rosterRes.data ?? []}
+        eligibility={eligibility}
+        eligibilityUnavailable={Boolean(eligRes.error)}
         maxAttendees={event.max_attendees}
         speakerNames={speakerNames}
         initialSpeakerCheckins={initialSpeakerCheckins}

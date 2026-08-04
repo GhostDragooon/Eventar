@@ -326,6 +326,8 @@ describe('NewEventForm — create mode (regression: existing behavior preserved)
       <NewEventForm
         mode="create"
         submit={vi.fn(async () => ({ ok: true as const }))}
+        cpdBodies={[]}
+        cpdBodiesUnavailable={false}
       />,
     );
     // The breadcrumb + page H1 ("New event"/"Create event") moved up to the
@@ -431,6 +433,8 @@ describe('NewEventForm — D.3b linear layout', () => {
       <NewEventForm
         mode="create"
         submit={vi.fn(async () => ({ ok: true as const }))}
+        cpdBodies={[]}
+        cpdBodiesUnavailable={false}
       />,
     );
     expect(screen.queryByTestId('venue-tz-hint')).toBeNull();
@@ -473,6 +477,8 @@ describe('NewEventForm — D.3b action row (Cancel · Save & Preview · Save)', 
       <NewEventForm
         mode="create"
         submit={vi.fn(async () => ({ ok: true as const }))}
+        cpdBodies={[]}
+        cpdBodiesUnavailable={false}
       />,
     );
     fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
@@ -497,6 +503,8 @@ describe('NewEventForm — D.3b action row (Cancel · Save & Preview · Save)', 
       <NewEventForm
         mode="create"
         submit={vi.fn(async () => ({ ok: true as const }))}
+        cpdBodies={[]}
+        cpdBodiesUnavailable={false}
       />,
     );
     expect(screen.queryByRole('button', { name: /save & preview/i })).toBeNull();
@@ -556,7 +564,7 @@ describe('NewEventForm — check-in mode (self-serve)', () => {
 
   it('defaults a new event to staff-only check-in', async () => {
     const submit = vi.fn<(p: SubmitPayload) => Promise<{ ok: true }>>(async () => ({ ok: true }));
-    render(<NewEventForm mode="create" submit={submit} />);
+    render(<NewEventForm mode="create" submit={submit} cpdBodies={[]} cpdBodiesUnavailable={false} />);
 
     const toggle = screen.getByRole('checkbox', { name: /check themselves in/i });
     expect(toggle).not.toBeChecked();
@@ -608,10 +616,15 @@ describe('NewEventForm — check-in mode (self-serve)', () => {
   });
 
   it('tells the organiser what self-serve actually does, not just that it is on', () => {
-    render(<NewEventForm mode="create" submit={vi.fn(async () => ({ ok: true as const }))} />);
+    render(<NewEventForm mode="create" submit={vi.fn(async () => ({ ok: true as const }))} cpdBodies={[]} cpdBodiesUnavailable={false} />);
     // Consequence-bearing copy: the pass page gains a button, staff scanning
     // is unaffected, and on an accredited event this posts credit unattended.
+    // Matched on the full sentence, not a bare /credit/i — the CPD
+    // accreditation section added below also contains "accredited", and a
+    // loose matcher would pass on the wrong element.
     expect(screen.getByText(/reception/i)).toBeInTheDocument();
-    expect(screen.getByText(/credit/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/posts attendance credit with no staff member present/i),
+    ).toBeInTheDocument();
   });
 });

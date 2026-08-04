@@ -3,6 +3,8 @@ import { requireStaff, NotAuthorizedError } from '@/lib/auth';
 import { StaffShell } from '@/components/shell/StaffShell';
 import NewEventForm, { type SubmitPayload } from './NewEventForm';
 import { createEvent } from './actions';
+import { supabaseAdmin } from '@/lib/supabase/admin';
+import { listAuthorisedBodies } from '@/lib/cpd/authorisedBodies';
 
 export const metadata = {
   title: 'New event',
@@ -17,6 +19,19 @@ export default async function NewEventPage() {
     if (e instanceof NotAuthorizedError) redirect('/login');
     throw e;
   }
+  // The event does not exist yet, so the allow-list is scoped to the CREATING
+  // staff member's organisation — which is exactly the organisation the
+  // set_event_organisation trigger will stamp on the new event, so the picker
+  // and the server agree by construction.
+  const { data: staffRow } = await supabaseAdmin()
+    .from('staff')
+    .select('organisation_id')
+    .eq('id', staff.id)
+    .maybeSingle();
+  const authorised = staffRow?.organisation_id
+    ? await listAuthorisedBodies(staffRow.organisation_id as string)
+    : { bodies: [], unavailable: true };
+
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role }} backHref="/dashboard" backLabel="Dashboard">
       {/* Page header. Per patterns §8 the StaffShell's NAV owns all back-
@@ -31,6 +46,8 @@ export default async function NewEventPage() {
 
       <NewEventForm
         mode="create"
+        cpdBodies={authorised.bodies}
+        cpdBodiesUnavailable={authorised.unavailable}
         submit={async (payload: SubmitPayload) => {
           'use server';
           // createEvent throws a Next-internal redirect on success (never

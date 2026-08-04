@@ -11,6 +11,13 @@
       "input_tokens": 158665,
       "output_tokens": 0,
       "files": 41
+    },
+    {
+      "date": "2026-07-23T00:00:30.495515+00:00",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "files": 96,
+      "note": "2 files (handoff_17072026.md, handoff_22072026.md) excluded from manifest - extraction incomplete, pending next update"
     }
   ],
   "total_input_tokens": 1039607,

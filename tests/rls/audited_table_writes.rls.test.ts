@@ -8,6 +8,14 @@
 //                                    to all roles incl service_role), but
 //                                    service_role DELETE is deliberately RETAINED
 //                                    for cleanup/erasure (see 20260709320000).
+//   organisation_body_authorisations — REGISTRY: no app role may write at all;
+//                                    service_role RETAINS full DML as the
+//                                    seeding path until the Stage 10 approval
+//                                    workflow. If `authenticated` could write
+//                                    this table, an organiser would grant their
+//                                    own organisation the right to claim any
+//                                    accrediting body and the DEFERRED-56 gate
+//                                    would be decorative (see 20260804000000).
 //
 // The service_role assertions are the load-bearing ones: service_role has
 // BYPASSRLS, so RLS provides zero protection for that credential — only the
@@ -163,6 +171,74 @@ describe.skipIf(!process.env.RLS_TESTS)('audited-table write guard (service_role
         expect(after, 'licence must be gone after service_role DELETE').toHaveLength(0);
       } finally {
         await deleteTestUser(user);
+        await mustDelete(admin.from('accrediting_bodies').delete().eq('id', body.id), 'accrediting_bodies fixture');
+      }
+    }, 60_000);
+  });
+  // ---- REGISTRY: organisation_body_authorisations ----
+  describe('organisation_body_authorisations — registry (no app-role writes, service_role retained)', () => {
+    it('anon and authenticated are denied INSERT/UPDATE/DELETE with 42501', async () => {
+      const anon = createAnonClient();
+      const user = await createTestUser(`obaguard-${Date.now()}`);
+      try {
+        for (const [label, client] of [
+          ['anon', anon],
+          ['authenticated', user.client],
+        ] as const) {
+          const ins = await client
+            .from('organisation_body_authorisations')
+            .insert({ id: BOGUS, organisation_id: DEFAULT_ORG, body_id: BOGUS });
+          expect(ins.error?.code, `${label} INSERT must be 42501`).toBe(PERMISSION_DENIED);
+
+          const upd = await client
+            .from('organisation_body_authorisations')
+            .update({ status: 'active' })
+            .eq('organisation_id', DEFAULT_ORG);
+          expect(upd.error?.code, `${label} UPDATE must be 42501`).toBe(PERMISSION_DENIED);
+
+          const del = await client
+            .from('organisation_body_authorisations')
+            .delete()
+            .eq('organisation_id', DEFAULT_ORG);
+          expect(del.error?.code, `${label} DELETE must be 42501`).toBe(PERMISSION_DENIED);
+        }
+
+        // anon must not even READ it: the allow-list names which organisations
+        // hold relationships with which bodies, which is not public.
+        const sel = await anon.from('organisation_body_authorisations').select('id').limit(1);
+        expect(sel.error?.code, 'anon SELECT must be 42501').toBe(PERMISSION_DENIED);
+      } finally {
+        await deleteTestUser(user);
+      }
+    }, 60_000);
+
+    it('service_role retains the seeding path (positive round-trip)', async () => {
+      const { data: body, error: bodyErr } = await admin
+        .from('accrediting_bodies')
+        .insert({
+          organisation_id: DEFAULT_ORG,
+          short_name: `OBA-GUARD-${Date.now()}`,
+          full_name: 'RLS Test Body (allow-list guard fixture)',
+          cycle_config: {},
+          category_taxonomy: {},
+        })
+        .select('id')
+        .single();
+      if (bodyErr || !body) throw new Error(`body fixture: ${bodyErr?.message}`);
+      try {
+        const ins = await admin
+          .from('organisation_body_authorisations')
+          .insert({ organisation_id: DEFAULT_ORG, body_id: body.id, status: 'active' });
+        expect(ins.error, 'service_role INSERT must succeed').toBeNull();
+
+        const upd = await admin
+          .from('organisation_body_authorisations')
+          .update({ status: 'suspended' })
+          .eq('organisation_id', DEFAULT_ORG)
+          .eq('body_id', body.id);
+        expect(upd.error, 'service_role UPDATE must succeed').toBeNull();
+      } finally {
+        await admin.from('organisation_body_authorisations').delete().eq('body_id', body.id);
         await mustDelete(admin.from('accrediting_bodies').delete().eq('id', body.id), 'accrediting_bodies fixture');
       }
     }, 60_000);

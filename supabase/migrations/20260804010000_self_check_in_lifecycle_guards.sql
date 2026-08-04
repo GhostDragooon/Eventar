@@ -108,9 +108,12 @@ begin
   end if;
 
   -- `is not true` rather than `= false`: a malformed or absent key yields SQL
-  -- NULL, which must read as OFF. events_checkin_modes_shape (20260803023000)
-  -- constrains the shape going forward, but rows predating it are not
-  -- retro-validated by a CHECK.
+  -- NULL, which must read as OFF.
+  -- CORRECTION (2026-08-04 review): an earlier version of this comment claimed
+  -- rows predating events_checkin_modes_shape (20260803023000) are not
+  -- retro-validated. That is wrong — the constraint is convalidated = t and no
+  -- row violates it. The null-safe read is still correct defensive style, but
+  -- it is not load-bearing for legacy rows, because there are none.
   if (v_ev.checkin_modes->>'self_serve')::boolean is not true then
     result := 'self_serve_off'; event_id := v_event_id; return next; return;
   end if;

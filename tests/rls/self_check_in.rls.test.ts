@@ -337,7 +337,7 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
   // Each test asserts a SPECIFIC result code, not merely "not ok": the whole
   // point is that the attendee at the door is told the real reason.
   describe('lifecycle guards', () => {
-    it('refuses before the check-in window opens', async () => {
+    it('refuses before the check-in window opens (not_open_yet)', async () => {
       // Starts in 3h; the window opens at start − 60 min, so now is outside it.
       const eventId = await makeEventFixture({
         startOffsetMs: 3 * 3_600_000,
@@ -349,7 +349,7 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
       const { data, error } = await admin.rpc('self_check_in', { p_code: regCode, p_ip: FAKE_IP });
       expect(error).toBeNull();
       const row = Array.isArray(data) ? data[0] : data;
-      expect(row.result).toBe('not_open');
+      expect(row.result).toBe('not_open_yet');
 
       const { data: reg } = await admin
         .from('registrations')
@@ -376,7 +376,10 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
       expect(row.result).toBe('ok');
     });
 
-    it('refuses after the event has ended', async () => {
+    // Split from not_open_yet deliberately: "wait, it opens in an hour" is a
+    // FALSE instruction for someone who arrived after the event ended, and
+    // nothing would ever correct them.
+    it('refuses after the event has ended (closed, not not_open_yet)', async () => {
       const eventId = await makeEventFixture({
         startOffsetMs: -3 * 3_600_000,
         endOffsetMs: -2 * 3_600_000,
@@ -387,7 +390,7 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
       const { data, error } = await admin.rpc('self_check_in', { p_code: regCode, p_ip: FAKE_IP });
       expect(error).toBeNull();
       const row = Array.isArray(data) ? data[0] : data;
-      expect(row.result).toBe('not_open');
+      expect(row.result).toBe('closed');
     });
 
     it('refuses when the event is not published', async () => {

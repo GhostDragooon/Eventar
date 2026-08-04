@@ -6,6 +6,7 @@ import { getRequestOrigin } from '@/lib/origin';
 import { buildCheckinQrPng } from '@/lib/checkinQr';
 import { PublicShell } from '@/components/shell/PublicShell';
 import ConfirmButton from './ConfirmButton';
+import { CHECKIN_OPEN_MINUTES } from '@/lib/lifecycle/eventLifecycle';
 
 export const metadata = {
   title: 'Your check-in pass',
@@ -87,22 +88,60 @@ export default async function SelfCheckinPage({
     check_in_method: string | null;
     events: EventRow | EventRow[] | null;
   };
-  const { data: reg } = (await admin
+  const { data: reg, error: regErr } = (await admin
     .from('registrations')
     .select(
       'id, full_name, status, check_in_at, check_in_method, ' +
         'events!inner(id, title, start_time, end_time, timezone, venue_name, status, checkin_modes)',
     )
     .eq('registration_code', code)
-    .maybeSingle()) as { data: RegRow | null };
+    .maybeSingle()) as { data: RegRow | null; error: { code?: string } | null };
+
+  // A lookup FAILURE is not an unrecognised code (rule 12). Collapsing the two
+  // told an attendee their code was wrong when the platform was at fault, and
+  // then routed them to a manual check-in that would fail identically. Log the
+  // code only — no PII, no row data.
+  if (regErr) {
+    console.error('[checkin] registration lookup failed', { code: regErr.code });
+    return (
+      <Empty
+        title="Something went wrong"
+        body="We couldn't look up your pass just now. Your registration is unaffected — please try again in a moment, or show this page to a member of staff."
+      />
+    );
+  }
 
   if (!reg || !reg.events) {
     return <Empty title="Code not recognised" body="Please show this code (or your QR) to the event organiser. They can check you in manually." />;
   }
 
   const event = Array.isArray(reg.events) ? reg.events[0] : reg.events;
-  if (!event || event.status !== 'published') {
+  // An unpublished event is a real state, not an unrecognised code — the demo
+  // run sheet pre-opens this page before the publish beat and it read as a
+  // broken seed.
+  if (!event) {
     return <Empty title="Code not recognised" body="Please show this code (or your QR) to the event organiser. They can check you in manually." />;
+  }
+  if (event.status !== 'published') {
+    return (
+      <Empty
+        title="This event isn't open yet"
+        body="Your registration is valid — the organiser hasn't published this event yet. Your pass will appear here once they do."
+      />
+    );
+  }
+
+  // A cancelled registration must not render a green "Pass ready" pill, a QR
+  // and a tappable button. self_check_in refuses it, so the old page showed a
+  // valid-looking pass right up until the tap failed — at a door, at the least
+  // recoverable moment.
+  if (reg.status === 'cancelled') {
+    return (
+      <Empty
+        title="This registration was cancelled"
+        body="If you think that's wrong, please speak to the event organiser — they can re-register you."
+      />
+    );
   }
 
   // Checked-in success state (final v2) — server-rendered when reception (or
@@ -122,11 +161,19 @@ export default async function SelfCheckinPage({
   const origin = await getRequestOrigin();
   const qr = await buildCheckinQrPng(code, origin);
   const selfServe = event.checkin_modes?.self_serve === true;
+  // The same window self_check_in enforces (20260804010000 / 20260804040000):
+  // [start - CHECKIN_OPEN_MINUTES, end]. Computed here so the pass tells the
+  // attendee where they stand instead of making them tap to find out.
+  const opensAtMs = new Date(event.start_time).getTime() - CHECKIN_OPEN_MINUTES * 60_000;
+  // eslint-disable-next-line react-hooks/purity
+  const nowMs = Date.now();
+  const checkinState: 'early' | 'open' | 'closed' =
+    nowMs < opensAtMs ? 'early' : nowMs > new Date(event.end_time).getTime() ? 'closed' : 'open';
 
   return (
     <PublicShell pill={{ label: 'Pass ready', tone: 'success' }}>
       <PageWrap>
-        <PassView event={event} code={code} name={reg.full_name} qrDataUri={`data:image/png;base64,${qr.pngBase64}`} selfServe={selfServe} />
+        <PassView event={event} code={code} name={reg.full_name} qrDataUri={`data:image/png;base64,${qr.pngBase64}`} selfServe={selfServe} checkinState={checkinState} opensAtIso={new Date(opensAtMs).toISOString()} />
       </PageWrap>
     </PublicShell>
   );
@@ -179,12 +226,17 @@ function PassView({
   name,
   qrDataUri,
   selfServe,
+  checkinState,
+  opensAtIso,
 }: {
   event: EventRow;
   code: string;
   name: string;
   qrDataUri: string;
   selfServe: boolean;
+  /** Where `now` sits relative to this event's own check-in window. */
+  checkinState: 'early' | 'open' | 'closed';
+  opensAtIso: string;
 }) {
   return (
     <>
@@ -240,16 +292,28 @@ function PassView({
         </div>
       </div>
 
-      {selfServe ? (
+      {!selfServe ? (
+        <p className="font-body-md text-body-md text-on-surface-variant text-center m-0">
+          Self check-in isn&apos;t enabled for this event — please see reception.
+        </p>
+      ) : checkinState === 'open' ? (
         <>
           <ConfirmButton code={code} />
           <p className="font-body-md text-body-md text-on-surface-variant text-center m-0">
             Tap when you arrive · staff will see you in the roster instantly.
           </p>
         </>
+      ) : checkinState === 'early' ? (
+        // The button used to render regardless of the clock, so tapping it was
+        // the only way to discover check-in hadn't opened. The window is known
+        // here — say so instead of letting the server refuse.
+        <p className="font-body-md text-body-md text-on-surface-variant text-center m-0">
+          Check-in opens at {formatClock(opensAtIso, event.timezone)} on{' '}
+          {formatDate(event.start_time, event.timezone)} — an hour before the event starts. Keep this pass handy.
+        </p>
       ) : (
         <p className="font-body-md text-body-md text-on-surface-variant text-center m-0">
-          Self check-in isn&apos;t enabled for this event — please see reception.
+          Check-in for this event has closed. Please see a member of staff.
         </p>
       )}
     </>

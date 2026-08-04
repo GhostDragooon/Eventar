@@ -11,6 +11,7 @@ import { deriveLeadingSession } from '@/lib/details/leadingSession';
 import { RegistrationSection } from '@/components/details/RegistrationSection';
 import { AttendanceSection } from '@/components/details/AttendanceSection';
 import { FeedbackSection } from '@/components/details/FeedbackSection';
+import { listAuthorisedBodies } from '@/lib/cpd/authorisedBodies';
 import { CpdAccreditationSection } from '@/components/details/CpdAccreditationSection';
 import { EmailSendControls } from './EmailSendControls';
 import { LiveScoreboard } from '@/components/details/LiveScoreboard';
@@ -36,10 +37,13 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
   // for the G6 "sent" count must go through supabaseAdmin().
   const admin = supabaseAdmin();
 
-  const [eventRes, regsRes, surveysRes, blocksRes, confirmationsRes, bodiesRes, creditsRes] = await Promise.all([
+  // The accrediting-body list is NOT in this batch: which bodies are offerable
+  // depends on the event's organisation (DEFERRED 56), so it cannot be fetched
+  // until the event row has resolved.
+  const [eventRes, regsRes, surveysRes, blocksRes, confirmationsRes, creditsRes] = await Promise.all([
     supabase
       .from('events')
-      .select('id, title, start_time, end_time, timezone, venue_name, max_attendees, status, registration_close_at, registration_open_at, created_by, accrediting_body_id, cpd_hours')
+      .select('id, title, start_time, end_time, timezone, venue_name, max_attendees, status, registration_close_at, registration_open_at, created_by, accrediting_body_id, cpd_hours, organisation_id')
       .eq('id', id)
       .maybeSingle(),
     supabase
@@ -68,14 +72,6 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
       .eq('event_id', id)
       .eq('purpose', 'confirmation')
       .eq('status', 'sent'),
-    // CPD accreditation options. Only ACTIVE bodies — binding an event to an
-    // onboarding or retired body would mint credits it cannot honour, which is
-    // exactly what set_event_cpd_config() refuses server-side.
-    supabase
-      .from('accrediting_bodies')
-      .select('id, full_name, short_name')
-      .eq('status', 'active')
-      .order('short_name'),
     // Credits already on the ledger for this event. Non-zero means the DB
     // freeze trigger will refuse any config change, so the form is disabled.
     // credit_ledger reads need the admin client: it is deliberately not
@@ -99,17 +95,17 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
   // bodies select then rendered an empty dropdown that looked exactly like
   // "this deployment has no accrediting bodies". Log the code (no PII, no row
   // data) and pass an explicit failure flag so the section can say so.
-  if (bodiesRes.error) {
-    console.error('[details] accrediting_bodies read failed', { code: bodiesRes.error.code });
-  }
   if (creditsRes.error) {
     console.error('[details] credit_ledger count failed', { code: creditsRes.error.code });
   }
-  const accreditingBodies = bodiesRes.data ?? [];
-  const bodiesUnavailable = Boolean(bodiesRes.error);
   const creditsIssued = creditsRes.count ?? 0;
 
   const event = eventRes.data;
+  // Deferred until now: offerable bodies depend on the event's organisation.
+  const authorised = await listAuthorisedBodies(event.organisation_id as string);
+  const accreditingBodies = authorised.bodies;
+  const bodiesUnavailable = authorised.unavailable;
+  const noAuthorisedBodies = !authorised.unavailable && authorised.bodies.length === 0;
   const regs = regsRes.data ?? [];
   const surveys = surveysRes.data ?? [];
   const blocks = blocksRes.data ?? [];
@@ -187,6 +183,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
         currentHours={event.cpd_hours}
         creditsIssued={creditsIssued}
         bodiesUnavailable={bodiesUnavailable}
+        noAuthorisedBodies={noAuthorisedBodies}
       />
 
       <RegistrationSection

@@ -44,7 +44,11 @@ export type SubmitPayload = {
   event: Record<string, unknown>;
   blocks: Array<Record<string, unknown>>;
   status?: 'draft' | 'published';
+  /** Create-mode only. Written by set_event_cpd_config AFTER the event exists. */
+  cpd?: { bodyId: string | null; hours: number | null };
 };
+
+export type CpdBodyOption = { id: string; full_name: string; short_name: string | null };
 
 type SubmitResult = { ok: true } | { error: string };
 
@@ -104,6 +108,13 @@ type Props =
   | {
       mode: 'create';
       submit: (payload: SubmitPayload) => Promise<SubmitResult>;
+      /**
+       * Bodies this organisation may actually claim. Empty is a legitimate
+       * state (authorised by nobody yet), and is NOT the same as a failed
+       * lookup — the section says which.
+       */
+      cpdBodies: CpdBodyOption[];
+      cpdBodiesUnavailable: boolean;
     }
   | {
       mode: 'edit';
@@ -228,6 +239,8 @@ export default function NewEventForm(props: Props) {
   // app/(public)/checkin/confirm/page.tsx — anything else is OFF, so a
   // malformed row can never render as enabled on one side and disabled on the
   // other.
+  const [cpdBodyId, setCpdBodyId] = useState<string>('');
+  const [cpdHours, setCpdHours] = useState<string>('');
   const [selfServe, setSelfServe] = useState<boolean>(
     initialEvent?.checkin_modes?.self_serve === true,
   );
@@ -357,7 +370,17 @@ export default function NewEventForm(props: Props) {
     // page-level Publish action, not in the form.
     const payload: SubmitPayload = props.mode === 'edit'
       ? { event, blocks: blocksPayload }
-      : { event, blocks: blocksPayload, status: nextIntent === 'publish' ? 'published' : 'draft' };
+      : {
+          event,
+          blocks: blocksPayload,
+          status: nextIntent === 'publish' ? 'published' : 'draft',
+          // Both-or-neither, matching set_event_cpd_config's own rule. Sending
+          // one without the other would half-configure the event, which
+          // award_attendance_credit silently skips.
+          cpd: cpdBodyId && cpdHours
+            ? { bodyId: cpdBodyId, hours: Number(cpdHours) }
+            : { bodyId: null, hours: null },
+        };
 
     // Capture the edit-mode preview target BEFORE awaiting submit — props is
     // narrowed inside this closure, so we don't re-narrow after the await.
@@ -602,6 +625,67 @@ export default function NewEventForm(props: Props) {
           </span>
         </label>
       </FormSection>
+
+      {/* 7 · CPD accreditation — create-mode only. The /edit and /details cards
+          own this after creation; offering it here saves the organiser a second
+          trip for the common case of an event that is accredited from the
+          start. Same audited definer either way (set_event_cpd_config): the
+          columns are revoked from every app role, so there is no direct-write
+          shortcut to take. */}
+      {props.mode === 'create' && (
+        <FormSection number="7" title="CPD accreditation" optional>
+          {props.cpdBodiesUnavailable ? (
+            <p className="rounded-lg bg-error-container px-md py-sm font-body-md text-body-md text-on-error-container max-w-prose">
+              The list of accrediting bodies couldn&rsquo;t be loaded. Save the event and set its accreditation from
+              the event page.
+            </p>
+          ) : props.cpdBodies.length === 0 ? (
+            <p className="rounded-lg bg-warning-container px-md py-sm font-body-md text-body-md text-on-warning-container max-w-prose">
+              Your organisation isn&rsquo;t authorised by any accrediting body yet, so events can&rsquo;t be marked
+              CPD-accredited. This is arranged with the body directly.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-md max-w-prose">
+              <label className="block">
+                <span className="block font-body-lg text-body-lg text-on-surface">Accrediting body</span>
+                <span className="block font-body-md text-body-md text-on-surface-variant mt-xs">
+                  Attendees with a verified licence from this body earn credit automatically when they check in.
+                </span>
+                <select
+                  name="cpdBodyId"
+                  value={cpdBodyId}
+                  onChange={(e) => setCpdBodyId(e.target.value)}
+                  className="mt-xs w-full rounded-lg border border-outline-variant bg-surface px-md py-sm text-body-md text-on-surface"
+                >
+                  <option value="">Not accredited</option>
+                  {props.cpdBodies.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.short_name ? `${b.short_name} — ${b.full_name}` : b.full_name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="block font-body-lg text-body-lg text-on-surface">CPD hours</span>
+                <input
+                  type="number"
+                  name="cpdHours"
+                  min="0.5"
+                  max="24"
+                  step="0.5"
+                  value={cpdHours}
+                  onChange={(e) => setCpdHours(e.target.value)}
+                  disabled={!cpdBodyId}
+                  className="mt-xs w-full rounded-lg border border-outline-variant bg-surface px-md py-sm text-body-md text-on-surface disabled:opacity-60"
+                />
+                <span className="block font-body-md text-body-md text-on-surface-variant mt-xs">
+                  Required once a body is chosen. Can be changed later, until the first credit is issued.
+                </span>
+              </label>
+            </div>
+          )}
+        </FormSection>
+      )}
 
       {/* Bottom action row — Cancel · Save & Preview (edit-only) · Save.
           Save is the primary on the right. Mobile: stacks vertically. The
