@@ -2,18 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "eventar-dev",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev"],
-      "port": 3000,
-      "autoPort": false
-    },
-    {
-      "name": "demo-local",
+      "name": "beta-local",
       "runtimeExecutable": "bash",
       "runtimeArgs": ["/Users/ivan/Eventar-demo/scripts/demo/dev-local.sh"],
-      "port": 3100,
-      "autoPort": false
+      "port": 3100
     }
   ]
 }

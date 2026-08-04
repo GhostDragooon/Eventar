@@ -176,6 +176,12 @@ type EventFixture = { id: string; start_time: string; end_time: string };
  * event too (not just at creation) — cheap, and means a pre-Stage-4 fixture
  * left over from an earlier seed run still ends up CPD-configured on the next
  * plain re-run, no reset required. */
+// Minutes from now to the event's start. Registration is open while
+// now < start - CHECKIN_OPEN_MINUTES; check-in is open from that moment until
+// end_time. The two never overlap (G11), so a full walkthrough re-runs this
+// script with a second offset rather than trying to satisfy both at once.
+const START_OFFSET_MIN = Number(process.env.DEMO_START_OFFSET_MIN ?? 180);
+
 async function findOrCreateEvent(
   client: AdminClient,
   operatorStaffId: string,
@@ -206,7 +212,28 @@ async function findOrCreateEvent(
       );
     }
     if (cpdErr) throw cpdErr;
-    return existing;
+
+    // Move the window to the requested offset. WITHOUT this a re-seed reused
+    // whatever times the row was first created with, so the fixture silently
+    // rotted: on 2026-08-05 a plain re-seed returned an event that had ended
+    // ten days earlier, with registration closed and check-in closed — the
+    // whole loop unwalkable and nothing saying why.
+    //
+    // It is also the clock knob. Registration and check-in windows are
+    // DISJOINT by design (see below), so one event cannot have both open at
+    // once. Re-run with a different offset to move between them:
+    //   DEMO_START_OFFSET_MIN=180  -> registration open  (walk register)
+    //   DEMO_START_OFFSET_MIN=-10  -> check-in open      (walk check-in)
+    // Times are not frozen by the CPD freeze trigger — only body/hours are —
+    // so this stays legal after a credit has been issued.
+    const reStart = new Date(Date.now() + START_OFFSET_MIN * 60_000);
+    const reEnd = new Date(reStart.getTime() + 4 * 60 * 60_000);
+    const { error: timeErr } = await client
+      .from('events')
+      .update({ start_time: reStart.toISOString(), end_time: reEnd.toISOString() })
+      .eq('id', existing.id);
+    if (timeErr) throw timeErr;
+    return { ...existing, start_time: reStart.toISOString(), end_time: reEnd.toISOString() };
   }
 
   // 180 min. Registration closes UNCONDITIONALLY once the check-in window
@@ -238,7 +265,7 @@ async function findOrCreateEvent(
   // physically-present actor), and Beat 4.6's credit, which fires off that
   // staff scan. ONLY the self-serve tap is affected. Awaiting Ivan's call —
   // see docs/plans/demo-run-sheet.md Beat 4.
-  const startTime = new Date(Date.now() + 180 * 60_000);
+  const startTime = new Date(Date.now() + START_OFFSET_MIN * 60_000);
   const endTime = new Date(startTime.getTime() + 4 * 60 * 60_000);
   const keynoteEnd = new Date(startTime.getTime() + 60 * 60_000);
   const panelEnd = new Date(keynoteEnd.getTime() + 75 * 60_000);
@@ -449,6 +476,23 @@ async function main() {
   const regCloseMs = new Date(event.start_time).getTime() - CHECKIN_OPEN_MINUTES * 60_000;
   const regCloseMinsFromNow = Math.round((regCloseMs - Date.now()) / 60_000);
 
+  // Say plainly which half of the loop is walkable right now. The two windows
+  // are disjoint, so exactly one of these is open at any moment, and a tester
+  // who does not know that reads the closed one as a broken build.
+  const nowMs = Date.now();
+  const endMs = new Date(event.end_time).getTime();
+  const registrationOpen = nowMs < regCloseMs;
+  const inCheckinWindow = nowMs >= regCloseMs && nowMs <= endMs;
+  // Publication is a separate gate from the clock, and forgetting it is how
+  // this banner first lied: the fixture is created as a DRAFT on purpose (so
+  // the organiser walkthrough includes the publish step), and every attendee
+  // surface correctly refuses a draft. A window that is open on the clock is
+  // still shut if nobody published.
+  const { data: statusRow } = await client
+    .from('events').select('status').eq('id', event.id).maybeSingle();
+  const published = statusRow?.status === 'published';
+  const checkinOpen = inCheckinWindow && published;
+
   console.log('');
   console.log('=== Demo fixture ready ===');
   console.log(`Event:        ${EVENT_TITLE} (draft)`);
@@ -479,6 +523,32 @@ async function main() {
   console.log('');
   console.log(`DEMO PASS CODE: ${demoReg.reg.registration_code}`);
   console.log(`  (${demoReg.attendee.full_name}, ${demoReg.attendee.email})`);
+  console.log('');
+  const site = process.env.DEMO_SITE_URL ?? 'http://localhost:3100';
+  console.log('=== What you can walk RIGHT NOW ===');
+  if (!published) {
+    console.log(`  ⚠️  The event is a DRAFT. Publish it first (attendee pages refuse a draft):`);
+    console.log(`       ${site}/events/${event.id}/edit  →  Publish`);
+    console.log('');
+  }
+  if (registrationOpen) {
+    console.log(`  ✅ REGISTER — ${site}/events/${event.id}`);
+    console.log(`     Registration closes in ${regCloseMinsFromNow} min, when check-in opens.`);
+    console.log('  ⛔ CHECK-IN — not open yet (opens 60 min before start).');
+    console.log('     To walk the check-in half, re-run with the clock moved:');
+    console.log('       DEMO_START_OFFSET_MIN=-10 pnpm exec tsx scripts/demo/seed-demo.ts');
+  } else if (inCheckinWindow) {
+    console.log(`  ✅ CHECK IN — ${site}/checkin/confirm?code=${demoReg.reg.registration_code}`);
+    console.log('     Self-serve is on, so the pass shows a "Confirm I\'m here" button.');
+    console.log(`     That check-in posts a real CPD credit (${CPD_HOURS} hrs @ ${CPD_BODY_SHORT_NAME}).`);
+    console.log(`  ✅ ROSTER  — ${site}/events/${event.id}/checkin  (watch it tick over)`);
+    console.log('  ⛔ REGISTER — closed; registration always closes when check-in opens.');
+    console.log('     To walk the registration half, re-run with the clock moved:');
+    console.log('       DEMO_START_OFFSET_MIN=180 pnpm exec tsx scripts/demo/seed-demo.ts');
+  } else {
+    console.log('  ⛔ The event has ENDED — nothing is walkable. Re-run to move the clock:');
+    console.log('       DEMO_START_OFFSET_MIN=180 pnpm exec tsx scripts/demo/seed-demo.ts');
+  }
   console.log('');
 }
 
