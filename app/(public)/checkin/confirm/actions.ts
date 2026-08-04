@@ -47,6 +47,19 @@ export async function selfCheckIn(
       return { error: "You're already checked in." };
     case 'rate_limited':
       return { error: 'Too many attempts. Please try again in a moment.' };
+    // The lifecycle refusals (DEFERRED 57). Each gets its own copy because
+    // each implies a different action for someone standing at a door: wait,
+    // find a staff member, or stop trying. Collapsing them into the generic
+    // default told an attendee their registration was invalid when it was
+    // perfectly valid and merely early.
+    case 'not_open':
+      return { error: "Check-in isn't open yet. It opens an hour before the event starts." };
+    case 'self_serve_off':
+      return { error: "Self check-in isn't enabled for this event — please see reception." };
+    case 'cancelled':
+      return { error: 'This registration was cancelled.' };
+    case 'unavailable':
+      return { error: "This event isn't accepting check-ins." };
     default:
       return { error: 'This registration is no longer valid.' };
   }

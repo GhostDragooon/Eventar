@@ -83,6 +83,14 @@ describe.skipIf(!process.env.RLS_TESTS)('check-in burst throughput (P2 exit gate
         latitude: 22.3,
         longitude: 114.2,
         status: 'published',
+        // Required since DEFERRED 57 (20260804010000): self_check_in now
+        // refuses when self_serve is off. The column default is
+        // {"staff": true, "self_serve": false}, so without this every one of
+        // the 200 calls below returns 'self_serve_off' and the gate measures
+        // the throughput of a refusal path. The timing above already sits
+        // inside the check-in window (start = now), which the same migration
+        // also began enforcing.
+        checkin_modes: { staff: true, self_serve: true },
         organisation_id: DEFAULT_ORG,
       })
       .select('id')

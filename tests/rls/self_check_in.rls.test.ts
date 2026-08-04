@@ -39,13 +39,35 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
   const registrationIds: string[] = [];
   const rateLimitKeys: string[] = [];
 
-  async function makeEventFixture(): Promise<string> {
+  // Defaults describe the ONE state in which self check-in is legitimate:
+  // published, self-serve on, and now inside [start − CHECKIN_OPEN_MINUTES,
+  // end]. Every lifecycle test below varies exactly one of them, so a failure
+  // names the guard that let it through.
+  //
+  // selfServe defaults to TRUE here, which is NOT the column default
+  // ({"staff": true, "self_serve": false}) — this file exists to exercise the
+  // self-serve path, so an explicit opt-in is the honest fixture. Before the
+  // DEFERRED-57 guards landed the value was irrelevant: the RPC never read it.
+  type EventFixtureOpts = {
+    startOffsetMs?: number;
+    endOffsetMs?: number;
+    status?: 'draft' | 'published' | 'cancelled';
+    selfServe?: boolean;
+  };
+
+  async function makeEventFixture(opts: EventFixtureOpts = {}): Promise<string> {
+    const {
+      startOffsetMs = 0,
+      endOffsetMs = 3_600_000,
+      status = 'published',
+      selfServe = true,
+    } = opts;
     const { data, error } = await admin
       .from('events')
       .insert({
         title: 'self-check-in RLS fixture — DELETE ME',
-        start_time: new Date().toISOString(),
-        end_time: new Date(Date.now() + 3_600_000).toISOString(),
+        start_time: new Date(Date.now() + startOffsetMs).toISOString(),
+        end_time: new Date(Date.now() + endOffsetMs).toISOString(),
         timezone: 'Asia/Hong_Kong',
         created_by: staffId,
         venue_name: 'Test Venue',
@@ -53,7 +75,8 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
         country: 'HK',
         latitude: 22.3,
         longitude: 114.2,
-        status: 'published',
+        status,
+        checkin_modes: { staff: true, self_serve: selfServe },
         organisation_id: DEFAULT_ORG,
       })
       .select('id')
@@ -302,7 +325,134 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
     expect(reg?.status).toBe('registered');
   });
 
-  // ---- 6. audit chain stays valid after all the above ----
+  // ---- 6. lifecycle guards (DEFERRED item 57) ----
+  //
+  // Until 2026-08-04 self_check_in's ONLY predicate was `status <> 'attended'`:
+  // no time window, no checkin_modes.self_serve check, no publication check,
+  // and a cancelled registration was flipped to attended. The ±24h bound in
+  // award_attendance_credit was compensating for all of it at one remove —
+  // attendance itself was minted by mere possession of an emailed code, at any
+  // time, on any event, in any state.
+  //
+  // Each test asserts a SPECIFIC result code, not merely "not ok": the whole
+  // point is that the attendee at the door is told the real reason.
+  describe('lifecycle guards', () => {
+    it('refuses before the check-in window opens', async () => {
+      // Starts in 3h; the window opens at start − 60 min, so now is outside it.
+      const eventId = await makeEventFixture({
+        startOffsetMs: 3 * 3_600_000,
+        endOffsetMs: 4 * 3_600_000,
+      });
+      const regCode = code('SCI100');
+      await makeRegistrationFixture(eventId, regCode);
+
+      const { data, error } = await admin.rpc('self_check_in', { p_code: regCode, p_ip: FAKE_IP });
+      expect(error).toBeNull();
+      const row = Array.isArray(data) ? data[0] : data;
+      expect(row.result).toBe('not_open');
+
+      const { data: reg } = await admin
+        .from('registrations')
+        .select('status')
+        .eq('registration_code', regCode)
+        .single();
+      expect(reg?.status).toBe('registered');
+    });
+
+    it('accepts inside the pre-start window (start − 60 min)', async () => {
+      // Starts in 30 min: before start, but inside the check-in window. This
+      // is the case that must NOT regress — the reminder email carrying the QR
+      // goes out exactly here.
+      const eventId = await makeEventFixture({
+        startOffsetMs: 30 * 60_000,
+        endOffsetMs: 90 * 60_000,
+      });
+      const regCode = code('SCI101');
+      await makeRegistrationFixture(eventId, regCode);
+
+      const { data, error } = await admin.rpc('self_check_in', { p_code: regCode, p_ip: FAKE_IP });
+      expect(error).toBeNull();
+      const row = Array.isArray(data) ? data[0] : data;
+      expect(row.result).toBe('ok');
+    });
+
+    it('refuses after the event has ended', async () => {
+      const eventId = await makeEventFixture({
+        startOffsetMs: -3 * 3_600_000,
+        endOffsetMs: -2 * 3_600_000,
+      });
+      const regCode = code('SCI102');
+      await makeRegistrationFixture(eventId, regCode);
+
+      const { data, error } = await admin.rpc('self_check_in', { p_code: regCode, p_ip: FAKE_IP });
+      expect(error).toBeNull();
+      const row = Array.isArray(data) ? data[0] : data;
+      expect(row.result).toBe('not_open');
+    });
+
+    it('refuses when the event is not published', async () => {
+      const eventId = await makeEventFixture({ status: 'draft' });
+      const regCode = code('SCI103');
+      await makeRegistrationFixture(eventId, regCode);
+
+      const { data, error } = await admin.rpc('self_check_in', { p_code: regCode, p_ip: FAKE_IP });
+      expect(error).toBeNull();
+      const row = Array.isArray(data) ? data[0] : data;
+      expect(row.result).toBe('unavailable');
+    });
+
+    it('refuses when the event is cancelled', async () => {
+      const eventId = await makeEventFixture({ status: 'cancelled' });
+      const regCode = code('SCI104');
+      await makeRegistrationFixture(eventId, regCode);
+
+      const { data, error } = await admin.rpc('self_check_in', { p_code: regCode, p_ip: FAKE_IP });
+      expect(error).toBeNull();
+      const row = Array.isArray(data) ? data[0] : data;
+      expect(row.result).toBe('unavailable');
+    });
+
+    it('refuses when self-serve check-in is off for the event', async () => {
+      // The pass page already hides the "Confirm I'm here" button on this
+      // event, but the Server Action could be POSTed directly — the UI was the
+      // only thing enforcing it.
+      const eventId = await makeEventFixture({ selfServe: false });
+      const regCode = code('SCI105');
+      await makeRegistrationFixture(eventId, regCode);
+
+      const { data, error } = await admin.rpc('self_check_in', { p_code: regCode, p_ip: FAKE_IP });
+      expect(error).toBeNull();
+      const row = Array.isArray(data) ? data[0] : data;
+      expect(row.result).toBe('self_serve_off');
+    });
+
+    it('refuses a cancelled registration and leaves it cancelled', async () => {
+      const eventId = await makeEventFixture();
+      const regCode = code('SCI106');
+      const regId = await makeRegistrationFixture(eventId, regCode);
+      const { error: cancelErr } = await admin
+        .from('registrations')
+        .update({ status: 'cancelled' })
+        .eq('id', regId);
+      expect(cancelErr).toBeNull();
+
+      const { data, error } = await admin.rpc('self_check_in', { p_code: regCode, p_ip: FAKE_IP });
+      expect(error).toBeNull();
+      const row = Array.isArray(data) ? data[0] : data;
+      expect(row.result).toBe('cancelled');
+
+      // The old predicate was `status <> 'attended'`, which happily flipped a
+      // cancelled registration to attended.
+      const { data: reg } = await admin
+        .from('registrations')
+        .select('status')
+        .eq('registration_code', regCode)
+        .single();
+      expect(reg?.status).toBe('cancelled');
+    });
+  });
+
+  // ---- 7. audit chain stays valid after all the above ----
   it('verify_audit_chain reports zero broken links after fixture inserts', async () => {
     const { data, error } = await admin.rpc('verify_audit_chain');
     expect(error).toBeNull();

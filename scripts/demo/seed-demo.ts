@@ -218,10 +218,26 @@ async function findOrCreateEvent(
   // that but left only a ~30-min window — which the run sheet's own ~30-min
   // prep block consumes, so registration could still be closed by the time
   // the operator reaches Beat 3 live. 180 leaves a ~120-min window that
-  // comfortably outlasts prep + the 15-min demo. Self-check-in (Beat 4) is
-  // unaffected by any offset — it's gated only by the static
-  // events.checkin_modes.self_serve flag set below, not by this clock — so a
-  // large offset has zero downside to any other beat.
+  // comfortably outlasts prep + the 15-min demo.
+  //
+  // ⚠️ 2026-08-04 — "self-check-in is unaffected by this offset" USED TO BE
+  // TRUE AND NO LONGER IS. self_check_in() had no time window at all until
+  // DEFERRED item 57 closed (20260804010000); it now refuses outside
+  // [start − CHECKIN_OPEN_MINUTES, end] like every other surface. At a 180-min
+  // offset the self-serve tap returns 'not_open'.
+  //
+  // This is not a tuning problem — the two windows are DISJOINT BY DESIGN.
+  // registerForEvent closes registration at min(registration_close_at,
+  // start − CHECKIN_OPEN_MINUTES), i.e. unconditionally when check-in opens
+  // (G11), so no offset makes Beat 3 (live registration) and a self-serve
+  // Beat 4 both work at the same wall-clock moment. The old script only
+  // worked because the guard was missing.
+  //
+  // STILL WORKING at this offset: Beat 3, Beat 4's staff scan and manual
+  // entry (mark_attended is deliberately NOT time-gated — a trusted,
+  // physically-present actor), and Beat 4.6's credit, which fires off that
+  // staff scan. ONLY the self-serve tap is affected. Awaiting Ivan's call —
+  // see docs/plans/demo-run-sheet.md Beat 4.
   const startTime = new Date(Date.now() + 180 * 60_000);
   const endTime = new Date(startTime.getTime() + 4 * 60 * 60_000);
   const keynoteEnd = new Date(startTime.getTime() + 60 * 60_000);
