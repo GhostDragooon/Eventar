@@ -14,8 +14,8 @@
 | **4** | Demo-ready & privilege hygiene | seed/reset/render/ledger demo scripts, `set_staff_role`, grant hygiene, CI replay harness | ✅ shipped 2026-07-18 |
 | **5** | Attendance-verified issuance | `award_attendance_credit`, event-config freeze trigger, reconcile path, the closed loop | ✅ shipped 2026-07-25 |
 | **6** | Organiser frontend & scheduler | token fusion, staff shell, CPD config surface, `/api/cron/dispatch`, Text size actually scaling | ✅ shipped 2026-08-03 |
-| **7** | Hardening & pre-flight | ← **CURRENT.** Full backend + frontend review, the fired deferrals closed, unaudited publish path, check-in mode reachable | 🟡 in progress |
-| **8** | Deploy & field-proven | Singapore → hosting → Resend cutover → Turnstile → privacy notice; ≥3 real events, ≥50 check-ins, 0 integrity incidents | gated on Ivan's deploy go |
+| **7** | Hardening & pre-flight | full backend + frontend review, the fired deferrals closed, unaudited publish path, check-in mode reachable | ✅ shipped 2026-08-04 |
+| **8** | Deploy & field-proven | ← **CURRENT.** Singapore → hosting → Resend cutover → Turnstile → privacy notice; ≥3 real events, ≥50 check-ins, 0 integrity incidents | 🟡 open; blocked only on credentials Ivan supplies |
 | **9** | Body engaged | review meeting held; the 7+2 questions answered; Q26 resolvable; pilot proposal delivered | external — their calendar |
 | **10** | CPD engine | versioned `body_rules`/`body_cycles`, the deterministic evaluator, roster ingestion, issuance against real rules | gated on Stage 9 |
 | **11** | Signed & verifiable | KMS-signed certificate verifies against the published key; public verify-this-record URL; staff TOTP mandatory | after Stage 10 |

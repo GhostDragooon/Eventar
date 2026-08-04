@@ -1,29 +1,27 @@
 # Project State — Eventar
 
-> ## ⬆️ CURRENT — STAGE 7 (hardening & pre-flight). Stage 6 shipped.
+> ## ⬆️ CURRENT — STAGE 7 COMPLETE. Next: STAGE 8 (deploy & field-proven), gated on Ivan's go.
 >
-> **📛 Terminology is now Stage 1–13 only. `docs/plans/STAGES.md` is the authority.** M1–M4, Sprint 0–5, Milestone A–E and Phase 7/8/9 are **retired** — four overlapping axes, and two different things were both called "M2" (the CPD engine *and* the frontend unfreeze). Translate old names with the table in STAGES.md; historical handoffs keep their original wording deliberately.
+> **📛 Terminology is Stage 1–13 only. `docs/plans/STAGES.md` is the authority.**
 >
-> **Stage 6 (organiser frontend & scheduler) is shipped.** The frontend freeze is lifted for S-Organiser; the design artifact was always *the real frontend*, not a mockup, and it is now fused with the shipped backend.
+> **Gates (2026-08-04):** tsc clean · eslint 0 errors (5 pre-existing `devEmailStub` warnings) · vitest **530 passed | 161 skipped** · `pnpm test:rls` **149/149** · `next build` clean, 21 route entries · migrations **88/88 two-sided on local AND Seoul** · both hash chains valid · closed-loop backtest **22/22**.
 >
-> **Gates:** tsc clean · eslint 0 errors (5 pre-existing `devEmailStub` warnings) · vitest **508 passed \| 124 skipped** · `next build` clean, **20 routes** (+`/api/cron/dispatch`) · both hash chains valid.
+> ### Stage 7 — shipped 2026-08-04
+> Four agent branches resolved (two landed, one landed, one rejected as superseded by `65935c7`) · the concurrent-migration clobber found and reconciled (`20260803120000`) · Seoul caught up from 4 migrations behind, closing a live `anon` SELECT on `email_log` (PII) and an INSERT-side CPD column hole · **DEFERRED 55, 56 and 57 all closed** · the three-lens phase-completion protocol run in full for the first time since Stage 5 · roster licence eligibility · CPD config at event creation.
 >
-> ### Stage 6 — shipped
-> Tokens (`046b21c`) · staff shell + CPD config front-to-back (`c291bce`) · patches (`56d5a7f`) · design audit (`c0c7105`) · **scheduler** (`0f54d8a` + `9658126`) · **Text size actually scaling** (`ddc144e` + `d240e88`).
-> - **The loop is self-running.** `/api/cron/dispatch` fires the 60-min reminder (carrying the QR pass) and the 10-min-after survey. Backtested live end to end. **`delivery: "stubbed"`** in the response — with `RESEND_API_KEY` unset nothing leaves the building and the response says so rather than reading as delivered.
-> - **`queued` is TERMINAL** under `email_log_dedup_idx`, so the dispatcher treats it as done-or-stuck, never "needs sending". A silent non-send is recoverable via the manual button; a duplicate to a practitioner is not. Proven live, and proven non-vacuous by a rolled-back `DROP INDEX`.
-> - **Two corrections the build produced:** the plan's "reuse `sendReminderForEvent`/`sendSurveyInviteForEvent`" was **not executable** (both open with `requireStaff()`, which throws without a session) → send core extracted to `lib/email/eventEmails.ts`; and the plan never mentioned `events.deleted_at`, which the dispatcher must filter.
-> - **`CRON_SECRET` is a new injection point** (`.env.example`). The dispatcher **fails closed** — unset means 503 on every request, so a misconfigured deploy can never become a public mass-mail trigger. **No trigger file ships yet** (Ivan, 2026-08-03: "we don't touch Vercel yet"); `vercel.json` was added then reverted (`72cda80`). Re-add at deploy time — one file, no dispatch-logic change. Vercel's Hobby plan caps crons at once-daily, which would miss every reminder window.
+> **The three-lens review found two criticals in the same day's work, both the same class — a control placed one layer above where the write happens (the fifth instance in this repo):**
+> - The DEFERRED-56 gate was **bypassable in two statements**: it reads the event's `organisation_id`, which `authenticated` could write, so an organiser could PATCH their event into the default org (holder of every authorisation) and accredit. Closed by `20260804030000` — the column is revoked and a trigger derives it, which also fixed a latent multi-tenancy bug where every event created through the product landed in the default organisation regardless of tenant.
+> - `mark_attended` minted attendance **and permanent credit** on a cancelled registration. DEFERRED 57 had fixed only the self-serve door. The July review's guard (5b), written as the compensating control for exactly this, had been **vacuous since it shipped on both paths**.
 >
-> ### Stage 7 — in progress
-> Full backend + frontend review done (`d240e88`). **Backend verified sound**: 30/30 definer functions pin `search_path` · RLS on all 18 tables · Hard Rule 11 posture exact · events/staff column locks holding · Hard Rule 3 on every staff action · no silent-failure swallows. Fixed: `email_log`/`rate_limits` PII grants (RLS was the *only* control in front of `recipient_email`), `handle_new_user` EXECUTE, plus `seed.sql` re-assertion so a `db reset` cannot re-open them. **Frontend**: Text size now reaches Tailwind's own default sizes (every `ui/` primitive was unscaled), door UI advertised a 4-char code when codes are 6, two §7a colour violations, emoji-as-status-icon. No horizontal overflow or sub-44px targets at 375/1280.
-> - **Still open in Stage 7:** roster licence eligibility (needs a `SECURITY DEFINER` function — it is **not** a free RLS read) · CPD config at event creation · the two background fixes (unaudited publish path; check-in mode unreachable) · **`DEFERRED` item 56, whose trigger has FIRED** · the three-lens phase-completion protocol, which has **not** run for any Stage 6 work and is not claimed.
-> - **Dead code found, not deleted:** `components/ui/{select,accordion,toggle}.tsx` have 0 importers; `lib/{withSecurity,abuseTier,attendeeAuth}.ts` remain unwired substrate; `users.locale` and `users.display_language` are both unread.
-> - **STILL GATED, not by the freeze:** the CPD evaluator vs versioned `body_rules` (Q26 + Stage 9), practitioner compliance math, S-Attendee, evidence/share, multi-track scheduling.
-> - **Read next:** `docs/plans/STAGES.md` (vocabulary) → `docs/plans/2026-08-03-stage-7-plan.md` (current work) → `docs/plans/2026-08-03-post-m2-execution-map.md` (what follows).
-> - **Latest handoff:** `docs/plans/handoff_03082026.md` — Stage 6 close, the Stage 7 review, the vocabulary change, and the honest limits of the closed-loop verification.
+> **Read next:** `docs/plans/STAGES.md` → `docs/plans/handoff_04082026.md` → `docs/DEFERRED.md`.
 >
-> Everything below predates the unfreeze.
+> ### Stage 8 — NOT started, gated on credentials Ivan must supply
+> Singapore project (billable) · hosting account · `RESEND_API_KEY` + verified domain · Turnstile keys · privacy-notice sign-off · `CRON_SECRET` placement. Everything up to the CI-green replay and the env matrix is doable without them. **Before the first real accredited event:** seed a real `organisation_body_authorisations` row — the gate now blocks all six seeded bodies until one exists, which is the intended posture, not a bug.
+>
+> ### STILL GATED, not by anything in Stage 7
+> The CPD evaluator vs versioned `body_rules` (Q26 + Stage 9), practitioner compliance math, S-Attendee, evidence/share, multi-track scheduling.
+>
+> Everything below predates Stage 7.
 
 _Last updated: 2026-07-25 (**CPD MVP attendance-verified issuance — Stages 0–8 shipped, then HARDENED after a three-lens phase-completion review that found two real authorisation holes**. The review is the headline, not the build: an earlier version of this very section claimed "ALL SHIPPED" before the review had run — that claim was premature and is corrected here. The build itself works (config-free `award_attendance_credit()` on both check-in paths, `reconcile-event.ts`, Stage 8's freeze trigger, all live-proven), but the review found that an organiser could bind their own event to ANY accrediting body with unbounded hours, and that `attendance_verified` was minted by possession of an emailed code with no lifecycle binding at all. Both now closed at the grant/definer layer with live-proven regression tests; the product questions underneath are in `docs/DEFERRED.md`. **Still open: Ivan's carried inputs (price, first-meeting date, D0 flip, vault Sprint↔Milestone reconciliation).** Full detail: this doc's CPD MVP section below + `docs/plans/handoff_25072026_v2.md` (the review session; `handoff_25072026.md` covers the build session and is marked superseded). Prior: Milestone A section below + `handoff_22072026.md`.)_
 
