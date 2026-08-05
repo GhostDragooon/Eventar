@@ -43,13 +43,18 @@ export default async function PublicEventPage({
 }) {
   const { id } = await params;
   const supabase = await supabaseServer();
-  const { data: event } = await supabase
+  // Thrown, not swallowed: a discarded error fell through to notFound(), so a
+  // practitioner opening the link from their confirmation email was told the
+  // event does not exist — indistinguishable from a cancelled event, and the
+  // wrong thing to act on (rule 12).
+  const { data: event, error: eventErr } = await supabase
     .from('events')
     .select(
       'id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status, max_attendees, registration_close_at, registration_open_at, hosted_by, organized_by, hero_image_url, created_by',
     )
     .eq('id', id)
     .maybeSingle();
+  if (eventErr) throw eventErr;
 
   // Draft handling: anon visitors and non-owners hit 404 as before. The
   // event's OWNER (and managers) silently bounce to /edit so a freshly-
@@ -78,11 +83,16 @@ export default async function PublicEventPage({
   // eslint-disable-next-line react-hooks/purity
   const lifecycle = computeLifecycle(event as EventLifecycleRow, Date.now());
 
-  const { data: blocks } = await supabase
+  // Thrown, not swallowed (rule 12): a discarded error dropped the whole
+  // Agenda section, so the page read as "this event has no agenda" — and a
+  // practitioner deciding whether the sessions are worth CPD time would be
+  // deciding on absent, not empty, information.
+  const { data: blocks, error: blocksErr } = await supabase
     .from('agenda_blocks')
     .select('id, kind, title, host, topics, start_time, end_time')
     .eq('event_id', id)
     .order('start_time', { ascending: true });
+  if (blocksErr) throw blocksErr;
 
   // Registration count for the capacity check. Anon has no SELECT policy on
   // `registrations` (PII — full visibility is organizer/manager only), so the
