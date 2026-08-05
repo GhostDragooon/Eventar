@@ -179,7 +179,7 @@ describe.skipIf(!process.env.RLS_TESTS)('publish_event RLS + audit', () => {
 
   // ---- 5. create-time publish routes through the same audited path ----
   //
-  // The create form's "Publish Event" button reaches create_event_with_blocks
+  // The create form's "Publish event" button reaches create_event_with_blocks
   // with status='published', NOT publish_event(). Before 2026-08-03 that wrote
   // status='published' with published_at NULL and zero audit rows — a second,
   // unaudited publish path into the regulator-facing chain. These two tests

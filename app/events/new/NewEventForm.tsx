@@ -727,14 +727,14 @@ export default function NewEventForm(props: Props) {
                 onClick={() => onSubmit('draft')}
                 disabled={pending}
               >
-                {pending && intent === 'draft' ? 'Saving…' : 'Save Draft'}
+                {pending && intent === 'draft' ? 'Saving…' : 'Save draft'}
               </Button>
               <Button
                 type="button"
                 onClick={() => onSubmit('publish')}
                 disabled={pending}
               >
-                {pending && intent === 'publish' ? 'Publishing…' : 'Publish Event'}
+                {pending && intent === 'publish' ? 'Publishing…' : 'Publish event'}
               </Button>
             </>
           )}

@@ -40,7 +40,10 @@ export default async function NewEventPage() {
       <header className="mb-lg">
         <h1 className="font-headline-lg text-headline-lg text-on-surface">Create event</h1>
         <p className="font-body-lg text-body-lg text-on-surface-variant mt-sm">
-          Save as draft first; publish when ready.
+          {/* Names the buttons verbatim ("Save draft" / "Publish event").
+              Guidance that paraphrases the control it points at is the same
+              defect as an error message naming a button that does not exist. */}
+          Save draft first; publish event when ready.
         </p>
       </header>
 
