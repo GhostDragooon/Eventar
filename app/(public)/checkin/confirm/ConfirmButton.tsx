@@ -53,7 +53,12 @@ export default function ConfirmButton({
         type="button"
         onClick={onClick}
         disabled={state.kind === 'loading'}
-        className="w-full bg-primary text-on-primary rounded-lg px-md py-md font-label-md text-body-md font-bold hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-50"
+        // Explicit ring: the base layer sets an outline *colour* but no width,
+        // so this fell back to the UA default ring — low contrast against the
+        // button's own dark blue. Offset because the ring sits on bg-primary.
+        // Matches the hand-written app convention (SurveyForm's segmented
+        // control, RegistrationCloseEditor), not the ui/ primitives'.
+        className="w-full bg-primary text-on-primary rounded-lg px-md py-md font-label-md text-body-md font-bold hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
       >
         {state.kind === 'loading' ? 'Checking in…' : "Confirm I'm here"}
       </button>
