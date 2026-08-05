@@ -233,6 +233,30 @@ async function findOrCreateEvent(
       .update({ start_time: reStart.toISOString(), end_time: reEnd.toISOString() })
       .eq('id', existing.id);
     if (timeErr) throw timeErr;
+
+    // Shift the agenda blocks by the same delta. WITHOUT this the blocks keep
+    // whatever times they were first created with, so a re-seed moves the
+    // event's window but leaves its own agenda dated days away from it — the
+    // public event page then shows an agenda that looks broken (times with
+    // no correlation to the event) even though the event's own window is
+    // correct. Same class of bug this fix is patching one layer up.
+    const delta = reStart.getTime() - new Date(existing.start_time).getTime();
+    const { data: existingBlocks, error: blocksFindErr } = await client
+      .from('agenda_blocks')
+      .select('id, start_time, end_time')
+      .eq('event_id', existing.id);
+    if (blocksFindErr) throw blocksFindErr;
+    for (const block of existingBlocks ?? []) {
+      const { error: blockShiftErr } = await client
+        .from('agenda_blocks')
+        .update({
+          start_time: new Date(new Date(block.start_time).getTime() + delta).toISOString(),
+          end_time: new Date(new Date(block.end_time).getTime() + delta).toISOString(),
+        })
+        .eq('id', block.id);
+      if (blockShiftErr) throw blockShiftErr;
+    }
+
     return { ...existing, start_time: reStart.toISOString(), end_time: reEnd.toISOString() };
   }
 
@@ -495,7 +519,7 @@ async function main() {
 
   console.log('');
   console.log('=== Demo fixture ready ===');
-  console.log(`Event:        ${EVENT_TITLE} (draft)`);
+  console.log(`Event:        ${EVENT_TITLE} (${statusRow?.status ?? 'unknown'})`);
   console.log(`Event ID:     ${event.id}`);
   console.log(`Public path:  /events/${event.id}`);
   console.log(`Venue:        ${VENUE_NAME}`);
@@ -532,13 +556,21 @@ async function main() {
     console.log('');
   }
   if (registrationOpen) {
-    console.log(`  ✅ REGISTER — ${site}/events/${event.id}`);
+    if (published) {
+      console.log(`  ✅ REGISTER — ${site}/events/${event.id}`);
+    } else {
+      console.log(`  ⛔ REGISTER — the event is still a DRAFT; publish it first (see above).`);
+    }
     console.log(`     Registration closes in ${regCloseMinsFromNow} min, when check-in opens.`);
     console.log('  ⛔ CHECK-IN — not open yet (opens 60 min before start).');
     console.log('     To walk the check-in half, re-run with the clock moved:');
     console.log('       DEMO_START_OFFSET_MIN=-10 pnpm exec tsx scripts/demo/seed-demo.ts');
   } else if (inCheckinWindow) {
-    console.log(`  ✅ CHECK IN — ${site}/checkin/confirm?code=${demoReg.reg.registration_code}`);
+    if (checkinOpen) {
+      console.log(`  ✅ CHECK IN — ${site}/checkin/confirm?code=${demoReg.reg.registration_code}`);
+    } else {
+      console.log(`  ⛔ CHECK IN — the event is still a DRAFT; publish it first (see above).`);
+    }
     console.log('     Self-serve is on, so the pass shows a "Confirm I\'m here" button.');
     console.log(`     That check-in posts a real CPD credit (${CPD_HOURS} hrs @ ${CPD_BODY_SHORT_NAME}).`);
     console.log(`  ✅ ROSTER  — ${site}/events/${event.id}/checkin  (watch it tick over)`);
