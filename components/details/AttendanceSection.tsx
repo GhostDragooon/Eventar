@@ -64,7 +64,13 @@ export function AttendanceSection({
         {/* Split: total / QR / manual */}
         <div className="flex flex-col gap-sm">
           <SplitRow n={attended} of={registered} unit="" label="Checked in" strong />
-          <SplitRow n={qr} unit="QR" label="Self-scan" />
+          {/* "By QR", not "Self-scan": check_in_method='qr' is written by BOTH
+              a staff camera scan and an attendee's self-serve tap, so naming it
+              after one of them mislabels the other. The roster already says
+              plain "QR"; these two screens now agree. Splitting the two apart
+              needs a distinct method value — a data-model change, flagged for
+              Ivan rather than guessed at here. */}
+          <SplitRow n={qr} unit="QR" label="By QR" />
           <SplitRow n={manual} unit="manual" label="Reception" />
           {/* No Open-roster button here — the toolbar (for-use) and the live
               sticky bar already carry it; a third copy was noise. */}

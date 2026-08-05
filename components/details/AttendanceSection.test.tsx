@@ -46,12 +46,15 @@ describe('AttendanceSection — live operator view', () => {
     { at: null, method: null },
   ];
 
-  it('shows the checked-in split (total / QR self-scan / manual reception)', () => {
+  it('shows the checked-in split (total / by QR / manual reception)', () => {
     const { getByText } = render(
       <AttendanceSection {...baseProps} lifecycle="live" attended={3} checkIns={checkIns} />,
     );
     expect(getByText('Checked in')).toBeInTheDocument();
-    expect(getByText('Self-scan')).toBeInTheDocument();
+    // "By QR", not "Self-scan" — check_in_method='qr' covers a staff camera
+    // scan as well as an attendee's self-serve tap, so the label must not
+    // claim which of the two happened.
+    expect(getByText('By QR')).toBeInTheDocument();
     expect(getByText('Reception')).toBeInTheDocument();
     expect(getByText(/Live · 3 of 10 checked in/)).toBeInTheDocument();
   });
