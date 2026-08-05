@@ -295,6 +295,31 @@ Two corrections to the brief's baseline, both verified by diffing my own pre-cha
 
 `pnpm test:rls` was **not** run — see §7.
 
+> ### ⚠️ Another session is editing this repo right now — read before trusting the table
+>
+> Immediately after my last commit, four files I never touched appeared modified in the working
+> tree, timestamped **23:32–23:34**, i.e. *after* my final gate run:
+>
+> ```
+> lib/cron/dispatchDue.ts
+> lib/cron/dispatchDue.test.ts
+> app/api/cron/dispatch/route.test.ts
+> tests/cron/dispatch_idempotency.rls.test.ts
+> ```
+>
+> It is coherent, deliberately-commented work — ordering `selectDue()` by soonest-closing window so
+> the caller's batch cap drops the least-urgent mail rather than an arbitrary one. **Someone else's
+> in-progress feature, not mine.**
+>
+> **I left it completely alone** — not committed, not stashed, not reverted. `handoff_04082026.md`
+> §2 records that uncommitted worktree changes with no commits behind them are exactly how work got
+> nearly destroyed before, so this is deliberate.
+>
+> **What that means for the numbers above:** the table is measured on *my* commits, with the tree
+> clean. Re-running with their work present gives **533 passed / 167 skipped** and `tsc` still
+> clean — so the combined tree is green too, but **my 530/165 is the figure for my changes alone.**
+> Whoever owns that cron work should land it themselves.
+
 ---
 
 ## 6. The thing worth acting on beyond any single fix
