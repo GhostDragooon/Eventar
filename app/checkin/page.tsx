@@ -28,13 +28,19 @@ export default async function CheckinIndexPage() {
   }
 
   const supabase = await supabaseServer();
-  const { data: events } = await supabase
+  // Both errors are thrown, not swallowed (rule 12). A discarded events error
+  // rendered "No open events" — an empty state indistinguishable from a failed
+  // load, on the screen an operator opens to find the door they are running. A
+  // discarded registrations error was worse: every event rendered "0 / 0
+  // checked in", a confidently wrong count rather than an absent one.
+  const { data: events, error: eventsErr } = await supabase
     .from('events')
     .select('id, title, start_time, end_time, timezone, status, venue_name, registration_close_at, registration_open_at, deleted_at')
     .is('deleted_at', null)
     .eq('status', 'published')
     .order('start_time', { ascending: true })
     .limit(100);
+  if (eventsErr) throw eventsErr;
 
   // eslint-disable-next-line react-hooks/purity
   const nowMs = Date.now();
@@ -48,6 +54,7 @@ export default async function CheckinIndexPage() {
   const regsRes = ids.length > 0
     ? await supabase.from('registrations').select('event_id, status').in('event_id', ids)
     : { data: [] as Array<{ event_id: string; status: string }>, error: null };
+  if (regsRes.error) throw regsRes.error;
   const counts = new Map<string, { registered: number; attended: number }>();
   for (const e of prelim) counts.set(e.id, { registered: 0, attended: 0 });
   for (const r of regsRes.data ?? []) {

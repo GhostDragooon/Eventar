@@ -38,11 +38,15 @@ export default async function DashboardPage() {
   }
 
   const supabase = await supabaseServer();
-  const { data: events } = await supabase
+  // Thrown, not swallowed: a discarded error rendered the "no events yet"
+  // empty state, which reads as "your events are gone" rather than "we could
+  // not load them" (rule 12). The sibling registrations query already throws.
+  const { data: events, error: eventsErr } = await supabase
     .from('events')
     .select('id, title, description, start_time, end_time, timezone, status, venue_name, max_attendees, registration_close_at, registration_open_at, created_by, category, deleted_at')
     .order('start_time', { ascending: false })
     .limit(300);
+  if (eventsErr) throw eventsErr;
 
   const eventIds = (events ?? []).map((e) => e.id);
   const regsRes = eventIds.length > 0

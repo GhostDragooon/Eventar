@@ -27,13 +27,14 @@ export default async function AnalyticsIndexPage() {
   }
 
   const supabase = await supabaseServer();
-  const { data: events } = await supabase
+  const { data: events, error: eventsErr } = await supabase
     .from('events')
     .select('id, title, start_time, end_time, timezone, status, venue_name, registration_close_at, registration_open_at, deleted_at')
     .is('deleted_at', null)
     .in('status', ['published', 'completed'])
     .order('start_time', { ascending: false })
     .limit(100);
+  if (eventsErr) throw eventsErr;
 
   // eslint-disable-next-line react-hooks/purity
   const nowMs = Date.now();
@@ -48,7 +49,16 @@ export default async function AnalyticsIndexPage() {
         supabase.from('registrations').select('event_id, status').in('event_id', ids),
         supabase.from('survey_responses').select('event_id').in('event_id', ids),
       ])
-    : [{ data: [] as Array<{ event_id: string; status: string }> }, { data: [] as Array<{ event_id: string }> }];
+    : [
+        { data: [] as Array<{ event_id: string; status: string }>, error: null },
+        { data: [] as Array<{ event_id: string }>, error: null },
+      ];
+  // Thrown, not swallowed: these two feed the attendance and response-rate
+  // figures. A failed query rendered 0 attended / 0 responses — a confidently
+  // wrong number on the screen an organiser reviews an event by, and
+  // attendance is what CPD credit is issued against.
+  if (regsRes.error) throw regsRes.error;
+  if (surveysRes.error) throw surveysRes.error;
   const counts = new Map<string, { registered: number; attended: number; responses: number }>();
   for (const e of prelim) counts.set(e.id, { registered: 0, attended: 0, responses: 0 });
   for (const r of regsRes.data ?? []) {
