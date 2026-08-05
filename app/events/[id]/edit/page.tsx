@@ -66,12 +66,18 @@ export default async function StaffEventEditPage({
   //   `display_order` and chronological order) would have shuffled blocks on
   //   save, since the form re-emits `display_order: i` from the in-memory
   //   array index. Ordering by `display_order` first pins the round-trip.
-  const { data: blocks } = await supabase
+  // - a swallowed error here was the same wipe hazard one level up: the form
+  //   would render with zero blocks, and the next Save round-trips that
+  //   emptiness through the RPC, replacing a real agenda with none. Throw so
+  //   the organiser sees the error boundary instead of an agenda that looks
+  //   deleted and then becomes deleted.
+  const { data: blocks, error: blocksErr } = await supabase
     .from('agenda_blocks')
     .select('id, kind, title, host, topics, notes, start_time, end_time, display_order')
     .eq('event_id', id)
     .order('display_order', { ascending: true })
     .order('start_time', { ascending: true });
+  if (blocksErr) throw blocksErr;
 
   // Close gate for the CSV export: registration is "closed" when end_time has
   // passed OR capacity is reached. Service-role count mirrors the public page +
