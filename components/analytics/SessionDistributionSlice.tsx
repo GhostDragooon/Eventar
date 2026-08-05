@@ -21,7 +21,10 @@ export function SessionDistributionSlice({
       icon="event_seat"
       iconBg="secondary-container"
       title="Most valuable session (Q2)"
-      prompt={'"Which session was most valuable to you?"'}
+      // Verbatim from SurveyForm Q2. It was a paraphrase, presented in quotes
+      // as the question respondents answered — and this page is what an
+      // organiser shows an accrediting body. Q1 and Q3 already quote exactly.
+      prompt={'"Which speaker or session provided the most clinical utility?"'}
     >
       {distribution.length === 0 ? (
         <p className="flex-grow text-body-md text-on-surface-variant italic">
