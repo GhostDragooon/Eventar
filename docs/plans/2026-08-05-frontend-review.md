@@ -206,11 +206,14 @@ accrediting body, and a misquoted question misrepresents what the responses unde
    directly above `Time: 05 Aug 2026, 19:36 → 23:36`. Redundant and the label is loose, but nothing
    is *false*, and `formatInTz` has no date-only variant so it needs a new formatter. Not worth the
    diff against rule 3.
-2. **190 arbitrary `text-[Npx]` values bypass the type scale** (carried, `2026-08-02` audit). The
-   Text-size setting still does nothing for most of the app. `/settings` now discloses this honestly
-   ("Some icons and badges keep a fixed size"), which is the *honest* version of a real limitation.
-   Deliberately out of scope: it is a 47-file mechanical sweep that wants its own review.
-3. **22 headings still bypass the typography tokens** (carried from Stage 1). Same reason.
+2. ~~**190 arbitrary `text-[Npx]` values bypass the type scale**~~ — **CORRECTION, measured
+   2026-08-05: this is already fixed and I repeated a stale doc.** The tree now has **1** arbitrary
+   `text-[Npx]` (in `/poster`, a fixed-size print artifact that should not scale) against **193**
+   `calc(Npx*var(--text-scale))` uses. `ddc144e fix(a11y): make /settings → Text size actually scale
+   the whole UI` did the sweep. **The Text-size setting works.** `2026-08-01-m2-frontend-unfreeze.md`
+   §"The structural finding — NOT fixed" is stale and should be marked resolved.
+3. **14 headings still hand-roll `font-extrabold` instead of the typography tokens** — measured, not
+   the "22 of 59" the older doc claims; token uses now outnumber them 48 to 14. Real but narrow.
 4. **`staff.role` accepted by `StaffShell` and never used** (carried). Dead prop; removing it is
    cleanup, surfacing it as a badge is a design decision. Neither is this run's remit.
 5. **`generateMetadata` still swallows its query error** — deliberate, see §2.2.
