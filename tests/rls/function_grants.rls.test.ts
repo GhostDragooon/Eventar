@@ -6,9 +6,11 @@
 //    the RPC to anon is a footgun. Now authenticated-only → an anon caller is
 //    refused at the GRANT level ("permission denied for function"), before the
 //    gate is even reached.
-//  - self_check_in: intentionally anon-open (public check-in). An anon caller
-//    with a bogus code reaches the function and gets a DOMAIN result
-//    ('invalid'), not a permission error — proving execute is still granted.
+//  - self_check_in: was anon-open, now service_role-only (security review
+//    2026-08-06, migration 20260806000100). Its guessing-path rate limit keys
+//    on a CALLER-supplied p_ip, so a direct anon RPC could rotate p_ip to defeat
+//    it. The only real caller is the Server Action, which uses the service_role
+//    admin client. An anon caller is now refused at the GRANT level.
 //  - require_active_staff: an app_private helper, never part of the exposed
 //    API. A PostgREST rpc call resolves to nothing (PGRST202).
 //
@@ -30,16 +32,16 @@ describe.skipIf(!process.env.RLS_TESTS)('residual function-grant hygiene', () =>
     expect(error?.message).toMatch(/permission denied for function/i);
   });
 
-  it('anon CAN still execute self_check_in — bogus code returns a domain result, not a permission error', async () => {
-    const { data, error } = await anon.rpc('self_check_in', {
+  it('anon is refused self_check_in at the grant level (service_role-only since 2026-08-06)', async () => {
+    const { error } = await anon.rpc('self_check_in', {
       p_code: 'DEFINITELY-NOT-A-REAL-CODE',
       p_ip: '203.0.113.99',
     });
-    expect(error).toBeNull();
-    const result = (data as { result: string }[])[0]?.result;
-    // Either the code doesn't resolve ('invalid') or the guess limiter trips
-    // ('rate_limited') — both prove execute reached the function body.
-    expect(['invalid', 'rate_limited']).toContain(result);
+    // Grant-level denial before the function body: the caller-supplied p_ip
+    // guessing bypass is unreachable from anon now. Dedicated coverage (anon +
+    // authenticated + service_role) lives in self_check_in_grant.rls.test.ts.
+    expect(error).not.toBeNull();
+    expect(error?.message).toMatch(/permission denied for function/i);
   });
 
   it('require_active_staff is not part of the exposed PostgREST API (PGRST202)', async () => {

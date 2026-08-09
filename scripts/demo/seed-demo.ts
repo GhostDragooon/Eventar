@@ -364,17 +364,22 @@ async function findOrCreateEvent(
     throw new Error('create_event_with_blocks returned no id');
   }
 
-  // Enable self-serve check-in (default is staff-only) — the run sheet's
-  // Beat 4 has an attendee self-check-in by opening their personal QR link
-  // and tapping "Confirm I'm here" on /checkin/confirm, which that page only
-  // offers when this flag is true (it reads the code from the link — there is
-  // no typed-entry field on the attendee side; manual typing is the staff surface).
+  // Self-serve check-in stays OFF (2026-08-06, Ivan's call). It used to be
+  // enabled here so the run sheet's Beat 4 could demo an attendee tapping
+  // "Confirm I'm here" on /checkin/confirm. That tap is a check-in from
+  // anywhere on earth inside the event window — `self_check_in` has no location
+  // check of any kind — which contradicts the product model: an attendee scans
+  // a QR at the venue, or staff scan/key their code. Nothing else.
+  // The venue-scan path that Beat 4 should have been demoing is specified in
+  // docs/plans/2026-08-06-venue-scan-checkin-spec.md and is deliberately NOT
+  // built yet (Stage 8 is the active phase). Until it is, the demo shows the
+  // two paths that actually exist: staff scan, and staff manual entry.
   // Same update also sets the CPD config columns not in create_event_with_blocks'
   // fixed insert list (Stage 4) — one round-trip, not a second update call.
   const { error: modesErr } = await client
     .from('events')
     .update({
-      checkin_modes: { staff: true, self_serve: true },
+      checkin_modes: { staff: true, self_serve: false },
       accrediting_body_id: bodyId,
       cpd_hours: CPD_HOURS,
     })
@@ -512,8 +517,15 @@ async function main() {
   // the organiser walkthrough includes the publish step), and every attendee
   // surface correctly refuses a draft. A window that is open on the clock is
   // still shut if nobody published.
-  const { data: statusRow } = await client
+  const { data: statusRow, error: statusErr } = await client
     .from('events').select('status').eq('id', event.id).maybeSingle();
+  // A failed read must not read as "not published yet". It degrades the same
+  // way either way, so the banner has to say WHICH it is — otherwise the
+  // operator spends the demo hunting for a publish button that already worked.
+  if (statusErr) {
+    console.error(`\n⚠️  Could not read the event's status (${statusErr.code ?? 'unknown'}).`);
+    console.error('   The walkability lines below assume NOT published and may be wrong.\n');
+  }
   const published = statusRow?.status === 'published';
   const checkinOpen = inCheckinWindow && published;
 

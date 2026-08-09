@@ -125,6 +125,14 @@ describe('withSecurity', () => {
     expect(ctx.staff).toBe(FAKE_STAFF);
     expect(ctx.supabase).toBe(supabaseClient);
 
+    // Security review 2026-08-06: the rate-limit key must be the staff id (a
+    // UUID), never the access token. The token is a bearer credential + PII and
+    // this key is persisted to rate_limits.key and logged on limiter error.
+    expect(mockRateLimitBySession).toHaveBeenCalledWith('testScope', FAKE_STAFF.id, {
+      windowMs: 60_000,
+      max: 5,
+    });
+
     expect(mockRevalidatePath).toHaveBeenCalledTimes(2);
     expect(mockRevalidatePath).toHaveBeenCalledWith('/dashboard');
     expect(mockRevalidatePath).toHaveBeenCalledWith('/events/1');

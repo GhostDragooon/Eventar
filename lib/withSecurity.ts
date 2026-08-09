@@ -34,10 +34,13 @@ export function withSecurity<I, T>(
     }
     const supabase = await supabaseServer();
 
-    // 2. Rate limit, keyed to the authenticated session (server-derived).
-    const { data: sess } = await supabase.auth.getSession();
-    const sessionId = sess.session?.access_token ?? staff.id; // fallback: user id
-    const rl = await rateLimitBySession(opts.rateLimit.scope, sessionId, {
+    // 2. Rate limit, keyed to the authenticated staff id (server-derived, and
+    // stable across token refreshes). Deliberately NOT the access token: this
+    // key is persisted to rate_limits.key and logged on limiter error, and the
+    // token is a bearer credential + PII (its JWT payload carries email/phone).
+    // staff.id is a UUID and a strictly better key — the prior comment already
+    // said so. Security review 2026-08-06.
+    const rl = await rateLimitBySession(opts.rateLimit.scope, staff.id, {
       windowMs: opts.rateLimit.windowMs, max: opts.rateLimit.max,
     });
     if (!rl.allowed) return { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };

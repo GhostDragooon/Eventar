@@ -146,6 +146,10 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('[reconcile-event] failed:', err);
+  // Log message + code only, never the whole error: a PostgrestError's
+  // details/hint echo row values (Rule 10), and this CLI runs against real
+  // registration data. Security review 2026-08-06.
+  const e = err as { message?: string; code?: string };
+  console.error('[reconcile-event] failed:', { message: e.message ?? String(err), code: e.code });
   process.exit(1);
 });

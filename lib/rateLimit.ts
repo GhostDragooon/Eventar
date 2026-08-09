@@ -71,8 +71,12 @@ export async function rateLimit(
   if (error) {
     const e = error as { code?: string; message?: string };
     // Fail-visible (Rule 12) + fail-open (policy choice — see above).
+    // Log the SCOPE only, never the full key: the discriminator is a client IP
+    // (rateLimitByIp) — personal data under Rule 10 — and would be a bearer
+    // token if a session-keyed caller ever failed here. Scope alone identifies
+    // which limiter broke. Security review 2026-08-06.
     console.error('[rateLimit] check failed; failing open', {
-      key,
+      scope: key.split(':')[0],
       code: e.code,
       message: e.message,
     });

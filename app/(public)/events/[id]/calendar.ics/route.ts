@@ -18,11 +18,15 @@ export async function GET(
   if (!limit.allowed) return new NextResponse('Too many requests', { status: 429 });
 
   const supabase = await supabaseServer();
-  const { data: event } = await supabase
+  const { data: event, error: eventErr } = await supabase
     .from('events')
     .select('id, title, status, start_time, end_time, venue_name, venue_address')
     .eq('id', id)
     .maybeSingle();
+  // 503, not 404: a discarded error told the calendar client the event does
+  // not exist, which is a permanent answer to a temporary problem — some
+  // clients stop retrying a subscription on 404 (rule 12).
+  if (eventErr) return new NextResponse('Service unavailable', { status: 503 });
   if (!event || event.status !== 'published') {
     return new NextResponse('Not found', { status: 404 });
   }

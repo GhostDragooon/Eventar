@@ -57,6 +57,12 @@ export async function markAttended(
       // process.env with non-null assertions and throws on a misconfigured deploy,
       // which outside the boundary would fail an already-committed check-in.
       try {
+        // Attribution only. A failed getUser() degrades actorId to NULL, which
+        // award_attendance_credit already handles with a raise warning rather
+        // than costing the practitioner a credit (DEFERRED, MEDIUM-4).
+        // Surfacing it would fail an attendance that is already committed —
+        // exactly what this try block exists to prevent.
+        // eslint-disable-next-line no-restricted-syntax -- see above: attribution degrades to NULL by design
         const { data: actor } = await supabase.auth.getUser();
         await awardAttendanceCredit(supabaseAdmin(), {
           eventId: row.event_id,

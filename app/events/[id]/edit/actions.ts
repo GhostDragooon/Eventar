@@ -29,12 +29,12 @@ export async function publishEvent(id: string) {
 export async function getEventQrPng(
   eventId: string,
 ): Promise<{ pngBase64: string; filename: string } | { error: string }> {
-  await requireStaff();
+  const staff = await requireStaff();
   const supabase = await supabaseServer();
 
   const { data: event, error: readErr } = await supabase
     .from('events')
-    .select('id, title, status')
+    .select('id, title, status, created_by')
     .eq('id', eventId)
     .maybeSingle();
   if (readErr) throw readErr;
@@ -45,6 +45,15 @@ export async function getEventQrPng(
   if (!event) {
     return { error: 'Event not found.' };
   }
+
+  // Ownership gate — NOT provided by the read above: supabaseServer() is an
+  // anon-scoped client whose only matching policy is events_public_read_published
+  // (any authenticated principal reads any published event), so requireStaff()
+  // alone would let a non-owner staffer mint this event's QR. Owner-or-manager,
+  // same shape as emailActions.ts::authorizeEvent. 'Event not found' hides
+  // existence from a non-owner (matches the not-found copy above).
+  const canManage = event.created_by === staff.id || staff.role === 'eventar_staff';
+  if (!canManage) return { error: 'Event not found.' };
 
   // Defense in depth — the UI also gates on event.status === 'published',
   // but a future refactor that exposes this action elsewhere would skip the
@@ -63,19 +72,28 @@ export async function getEventQrPng(
 export async function exportRegistrantsCsv(
   eventId: string,
 ): Promise<{ csvBase64: string; filename: string } | { error: string }> {
-  await requireStaff();
+  const staff = await requireStaff();
   const supabase = await supabaseServer();
 
-  // RLS gates the event read to the organizer / manager. .maybeSingle() lets us
-  // surface "not found" as a real error rather than letting a silently-empty
-  // result trickle through (CLAUDE.md rule 12).
+  // .maybeSingle() lets us surface "not found" as a real error rather than
+  // letting a silently-empty result trickle through (CLAUDE.md rule 12).
   const { data: event, error: readErr } = await supabase
     .from('events')
-    .select('id, title, start_time, end_time, timezone, venue_name, max_attendees')
+    .select('id, title, start_time, end_time, timezone, venue_name, max_attendees, created_by')
     .eq('id', eventId)
     .maybeSingle();
   if (readErr) throw readErr;
   if (!event) return { error: 'Event not found.' };
+
+  // Ownership gate. The old comment claimed "RLS gates the event read to the
+  // organizer / manager" — it does not: supabaseServer() reads via the anon
+  // events_public_read_published policy (any authenticated principal reads any
+  // published event), and the registrant rows below are read via supabaseAdmin()
+  // (RLS bypassed). Without this check any active staff row could export another
+  // organiser's full registrant name+email list. Owner-or-manager, matching
+  // emailActions.ts::authorizeEvent; 'Event not found' hides existence.
+  const canManage = event.created_by === staff.id || staff.role === 'eventar_staff';
+  if (!canManage) return { error: 'Event not found.' };
 
   // Single rows query is the source of truth for both the gate and the
   // metadata count — eliminates the race window where a separate `count`

@@ -11,6 +11,10 @@ const { mockSendReal, mockSendStub } = vi.hoisted(() => ({
   mockSendReal: vi.fn(),
   mockSendStub: vi.fn(),
 }));
+
+// Captures the columns the event SELECT actually requests, so a test can pin
+// that deleted_at is fetched (the soft-delete gate is only real if it is).
+const { colCapture } = vi.hoisted(() => ({ colCapture: { eventCols: '' } }));
 vi.mock('@/lib/resend', () => ({ sendEmail: mockSendReal }));
 vi.mock('@/lib/devEmailStub', () => ({ sendEmail: mockSendStub }));
 
@@ -72,6 +76,7 @@ type EventRow = {
   venue_name: string;
   venue_address: string | null;
   registration_close_at: string | null;
+  deleted_at: string | null;
 };
 let mockEventRow: EventRow | null = null;
 let lastEmailLogUpdate: Record<string, unknown> | null = null;
@@ -80,11 +85,14 @@ let lastEmailLogUpdateId: string | null = null;
 vi.mock('@/lib/supabase/server', () => ({
   supabaseServer: vi.fn(async () => ({
     from: (_table: string) => ({
-      select: (_cols: string) => ({
-        eq: (_col: string, _val: string) => ({
-          maybeSingle: async () => ({ data: mockEventRow, error: null }),
-        }),
-      }),
+      select: (cols: string) => {
+        colCapture.eventCols = cols;
+        return {
+          eq: (_col: string, _val: string) => ({
+            maybeSingle: async () => ({ data: mockEventRow, error: null }),
+          }),
+        };
+      },
     }),
   })),
 }));
@@ -200,6 +208,7 @@ function futureEventRow(): EventRow {
     venue_name: 'Office HQ',
     venue_address: 'Gedimino 1, Vilnius',
     registration_close_at: null,
+    deleted_at: null,
   };
 }
 
@@ -315,5 +324,22 @@ describe('registerForEvent — registration window gate', () => {
 
     expect(result).toEqual({ ok: true });
     expect(mockSendStub).toHaveBeenCalledTimes(1);
+  });
+
+  // A soft-deleted event keeps status='published' (softDeleteEvents only sets
+  // deleted_at), and every sibling consumer — /events, the cron dispatcher,
+  // self_check_in — filters deleted_at. registerForEvent did not, so a deleted
+  // event kept taking registrations via its direct URL: the registrant got a
+  // confirmation email and was turned away at the door. Security review 2026-08-06.
+  it('rejects a soft-deleted event even while status is still published', async () => {
+    mockEventRow!.deleted_at = new Date(Date.now() - 1 * HOUR).toISOString();
+
+    const result = await registerForEvent(valid);
+
+    expect(result).toEqual({ error: 'Registrations are not open for this event.' });
+    expect(mockSendStub).not.toHaveBeenCalled();
+    expect(mockSendReal).not.toHaveBeenCalled();
+    // The gate is only real if the column is actually fetched.
+    expect(colCapture.eventCols).toContain('deleted_at');
   });
 });

@@ -59,12 +59,21 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
   // Step 2 — event must exist and be published. Anon RLS already filters
   // non-published events, but selecting explicit columns lets us read
   // max_attendees + title for the capacity check + stub message.
-  const { data: event } = await anon
+  const { data: event, error: eventErr } = await anon
     .from('events')
-    .select('id, title, status, max_attendees, start_time, end_time, timezone, venue_name, venue_address, registration_close_at, registration_open_at')
+    .select('id, title, status, max_attendees, start_time, end_time, timezone, venue_name, venue_address, registration_close_at, registration_open_at, deleted_at')
     .eq('id', event_id)
     .maybeSingle();
-  if (!event || event.status !== 'published') {
+  // A discarded error fell through to "Registrations are not open" — a
+  // confident policy claim about an event whose row we never actually read,
+  // told to someone who could in fact have registered (rule 12).
+  if (eventErr) return { error: 'Could not load this event. Please try again.' };
+  // deleted_at gate: softDeleteEvents only sets deleted_at, leaving
+  // status='published', so a soft-deleted event stayed registrable via its
+  // direct URL while /events, the cron dispatcher and self_check_in all filter
+  // it. Anon RLS still returns the row (published), so this is the layer that
+  // must exclude it. Security review 2026-08-06.
+  if (!event || event.status !== 'published' || event.deleted_at != null) {
     return { error: 'Registrations are not open for this event.' };
   }
 

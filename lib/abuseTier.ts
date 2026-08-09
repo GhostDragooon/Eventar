@@ -1,6 +1,6 @@
 import 'server-only';
 import { supabaseAdmin } from './supabase/admin';
-import { rateLimitBySession } from './rateLimit';
+import { rateLimitByUser } from './rateLimit';
 
 const ABUSE_SCOPE = 'sessionAbuse';
 const ABUSE_WINDOW_MS = 60 * 60 * 1000; // 60 min
@@ -17,7 +17,12 @@ const ABUSE_MAX = 3;                    // 3 hits in the window → revoke
 export async function recordAbuseHitAndMaybeRevoke(args: {
   sessionAccessToken: string; userId: string;
 }): Promise<{ revoked: boolean }> {
-  const rl = await rateLimitBySession(ABUSE_SCOPE, args.sessionAccessToken, {
+  // Key on userId (a UUID), NOT the access token: the key is persisted to
+  // rate_limits.key and logged, and a bearer token must never be either. Per-
+  // user is also the stronger abuse semantic here — the revoke is global, and
+  // per-session keying would let hits be spread across sessions to duck the cap.
+  // The raw token is still needed below for the global signOut. Security review 2026-08-06.
+  const rl = await rateLimitByUser(ABUSE_SCOPE, args.userId, {
     windowMs: ABUSE_WINDOW_MS, max: ABUSE_MAX,
   });
   if (rl.allowed) return { revoked: false };
