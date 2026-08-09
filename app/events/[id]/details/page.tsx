@@ -4,6 +4,7 @@ import { requireStaff, NotAuthorizedError } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { StaffShell } from '@/components/shell/StaffShell';
+import { ReadinessStrip, type ReadinessCell } from '@/components/details/ReadinessStrip';
 import { StatusPill } from '@/components/lifecycle/StatusPill';
 import { computeLifecycle, type EventLifecycleRow, type Lifecycle } from '@/lib/lifecycle/eventLifecycle';
 import { formatInTz } from '@/lib/tz';
@@ -13,6 +14,7 @@ import { AttendanceSection } from '@/components/details/AttendanceSection';
 import { FeedbackSection } from '@/components/details/FeedbackSection';
 import { listAuthorisedBodies } from '@/lib/cpd/authorisedBodies';
 import { CpdAccreditationSection } from '@/components/details/CpdAccreditationSection';
+import { PassDeliveryPanel } from '@/components/details/PassDeliveryPanel';
 import { EmailSendControls } from './EmailSendControls';
 import { LiveScoreboard } from '@/components/details/LiveScoreboard';
 import { StickyLiveBar } from '@/components/details/StickyLiveBar';
@@ -40,7 +42,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
   // The accrediting-body list is NOT in this batch: which bodies are offerable
   // depends on the event's organisation (DEFERRED 56), so it cannot be fetched
   // until the event row has resolved.
-  const [eventRes, regsRes, surveysRes, blocksRes, confirmationsRes, creditsRes] = await Promise.all([
+  const [eventRes, regsRes, surveysRes, blocksRes, confirmationsRes, creditsRes, deliveryRes] = await Promise.all([
     supabase
       .from('events')
       .select('id, title, start_time, end_time, timezone, venue_name, max_attendees, status, registration_close_at, registration_open_at, created_by, accrediting_body_id, cpd_hours, organisation_id')
@@ -48,7 +50,9 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
       .maybeSingle(),
     supabase
       .from('registrations')
-      .select('id, status, check_in_at, check_in_method, registered_at')
+      // full_name is for the pass-delivery panel, which names who has no usable
+      // pass — a count alone gives the organiser nothing to act on.
+      .select('id, status, check_in_at, check_in_method, registered_at, full_name')
       .eq('event_id', id),
     // E.3: fetch the Q2 columns so we can both count responses AND derive the
     // leading session in one round-trip (replaces the head:true count-only call).
@@ -81,6 +85,14 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
       .select('id', { count: 'exact', head: true })
       .eq('event_id', id)
       .eq('entry_type', 'credit_earned'),
+    // Per-recipient pass delivery. Admin like the sibling reads above:
+    // email_log has no anon/authenticated policy at all (service-role only),
+    // and this page's auth gate has already run.
+    admin
+      .from('email_log')
+      .select('registration_id, purpose, status')
+      .eq('event_id', id)
+      .not('registration_id', 'is', null),
   ]);
 
   if (eventRes.error) throw eventRes.error;
@@ -99,6 +111,19 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
     console.error('[details] credit_ledger count failed', { code: creditsRes.error.code });
   }
   const creditsIssued = creditsRes.count ?? 0;
+
+  // Same posture as the credit count: one panel failing must not take the page
+  // down, but it must not read as "everyone got their pass" either (rule 12).
+  // A failed read yields no rows, which would render every attendee as
+  // "not sent" — alarming but never falsely reassuring, so it fails loud.
+  if (deliveryRes.error) {
+    console.error('[details] email_log delivery read failed', { code: deliveryRes.error.code });
+  }
+  const deliveryRows = (deliveryRes.data ?? []) as Array<{
+    registration_id: string;
+    purpose: string;
+    status: 'queued' | 'sent' | 'failed';
+  }>;
 
   const event = eventRes.data;
   // Deferred until now: offerable bodies depend on the event's organisation.
@@ -121,6 +146,65 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
     ? (confirmationsRes.count ?? 0)
     : 0;
   const leadingSession = deriveLeadingSession(surveys, blocks);
+
+  // ---- Readiness strip (IA spec, Events section) ---------------------------
+  // Five facts, each with a state. Anything we cannot actually check renders
+  // `idle` (muted) rather than green — asserting readiness we have not verified
+  // is exactly what this strip exists to prevent.
+  const capacityLabel = event.max_attendees != null ? `${regs.length}/${event.max_attendees}` : `${regs.length}`;
+  const fillPct = event.max_attendees ? regs.length / event.max_attendees : null;
+  // Resolve the body to a REAL name. A config row alone is not accreditation:
+  // if the id does not resolve against the organisation's authorised bodies,
+  // the event carries points nobody has agreed to honour, and the strip must
+  // say so rather than print a placeholder and a green "confirmed".
+  const configuredBody = accreditingBodies.find((b) => b.id === event.accrediting_body_id);
+  const hasConfig = event.accrediting_body_id != null && event.cpd_hours != null;
+  const accredited = hasConfig && configuredBody != null;
+
+  const readiness: ReadinessCell[] = [
+    {
+      label: 'registered',
+      value: capacityLabel,
+      state: fillPct == null ? 'idle' : fillPct >= 0.9 ? 'ok' : fillPct >= 0.4 ? 'warn' : 'blocked',
+      note:
+        fillPct == null ? 'no capacity set'
+        : fillPct >= 0.9 ? 'on pace'
+        : `${Math.round(fillPct * 100)}% full`,
+    },
+    {
+      label: 'programme',
+      value: `${blocks.length}`,
+      state: blocks.length > 0 ? 'ok' : 'warn',
+      note: blocks.length > 0 ? 'agenda blocks set' : 'no agenda yet',
+    },
+    {
+      label: 'accreditation',
+      value: accredited
+        ? `${configuredBody.short_name} ${event.cpd_hours}`
+        : hasConfig ? 'Unverified'
+        : 'Not set',
+      state: accredited ? 'ok' : hasConfig ? 'blocked' : 'warn',
+      note: accredited
+        ? 'points confirmed'
+        : hasConfig ? 'body not authorised for this org'
+        : 'no body or points',
+    },
+    {
+      label: 'passes sent',
+      value: `${confirmationsSent}`,
+      state: confirmationsSent > 0 ? 'ok' : regs.length === 0 ? 'idle' : 'warn',
+      note:
+        regs.length === 0 ? 'nobody registered'
+        : confirmationsSent >= regs.length ? 'all registrants'
+        : `${regs.length - confirmationsSent} outstanding`,
+    },
+    {
+      label: 'survey',
+      value: responseCount > 0 ? `${responseCount}` : 'Armed',
+      state: responseCount > 0 ? 'ok' : 'idle',
+      note: responseCount > 0 ? 'responses in' : 'fires 10 min after end',
+    },
+  ];
 
   // eslint-disable-next-line react-hooks/purity
   const nowMs = Date.now();
@@ -161,6 +245,9 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
         </div>
         <ActionToolbar eventId={event.id} lifecycle={lifecycle} />
       </header>
+
+      {/* "One glance = is this event ready to run" (IA spec). */}
+      <ReadinessStrip cells={readiness} />
 
       {/* Dark status scoreboard — the live operator's at-a-glance readout. */}
       <LiveScoreboard
@@ -209,6 +296,22 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
           ) : undefined
         }
       />
+
+      {canSeeConfirmationsSent && (
+        <PassDeliveryPanel
+          registrations={regs
+            .filter((r) => r.status === 'registered')
+            .map((r) => ({ id: r.id, full_name: r.full_name }))}
+          logRows={deliveryRows}
+          // The pass goes out when check-in opens; before that, "not sent" is
+          // expected rather than a problem worth flagging.
+          windowOpen={lifecycle === 'live' || lifecycle === 'completed'}
+          // Same env switch the send core uses to pick devEmailStub. Without
+          // it every local run reports the whole roster as pass-less, because
+          // the stub leaves rows 'queued' by design.
+          deliveryLive={Boolean(process.env.RESEND_API_KEY)}
+        />
+      )}
 
       <AttendanceSection
         lifecycle={lifecycle}

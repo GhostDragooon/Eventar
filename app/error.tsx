@@ -34,14 +34,14 @@ export default function GlobalError({
         <button
           type="button"
           onClick={reset}
-          className="inline-flex items-center gap-xs bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
+          className="inline-flex items-center gap-xs bg-primary text-on-primary font-label-md text-label-md rounded-full py-sm px-lg hover:opacity-90 transition-opacity"
         >
           <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>refresh</span>
           Try again
         </button>
         <Link
           href="/"
-          className="inline-flex items-center gap-xs border border-outline-variant text-on-surface font-label-md text-label-md rounded-lg py-sm px-lg hover:bg-surface-container-high transition-colors"
+          className="inline-flex items-center gap-xs border border-outline-variant text-on-surface font-label-md text-label-md rounded-full py-sm px-lg hover:bg-surface-container-high transition-colors"
         >
           Home
         </Link>

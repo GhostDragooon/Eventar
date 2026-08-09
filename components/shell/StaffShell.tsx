@@ -2,29 +2,34 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { BrandMark } from './BrandMark';
+import { SiteFooter } from './SiteFooter';
 
-// Staff shell — M2 Stage 2 (2026-08-01), replacing the three-column top NAV
-// with the locked global-shell architecture: a persistent top bar + a
-// persistent left sidebar, where THE SIDEBAR IS THE NAVIGATION and only the
-// content region changes between pages.
+// Organiser shell — rebuilt 2026-08-09 to `docs/plans/2026-07-12-organiser-ia-spec.md`.
 //
-// Deliberately NOT built (each would fabricate a capability the backend does
-// not have, and a shell that lies is worse than a plain one):
-//   · workspace switcher  — staff belong to exactly one organisation today;
-//                           a switcher implies multi-org membership
-//   · venue status pill    — there is no venue-link subsystem to report on
-//   · notification bell    — there is no needs-attention queue to open
-//   · ⌘K global search     — there is no search backend (tagged post-M4)
-// They belong to the surfaces that make them real, not to this stage.
+// That spec's layout decision is explicit and was NOT optional:
+//   "Left sidebar for the organiser web app (witan/Cadre pattern - both
+//    references use it; 8 nav areas outgrow the shipped 3-part top bar), plus
+//    a slim top context bar (org name, global search, user menu)."
 //
-// NO Eventar wordmark in the shell chrome (locked naming rule, carried over
-// from the previous nav) — brand presence lives in the "By Eventar" footer.
-// The artifact's mockup shows a brand mark top-left; that is a design target,
-// not a rule source, so the locked rule wins until Ivan says otherwise.
+// On 2026-08-08 I replaced that sidebar with a single top pill nav. That was a
+// mistake with a specific cause worth recording so it does not recur: the
+// option Ivan chose was about applying ONE DESIGN LANGUAGE across surfaces, and
+// I wrote "replaces the sidebar architecture" into that option's description.
+// A paint decision was allowed to carry an architecture decision. The IA spec
+// was never read; this file's own comment already said the sidebar was locked.
 //
-// Nav lists ONLY routes that exist. The artifact's sidebar also shows
-// Participants / Accreditation / Communications / Reports; wiring those now
-// would ship links to 404s. They arrive with their surfaces (Stage 4+).
+// The design language still applies - it is applied TO the sidebar (glass
+// material, pill active states, the blue ramp, one type scale) rather than by
+// deleting it.
+//
+// Palette note: the 2026-07-12 mockups are teal. Teal was retired 2026-07-16 in
+// favour of the blue ramp, which is the newer locked decision, so the STRUCTURE
+// comes from the mockups and the COLOUR from the current tokens.
+//
+// Wordmark: the mockup puts "Eventar" at the top of the sidebar. That reverses
+// the older "no wordmark in shell chrome" rule - Ivan's call 2026-08-09, taken
+// explicitly after being shown the conflict.
 
 type StaffShellBaseProps = {
   staff: { email: string; role: 'organiser_admin' | 'organiser_member' | 'body_admin' | 'auditor' | 'eventar_staff' };
@@ -37,46 +42,100 @@ type StaffShellBackProps =
 
 export type StaffShellProps = StaffShellBaseProps & StaffShellBackProps;
 
-// Only staff routes that render INSIDE this shell.
-//
-// "Events" used to sit here pointing at /events — which is app/(public)/events,
-// a SiteShell page. Clicking it in the staff sidebar loaded the public listing
-// and the whole sidebar vanished, which reads as the app breaking. /dashboard
-// is already the staff events list (filter tabs by lifecycle, search, sort,
-// per-event edit/delete), so the link was both broken and redundant. A
-// dedicated staff /events route can earn its place back when it exists.
-const NAV = [
+/**
+ * 7 of the spec's 8 areas (6 here + Settings, rendered separately below).
+ * `href: null` means the surface does not exist yet: rendered visible-but-inert
+ * so the shell shows the real IA without shipping a link to a 404 (Ivan's call
+ * 2026-08-09). Give an item an href the day its route lands - that is the whole
+ * migration.
+ *
+ * EVENTS IS DELIBERATELY ABSENT (Ivan's call 2026-08-09). It was previously
+ * rendered inert with a SOON chip, which told an organiser a capability was
+ * coming while they were already standing in it: /dashboard IS the staff events
+ * list (lifecycle filter tabs, search, sort, per-event edit/delete). The real
+ * defect underneath was an audience boundary, not a routing one - the original
+ * link pointed at app/(public)/events, the ATTENDEE-facing directory, so
+ * clicking it from the staff sidebar loaded the public listing and the sidebar
+ * vanished. The attendee list is not a staff nav destination at all. If the
+ * spec's dedicated organiser list is ever built, it gets its own route and its
+ * own row then - not a placeholder now.
+ */
+const NAV: { label: string; href: string | null; icon: string; count?: number }[] = [
   { label: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
+  { label: 'Participants', href: null, icon: 'group' },
+  { label: 'Accreditation', href: null, icon: 'verified_user' },
   { label: 'Check-in', href: '/checkin', icon: 'how_to_reg' },
-  { label: 'Analytics', href: '/analytics', icon: 'bar_chart' },
+  { label: 'Communications', href: null, icon: 'mail' },
+  { label: 'Reports', href: '/analytics', icon: 'bar_chart' },
 ];
 
 function isActive(pathname: string, href: string): boolean {
-  // The '/events' branch that used to live here is gone with the nav item —
-  // nothing routes there from this shell any more, so it was dead code.
   if (href === '/checkin') return pathname === '/checkin' || pathname.endsWith('/checkin');
   if (href === '/analytics') return pathname === '/analytics' || pathname.endsWith('/analytics');
   return pathname === href;
 }
 
-function NavLink({ href, label, icon, active }: { href: string; label: string; icon: string; active: boolean }) {
+function NavRow({
+  label,
+  href,
+  icon,
+  count,
+  active,
+}: {
+  label: string;
+  href: string | null;
+  icon: string;
+  count?: number;
+  active: boolean;
+}) {
+  const inner = (
+    <>
+      <span className="material-symbols-outlined text-[calc(20px*var(--text-scale))]" aria-hidden>
+        {icon}
+      </span>
+      {/* No `truncate`: at 248px every label fits, and truncating clipped
+          "Communications" to "Communicati…" once the Soon chip took its space. */}
+      <span className="flex-1 whitespace-nowrap text-left">{label}</span>
+      {count !== undefined && (
+        <span className="rounded-full bg-surface-container-high px-sm py-[1px] text-[calc(11px*var(--text-scale))] font-semibold text-on-surface-variant">
+          {count}
+        </span>
+      )}
+    </>
+  );
+
+  const base =
+    'nav-item flex w-full items-center gap-sm rounded-full px-md py-sm text-[calc(13.5px*var(--text-scale))] font-medium';
+
+  if (!href) {
+    return (
+      <span
+        // Not a <button>: it is not actionable, and a disabled button is still
+        // a tab stop in some AT. `aria-disabled` + the visible "Soon" chip say
+        // the same thing to sighted and non-sighted users.
+        aria-disabled="true"
+        title={`${label} — surface not built yet`}
+        className={`${base} cursor-default text-on-surface-variant/45`}
+      >
+        {inner}
+        <span className="rounded-full border border-outline-variant px-sm py-[1px] text-[calc(10px*var(--text-scale))] font-semibold uppercase tracking-[.06em] text-on-surface-variant/70">
+          Soon
+        </span>
+      </span>
+    );
+  }
+
   return (
     <Link
       href={href}
       aria-current={active ? 'page' : undefined}
-      // whitespace-nowrap: on the mobile horizontal strip the flex children
-      // shrink, and "Check-in" wrapped to two lines mid-word. The strip
-      // scrolls, so refusing to wrap is the correct trade.
-      className={`flex shrink-0 items-center gap-sm whitespace-nowrap rounded-lg px-sm py-sm text-[calc(13px*var(--text-scale))] font-medium transition-colors ${
+      className={`${base} ${
         active
-          ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold'
+          ? 'bg-primary-container font-semibold text-on-primary-container'
           : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
       }`}
     >
-      <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>
-        {icon}
-      </span>
-      {label}
+      {inner}
     </Link>
   );
 }
@@ -86,92 +145,117 @@ export function StaffShell(props: StaffShellProps) {
   const pathname = usePathname() ?? '';
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-background text-on-surface">
-      {/* Skip link (WCAG 2.4.1 Bypass Blocks). The sidebar puts five nav links
-          ahead of the page content on every staff route, so a keyboard or
-          screen-reader user otherwise tabs the whole nav on every navigation.
-          Visually hidden until focused. */}
+    <div className="app-atmo flex min-h-screen w-full flex-col text-on-surface">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-md focus:top-md focus:z-50 focus:rounded-lg focus:bg-primary focus:px-md focus:py-sm focus:text-[calc(13px*var(--text-scale))] focus:font-semibold focus:text-on-primary"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-md focus:top-md focus:z-50 focus:rounded-full focus:bg-primary focus:px-md focus:py-sm focus:text-[calc(13px*var(--text-scale))] focus:font-semibold focus:text-on-primary"
       >
         Skip to content
       </a>
 
-      {/* Top bar — persistent. Left carries page context (the back link the
-          9 consuming pages already pass), right carries the account. */}
-      <header className="flex h-[60px] shrink-0 items-center justify-between gap-md border-b border-outline-variant px-grid-margin">
-        <div className="flex min-w-0 items-center">
-          {backHref && backLabel && (
-            <Link
-              href={backHref}
-              className="truncate text-[calc(13px*var(--text-scale))] text-on-surface-variant transition-colors hover:text-on-surface"
-            >
-              <span aria-hidden>← </span>
-              Back to {backLabel}
-            </Link>
-          )}
-        </div>
-
-        {/* Right: identity only. Settings moved INTO the sidebar — with the
-            sidebar owning navigation, a second link to the same destination up
-            here was a duplicate nav entry (and made the accessible name
-            "Settings" ambiguous for anything querying by role+name). */}
-        <div className="flex shrink-0 items-center gap-sm text-[calc(13px*var(--text-scale))]">
-          <span className="hidden max-w-[220px] truncate text-on-surface-variant sm:inline" title={staff.email}>
-            {staff.email}
-          </span>
-        </div>
-      </header>
-
       <div className="flex flex-1 flex-col md:flex-row">
-        {/* Sidebar — the navigation. Below md it becomes a horizontal
-            scrollable strip so the same links stay reachable on a phone
-            without a second nav implementation to keep in sync. */}
-        {/* Sticky + viewport-height on desktop. Without this the aside grows to
-            the full page height, so "pin Settings to the bottom" put it ~1450px
-            down — off-screen and unreachable without scrolling the whole page.
-            Sticking the sidebar keeps every nav item in view at any scroll
-            position, which is the point of a persistent sidebar. */}
-        <aside className="shrink-0 border-b border-sidebar-border bg-sidebar md:sticky md:top-0 md:h-[calc(100vh-60px)] md:w-[248px] md:self-start md:border-b-0 md:border-r">
-          {/* aria-label belongs on the <nav>, not the <aside>. An <aside> is a
-              COMPLEMENTARY landmark; labelling it "Primary" named the wrong
-              landmark and left the real navigation landmark anonymous. */}
-          <nav
-            aria-label="Primary"
-            className="flex gap-xs overflow-x-auto p-sm md:h-full md:flex-col md:gap-xs md:overflow-y-auto md:p-md"
-          >
-            {NAV.map((item) => (
-              <NavLink key={item.href} {...item} active={isActive(pathname, item.href)} />
-            ))}
-            {/* Settings is pinned to the foot of the sidebar on desktop (it is
-                a destination, not a section). Without it here the sidebar shows
-                NO active item while you are on /settings, which reads as a
-                broken nav — the gear in the top bar was the only entry point. */}
-            <div className="hidden md:block md:flex-1" aria-hidden />
-            <NavLink href="/settings" label="Settings" icon="settings" active={pathname === '/settings'} />
-          </nav>
+        {/* SIDEBAR — the navigation, per the IA spec. Sticky and viewport-tall
+            on desktop so Settings at the foot stays reachable at any scroll
+            position; a horizontal strip below md, which is what the pre-2026-08-08
+            shell did too (the spec's real mobile answer is a bottom nav with
+            Scan as the centre action — that is its own piece of work). */}
+        <aside className="shrink-0 border-b border-outline-variant md:sticky md:top-0 md:h-screen md:w-[248px] md:self-start md:border-b-0 md:border-r">
+          <div className="flex h-full flex-col gap-md p-md">
+            {/* Brand mark. Reinstated 2026-08-09 per the mockup. */}
+            {/* href="/" is the shipped behaviour, kept deliberately: changing it
+                was not part of the wordmark decision. Worth a look though — from
+                a staff surface the mark lands on the marketing landing, which
+                ejects the organiser out of the app. Same class as the old Events
+                link that loaded the public listing. Flagged, not changed. */}
+            <BrandMark compact />
+
+            <nav
+              aria-label="Primary"
+              className="flex gap-xs overflow-x-auto md:flex-1 md:flex-col md:overflow-x-visible md:overflow-y-auto"
+            >
+              {NAV.map((item) => (
+                <NavRow
+                  key={item.label}
+                  {...item}
+                  active={item.href ? isActive(pathname, item.href) : false}
+                />
+              ))}
+
+              {/* ADMIN group, per the mockup. */}
+              <p className="mt-md hidden px-md text-[calc(10px*var(--text-scale))] font-semibold uppercase tracking-[.1em] text-on-surface-variant/70 md:block">
+                Admin
+              </p>
+              <NavRow label="Settings" href="/settings" icon="settings" active={pathname === '/settings'} />
+            </nav>
+          </div>
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          {/* Page canvas — only this region changes between pages. */}
+          {/* SLIM TOP CONTEXT BAR — org name, global search, user menu. */}
+          <header className="glass-nav sticky top-0 z-[5] flex items-center gap-md border-b border-outline-variant px-grid-margin py-sm">
+            <div className="min-w-0 shrink-0">
+              {backHref && backLabel ? (
+                <Link
+                  href={backHref}
+                  className="nav-item block max-w-[220px] truncate text-[calc(13px*var(--text-scale))] text-on-surface-variant hover:text-on-surface"
+                >
+                  <span aria-hidden>← </span>
+                  Back to {backLabel}
+                </Link>
+              ) : (
+                // The mockup shows the organisation name here. StaffShell is
+                // only handed `staff`, so printing the mockup's "Demo CPD
+                // Alliance" would hardcode a fixture name into every real
+                // tenant's chrome — the same fabrication this shell's own
+                // comments reject elsewhere. The label is honest until the org
+                // is actually threaded through.
+                <p className="truncate text-[calc(12px*var(--text-scale))] font-semibold uppercase tracking-[.08em] text-on-surface-variant">
+                  Organiser workspace
+                </p>
+              )}
+            </div>
+
+            {/* Search is in the spec's context bar, but there is no search
+                backend (the spec tags global search post-M4 and the previous
+                shell removed it for exactly that reason). Rendering a live-
+                looking input that returns nothing is the "chrome that lies"
+                failure. Shown disabled, labelled, so the slot is visibly
+                reserved without pretending to work. */}
+            <div className="hidden flex-1 justify-center lg:flex">
+              <div
+                aria-hidden
+                className="flex w-full max-w-[420px] items-center gap-sm rounded-full border border-outline-variant bg-surface-container-lowest/70 px-md py-[6px] text-[calc(12.5px*var(--text-scale))] text-on-surface-variant/60"
+              >
+                <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]">search</span>
+                Search — coming with the search backend
+              </div>
+            </div>
+
+            <div className="ml-auto flex shrink-0 items-center gap-sm">
+              <span
+                className="grid h-[26px] w-[26px] place-items-center rounded-full bg-primary-container text-[calc(11px*var(--text-scale))] font-semibold text-on-primary-container"
+                aria-hidden
+              >
+                {staff.email.slice(0, 2).toUpperCase()}
+              </span>
+              <span
+                className="hidden max-w-[220px] truncate text-[calc(12.5px*var(--text-scale))] text-on-surface-variant sm:inline"
+                title={staff.email}
+              >
+                {staff.email}
+              </span>
+            </div>
+          </header>
+
           <main
             id="main-content"
             tabIndex={-1}
-            /* mx-auto: dropped in the Stage 2 rewrite, which left content pinned
-               left of a 1440px column on wide screens instead of centred in the
-               space beside the sidebar. */
-            className="w-full max-w-[1440px] flex-1 mx-auto p-grid-margin pb-xxl"
+            className="w-full max-w-[1440px] flex-1 p-grid-margin pb-xxl"
           >
             {children}
           </main>
 
-          {/* Brand footer band — the only place the wordmark lives. */}
-          <footer className="w-full border-t border-outline-variant bg-surface-container-lowest py-md text-center">
-            <span className="text-[calc(11px*var(--text-scale))] text-on-surface-variant">
-              By <span className="font-bold text-on-surface">Eventar</span>
-            </span>
-          </footer>
+          <SiteFooter links={false} />
         </div>
       </div>
     </div>

@@ -36,6 +36,7 @@
   /* M3 color tokens — registered via @theme so they become utility classes
      (bg-primary, text-on-primary-container, border-outline-variant, …) */
   --color-primary: var(--primary);
+  --color-primary-ink: var(--primary-ink);
   --color-on-primary: var(--on-primary);
   --color-primary-container: var(--primary-container);
   --color-on-primary-container: var(--on-primary-container);
@@ -276,10 +277,17 @@
   --font-source-serif: "Iowan Old Style", "Palatino Linotype", Palatino,
     "Book Antiqua", Georgia, serif;
 
-  /* Primary = the ramp's deep blue. Only blue in the ramp safe for small
-     text (~10:1 on white), so it carries primary actions, key headings and
-     active nav. Containers/tints step down the same ramp. */
-  --primary: #1c3c94;
+  /* Primary splits into TWO roles, deliberately (Ivan, 2026-08-09).
+     Measured, not assumed: #0070f3 is 4.55:1 under white, so it is a safe
+     FILL — the ground is the button. As INK it is 4.36:1 on surface-container,
+     4.14:1 on surface-container-high and 4.04:1 on primary-container: three
+     AA failures. #1c3c94 is >8.7:1 as ink on all four grounds.
+     So: --primary is the fill you put --on-primary on. --primary-ink is the
+     ink you put on white or a pale tint. Never substitute one for the other —
+     collapsing them back into one token is exactly the value-without-role
+     regression that broke every CTA on the first live palette pass. */
+  --primary: #0070f3;
+  --primary-ink: #1c3c94;
   --on-primary: #ffffff;
   --primary-container: #eaf2fd;
   --on-primary-container: #1c3c94;
@@ -473,7 +481,12 @@
 :root.dark {
   color-scheme: dark;
 
+  /* Dark keeps ONE blue: on a dark ground the fill and the ink are the same
+     value (#7fb0f4 is 7.59:1 under #0b1b3e as a fill, and light-on-dark as
+     ink). Defining --primary-ink here anyway means text-primary-ink resolves
+     in both themes and dark behaviour is byte-identical to before the split. */
   --primary: #7fb0f4;
+  --primary-ink: #7fb0f4;
   --on-primary: #0b1b3e;
   --primary-container: rgba(108, 170, 239, 0.14);
   --on-primary-container: #cfe2fa;
@@ -574,9 +587,15 @@
  * now" via background-color cycling.
  * ------------------------------------------------------------------------- */
 
+/* Pulses the CONTAINER, not the solid fill. The pill moved to
+   success-container + on-success-container on 2026-08-09 because the solid
+   form was 3.28:1 at 12px/600 — an AA failure. This keyframe drives
+   background-color directly, so leaving it on --success would repaint the
+   failing green over the fixed pill on every cycle. Fading a pale tint toward
+   white only ever RAISES the ink contrast, so the floor stays 7.21:1. */
 @keyframes livePillBgPulse {
-  0%, 100% { background-color: rgb(from var(--success) r g b); }
-  50%      { background-color: rgb(from var(--success) r g b / 0.55); }
+  0%, 100% { background-color: rgb(from var(--success-container) r g b); }
+  50%      { background-color: rgb(from var(--success-container) r g b / 0.55); }
 }
 
 .live-pill-pulse {
@@ -585,6 +604,234 @@
 
 @media (prefers-reduced-motion: reduce) {
   .live-pill-pulse {
-    animation: none; /* static bg-success fallback on the pill stands in */
+    animation: none; /* static bg-success-container on the pill stands in */
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Landing — aesthetic variant D ("White stage") from the approved design
+   artifact `cpd-design-exploration`. Ported 2026-08-06 on Ivan's call to bring
+   the artifact across and match it closely.
+
+   These live here rather than as Tailwind utilities because they are layered
+   radial gradients, a masked dot field, and a backdrop-filter glass panel —
+   each of which Tailwind expresses either not at all or as an unreadable
+   arbitrary-value soup. Scoped to .hero-zone / .landing-nav so nothing else
+   can pick them up.
+
+   White ground is the locked decision: dark below is the explicit toggle only,
+   never the default.
+--------------------------------------------------------------------------- */
+/* The glow lives on the PAGE ROOT, not on the hero block.
+   It was on `.hero-zone`, and the nav had to move inside `.hero-zone` to stop
+   a white band appearing above the gradient — but `position: sticky` is bound
+   by its containing block, so a nav inside a 523px hero un-sticks after 523px
+   of a 1958px document and the landing loses its navigation for the rest of
+   the scroll. Painting the glow from the page root instead lets the nav sit at
+   page level (sticky for the whole document) AND start the gradient at y=0.
+
+   no-repeat matters: these layers are sized (680x340 etc.), and on a
+   full-page-height element the default `repeat` would tile them down the page. */
+/* Every shell's nav is a STICKY pill occupying roughly y 10-66px. Without this,
+   anchor jumps and keyboard focus land underneath it: #verification put its
+   heading behind the pill, and tabbing down /dashboard or /events pushed the
+   focused row under the nav — WCAG 2.2 SC 2.4.11 (Focus Not Obscured).
+
+   NOT inside `@layer base`. It was, and the production build emitted it while
+   the Turbopack dev pipeline silently dropped it — verified by diffing the
+   dev-served chunk against the built chunk on a freshly-restarted server with
+   every other new rule present. A declaration that only exists in prod is
+   worse than no declaration, because it cannot be verified in dev.
+
+   Governs the ROOT scroller only (scroll-padding does not inherit); nested
+   scrollers like the staff nav strip are unaffected, which is correct. */
+html {
+  scroll-padding-top: 72px;
+}
+
+.hero-ground {
+  background:
+    radial-gradient(680px 340px at 82% -6%, rgba(108, 170, 239, 0.34), transparent 66%),
+    radial-gradient(560px 320px at 3% 2%, rgba(68, 148, 188, 0.24), transparent 66%),
+    radial-gradient(520px 280px at 46% -8%, rgba(28, 60, 148, 0.14), transparent 64%),
+    var(--surface-container-lowest, #fff);
+  background-repeat: no-repeat;
+}
+
+/* Transparent so the root's glow shows through; keeps only its own spacing. */
+.hero-zone {
+  padding-top: 14px;
+}
+
+/* The dot field is masked so it fades out rather than ending on a hard edge —
+   without the mask it reads as a texture swatch pasted over the hero. */
+.hero-atmo {
+  background-image: radial-gradient(rgba(28, 60, 148, 0.24) 1px, transparent 1.5px);
+  background-size: 18px 18px;
+  -webkit-mask-image: radial-gradient(880px 520px at 66% 0%, #000 40%, transparent 80%);
+  mask-image: radial-gradient(880px 520px at 66% 0%, #000 40%, transparent 80%);
+}
+
+/* THE SHARED NAV MATERIAL — one design language across every shell.
+   Ivan's call 2026-08-08: apply the landing's language to all surfaces.
+   Used by LandingNav, SiteShell, PublicShell and StaffShell so the four
+   navs stop reading as four different products.
+
+   Was `.landing-nav`, scoped to the landing only; that scoping is precisely
+   what made every other page look like a different site. */
+.glass-nav {
+  background: linear-gradient(177deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.06));
+  /* Prefixed FIRST, unprefixed LAST. With them the other way round Lightning
+     CSS emitted ONLY `-webkit-backdrop-filter` (verified in the built chunk),
+     and Firefox supports the unprefixed property without aliasing the webkit
+     one — so the nav lost its blur entirely and page content read straight
+     through the labels. Harmless when this class was landing-only; it now
+     backs all four shells. */
+  -webkit-backdrop-filter: blur(30px) saturate(2.2);
+  backdrop-filter: blur(30px) saturate(2.2);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 12px 38px rgba(28, 60, 148, 0.2);
+}
+
+/* Atmosphere grades DOWN as density goes UP (stage-1 rule). The landing gets
+   `.hero-zone`'s full three-layer glow; product grounds get this single quiet
+   wash so they belong to the same world without competing with data. */
+.app-atmo {
+  background:
+    radial-gradient(760px 300px at 88% -10%, rgba(108, 170, 239, 0.13), transparent 68%),
+    radial-gradient(520px 260px at 2% -4%, rgba(68, 148, 188, 0.09), transparent 68%),
+    var(--background);
+}
+/* Dark uses the SAME two-path mechanism as the token block above (:root.dark
+   for the explicit toggle, prefers-color-scheme + :root:not(.light) for a
+   dark-OS visitor with no pick). `[data-theme='dark']` was inherited from the
+   artifact port and matches NOTHING here — lib/theme.ts sets a CLASS, and
+   grep finds zero `data-theme` writers in app/, components/ or lib/. Every
+   dark rule in this section was therefore dead. Harmless while it was one
+   landing-only nav; now that `.glass-nav` backs all four shells it meant dark
+   users got a white frosted pill with a near-white border on a #0a0a0a page. */
+:root.dark .app-atmo {
+  background:
+    radial-gradient(760px 300px at 88% -10%, rgba(108, 170, 239, 0.1), transparent 68%),
+    var(--background);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) .app-atmo {
+    background:
+      radial-gradient(760px 300px at 88% -10%, rgba(108, 170, 239, 0.1), transparent 68%),
+      var(--background);
+  }
+}
+
+/* One motion language for nav controls: 180ms on the hero's own curve.
+   Anything longer than ~220ms on a control that is clicked all day reads as
+   lag rather than polish. */
+.nav-item {
+  transition:
+    background-color 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+    color 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-item { transition: none; }
+}
+
+/* The dark bezel + negative margin are what make the product read as sitting
+   ON the page rather than in it; the section below rides up underneath. */
+.ledger-window {
+  border: 9px solid #10182d;
+  box-shadow:
+    0 12px 30px rgba(28, 60, 148, 0.14),
+    0 42px 90px rgba(14, 121, 236, 0.2);
+  margin-bottom: -50px;
+}
+.hero-zone-tail + section {
+  padding-top: 94px;
+}
+
+.aud-thumb {
+  transition: transform 0.34s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Staggered rise. Reduced-motion users get the end state immediately — the
+   hero must never withhold copy from someone who asked for no animation. */
+@keyframes heroUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+.hero-zone > div > * {
+  animation: heroUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.hero-zone > div > *:nth-child(2) { animation-delay: 0.06s; }
+.hero-zone > div > *:nth-child(3) { animation-delay: 0.12s; }
+.hero-zone > div > *:nth-child(4) { animation-delay: 0.18s; }
+.hero-zone > div > *:nth-child(5) { animation-delay: 0.24s; }
+.hero-zone > div > *:nth-child(6) { animation-delay: 0.32s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-zone > div > * { animation: none; }
+  .aud-thumb { transition: none; }
+}
+
+/* Dark, via the house two-path mechanism (see the token block above). The
+   previous `[data-theme='dark']` selector never matched anything. */
+:root.dark .hero-ground,
+:root.dark .hero-zone {
+  background:
+    radial-gradient(680px 340px at 82% -6%, rgba(108, 170, 239, 0.22), transparent 66%),
+    radial-gradient(560px 320px at 3% 2%, rgba(68, 148, 188, 0.17), transparent 66%),
+    var(--background);
+}
+:root.dark .hero-atmo {
+  background-image: radial-gradient(rgba(108, 170, 239, 0.2) 1px, transparent 1.5px);
+}
+:root.dark .glass-nav {
+  background: linear-gradient(177deg, rgba(40, 44, 54, 0.34), rgba(18, 18, 20, 0.05));
+  -webkit-backdrop-filter: blur(30px) saturate(1.9);
+  backdrop-filter: blur(30px) saturate(1.9);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 12px 38px rgba(0, 0, 0, 0.55);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) .hero-ground,
+  :root:not(.light) .hero-zone {
+    background:
+      radial-gradient(680px 340px at 82% -6%, rgba(108, 170, 239, 0.22), transparent 66%),
+      radial-gradient(560px 320px at 3% 2%, rgba(68, 148, 188, 0.17), transparent 66%),
+      var(--background);
+  }
+  :root:not(.light) .hero-atmo {
+    background-image: radial-gradient(rgba(108, 170, 239, 0.2) 1px, transparent 1.5px);
+  }
+  :root:not(.light) .glass-nav {
+    background: linear-gradient(177deg, rgba(40, 44, 54, 0.34), rgba(18, 18, 20, 0.05));
+    -webkit-backdrop-filter: blur(30px) saturate(1.9);
+    backdrop-filter: blur(30px) saturate(1.9);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.12) inset,
+      0 12px 38px rgba(0, 0, 0, 0.55);
+  }
+}
+
+/* Backdrop-filter is a GPU cost on every scrolled frame and a legibility risk
+   for anyone who asked for less transparency. Solid fill instead.
+
+   MUST come last and MUST name every dark selector: a media query adds no
+   specificity, so a bare `.glass-nav` (0,1,0) loses to `:root.dark .glass-nav`
+   (0,2,0). The inset highlight and the border are reset too — they read as
+   glass edges over a fill that is no longer glass. */
+@media (prefers-reduced-transparency: reduce) {
+  .glass-nav,
+  :root.dark .glass-nav,
+  :root:not(.light) .glass-nav {
+    background: var(--surface-container-lowest, #fff);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border: 1px solid var(--outline-variant);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
   }
 }

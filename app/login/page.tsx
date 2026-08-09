@@ -8,6 +8,7 @@ const URL_ERROR_MESSAGES: Record<string, string> = {
   missing_code:    'The sign-in link was missing its verification code. Request a new one below.',
   exchange_failed: 'The sign-in link has expired or already been used. Request a new one below.',
   not_authorized:  'Your email is not on the staff list. Contact an admin to be added.',
+  unavailable:     'We could not check your staff access just now. This is on our side — please try again in a moment.',
 };
 
 export default function LoginPage() {
@@ -56,9 +57,12 @@ function LoginForm() {
 
   return (
     <LoginLayout>
-      {/* LG v2 (locked): eyebrow `Sign in · Eventar` + "Welcome back". */}
+      {/* LG v2 (locked) set this eyebrow as `Sign in · Eventar`. Reworded to
+          "Log in" 2026-08-08 (Ivan): one label per intent across the product,
+          and the nav, the landing CTA and this page were saying three
+          different things for the same destination. */}
       <p className="text-label-md font-semibold uppercase tracking-[0.18em] m-0">
-        <span className="text-[color:var(--on-primary-container)]">Sign in</span>
+        <span className="text-[color:var(--on-primary-container)]">Log in</span>
         <span className="text-on-surface-variant"> · Eventar</span>
       </p>
       <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">
@@ -97,7 +101,7 @@ function LoginForm() {
         </label>
         <button
           disabled={pending}
-          className="w-full inline-flex items-center justify-center gap-sm rounded-lg bg-primary text-on-primary font-label-md text-label-md py-md hover:opacity-90 transition-opacity disabled:opacity-50"
+          className="w-full inline-flex items-center justify-center gap-sm rounded-full bg-primary text-on-primary font-label-md text-label-md py-md hover:opacity-90 transition-opacity disabled:opacity-50"
         >
           <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>mail</span>
           {pending ? 'Sending…' : 'Send magic link'}
@@ -108,7 +112,7 @@ function LoginForm() {
 
         {msg && (
           <p className="font-body-md text-body-md text-on-surface bg-secondary-container border border-secondary-container rounded-lg px-md py-sm flex items-start gap-sm">
-            <span className="material-symbols-outlined text-primary text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>
+            <span className="material-symbols-outlined text-primary-ink text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>
               mark_email_read
             </span>
             <span>{msg}</span>
@@ -148,7 +152,7 @@ function LoginForm() {
 function LoginShell() {
   return (
     <LoginLayout>
-      <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">Sign in</h1>
+      <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">Log in</h1>
       <p className="font-body-md text-body-md text-on-surface-variant m-0">Loading…</p>
     </LoginLayout>
   );

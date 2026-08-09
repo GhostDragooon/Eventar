@@ -23,6 +23,12 @@ export default async function NewEventPage() {
   // staff member's organisation — which is exactly the organisation the
   // set_event_organisation trigger will stamp on the new event, so the picker
   // and the server agree by construction.
+  // A failed read leaves staffRow null, which falls through to
+  // `{ bodies: [], unavailable: true }` — already the honest state, and exactly
+  // the "genuine lookup failure, distinct from no bodies" distinction
+  // listAuthorisedBodies documents. The picker renders it as unavailable
+  // rather than as an empty list.
+  // eslint-disable-next-line no-restricted-syntax -- see above: already degrades to unavailable:true
   const { data: staffRow } = await supabaseAdmin()
     .from('staff')
     .select('organisation_id')

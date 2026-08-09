@@ -1,13 +1,18 @@
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
 
 /* Color-as-meaning (§7a): amber = draft · accent blue = registering ·
-   green = live ONLY (the one solid pill) · neutral = upcoming/completed
-   ("done" is the absence of color) · red = destructive (cancelled). */
+   green = live ONLY · neutral = upcoming/completed ("done" is the absence of
+   color) · red = destructive (cancelled).
+   Live was the one SOLID pill until 2026-08-09. #052e16 on #1e874b is 3.28:1,
+   and --text-label-md is 12px/600 — normal text, which needs 4.5:1, since the
+   3:1 large-text exemption starts at 18.66px bold. It now uses the same
+   container+ink form as its siblings (7.21:1). The pulse and the dot are what
+   carry "happening now" instead of the fill. */
 const STYLES: Record<Lifecycle, string> = {
   drafted: 'bg-warning-container text-on-warning-container border border-transparent',
   registering: 'bg-primary-container text-on-primary-container border border-transparent',
   upcoming: 'bg-surface-container-high text-on-surface-variant border border-outline-variant',
-  live: 'live-pill-pulse bg-success text-on-success border border-transparent',
+  live: 'live-pill-pulse bg-success-container text-on-success-container border border-transparent',
   completed: 'bg-surface-container-high text-on-surface-variant border border-transparent',
   cancelled: 'bg-error-container text-on-error-container border border-transparent',
 };
@@ -26,7 +31,7 @@ export function StatusPill({ lifecycle }: { lifecycle: Lifecycle }) {
   if (lifecycle === 'live') {
     return (
       <span className={`${base} ${STYLES.live}`}>
-        <span className="w-1.5 h-1.5 rounded-full bg-on-success shrink-0" aria-hidden />
+        <span className="w-1.5 h-1.5 rounded-full bg-on-success-container shrink-0" aria-hidden />
         {LABELS.live}
       </span>
     );

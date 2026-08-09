@@ -82,11 +82,15 @@ export default async function SurveyPage({
     full_name: string;
     events: EventEmbed | Array<EventEmbed> | null;
   };
-  const { data: reg } = (await admin
+  // Thrown, not swallowed: a discarded error rendered "Code not recognised" —
+  // telling an attendee who holds a valid emailed code that their code is
+  // wrong, and sending them to the organiser over an outage (rule 12).
+  const { data: reg, error: regErr } = (await admin
     .from('registrations')
     .select('id, status, full_name, events!inner(id, title, status, start_time, timezone, venue_name)')
     .eq('registration_code', code)
-    .maybeSingle()) as { data: RegRow | null };
+    .maybeSingle()) as { data: RegRow | null; error: unknown };
+  if (regErr) throw regErr;
 
   if (!reg || !reg.events) {
     return (
@@ -137,11 +141,15 @@ export default async function SurveyPage({
 
   // Already submitted? (idempotent UX — the DB unique constraint is the real
   // guard; this just avoids showing the form a second time.)
-  const { data: existing } = await admin
+  const { data: existing, error: existingErr } = await admin
     .from('survey_responses')
     .select('id')
     .eq('registration_id', reg.id)
     .maybeSingle();
+  // The unique constraint is still the real guard, but a discarded error here
+  // showed the form to someone who had already answered — they fill the whole
+  // survey again and only then get rejected at submit (rule 12).
+  if (existingErr) throw existingErr;
   if (existing) {
     return (
       <PublicShell>

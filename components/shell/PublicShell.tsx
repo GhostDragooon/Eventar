@@ -1,10 +1,31 @@
-// Attendee-surface shell (CI pass, SV survey, LG login, PE register).
-// Design Session Log §"Nav (attendee surfaces)": same three-column grid as
-// the staff nav, populated for anonymous context —
-//   LEFT   empty (attendees arrive from email links; no back navigation)
-//   CENTER empty (no in-app sections for anonymous attendees)
-//   RIGHT  optional state pill (`Pass ready` / `Checked in` / …)
-// NO wordmark in the nav — brand lives in the "By Eventar" footer band.
+import Link from 'next/link';
+import { BrandMark } from './BrandMark';
+import { SiteFooter } from './SiteFooter';
+
+// Attendee-surface shell (check-in pass, survey, public event page, register).
+//
+// 2026-08-08 (Ivan): one design language across every surface. Previously a
+// bordered edge-to-edge bar with two empty grid cells and an optional state
+// pill floating at the right — structurally the staff nav with the contents
+// deleted, which is why an attendee arriving from an email landed on
+// something that looked unrelated to the site the QR came from.
+//
+// Now the same floating glass pill as the landing and SiteShell, over the
+// quiet `.app-atmo` ground.
+//
+// The pill always carries ONE link out. The old shell's left and centre cells
+// were deliberately empty ("attendees arrive from email links; no back
+// navigation"), which is true right up until something goes wrong: /survey
+// with no code renders "No survey code" with no control anywhere on the page,
+// so a practitioner whose link expired has literally nowhere to click. That is
+// a dead end, not minimalism. "Upcoming events" is a real destination that is
+// useful to exactly the person who lands here by accident.
+//
+// WORDMARK: present, as of 2026-08-09 (Ivan) — the old "no wordmark in shell
+// chrome" rule is retired across all four shells. This comment previously
+// claimed the rule was "shared with SiteShell/StaffShell" while StaffShell had
+// already abandoned it, which is the kind of stale cross-reference that makes a
+// retired rule look live.
 
 export type PublicShellPill = {
   label: string;
@@ -19,41 +40,42 @@ export function PublicShell({
   pill?: PublicShellPill;
 }) {
   return (
-    <div className="flex min-h-screen flex-col bg-background text-on-surface">
+    <div className="app-atmo flex min-h-screen flex-col text-on-surface">
       <nav
         aria-label="Primary"
-        className="grid grid-cols-[1fr_auto_1fr] items-center gap-md border-b border-outline-variant px-grid-margin py-md text-[calc(13px*var(--text-scale))]"
+        className="glass-nav sticky top-[10px] z-[5] mx-[18px] flex items-center justify-between gap-md rounded-full py-sm pl-md pr-sm"
       >
-        <div />
-        <div />
-        <div className="flex items-center justify-self-end">
-          {pill && (
+        <BrandMark />
+
+        <Link
+          href="/events"
+          className="nav-item rounded-full px-[11px] py-[7px] text-[calc(13px*var(--text-scale))] font-medium text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
+        >
+          Upcoming events
+        </Link>
+
+        {pill && (
+          <span
+            className={`inline-flex items-center gap-xs rounded-full px-sm py-[3px] text-[calc(11px*var(--text-scale))] font-semibold ${
+              pill.tone === 'success'
+                ? 'bg-success-container text-on-success-container'
+                : 'bg-surface-container-high text-on-surface-variant'
+            }`}
+          >
             <span
-              className={`inline-flex items-center gap-xs px-sm py-[3px] rounded-full text-[calc(11px*var(--text-scale))] font-semibold ${
-                pill.tone === 'success'
-                  ? 'bg-success-container text-on-success-container'
-                  : 'bg-surface-container-high text-on-surface-variant'
+              className={`h-[6px] w-[6px] rounded-full ${
+                pill.tone === 'success' ? 'bg-[color:var(--success)]' : 'bg-outline'
               }`}
-            >
-              <span
-                className={`w-[6px] h-[6px] rounded-full ${
-                  pill.tone === 'success' ? 'bg-[color:var(--success)]' : 'bg-outline'
-                }`}
-                aria-hidden
-              />
-              {pill.label}
-            </span>
-          )}
-        </div>
+              aria-hidden
+            />
+            {pill.label}
+          </span>
+        )}
       </nav>
 
-      <main className="flex-1 w-full">{children}</main>
+      <main className="w-full flex-1">{children}</main>
 
-      <footer className="w-full border-t border-outline-variant bg-surface-container-lowest py-md text-center">
-        <span className="text-[calc(11px*var(--text-scale))] text-on-surface-variant">
-          By <span className="font-bold text-on-surface">Eventar</span>
-        </span>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

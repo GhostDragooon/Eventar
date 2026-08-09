@@ -46,7 +46,11 @@ function event(overrides: Partial<WorkstationEvent>): WorkstationEvent {
   };
 }
 
-const metrics = { openRegistered: 10, registered7d: 2, eventsThisWeek: 1, closingSoon: 1 };
+const metrics = {
+  openRegistered: 10, registered7d: 2, eventsThisWeek: 1, closingSoon: 1,
+  // IA-spec stat row (2026-08-09): capture rate + the CPD credits pulse.
+  checkedInToday: 4, captureRate: 80, creditsIssued: 12, creditsBlocked: 0, liveNow: 1,
+};
 
 function renderBoard(events: WorkstationEvent[]) {
   return render(

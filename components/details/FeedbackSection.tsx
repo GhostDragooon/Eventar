@@ -83,7 +83,7 @@ export function FeedbackSection({
         <div className="flex items-center gap-sm flex-wrap">
           <Link
             href={`/events/${eventId}/analytics`}
-            className="flex items-center gap-sm bg-primary text-on-primary px-lg py-sm rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity"
+            className="flex items-center gap-sm bg-primary text-on-primary px-lg py-sm rounded-full font-label-md text-label-md hover:opacity-90 transition-opacity"
           >
             <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>
               insights

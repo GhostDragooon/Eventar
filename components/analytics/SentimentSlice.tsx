@@ -38,7 +38,7 @@ export function SentimentSlice({
       prompt={'"Did this event meet your expectations?"'}
     >
       <div className="flex items-center gap-md flex-shrink-0">
-        <span className="text-display font-bold text-primary leading-none">
+        <span className="text-display font-bold text-primary-ink leading-none">
           {happyRate == null ? '—' : `${Math.round(happyRate * 100)}%`}
         </span>
         <div className="text-label-md font-bold text-on-surface-variant leading-tight">

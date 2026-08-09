@@ -18,6 +18,11 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await supabaseServer();
+  // The one read where the swallow is correct: metadata is decoration for a
+  // page that renders on its own. Throwing here would replace a working event
+  // page with an error boundary over a link preview. The page's own read
+  // (below) is NOT swallowed and is what surfaces a real outage.
+  // eslint-disable-next-line no-restricted-syntax -- see above: metadata is decoration
   const { data: event } = await supabase
     .from('events')
     .select('title, description, status, venue_name, city')
@@ -356,7 +361,7 @@ function PartnerRow({
                 href={p.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-primary hover:underline"
+                className="text-primary-ink hover:underline"
               >
                 {p.name}
               </a>

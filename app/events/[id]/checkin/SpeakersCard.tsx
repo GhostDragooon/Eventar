@@ -123,7 +123,7 @@ export function SpeakersCard({
                     'shrink-0 min-h-11 min-w-24 rounded-lg px-md py-sm font-label-md text-label-md transition-colors disabled:opacity-60 ' +
                     (isChecked
                       ? 'bg-primary-container text-on-primary-container hover:opacity-90'
-                      : 'bg-transparent text-primary border border-outline-variant hover:bg-surface-container-low')
+                      : 'bg-transparent text-primary-ink border border-outline-variant hover:bg-surface-container-low')
                   }
                 >
                   {isChecked ? '✓ Checked in' : 'Check in'}

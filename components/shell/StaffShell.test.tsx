@@ -19,7 +19,11 @@ beforeEach(() => {
 
 const staff = { email: 'jane@company.com', role: 'organiser_member' as const };
 
-describe('StaffShell — sidebar navigation', () => {
+// The 248px sidebar was replaced by a floating glass pill nav on 2026-08-08.
+// These assertions are role/href-based, so they survived the rewrite unchanged
+// — which is why they are worth keeping: they pin the shell's CONTRACT (which
+// routes exist, which is current, where the brand lives) rather than its layout.
+describe('StaffShell — primary navigation', () => {
   it('renders the staff sections with their routes', () => {
     render(
       <StaffShell staff={staff}>
@@ -28,7 +32,9 @@ describe('StaffShell — sidebar navigation', () => {
     );
     expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('href', '/dashboard');
     expect(screen.getByRole('link', { name: 'Check-in' })).toHaveAttribute('href', '/checkin');
-    expect(screen.getByRole('link', { name: 'Analytics' })).toHaveAttribute('href', '/analytics');
+    // Labelled "Reports" per the IA spec's area 7 ("Reports / Analytics") and
+    // the mockup sidebar; the ROUTE it must reach is still /analytics.
+    expect(screen.getByRole('link', { name: 'Reports' })).toHaveAttribute('href', '/analytics');
   });
 
   it('does NOT link to /events — that route ejects the user out of the shell', () => {
@@ -55,23 +61,60 @@ describe('StaffShell — sidebar navigation', () => {
     expect(screen.getByRole('link', { name: 'Dashboard' })).not.toHaveAttribute('aria-current');
   });
 
-  it('does NOT render an Eventar wordmark in the nav (brand lives in the footer)', () => {
+  it('renders the Eventar brand mark at the top of the sidebar', () => {
+    // REVERSES the old "no wordmark in shell chrome" rule. Ivan's call
+    // 2026-08-09, taken explicitly after being shown that the organiser IA
+    // mockups put the mark in the sidebar and the older rule forbade it.
     render(
       <StaffShell staff={staff}>
         <div>page content</div>
       </StaffShell>,
     );
-    expect(screen.queryByRole('link', { name: 'Eventar' })).toBeNull();
+    expect(screen.getByRole('link', { name: /eventar home/i })).toHaveAttribute('href', '/');
   });
 
-  it('renders the "By Eventar" footer band', () => {
+  it('shows every IA area, with unbuilt ones inert rather than linking to 404s', () => {
+    // docs/plans/2026-07-12-organiser-ia-spec.md lists 8 areas; 7 render (Events
+    // was removed 2026-08-09 — /dashboard already IS the events list) and four
+    // of those have routes. The unbuilt ones must be VISIBLE (so the shell shows
+    // the real IA) and NOT links (so nothing navigates into a 404).
     render(
       <StaffShell staff={staff}>
         <div>page content</div>
       </StaffShell>,
     );
-    expect(screen.getByText(/^By$/)).toBeInTheDocument();
-    expect(screen.getByText('Eventar')).toBeInTheDocument();
+    for (const label of ['Participants', 'Accreditation', 'Communications']) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: new RegExp(label, 'i') })).toBeNull();
+    }
+  });
+
+  it('puts the Eventar wordmark in the footer, inside a contentinfo landmark', () => {
+    // The behaviour this guards (paired with the no-wordmark-in-nav test above)
+    // is WHERE the brand lives, not how the old band split its text nodes. It
+    // used to assert /^By$/ against `By <span>Eventar</span>`; the shared
+    // SiteFooter reads "By Eventar · CPD infrastructure, Hong Kong", so that
+    // assertion was pinning markup, not behaviour.
+    render(
+      <StaffShell staff={staff}>
+        <div>page content</div>
+      </StaffShell>,
+    );
+    const footer = screen.getByRole('contentinfo');
+    expect(footer).toHaveTextContent('Eventar');
+  });
+
+  it('does not render marketing anchors in the staff footer', () => {
+    // Regression guard: SiteFooter's default renders landing anchors. From a
+    // staff route `/#how-it-works` leaves the app, so StaffShell passes
+    // links={false}. This is the same "link that goes nowhere useful" class the
+    // 2026-08-08 nav pass existed to remove.
+    render(
+      <StaffShell staff={staff}>
+        <div>page content</div>
+      </StaffShell>,
+    );
+    expect(screen.queryByRole('navigation', { name: 'Footer' })).toBeNull();
   });
 
   it('renders the back link when backHref + backLabel are provided', () => {

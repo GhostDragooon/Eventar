@@ -143,7 +143,7 @@ export function CpdAccreditationSection({
         <button
           type="submit"
           disabled={frozen || pending || bodiesUnavailable}
-          className="rounded-lg bg-primary px-lg py-sm text-label-md font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="rounded-full bg-primary px-lg py-sm text-label-md font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {pending ? 'Saving…' : 'Save'}
         </button>

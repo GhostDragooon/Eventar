@@ -15,7 +15,7 @@ export default function VenueSection({ value, onChange }: Props) {
       {value && (
         <div className="rounded-lg border border-outline-variant bg-surface-container-low p-md">
           <p className="font-body-md text-body-md font-semibold text-on-surface flex items-center gap-xs">
-            <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] text-primary" aria-hidden>location_on</span>
+            <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] text-primary-ink" aria-hidden>location_on</span>
             {value.venue_name}
           </p>
           {value.venue_address && (
@@ -27,7 +27,7 @@ export default function VenueSection({ value, onChange }: Props) {
           </p>
           <button
             type="button"
-            className="mt-sm font-label-md text-label-md text-primary hover:underline"
+            className="mt-sm font-label-md text-label-md text-primary-ink hover:underline"
             onClick={() => onChange(null)}
           >
             Clear

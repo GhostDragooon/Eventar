@@ -41,7 +41,7 @@ export function FunnelCard({
       className="mt-lg p-lg bg-surface-container-lowest border border-outline-variant rounded-xxl shadow-sm"
     >
       <div className="flex items-center gap-sm mb-md">
-        <span className="material-symbols-outlined text-primary" aria-hidden>
+        <span className="material-symbols-outlined text-primary-ink" aria-hidden>
           filter_alt
         </span>
         <h2 className="font-title-lg text-title-lg text-on-surface">Conversion funnel</h2>

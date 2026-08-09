@@ -5,6 +5,7 @@ import "./globals.css";
 import { THEME_STORAGE_KEY } from "@/lib/theme";
 import { TEXT_SIZE_STORAGE_KEY } from "@/lib/textSize";
 import { ToastProvider } from "@/components/ui/toast";
+import { ReviewBanner } from "@/components/dev/ReviewBanner";
 
 // FOUC prevention: runs synchronously before paint, applies the user's saved
 // theme + text-size classes on <html>. Without this, the page would render
@@ -82,6 +83,20 @@ export default function RootLayout({
             icon flashes as its raw ligature text ("arrow_forward") until the
             font arrives — the classic weekend-project tell. A short blank is
             the correct trade for glyphs. */}
+        {/* Preconnect to BOTH hosts. The stylesheet is on fonts.googleapis.com
+            but the woff2 it points at is on fonts.gstatic.com, so without this
+            the browser pays DNS + TCP + TLS twice, serially, before the first
+            glyph can paint — and `display=block` means every icon is INVISIBLE
+            for that entire window, not just unstyled.
+
+            That is the "the dashboard reverted to the old design" report on
+            2026-08-09: nav items, the date/time/venue row and the button
+            glyphs all rendered as empty gaps on a cold load, which reads as a
+            broken page rather than a loading one. crossOrigin is required on
+            the gstatic hint — font fetches are CORS, and a preconnect without
+            it opens a connection the font request cannot reuse. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* eslint-disable-next-line @next/next/no-page-custom-font, @next/next/google-font-display */}
         <link
           rel="stylesheet"
@@ -96,6 +111,8 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col font-body-md" suppressHydrationWarning>
         <ToastProvider>{children}</ToastProvider>
+        {/* Renders nothing unless the local review bypass is engaged. */}
+        <ReviewBanner />
       </body>
     </html>
   );

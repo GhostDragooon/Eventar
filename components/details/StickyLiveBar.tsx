@@ -57,8 +57,16 @@ export function StickyLiveBar({
       <div ref={sentinelRef} aria-hidden className="h-0 w-full pointer-events-none" />
 
       <div
-        className={`fixed inset-x-0 top-0 z-40 transition-transform duration-200 ${
-          pinned ? 'translate-y-0' : '-translate-y-full'
+        // Sits BELOW the shell nav, not over it. This was `top-0 z-40` against
+        // a non-sticky staff top bar, so by the time the bar pinned the bar it
+        // would have covered had already scrolled away. StaffShell's nav is now
+        // a STICKY pill at y 10-62, so `top-0` parked an opaque strip on top of
+        // Dashboard / Check-in / Analytics / Settings and the back link for the
+        // entire live window — the one window where an operator most needs them.
+        className={`fixed inset-x-0 top-[72px] z-[4] transition-transform duration-200 ${
+          // -300%, not -full: parked at top-[72px] the bar must clear its own
+          // height AND the 72px offset, or a sliver stays visible under the nav.
+          pinned ? 'translate-y-0' : '-translate-y-[300%]'
         }`}
         aria-hidden={!pinned}
       >
@@ -73,7 +81,7 @@ export function StickyLiveBar({
           <Link
             href={`/events/${eventId}/checkin`}
             tabIndex={pinned ? 0 : -1}
-            className="inline-flex items-center gap-xs bg-primary text-on-primary px-md py-[6px] rounded-lg text-[calc(12px*var(--text-scale))] font-semibold hover:opacity-90 transition-opacity shrink-0"
+            className="inline-flex items-center gap-xs bg-primary text-on-primary px-md py-[6px] rounded-full text-[calc(12px*var(--text-scale))] font-semibold hover:opacity-90 transition-opacity shrink-0"
           >
             <span className="material-symbols-outlined text-[calc(15px*var(--text-scale))]" aria-hidden>group</span>
             Open roster →

@@ -27,13 +27,18 @@ export default async function StaffCheckinPage({
   const { id } = await params;
 
   const supabase = await supabaseServer();
-  const { data: event } = await supabase
+  const { data: event, error: eventErr } = await supabase
     .from('events')
     .select(
       'id, title, start_time, end_time, timezone, venue_name, status, max_attendees, registration_close_at, registration_open_at, created_by',
     )
     .eq('id', id)
     .maybeSingle();
+  // Thrown, not swallowed: a discarded error fell through to notFound(), so an
+  // operator opening the door screen minutes before an event was told the
+  // event does not exist — on the one surface where they have no time to
+  // diagnose it (rule 12). The sibling roster reads below already throw.
+  if (eventErr) throw eventErr;
   if (!event) notFound();
 
   // Owner-only gate: /checkin mutates registrations (status → attended).

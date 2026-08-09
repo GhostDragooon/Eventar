@@ -39,11 +39,15 @@ export default async function StaffEventEditPage({
   const { id } = await params;
 
   const supabase = await supabaseServer();
-  const { data: event } = await supabase
+  const { data: event, error: eventErr } = await supabase
     .from('events')
     .select('id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, latitude, longitude, description, status, max_attendees, created_by, hosted_by, organized_by, hero_image_url, registration_open_at, registration_close_at, category, checkin_modes, accrediting_body_id, cpd_hours, organisation_id')
     .eq('id', id)
     .maybeSingle();
+  // Thrown, not swallowed: a discarded error fell through to notFound(), which
+  // on the edit surface reads as "your event was deleted" — the same class the
+  // agenda read below was fixed for in 2ad5f09 (rule 12).
+  if (eventErr) throw eventErr;
   if (!event) notFound();
 
   // Owner-only gate: /edit is the mutation surface (Publish, future field
@@ -158,7 +162,7 @@ export default async function StaffEventEditPage({
           <div className="lg:col-span-8 min-w-0">
             <DraftEditFormPanel event={event} blocks={blocks ?? []} />
           </div>
-          <aside className="lg:col-span-4 lg:sticky lg:top-grid-margin space-y-md self-start">
+          <aside className="lg:col-span-4 lg:sticky lg:top-[72px] space-y-md self-start">
             <ActionCard
               icon="publish"
               title="Ready to publish?"
@@ -172,7 +176,7 @@ export default async function StaffEventEditPage({
               >
                 <button
                   type="submit"
-                  className="w-full bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
+                  className="w-full bg-primary text-on-primary font-label-md text-label-md rounded-full py-sm px-lg hover:opacity-90 transition-opacity"
                 >
                   Publish event
                 </button>
@@ -195,7 +199,7 @@ export default async function StaffEventEditPage({
           </Section>
 
           {event.description && (
-            <Section icon="description" iconBg="bg-tertiary-fixed" iconColor="text-primary" title="About">
+            <Section icon="description" iconBg="bg-tertiary-fixed" iconColor="text-primary-ink" title="About">
               <p className="font-body-md text-body-md text-on-surface whitespace-pre-wrap">
                 {event.description}
               </p>
@@ -203,7 +207,7 @@ export default async function StaffEventEditPage({
           )}
 
           {(blocks?.length ?? 0) > 0 && (
-            <Section icon="view_agenda" iconBg="bg-primary-fixed" iconColor="text-primary" title="Agenda">
+            <Section icon="view_agenda" iconBg="bg-primary-fixed" iconColor="text-primary-ink" title="Agenda">
               <ul className="divide-y divide-outline-variant -mx-lg -mb-lg mt-md">
                 {blocks!.map(b => {
                   const topics = (Array.isArray(b.topics) ? b.topics : []) as AgendaTopic[];
@@ -254,7 +258,7 @@ export default async function StaffEventEditPage({
         </div>
 
         {/* Right (4 cols): sticky action panel */}
-        <aside className="lg:col-span-4 lg:sticky lg:top-grid-margin space-y-md self-start">
+        <aside className="lg:col-span-4 lg:sticky lg:top-[72px] space-y-md self-start">
           {event.status === 'draft' && (
             <ActionCard
               icon="publish"
@@ -269,7 +273,7 @@ export default async function StaffEventEditPage({
               >
                 <button
                   type="submit"
-                  className="w-full bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
+                  className="w-full bg-primary text-on-primary font-label-md text-label-md rounded-full py-sm px-lg hover:opacity-90 transition-opacity"
                 >
                   Publish event
                 </button>
@@ -288,7 +292,7 @@ export default async function StaffEventEditPage({
                   href={`/events/${event.id}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-xs font-label-md text-label-md text-primary hover:underline"
+                  className="inline-flex items-center gap-xs font-label-md text-label-md text-primary-ink hover:underline"
                 >
                   View public page
                   <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>open_in_new</span>
@@ -302,7 +306,7 @@ export default async function StaffEventEditPage({
               >
                 <Link
                   href={`/events/${event.id}/details`}
-                  className="inline-flex items-center gap-xs font-label-md text-label-md text-primary hover:underline"
+                  className="inline-flex items-center gap-xs font-label-md text-label-md text-primary-ink hover:underline"
                 >
                   View details
                   <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>arrow_forward</span>
@@ -316,7 +320,7 @@ export default async function StaffEventEditPage({
               >
                 <Link
                   href={`/events/${event.id}/analytics`}
-                  className="inline-flex items-center gap-xs font-label-md text-label-md text-primary hover:underline"
+                  className="inline-flex items-center gap-xs font-label-md text-label-md text-primary-ink hover:underline"
                 >
                   View analytics
                   <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>arrow_forward</span>
@@ -334,7 +338,7 @@ export default async function StaffEventEditPage({
                     href={`/events/${event.id}/poster`}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-xs font-label-md text-label-md text-primary hover:underline"
+                    className="inline-flex items-center gap-xs font-label-md text-label-md text-primary-ink hover:underline"
                   >
                     View poster
                     <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>open_in_new</span>
@@ -349,7 +353,7 @@ export default async function StaffEventEditPage({
               >
                 <Link
                   href={`/events/${event.id}/checkin`}
-                  className="inline-flex items-center bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
+                  className="inline-flex items-center bg-primary text-on-primary font-label-md text-label-md rounded-full py-sm px-lg hover:opacity-90 transition-opacity"
                 >
                   Open check-in
                 </Link>
@@ -545,7 +549,7 @@ function ActionCard({
   return (
     <div className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-md shadow-sm">
       <div className="flex items-start gap-sm mb-sm">
-        <span className="material-symbols-outlined text-primary text-[calc(20px*var(--text-scale))] mt-[2px]" aria-hidden>
+        <span className="material-symbols-outlined text-primary-ink text-[calc(20px*var(--text-scale))] mt-[2px]" aria-hidden>
           {icon}
         </span>
         <div className="flex-1 min-w-0">

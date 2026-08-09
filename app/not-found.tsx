@@ -22,14 +22,14 @@ export default function NotFound() {
         <div className="flex items-center justify-center gap-sm">
           <Link
             href="/events"
-            className="inline-flex items-center gap-xs bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity"
+            className="inline-flex items-center gap-xs bg-primary text-on-primary font-label-md text-label-md rounded-full py-sm px-lg hover:opacity-90 transition-opacity"
           >
             Upcoming events
             <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>arrow_forward</span>
           </Link>
           <Link
             href="/"
-            className="inline-flex items-center gap-xs border border-outline-variant text-on-surface font-label-md text-label-md rounded-lg py-sm px-lg hover:bg-surface-container-high transition-colors"
+            className="inline-flex items-center gap-xs border border-outline-variant text-on-surface font-label-md text-label-md rounded-full py-sm px-lg hover:bg-surface-container-high transition-colors"
           >
             Home
           </Link>

@@ -30,6 +30,12 @@ export type DashboardMetrics = {
   registered7d: number;
   eventsThisWeek: number;
   closingSoon: number;
+  checkedInToday: number;
+  /** Percent, or null when nobody has registered for a run-able event yet. */
+  captureRate: number | null;
+  creditsIssued: number;
+  creditsBlocked: number;
+  liveNow: number;
 };
 
 // Instructional color (locked): green=live/go, blue=action, amber=draft/hold,
@@ -238,7 +244,7 @@ export function DashboardWorkstation({
         </div>
         <Link
           href="/events/new"
-          className="inline-flex items-center gap-sm bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity shrink-0"
+          className="inline-flex items-center gap-sm bg-primary text-on-primary font-label-md text-label-md rounded-full py-sm px-lg hover:opacity-90 transition-opacity shrink-0"
         >
           <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>add</span>
           New event
@@ -246,10 +252,14 @@ export function DashboardWorkstation({
       </header>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-sm mb-lg">
-        <Metric label="People registered (open events)" value={metrics.openRegistered} tone="accent" />
-        <Metric label="Registered in last 7 days" value={metrics.registered7d} prefix="+" tone="success" />
-        <Metric label="Events happening this week" value={metrics.eventsThisWeek} tone="plain" />
-        <Metric label="Registration closing in 7 days" value={metrics.closingSoon} tone="plain" />
+        {/* The IA spec's four: Registered + delta7d · Checked-in today +
+            capture % · Credits issued/pending/blocked (THE CPD PULSE) · Events
+            this week. The credits cell is the one that makes this a CPD
+            dashboard rather than an events dashboard, and it was missing. */}
+        <Metric label="Registered (open events)" value={metrics.openRegistered} tone="accent" foot={metrics.registered7d > 0 ? `+${metrics.registered7d} in 7 days` : 'no change in 7 days'} />
+        <Metric label="Checked in today" value={metrics.checkedInToday} tone="success" foot={metrics.captureRate != null ? `${metrics.captureRate}% capture rate` : 'no attendance yet'} />
+        <Metric label="Credits issued" value={metrics.creditsIssued} tone="plain" foot={metrics.creditsBlocked > 0 ? `${metrics.creditsBlocked} blocked by lapsed licence` : 'none blocked'} footTone={metrics.creditsBlocked > 0 ? 'warn' : 'muted'} />
+        <Metric label="Events this week" value={metrics.eventsThisWeek} tone="plain" foot={metrics.liveNow > 0 ? `${metrics.liveNow} live now` : `${metrics.closingSoon} closing in 7 days`} footTone={metrics.liveNow > 0 ? 'live' : 'muted'} />
       </div>
 
       <div className="flex flex-col sm:flex-row gap-sm mb-md">
@@ -290,24 +300,24 @@ export function DashboardWorkstation({
         <div className="flex items-center justify-between gap-md bg-primary-container/60 border border-[color:var(--primary-fixed-dim)] rounded-lg px-md py-sm mb-md flex-wrap">
           <span className="font-label-md text-label-md text-on-surface font-semibold">{selected.size} selected</span>
           <div className="flex items-center gap-xs flex-wrap">
-            <button type="button" onClick={exportCsv} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-lg bg-surface-container-lowest border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50">
+            <button type="button" onClick={exportCsv} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-full bg-surface-container-lowest border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50">
               <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>download</span>Export CSV
             </button>
             {inBin ? (
-              <button type="button" onClick={() => runBulk('restore')} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-lg bg-surface-container-lowest border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50">
+              <button type="button" onClick={() => runBulk('restore')} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-full bg-surface-container-lowest border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50">
                 <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>restore_from_trash</span>Restore
               </button>
             ) : (
               <>
-                <button type="button" onClick={() => runBulk('archive')} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-lg bg-surface-container-lowest border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50">
+                <button type="button" onClick={() => runBulk('archive')} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-full bg-surface-container-lowest border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50">
                   <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>archive</span>Archive
                 </button>
-                <button type="button" onClick={() => runBulk('cancel')} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-lg border border-[color:var(--error)] font-label-md text-label-md text-[color:var(--error)] hover:bg-error-container transition-colors disabled:opacity-50">
+                <button type="button" onClick={() => runBulk('cancel')} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-full border border-[color:var(--error)] font-label-md text-label-md text-[color:var(--error)] hover:bg-error-container transition-colors disabled:opacity-50">
                   <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>block</span>Cancel
                 </button>
               </>
             )}
-            <button type="button" onClick={() => setSelected(new Set())} disabled={pending} className="px-md py-sm rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors disabled:opacity-50">Clear</button>
+            <button type="button" onClick={() => setSelected(new Set())} disabled={pending} className="px-md py-sm rounded-full font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors disabled:opacity-50">Clear</button>
           </div>
         </div>
       )}
@@ -318,7 +328,7 @@ export function DashboardWorkstation({
             {events.length === 0 ? 'No events yet.' : inBin ? 'The Deleted bucket is empty.' : 'No events match this filter.'}
           </p>
           {events.length === 0 && (
-            <Link href="/events/new" className="inline-flex items-center gap-sm mt-md bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity">
+            <Link href="/events/new" className="inline-flex items-center gap-sm mt-md bg-primary text-on-primary font-label-md text-label-md rounded-full py-sm px-lg hover:opacity-90 transition-opacity">
               <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>add</span>Create your first event
             </Link>
           )}
@@ -343,12 +353,29 @@ export function DashboardWorkstation({
   );
 }
 
-function Metric({ label, value, prefix, tone }: { label: string; value: number; prefix?: string; tone: 'accent' | 'success' | 'plain' }) {
+// `foot` carries the spec's "deltas always carry comparison context" rule:
+// a bare number tells the operator nothing about direction or health.
+function Metric({
+  label, value, prefix, tone, foot, footTone = 'muted',
+}: {
+  label: string; value: number; prefix?: string;
+  tone: 'accent' | 'success' | 'plain';
+  foot?: string; footTone?: 'muted' | 'warn' | 'live';
+}) {
   const color = tone === 'accent' ? 'text-[color:var(--on-primary-container)]' : tone === 'success' ? 'text-[color:var(--success)]' : 'text-on-surface';
+  const footCls =
+    footTone === 'warn' ? 'bg-warning-container text-on-surface'
+    : footTone === 'live' ? 'bg-success-container text-on-success-container'
+    : 'text-on-surface-variant';
   return (
     <div className="bg-[color:var(--surface-container-high)] rounded-[14px] p-md">
       <p className="font-label-md text-label-md text-on-surface-variant leading-snug mb-sm normal-case tracking-normal">{label}</p>
       <p className={`text-[calc(30px*var(--text-scale))] leading-none font-extrabold tracking-[-0.02em] tabular-nums ${color}`}>{prefix}{value}</p>
+      {foot && (
+        <p className={`mt-sm inline-block rounded-full px-sm py-[2px] text-[calc(11.5px*var(--text-scale))] font-medium ${footCls}`}>
+          {foot}
+        </p>
+      )}
     </div>
   );
 }

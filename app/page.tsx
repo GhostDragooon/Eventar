@@ -1,171 +1,155 @@
 import Link from 'next/link';
-import { SiteShell } from '@/components/shell/SiteShell';
+import { LandingNav } from '@/components/landing/LandingNav';
+import { LandingHero } from '@/components/landing/LandingHero';
+import { LedgerWindow } from '@/components/landing/LedgerWindow';
+import { HowItWorks } from '@/components/landing/HowItWorks';
+import { SiteFooter } from '@/components/shell/SiteFooter';
 
-// Landing (final v5 — editorial-minimal, light palette; Design Session Log
-// §"Landing"): dark hero (shared gradient + dot-grid + accent rule) with
-// three product slivers proving the loop, "Built for" prospect cards,
-// "How it works" 3-step, dark CTA band, 4-column dark footer.
+/**
+ * Landing — ported from the approved design artifact `cpd-design-exploration`,
+ * aesthetic variant **D · White stage** (the variant marked selected there).
+ * Ivan's call 2026-08-06: bring the artifact across and match it closely.
+ *
+ * REPLACES the v5 editorial landing, which was wrong on two counts beyond
+ * style: it sold "Workshops that run themselves on the day" — the pre-pivot
+ * workshop product, not CPD for regulated professions — and it did so on a
+ * near-black hero, contradicting the locked "white ground, loads light for
+ * everyone, dark is the toggle only" decision.
+ *
+ * `SiteShell` is deliberately not used here: it supplies the in-product nav
+ * (Home / Upcoming events / Sign in), which still belongs on /events. The
+ * landing is a marketing surface and brings its own glass pill nav + footer.
+ */
+
+export const metadata = {
+  title: 'Eventar — CPD that keeps itself',
+  description:
+    'Accredited CPD for Hong Kong professionals. Attend, and your verified record updates itself — no certificate hunting, no renewal spreadsheet.',
+};
+
+const FEATURES = {
+  practitioner: [
+    {
+      t: 'Stop guessing if your credits count',
+      d: 'Every activity shows its exact, verified points before you register. Your running total is always accurate — your compliance status at a glance.',
+    },
+    {
+      t: 'Stop losing proof of attendance',
+      d: 'Check in on-site and credits write directly to your CPD Ledger. No PDFs to hoard, no emails to flag, nothing to submit later.',
+    },
+    {
+      t: 'Stop dreading the audit',
+      d: 'Your log is complete and formatted the moment your governing body asks. Share a tamper-evident, audit-ready record in seconds.',
+    },
+  ],
+  organiser: [
+    {
+      t: 'Stop paying to chase attention',
+      d: 'List your event where practitioners look for accredited hours — the professionals who need your CPD find you, without ad spend.',
+    },
+    {
+      t: 'Stop risking your accreditation',
+      d: 'Requirements, approvals and point assignments live in one auditable workflow. Nothing is lost in an email thread; nothing publishes without verified credits attached.',
+    },
+    {
+      t: 'Stop arguing over attendance',
+      d: 'On-site check-in writes straight to the participant’s verified record. No manual certificates, no data entry, no post-event disputes.',
+    },
+  ],
+} as const;
+
 export default function LandingPage() {
   return (
-    <SiteShell active="home" footer="none">
-      {/* Hero — the site's first dark moment. */}
-      <section
-        className="relative overflow-hidden text-white"
-        style={{ background: 'radial-gradient(130% 120% at 20% 0%, #10233F 0%, #0A0A0A 60%)' }}
-      >
-        <div aria-hidden className="absolute inset-0 opacity-[0.13]" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.5) 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
-        <div aria-hidden className="absolute top-0 left-0 right-0 h-[2px] bg-[#0E79EC]" />
-        <div className="relative max-w-[1100px] mx-auto px-grid-margin pt-[72px] pb-[64px] text-center">
-          <p className="text-[calc(11px*var(--text-scale))] font-bold uppercase tracking-[0.22em] text-white/50 mb-md">Eventar</p>
-          <h1 className="text-[calc(44px*var(--text-scale))] sm:text-[calc(56px*var(--text-scale))] font-black leading-[1.05] tracking-[-0.045em] mb-md">
-            Workshops that run<br />themselves on the day.
-          </h1>
-          <p className="text-[calc(16px*var(--text-scale))] leading-1.6 text-white/70 max-w-[560px] mx-auto mb-lg">
-            Registration, reminders with a personal check-in pass, a live door roster,
-            and a post-event survey — one loop, no attendee accounts.
-          </p>
-          <div className="flex items-center justify-center gap-sm mb-xl">
-            <Link href="/events" className="inline-flex items-center gap-xs bg-primary text-on-primary font-label-md text-label-md rounded-lg py-md px-lg hover:opacity-90 transition-opacity">
-              See upcoming events
-              <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>arrow_forward</span>
-            </Link>
-            <Link href="/login" className="inline-flex items-center gap-xs border border-white/20 text-white font-label-md text-label-md rounded-lg py-md px-lg hover:bg-white/10 transition-colors">
-              Staff sign in
-            </Link>
-          </div>
+    <div className="hero-ground flex min-h-screen flex-col text-on-surface">
+      {/* Page-level, so `position: sticky` is bound by the whole document and
+          the nav stays reachable to the footer. It does NOT reintroduce the
+          white band it was moved to fix: `.hero-ground` paints the glow from
+          y=0 on this container, so the nav floats on the gradient rather than
+          on `bg-background`. */}
+      <LandingNav />
 
-          {/* Three product slivers — visual proof of the loop. */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-sm text-left">
-            <Sliver label="Register">
-              <p className="text-[calc(13px*var(--text-scale))] font-semibold text-white mb-xs">Cardiology Symposium</p>
-              <div className="h-[6px] rounded-full bg-white/10 overflow-hidden mb-xs" aria-hidden>
-                <div className="h-full w-[64%] rounded-full bg-[#0E79EC]" />
-              </div>
-              <p className="text-[calc(11px*var(--text-scale))] text-white/50">96 / 150 registered · closes in 3 days</p>
-            </Sliver>
-            <Sliver label="Live door">
-              <p className="text-[calc(24px*var(--text-scale))] font-extrabold tabular-nums text-[#4CC47D] leading-none mb-xs">
-                38<span className="text-[calc(13px*var(--text-scale))] text-white/40 font-semibold"> / 48 checked in</span>
-              </p>
-              <p className="text-[calc(11px*var(--text-scale))] text-white/50">QR self-scan + reception roster, live</p>
-            </Sliver>
-            <Sliver label="Feedback">
-              <p className="text-[calc(24px*var(--text-scale))] font-extrabold tabular-nums text-[#7FB0F4] leading-none mb-xs">
-                73<span className="text-[calc(13px*var(--text-scale))] text-white/40 font-semibold">% responded</span>
-              </p>
-              <p className="text-[calc(11px*var(--text-scale))] text-white/50">5 questions · ~2 minutes · confidential</p>
-            </Sliver>
-          </div>
+      <main className="flex-1">
+        <LandingHero />
+        <div className="hero-zone-tail relative px-lg">
+          <LedgerWindow />
         </div>
-      </section>
 
-      {/* Built for — prospect cards (locked: CRM · SME explore · CPD/CME). */}
-      <section className="max-w-[1100px] mx-auto px-grid-margin py-xl">
-        <p className="text-label-md font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-xs text-center">Built for</p>
-        <h2 className="text-[calc(26px*var(--text-scale))] font-extrabold tracking-[-0.025em] text-on-surface text-center mb-lg">
-          Teams that run events as a practice
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-sm">
-          <Prospect tone="blue" title="CRM" sub="Customer & client events" body="Partner roadshows, client days, launches — keep every registrant, arrival, and follow-up in one place." />
-          <Prospect tone="green" title="SME explore" sub="Growth & discovery" body="Meetups and open houses with zero attendee friction: a link to register, a QR at the door." />
-          <Prospect tone="blue" title="CPD · CME" sub="Accredited education" body="Attendance verified at the door and surveyed after — the audit trail accreditation asks for." />
-        </div>
-      </section>
+        {/* Was a bare `id="verification"` on the ledger mockup above: a nav
+            item pointing at a picture, with no heading carrying the word and
+            nothing explaining what verification meant. Replaced by a real
+            walkthrough. */}
+        <HowItWorks />
 
-      {/* How it works — 3 steps. */}
-      <section className="bg-surface-container-lowest border-y border-outline-variant">
-        <div className="max-w-[1100px] mx-auto px-grid-margin py-xl">
-          <h2 className="text-[calc(26px*var(--text-scale))] font-extrabold tracking-[-0.025em] text-on-surface text-center mb-lg">How it works</h2>
-          <ol className="grid grid-cols-1 md:grid-cols-3 gap-sm">
-            <Step n="01" title="Publish & register" body="Publish your event page. Attendees register with a name and email — no accounts." />
-            <Step n="02" title="Pass at the door" body="60 minutes before start, everyone gets a personal QR pass. Scan or type the code at the door." />
-            <Step n="03" title="Close the loop" body="Ten minutes after wrap, attendees get a 2-minute survey. Analytics land on your dashboard." />
-          </ol>
-        </div>
-      </section>
+        <FeatureBand
+          id="platform"
+          audience="practitioner"
+          title="What it changes for a practitioner"
+          sub="Three things that stop being your problem."
+        />
+        <FeatureBand
+          id="for-organisers"
+          audience="organiser"
+          title="What it changes for an organiser"
+          sub="Three things that stop being your problem."
+        />
 
-      {/* Dark CTA band — the second dark moment. */}
-      <section className="text-white" style={{ background: 'radial-gradient(120% 140% at 80% 0%, #10233F 0%, #0A0A0A 60%)' }}>
-        <div className="max-w-[1100px] mx-auto px-grid-margin py-xl text-center">
-          <h2 className="text-[calc(30px*var(--text-scale))] font-extrabold tracking-[-0.03em] mb-sm">Your next event, end to end.</h2>
-          <p className="text-[calc(14px*var(--text-scale))] text-white/60 mb-lg">Staff sign in with a magic link — attendees never sign in at all.</p>
-          <Link href="/login" className="inline-flex items-center gap-xs bg-primary text-on-primary font-label-md text-label-md rounded-lg py-md px-lg hover:opacity-90 transition-opacity">
-            Staff sign in
-            <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>arrow_forward</span>
-          </Link>
-        </div>
-      </section>
+        {/* CTA band — one line per audience, so neither is an afterthought. */}
+        <section id="get-started" className="mx-auto mt-[46px] max-w-[980px] px-lg">
+          <div className="rounded-[18px] border border-outline-variant bg-surface-container-low p-xl text-center">
+            <h2 className="font-serif text-[calc(26px*var(--text-scale))] font-semibold tracking-[-0.01em] text-on-surface">
+              Your next event keeps your record for you
+            </h2>
+            <p className="mt-sm text-[calc(13.5px*var(--text-scale))] text-on-surface-variant">
+              Run your next accredited event on Eventar.
+            </p>
+            <div className="mt-lg flex flex-wrap justify-center gap-sm">
+              <Link
+                href="/events"
+                className="rounded-full bg-[#0D74E2] px-[19px] py-[9px] text-[calc(13px*var(--text-scale))] font-semibold text-white"
+              >
+                Get started
+              </Link>
+              <Link
+                href="/login"
+                className="rounded-full border border-outline bg-surface-container-lowest px-[19px] py-[9px] text-[calc(13px*var(--text-scale))] font-semibold text-on-surface"
+              >
+                Log in
+              </Link>
+            </div>
+          </div>
+        </section>
+      </main>
 
-      {/* 4-column dark footer. */}
-      <footer className="bg-[#0A0A0A] text-white/60">
-        <div className="max-w-[1100px] mx-auto px-grid-margin py-xl grid grid-cols-2 md:grid-cols-4 gap-lg text-[calc(13px*var(--text-scale))]">
-          <div>
-            <p className="text-white font-bold mb-sm">Eventar</p>
-            <p className="leading-relaxed">Internal workshop manager — registration to feedback in one loop.</p>
-          </div>
-          <div>
-            <p className="text-white/80 font-semibold uppercase tracking-wider text-[calc(11px*var(--text-scale))] mb-sm">Product</p>
-            <ul className="flex flex-col gap-xs">
-              <li><Link href="/events" className="hover:text-white transition-colors">Upcoming events</Link></li>
-              <li><Link href="/login" className="hover:text-white transition-colors">Staff sign in</Link></li>
-            </ul>
-          </div>
-          <div>
-            <p className="text-white/80 font-semibold uppercase tracking-wider text-[calc(11px*var(--text-scale))] mb-sm">The loop</p>
-            <ul className="flex flex-col gap-xs">
-              <li>Register</li>
-              <li>Remind + pass</li>
-              <li>Check in</li>
-              <li>Survey</li>
-            </ul>
-          </div>
-          <div>
-            <p className="text-white/80 font-semibold uppercase tracking-wider text-[calc(11px*var(--text-scale))] mb-sm">Audiences</p>
-            <ul className="flex flex-col gap-xs">
-              <li>Customer & client events</li>
-              <li>Growth & discovery</li>
-              <li>Accredited education</li>
-            </ul>
-          </div>
-        </div>
-        <div className="border-t border-white/10 py-md text-center text-[calc(11px*var(--text-scale))]">
-          By <span className="font-bold text-white">Eventar</span>
-        </div>
-      </footer>
-    </SiteShell>
-  );
-}
-
-function Sliver({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-[14px] border border-white/10 bg-white/[0.04] p-md backdrop-blur-sm">
-      <p className="text-[calc(10px*var(--text-scale))] font-bold uppercase tracking-[0.18em] text-white/40 mb-sm">{label}</p>
-      {children}
+      <SiteFooter />
     </div>
   );
 }
 
-function Prospect({ tone, title, sub, body }: { tone: 'blue' | 'green'; title: string; sub: string; body: string }) {
-  const accent = tone === 'green' ? 'text-[color:var(--success)]' : 'text-[color:var(--on-primary-container)]';
-  const bar = tone === 'green' ? 'bg-[color:var(--success)]' : 'bg-[color:var(--on-primary-container)]';
+function FeatureBand({
+  id,
+  audience,
+  title,
+  sub,
+}: {
+  id: string;
+  audience: keyof typeof FEATURES;
+  title: string;
+  sub: string;
+}) {
   return (
-    <div className="rounded-[16px] border border-outline-variant bg-surface-container-lowest p-lg">
-      <span className={`block w-[28px] h-[3px] rounded-full mb-md ${bar}`} aria-hidden />
-      <p className={`text-[calc(16px*var(--text-scale))] font-extrabold tracking-[-0.01em] ${accent}`}>{title}</p>
-      <p className="font-label-md text-label-md text-on-surface-variant normal-case tracking-normal mb-sm">{sub}</p>
-      <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">{body}</p>
-    </div>
-  );
-}
-
-function Step({ n, title, body }: { n: string; title: string; body: string }) {
-  return (
-    <li className="rounded-[16px] bg-background border border-outline-variant p-lg">
-      <span className="inline-flex items-center justify-center w-[30px] h-[22px] rounded-md text-[calc(11px*var(--text-scale))] font-bold tabular-nums bg-primary-container text-on-primary-container mb-sm" aria-hidden>
-        {n}
-      </span>
-      <p className="text-[calc(16px*var(--text-scale))] font-bold text-on-surface mb-xs">{title}</p>
-      <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">{body}</p>
-    </li>
+    <section id={id} className="mx-auto mt-[46px] max-w-[980px] px-lg">
+      <h2 className="text-center font-serif text-[calc(26px*var(--text-scale))] font-semibold tracking-[-0.01em] text-on-surface">
+        {title}
+      </h2>
+      <p className="mt-[6px] text-center text-[calc(13.5px*var(--text-scale))] text-on-surface-variant">{sub}</p>
+      <div className="mt-lg grid gap-md md:grid-cols-3">
+        {FEATURES[audience].map((f) => (
+          <article key={f.t} className="rounded-[14px] border border-outline-variant bg-surface-container-lowest p-lg">
+            <h3 className="text-[calc(15px*var(--text-scale))] font-semibold leading-snug text-on-surface">{f.t}</h3>
+            <p className="mt-sm text-[calc(13px*var(--text-scale))] leading-[1.55] text-on-surface-variant">{f.d}</p>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }

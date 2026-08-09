@@ -99,7 +99,7 @@ export default function SurveyForm({
       <div className="grid grid-cols-12 gap-grid-gutter items-start">
         {/* Left focal header (4/12) */}
         <div className="col-span-12 lg:col-span-4 sticky lg:top-20">
-          <h1 className="font-headline-md text-headline-md text-primary mb-sm">{eventTitle}</h1>
+          <h1 className="font-headline-md text-headline-md text-primary-ink mb-sm">{eventTitle}</h1>
           <div className="font-body-md text-body-md text-on-surface-variant mb-md space-y-1">
             <p className="flex items-start gap-xs">
               <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>
@@ -119,7 +119,7 @@ export default function SurveyForm({
             Dear {firstName}, thank you for joining&mdash;five quick questions, about 2 minutes.
           </p>
           <div className="bg-primary/5 border border-primary/10 p-md rounded-lg">
-            <div className="flex items-center gap-sm text-primary mb-1">
+            <div className="flex items-center gap-sm text-primary-ink mb-1">
               <span className="material-symbols-outlined text-xl" aria-hidden>
                 lock
               </span>

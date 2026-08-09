@@ -42,7 +42,7 @@ export function ExportAnalyticsCsv({
     <button
       type="button"
       onClick={download}
-      className="inline-flex items-center gap-xs bg-primary text-on-primary font-label-md text-label-md rounded-lg py-sm px-lg hover:opacity-90 transition-opacity shrink-0"
+      className="inline-flex items-center gap-xs bg-primary text-on-primary font-label-md text-label-md rounded-full py-sm px-lg hover:opacity-90 transition-opacity shrink-0"
     >
       <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>download</span>
       Export CSV

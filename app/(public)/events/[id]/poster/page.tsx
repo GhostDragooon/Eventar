@@ -50,13 +50,17 @@ export default async function EventPosterPage({
 }) {
   const { id } = await params;
   const supabase = await supabaseServer();
-  const { data: event } = await supabase
+  const { data: event, error: eventErr } = await supabase
     .from('events')
     .select(
       'id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status, max_attendees, registration_close_at, registration_open_at',
     )
     .eq('id', id)
     .maybeSingle();
+  // Thrown, not swallowed: a discarded error fell through to notFound(), so an
+  // organiser printing the door poster was told the event does not exist
+  // (rule 12) — same fix as /events/[id] itself.
+  if (eventErr) throw eventErr;
 
   // RLS filters to status='published' for anon; this 404s drafts + non-existent.
   // Defense-in-depth status check matches the existing /events/[id] page.
@@ -66,11 +70,16 @@ export default async function EventPosterPage({
   // eslint-disable-next-line react-hooks/purity
   const lifecycle = computeLifecycle(event as EventLifecycleRow, Date.now());
 
-  const { data: blocks } = await supabase
+  // Thrown for the same reason the /edit agenda read is (2ad5f09): a failed
+  // agenda read rendered as an event with no agenda, and this poster is
+  // printed and taped to a door — a silently empty programme is worse here
+  // than a visible failure.
+  const { data: blocks, error: blocksErr } = await supabase
     .from('agenda_blocks')
     .select('id, kind, title, host, topics, start_time, end_time')
     .eq('event_id', id)
     .order('start_time', { ascending: true });
+  if (blocksErr) throw blocksErr;
 
   // Service-role count: anon has no SELECT policy on registrations (PII gated
   // to organizer/manager). Same pattern as the existing public event page.

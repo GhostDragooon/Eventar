@@ -478,7 +478,7 @@ function BlockEditor({ block, parallel, touched, errors, onTouch, onChange, onRe
           <button
             type="button"
             onClick={() => onChange({ topics: [...block.topics, emptyTopic()] })}
-            className="font-label-md text-label-md text-primary hover:underline"
+            className="font-label-md text-label-md text-primary-ink hover:underline"
           >
             + Add topic
           </button>

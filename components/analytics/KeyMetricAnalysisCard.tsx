@@ -3,7 +3,7 @@ import { keyMetricAnalysisText, type NarrativeMetrics } from '@/lib/analytics/na
 export function KeyMetricAnalysisCard({ metrics }: { metrics: NarrativeMetrics }) {
   return (
     <div className="mt-md p-lg bg-surface-container-high rounded-xxl border border-outline-variant flex items-start gap-md">
-      <span className="material-symbols-outlined text-primary" aria-hidden>
+      <span className="material-symbols-outlined text-primary-ink" aria-hidden>
         analytics
       </span>
       <div>

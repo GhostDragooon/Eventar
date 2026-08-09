@@ -82,16 +82,20 @@ export default async function SelfCheckinPage({
   // inference — cast to the shape we actually request.
   type RegRow = {
     id: string;
-    full_name: string;
     status: string;
     check_in_at: string | null;
     check_in_method: string | null;
     events: EventRow | EventRow[] | null;
   };
+  // full_name is deliberately NOT selected: this GET is anonymous and reachable
+  // by anyone holding (or guessing) the code, so returning the registrant's name
+  // is a name↔event enumeration oracle (Phase-8 gate 1, closed in 7c5bcbd and
+  // re-opened by a later restyle — see page.test.tsx). The holder already knows
+  // who they are; reception identifies by QR/code, not a printed name.
   const { data: reg, error: regErr } = (await admin
     .from('registrations')
     .select(
-      'id, full_name, status, check_in_at, check_in_method, ' +
+      'id, status, check_in_at, check_in_method, ' +
         'events!inner(id, title, start_time, end_time, timezone, venue_name, status, checkin_modes)',
     )
     .eq('registration_code', code)
@@ -173,7 +177,7 @@ export default async function SelfCheckinPage({
   return (
     <PublicShell pill={{ label: 'Pass ready', tone: 'success' }}>
       <PageWrap>
-        <PassView event={event} code={code} name={reg.full_name} qrDataUri={`data:image/png;base64,${qr.pngBase64}`} selfServe={selfServe} checkinState={checkinState} opensAtIso={new Date(opensAtMs).toISOString()} />
+        <PassView event={event} code={code} qrDataUri={`data:image/png;base64,${qr.pngBase64}`} selfServe={selfServe} checkinState={checkinState} opensAtIso={new Date(opensAtMs).toISOString()} />
       </PageWrap>
     </PublicShell>
   );
@@ -223,7 +227,6 @@ function EventCard({ event, accent }: { event: EventRow; accent?: boolean }) {
 function PassView({
   event,
   code,
-  name,
   qrDataUri,
   selfServe,
   checkinState,
@@ -231,7 +234,6 @@ function PassView({
 }: {
   event: EventRow;
   code: string;
-  name: string;
   qrDataUri: string;
   selfServe: boolean;
   /** Where `now` sits relative to this event's own check-in window. */
@@ -256,9 +258,12 @@ function PassView({
 
       {/* Pass card — perforated-ticket pattern. */}
       <div className="bg-surface-container-lowest border border-outline-variant rounded-[20px] overflow-hidden shadow-sm">
+        {/* No name here: this pass is served on an anonymous, code-addressable
+            GET, so the identity line would leak a stranger's name to anyone who
+            guesses a code (Phase-8 gate 1). The event above + QR below identify
+            the pass without naming its holder. */}
         <div className="flex items-baseline justify-between px-lg pt-md pb-sm">
-          <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Issued to</span>
-          <span className="font-body-md text-body-md font-semibold text-on-surface">{name}</span>
+          <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Check-in pass</span>
         </div>
 
         {/* Notched divider (ticket perforation). */}

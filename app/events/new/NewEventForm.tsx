@@ -787,7 +787,7 @@ function FormSection({
   return (
     <section ref={ref} className="space-y-md scroll-mt-grid-margin">
       <h2 className="font-headline-sm text-[calc(20px*var(--text-scale))] text-on-surface flex items-baseline gap-sm">
-        <span className="text-primary font-bold">{number} ·</span>
+        <span className="text-primary-ink font-bold">{number} ·</span>
         <span>{title}</span>
         {optional && (
           <span className="font-body-md text-body-md text-on-surface-variant font-normal">

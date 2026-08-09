@@ -128,7 +128,7 @@ function SettingsSection({
       <div className="flex items-center gap-md mb-md">
         <div
           aria-hidden
-          className="w-10 h-10 rounded-full bg-primary-fixed text-primary flex items-center justify-center"
+          className="w-10 h-10 rounded-full bg-primary-fixed text-primary-ink flex items-center justify-center"
         >
           <span className="material-symbols-outlined text-[calc(20px*var(--text-scale))]">{icon}</span>
         </div>
@@ -177,7 +177,7 @@ function RadioCardGroup<V extends string>({
             />
             <span
               className={`material-symbols-outlined text-[calc(24px*var(--text-scale))] mt-[2px] shrink-0 ${
-                isSelected ? 'text-primary' : 'text-on-surface-variant'
+                isSelected ? 'text-primary-ink' : 'text-on-surface-variant'
               }`}
               aria-hidden
               data-fill={isSelected ? '1' : undefined}
@@ -185,7 +185,7 @@ function RadioCardGroup<V extends string>({
               {opt.icon}
             </span>
             <div className="flex-1 min-w-0">
-              <p className={`font-title-lg text-[calc(16px*var(--text-scale))] ${isSelected ? 'text-primary' : 'text-on-surface'}`}>
+              <p className={`font-title-lg text-[calc(16px*var(--text-scale))] ${isSelected ? 'text-primary-ink' : 'text-on-surface'}`}>
                 {opt.label}
               </p>
               <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
@@ -194,7 +194,7 @@ function RadioCardGroup<V extends string>({
             </div>
             <span
               className={`material-symbols-outlined text-[calc(20px*var(--text-scale))] mt-[2px] shrink-0 ${
-                isSelected ? 'text-primary' : 'text-outline'
+                isSelected ? 'text-primary-ink' : 'text-outline'
               }`}
               aria-hidden
               data-fill={isSelected ? '1' : undefined}
