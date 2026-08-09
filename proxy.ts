@@ -3,8 +3,20 @@
 // See: node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/proxy.md
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { isReviewMode } from '@/lib/reviewMode';
 
 export async function proxy(req: NextRequest) {
+  // LOCAL REVIEW BYPASS — Layer 1 of the three-layer auth gate. Without this
+  // the middleware redirects to /login before any page renders, so the
+  // requireStaff bypass alone would be invisible. Same guard function, so both
+  // layers open and close together and there is one thing to audit.
+  // lib/reviewMode.ts checks NODE_ENV first: a production build never reaches
+  // this branch. RLS (Layer 3) is untouched either way.
+  if (isReviewMode()) {
+    console.warn('[review-mode] proxy gate BYPASSED for', req.nextUrl.pathname);
+    return NextResponse.next();
+  }
+
   // We bind the Supabase client's cookie-setter to `res`. The client may write
   // refreshed-session cookies during `getUser()` or clear cookies during
   // `signOut()`. For the happy path we return `res` directly and those cookies
@@ -35,6 +47,10 @@ export async function proxy(req: NextRequest) {
     return redirect;
   }
 
+  // Same as requireStaff: getUser() reports "no session" as an error, so a
+  // failed call and an absent session are the same fact here, and a gate must
+  // fail closed to /login on either.
+  // eslint-disable-next-line no-restricted-syntax -- see above: no-session and call-failed are the same fact
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return redirectWithCookies(new URL('/login', req.url));
@@ -46,11 +62,20 @@ export async function proxy(req: NextRequest) {
     return redirectWithCookies(new URL('/login?error=not_authorized', req.url));
   }
 
-  const { data: staff } = await supabase
+  const { data: staff, error: staffErr } = await supabase
     .from('staff')
     .select('id')
     .eq('email', email)
     .maybeSingle();
+
+  // An unreadable staff table is an outage, not a verdict. Swallowing the error
+  // signed the user out and told them their email is not on the staff list —
+  // a false accusation that also destroyed a valid session, so they could not
+  // simply retry once the read recovered (rule 12). Still fails closed: no
+  // staff route is served, but the session survives and the copy is honest.
+  if (staffErr) {
+    return redirectWithCookies(new URL('/login?error=unavailable', req.url));
+  }
 
   if (!staff) {
     await supabase.auth.signOut();

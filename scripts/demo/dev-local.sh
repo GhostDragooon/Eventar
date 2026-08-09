@@ -21,4 +21,16 @@ export NEXT_PUBLIC_SUPABASE_ANON_KEY="$ANON_KEY"
 export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
 export NEXT_PUBLIC_SITE_URL="${DEMO_SITE_URL:-http://localhost:3100}"
 
+# Local-only placeholder so /api/cron/dispatch is exercisable here (it fails
+# CLOSED with 503 when unset, which is correct but untestable). NOT a secret:
+# this stack is a throwaway container on localhost. The real value is supplied
+# by the deploy environment and must never live in the repo.
+export CRON_SECRET="${CRON_SECRET:-local-dev-cron-not-a-secret}"
+
+# Review bypass: lets every staff surface be walked without an account.
+# Opt-out with EVENTAR_REVIEW_MODE=false. lib/reviewMode.ts refuses to engage
+# when NODE_ENV=production, so this cannot follow the code to a deploy — and a
+# banner is pinned to the viewport whenever it is on.
+export EVENTAR_REVIEW_MODE="${EVENTAR_REVIEW_MODE:-true}"
+
 exec pnpm exec next dev -p 3100
