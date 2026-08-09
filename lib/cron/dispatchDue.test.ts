@@ -88,3 +88,32 @@ describe('selectDue — batching', () => {
     expect(selectDue([], at('2026-06-01T09:00:00Z'))).toEqual([]);
   });
 });
+
+// The caller slices this list to a fixed cap. An arbitrary order therefore
+// decides who gets mailed at all, not just who gets mailed first: a reminder
+// that misses its 60-min window is gone (the window closes at start_time),
+// whereas a survey behind it still has most of a day left.
+describe('selectDue — urgency ordering', () => {
+  it('puts a reminder closing in an hour ahead of surveys with a day left', () => {
+    // Surveys ended at 08:00, so each window closes 2026-06-02T08:00.
+    const surveys = Array.from({ length: 20 }, (_, i) =>
+      event({ id: `s${i}`, start_time: '2026-06-01T06:00:00Z', end_time: '2026-06-01T08:00:00Z' }),
+    );
+    // Reminder window closes at start_time — 10:00, 22 hours sooner.
+    const reminder = event({ id: 'urgent' });
+
+    const due = selectDue([...surveys, reminder], at('2026-06-01T09:00:00Z'));
+
+    expect(due).toHaveLength(21);
+    expect(due[0]).toEqual({ eventId: 'urgent', purpose: 'reminder' });
+  });
+
+  it('orders two reminders by which one starts sooner', () => {
+    const later = event({ id: 'later', start_time: '2026-06-01T09:50:00Z', end_time: '2026-06-01T11:00:00Z' });
+    const sooner = event({ id: 'sooner', start_time: '2026-06-01T09:10:00Z', end_time: '2026-06-01T11:00:00Z' });
+
+    const due = selectDue([later, sooner], at('2026-06-01T09:00:00Z'));
+
+    expect(due.map((d) => d.eventId)).toEqual(['sooner', 'later']);
+  });
+});

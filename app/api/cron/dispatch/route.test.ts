@@ -11,15 +11,38 @@ const { mockSendReminder, mockSendSurvey } = vi.hoisted(() => ({
 vi.mock('@/lib/email/eventEmails', () => ({
   sendReminderToRegistrants: mockSendReminder,
   sendSurveyInviteToAttendees: mockSendSurvey,
+  // The route builds its whole-event-throw result from the real zero(), so the
+  // shape stays in lockstep with SendResult rather than drifting in a literal.
+  zero: (error?: string) => ({
+    sent: 0, queued: 0, skipped: 0, stalled: 0, failed: 0, gaveUp: 0,
+    ...(error ? { error } : {}),
+  }),
 }));
 
 type Row = Record<string, unknown>;
 let mockEventRows: Row[];
 let eventFilters: Array<[string, unknown]>;
+// Registered-recipient count per event id, for the recipient-budget batching.
+let mockRegistrationCounts: Record<string, number>;
 
 vi.mock('@/lib/supabase/admin', () => ({
   supabaseAdmin: vi.fn(() => ({
     from: (table: string) => {
+      if (table === 'registrations') {
+        // Mirrors the route's head:true count-per-event read.
+        const chain = {
+          _event: '',
+          eq(col: string, val: string) {
+            if (col === 'event_id') chain._event = val;
+            return chain;
+          },
+          in: () => chain,
+          then(onF: (v: { count: number; error: null }) => unknown) {
+            return Promise.resolve({ count: mockRegistrationCounts[chain._event] ?? 1, error: null }).then(onF);
+          },
+        };
+        return { select: () => chain };
+      }
       if (table !== 'events') throw new Error(`unexpected admin table: ${table}`);
       const chain = {
         in(col: string, val: unknown) {
@@ -94,8 +117,9 @@ beforeEach(() => {
   delete process.env.RESEND_API_KEY;
   mockEventRows = [];
   eventFilters = [];
-  mockSendReminder.mockReset().mockResolvedValue({ sent: 0, queued: 2, skipped: 0, failed: 0 });
-  mockSendSurvey.mockReset().mockResolvedValue({ sent: 0, queued: 1, skipped: 0, failed: 0 });
+  mockRegistrationCounts = {};
+  mockSendReminder.mockReset().mockResolvedValue({ sent: 0, queued: 2, skipped: 0, stalled: 0, failed: 0, gaveUp: 0 });
+  mockSendSurvey.mockReset().mockResolvedValue({ sent: 0, queued: 1, skipped: 0, stalled: 0, failed: 0, gaveUp: 0 });
 });
 
 describe('POST /api/cron/dispatch — the guard', () => {
@@ -157,7 +181,7 @@ describe('POST /api/cron/dispatch — dispatching', () => {
     expect(mockSendReminder).toHaveBeenCalledTimes(1);
     expect(mockSendSurvey).not.toHaveBeenCalled();
     expect(body.dispatched).toEqual([
-      { eventId: 'evt-reminder', purpose: 'reminder', sent: 0, queued: 2, skipped: 0, failed: 0 },
+      { eventId: 'evt-reminder', purpose: 'reminder', sent: 0, queued: 2, skipped: 0, stalled: 0, failed: 0, gaveUp: 0 },
     ]);
   });
 
@@ -217,6 +241,58 @@ describe('POST /api/cron/dispatch — dispatching', () => {
     expect(mockSendReminder).toHaveBeenCalledTimes(20);
   });
 
+  // The cap is a time bound, not a priority scheme. If selection order were
+  // arbitrary, a backlog of surveys (24h of grace left) could fill every slot
+  // and push out a reminder whose window shuts at start_time — and unlike a
+  // survey, a reminder missed is a QR pass that never arrives at the door.
+  it('dispatches an urgent reminder even when the cap is filled with surveys', async () => {
+    const surveys = Array.from({ length: 20 }, (_, i) =>
+      reminderDueRow({
+        id: `survey-${i}`,
+        start_time: new Date(Date.now() - 3 * HOUR).toISOString(),
+        end_time: new Date(Date.now() - 1 * HOUR).toISOString(),
+      }),
+    );
+    mockEventRows = [...surveys, reminderDueRow({ id: 'evt-urgent' })];
+
+    const body = await (await POST(req(SECRET))).json();
+
+    expect(body.dispatched).toHaveLength(20);
+    expect(body.morePending).toBe(true);
+    expect(body.dispatched[0]).toMatchObject({ eventId: 'evt-urgent', purpose: 'reminder' });
+    expect(mockSendReminder).toHaveBeenCalledTimes(1);
+  });
+
+  // The cap has to bound the WORK, not the event count. 20 events x 200
+  // registrants is 4000 sequential sends (QR render + email render + provider
+  // round-trip each) against a 60s function budget — a kill mid-batch leaves
+  // rows at 'queued', which is TERMINAL, so a timeout is permanent mail loss.
+  it('stops adding events once the recipient budget is reached', async () => {
+    mockRegistrationCounts = { 'evt-0': 400, 'evt-1': 400, 'evt-2': 400 };
+    mockEventRows = [
+      reminderDueRow({ id: 'evt-0' }),
+      reminderDueRow({ id: 'evt-1' }),
+      reminderDueRow({ id: 'evt-2' }),
+    ];
+
+    const body = await (await POST(req(SECRET))).json();
+
+    expect(body.dispatched.length).toBeLessThan(3);
+    expect(body.morePending).toBe(true);
+  });
+
+  // A single event larger than the whole budget must still go out, or it would
+  // be starved forever while smaller ones jump it every tick.
+  it('always dispatches at least one event, even one bigger than the budget', async () => {
+    mockRegistrationCounts = { 'evt-huge': 100_000 };
+    mockEventRows = [reminderDueRow({ id: 'evt-huge' })];
+
+    const body = await (await POST(req(SECRET))).json();
+
+    expect(body.dispatched).toHaveLength(1);
+    expect(body.morePending).toBe(false);
+  });
+
   it('does not flag morePending when everything due was handled', async () => {
     mockEventRows = [reminderDueRow()];
     const body = await (await POST(req(SECRET))).json();
@@ -228,13 +304,17 @@ describe('POST /api/cron/dispatch — dispatching', () => {
     mockEventRows = [reminderDueRow({ id: 'evt-a' }), reminderDueRow({ id: 'evt-b' })];
     mockSendReminder
       .mockRejectedValueOnce(new Error('resend exploded'))
-      .mockResolvedValueOnce({ sent: 1, queued: 0, skipped: 0, failed: 0 });
+      .mockResolvedValueOnce({ sent: 1, queued: 0, skipped: 0, stalled: 0, failed: 0, gaveUp: 0 });
 
     const body = await (await POST(req(SECRET))).json();
 
     expect(mockSendReminder).toHaveBeenCalledTimes(2);
     expect(body.dispatched).toHaveLength(2);
-    expect(body.dispatched[0]).toMatchObject({ eventId: 'evt-a', failed: 1 });
+    // A whole-event throw is reported as a batch error, not as "1 failed" —
+    // that number read as one recipient when the entire roster was skipped.
+    expect(body.dispatched[0]).toMatchObject({ eventId: 'evt-a', failed: 0 });
+    expect(body.dispatched[0].error).toMatch(/no recipients were processed/i);
+    expect(body.ok).toBe(false);
     expect(body.dispatched[1]).toMatchObject({ eventId: 'evt-b', sent: 1 });
   });
 });

@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { CHECKIN_OPEN_MINUTES } from '@/lib/lifecycle/eventLifecycle';
 import { selectDue, SURVEY_GRACE_HOURS, type DispatchCandidate } from '@/lib/cron/dispatchDue';
 import {
+  zero,
   sendReminderToRegistrants,
   sendSurveyInviteToAttendees,
   type EventRow,
@@ -22,26 +23,87 @@ import {
  * Vercel cron entry, or plain `curl` all hit the same URL. Swapping triggers
  * must never mean touching dispatch logic.
  *
- * Shipped trigger: `vercel.json`, `*／5 * * * *`. Chosen over a pg_cron
- * migration because it needs no extension, no Vault secret and no DB change,
- * so it cannot break CI replay-from-zero or schedule a job pointing at a
- * not-yet-deployed URL. It is inert until deploy.
- *   CAVEAT: Vercel's Hobby plan caps crons at ONE RUN PER DAY — the `*／5`
- *   cadence silently degrades there, which would miss every reminder window.
- *   Pro (or any other trigger hitting this URL) is required for real use.
+ * ⚠️ THERE IS CURRENTLY NO TRIGGER. Nothing fires this endpoint.
+ *
+ * A `vercel.json` entry existed briefly and was reverted in 72cda80 ("Vercel is
+ * not in scope yet"); the comment claiming it was still the shipped trigger
+ * outlived the file and was corrected here (2026-08-05). No pg_cron job exists
+ * either — grep `cron.schedule` across supabase/migrations: nothing.
+ *
+ * DEPLOYING WITHOUT ADDING ONE SHIPS A DEAD SCHEDULER, and it fails silently:
+ * no reminder means no QR pass, which means no door check-in, which means no
+ * attendance, which means no CPD credit. Choosing the trigger is deliberately
+ * deferred to the deploy decision because it depends on the host (Stage 8).
+ * Whichever is chosen, it hits this same URL — no logic here changes.
+ *   - Vercel Cron: needs Pro. The Hobby plan caps crons at ONE RUN PER DAY,
+ *     so a `*／5` entry silently degrades and misses every reminder window.
+ *   - pg_cron + pg_net: host-independent, but costs an extension, a Vault
+ *     secret for CRON_SECRET, and a DB change CI replay must tolerate.
+ *   - Any external scheduler that can issue an authenticated GET or POST.
  *
  * Cadence vs windows: at 5-minute ticks the reminder lands 55–60 min before
  * start (window is 60 min wide) and the survey within 5 min of its opening
- * (window is 24 h wide). Both have ample slack.
+ * (window is 24 h wide). Both have ample slack. A tick interval longer than
+ * 60 min can miss a reminder window entirely.
  *
  * Authorization is a shared secret, not a session: `requireStaff()` throws
  * without one, which is exactly why this route calls the session-less send core
  * in `@/lib/email/eventEmails` rather than the Server Actions.
  */
 
-// Bounds one invocation so a large backlog cannot exceed a platform function
-// timeout. Leftovers are reported, not queued — the next tick picks them up.
+/**
+ * Platform function timeout. Without this the host default applies (10–15s on
+ * Vercel), which a real batch exceeds easily: the per-recipient work is a QR
+ * render plus an email render plus a provider round-trip, run sequentially. A
+ * kill mid-batch leaves rows stuck at 'queued', which is TERMINAL under
+ * email_log_dedup_idx — so a timeout is permanent mail loss, not a retry.
+ *
+ * 60 is a conservative choice, NOT a verified plan ceiling — the per-plan
+ * limits could not be checked from this environment (vercel.com unreachable).
+ * Confirm the chosen host's real maximum at Stage 8, and whether exceeding it
+ * is a build error or a silent clamp; a silent clamp would mean this line
+ * reads as protection it is not actually providing.
+ *
+ * ⚠️ IT IS A HINT, NOT A TIMEOUT. Next's own docs say platforms *can* use
+ * maxDuration from the build output — Vercel does; self-hosted Node, Netlify
+ * and Cloudflare ignore it. On a host that ignores it this mitigates nothing
+ * and the mid-batch-kill mail loss is fully unmitigated, so the host choice
+ * (still open — see docs/DEFERRED.md) decides whether this line does anything.
+ */
+export const maxDuration = 60;
+
+/**
+ * Bounds one invocation so a large backlog cannot exceed the timeout above.
+ *
+ * NOTE this bounds EVENTS, not recipients, while the cost is per recipient —
+ * 20 events × 30 registrants is 600 sequential sends. The mitigation for now is
+ * `selectDue`'s urgency ordering: when more is due than fits, the work whose
+ * window closes soonest goes first, so the cap degrades gracefully instead of
+ * arbitrarily. Leftovers are reported via `morePending`.
+ *
+ * Do NOT read that as "the next tick picks them up" (this comment's previous
+ * claim, which was false): selection is purely time-based and has no idea what
+ * was already sent, so the same events are re-selected every tick until their
+ * windows close. Recipient-level chunking is the real fix and is deferred —
+ * see docs/DEFERRED.md for the re-entry criterion.
+ */
 const MAX_EVENTS_PER_RUN = 20;
+
+/**
+ * The bound that actually matters. `MAX_EVENTS_PER_RUN` counts events while the
+ * cost is per RECIPIENT — a QR render plus an email render plus a provider
+ * round-trip, run sequentially — so 20 events x 200 registrants is 4000
+ * sequential sends against a 60s budget. A kill mid-batch leaves rows at
+ * 'queued', which is TERMINAL under email_log_dedup_idx, so an overrun is
+ * permanent mail loss rather than a retry.
+ *
+ * Events are taken in `selectDue`'s urgency order until this is reached, so
+ * what gets deferred is always the work with the most window left.
+ *
+ * ~300 recipients at roughly 150ms each is well inside 60s with room for a slow
+ * provider. Tune it against real send latency, not arithmetic.
+ */
+const MAX_RECIPIENTS_PER_RUN = 300;
 
 type CandidateRow = EventRow & DispatchCandidate;
 
@@ -108,7 +170,39 @@ async function dispatch(req: NextRequest) {
   const candidates = (data ?? []) as CandidateRow[];
   const byId = new Map(candidates.map((c) => [c.id, c]));
   const due = selectDue(candidates, nowMs);
-  const batch = due.slice(0, MAX_EVENTS_PER_RUN);
+
+  // Fill the batch by RECIPIENT COUNT, in urgency order. One count query per
+  // candidate event (head:true — no rows transferred), which is cheap next to
+  // the per-recipient send work it is protecting.
+  const batch: typeof due = [];
+  let budget = 0;
+  for (const item of due.slice(0, MAX_EVENTS_PER_RUN)) {
+    const event = byId.get(item.eventId);
+    if (!event) continue;
+
+    const { count, error: countErr } = await admin
+      .from('registrations')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_id', item.eventId)
+      .eq('status', item.purpose === 'reminder' ? 'registered' : 'attended');
+
+    if (countErr) {
+      // Unknown size. Take it rather than skip it — deferring an event because
+      // a COUNT failed would silently drop mail, and the send itself is still
+      // bounded by its own roster.
+      console.error('[cron/dispatch] recipient count failed — taking the event anyway', {
+        eventId: item.eventId,
+        code: countErr.code,
+      });
+    }
+
+    // Always take the first item, however big: an event larger than the whole
+    // budget would otherwise be starved forever while smaller ones jump it.
+    if (batch.length > 0 && budget + (count ?? 0) > MAX_RECIPIENTS_PER_RUN) break;
+
+    batch.push(item);
+    budget += count ?? 0;
+  }
 
   const dispatched: Array<{ eventId: string; purpose: 'reminder' | 'survey' } & SendResult> = [];
 
@@ -129,19 +223,34 @@ async function dispatch(req: NextRequest) {
         purpose: item.purpose,
         message: e instanceof Error ? e.message : 'unknown',
       });
+      // NOT `failed: 1`. That read as one recipient when the truth is that the
+      // whole event was skipped — a 200-person roster rendered as "1 failed",
+      // which radically under-reports the blast radius. No email_log rows were
+      // written, so the next tick retries cleanly; what matters here is that
+      // the number a human reads is not a lie.
       dispatched.push({
         eventId: item.eventId,
         purpose: item.purpose,
-        sent: 0,
-        queued: 0,
-        skipped: 0,
-        failed: 1,
+        ...zero('send threw — no recipients were processed for this event'),
       });
     }
   }
 
+  // `ok` is DERIVED, never asserted. An external trigger or uptime monitor sees
+  // the status code and this flag, not the per-event detail below — so a tick
+  // where every send failed used to report success at the only layer anyone
+  // watches. That is the signature defect of this repo (a control one layer
+  // above where the work happens) at the response boundary, and Stage 8 is what
+  // wires the consumer that would be misled.
+  const trouble = dispatched.reduce(
+    (n, d) => n + (d.error ? 1 : 0) + d.failed + d.gaveUp + d.stalled,
+    0,
+  );
+
   return NextResponse.json({
-    ok: true,
+    ok: trouble === 0,
+    // Roll-up so a trigger can alert without parsing the per-event array.
+    needsAttention: trouble,
     now: now.toISOString(),
     // Without this an all-green local run reads as "mail delivered" when the
     // stub swallowed every message. `queued` counts are stub writes, not sends.

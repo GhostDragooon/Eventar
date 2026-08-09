@@ -3,7 +3,13 @@ import { Resend } from 'resend';
 
 export type SendEmailResult =
   | { ok: true; id: string }
-  | { error: { code: string; message: string } };
+  /**
+   * `statusCode` is Resend's HTTP status, surfaced because callers need to
+   * distinguish a 409 idempotency conflict (already submitted — do not retry)
+   * from an ordinary failure. Absent when the SDK threw rather than returning
+   * an API error, i.e. on network faults.
+   */
+  | { error: { code: string; message: string; statusCode?: number } };
 
 /**
  * Inline attachment for CID-referenced images (e.g. the check-in QR in the
@@ -39,6 +45,14 @@ export async function sendEmail(opts: {
   subject: string;
   html: string;
   attachments?: EmailAttachment[];
+  /**
+   * Sent as Resend's `Idempotency-Key` header. Required wherever a send can be
+   * RETRIED, because the catch below maps a network error to the same
+   * `{ error }` shape as a provider rejection — so a message Resend actually
+   * accepted can be recorded `failed` and re-sent (those rows are retryable
+   * since 20260805000000). Same key ⇒ Resend delivers once.
+   */
+  idempotencyKey?: string;
 }): Promise<SendEmailResult> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -52,26 +66,32 @@ export async function sendEmail(opts: {
   const resend = new Resend(apiKey);
 
   try {
-    const { data, error } = await resend.emails.send({
-      from,
-      to: opts.to,
-      subject: opts.subject,
-      html: opts.html,
-      // Only include the key when attachments are present — keeps the sent
-      // envelope minimal for text-only emails (#1 confirmation, #3 survey).
-      ...(opts.attachments && opts.attachments.length > 0
-        ? { attachments: opts.attachments }
-        : {}),
-    });
+    const { data, error } = await resend.emails.send(
+      {
+        from,
+        to: opts.to,
+        subject: opts.subject,
+        html: opts.html,
+        // Only include the key when attachments are present — keeps the sent
+        // envelope minimal for text-only emails (#1 confirmation, #3 survey).
+        ...(opts.attachments && opts.attachments.length > 0
+          ? { attachments: opts.attachments }
+          : {}),
+      },
+      // Second argument omitted entirely when unkeyed, so unretried callers
+      // send exactly the request shape they did before.
+      ...(opts.idempotencyKey ? [{ idempotencyKey: opts.idempotencyKey }] : []),
+    );
 
     if (error) {
       // Resend SDK returns { error } for API-side failures (4xx/5xx).
       // Map to our typed shape; both code + message are safe (no PII).
-      const err = error as { name?: string; message?: string };
+      const err = error as { name?: string; message?: string; statusCode?: number | null };
       return {
         error: {
           code: err.name ?? 'unknown_error',
           message: err.message ?? 'send failed',
+          ...(typeof err.statusCode === 'number' ? { statusCode: err.statusCode } : {}),
         },
       };
     }

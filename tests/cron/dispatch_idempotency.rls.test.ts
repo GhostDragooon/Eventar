@@ -6,6 +6,13 @@
 //
 //   email_log_dedup_idx — UNIQUE (event_id, registration_id, purpose)
 //                         WHERE registration_id IS NOT NULL
+//                           AND status <> 'failed'
+//
+// The `status <> 'failed'` arm was added 2026-08-05 (20260805000000). Before it,
+// ANY existing row blocked the next insert, so a transient provider error lost
+// that recipient's mail permanently and the dispatcher counted the loss as
+// `skipped` — "already handled". Tests 5 and 6 pin both halves of the fix: a
+// failed row retries, a sent row still cannot.
 //
 // combined with Hard Rule 2 (insert email_log FIRST, send SECOND). The insert
 // itself is therefore the concurrency lock: a second dispatcher racing the
@@ -48,6 +55,19 @@ describe.skipIf(!process.env.RLS_TESTS)('cron dispatch — email_log idempotency
   let eventId: string;
   let regA: string;
   let regB: string;
+  let regC: string;
+  let regD: string;
+
+  /** Drives a row to a terminal-or-retryable state the way runBulkSend does. */
+  async function setStatus(registrationId: string, status: 'sent' | 'failed'): Promise<void> {
+    const { error } = await admin
+      .from('email_log')
+      .update({ status, ...(status === 'sent' ? { sent_at: new Date().toISOString() } : {}) })
+      .eq('event_id', eventId)
+      .eq('registration_id', registrationId)
+      .eq('purpose', 'reminder');
+    if (error) throw new Error(`setStatus(${status}): ${error.message}`);
+  }
 
   /** One email_log insert, shaped exactly as runBulkSend writes it. */
   async function insertLog(
@@ -119,6 +139,8 @@ describe.skipIf(!process.env.RLS_TESTS)('cron dispatch — email_log idempotency
     };
     regA = await makeReg('A');
     regB = await makeReg('B');
+    regC = await makeReg('C');
+    regD = await makeReg('D');
   });
 
   afterAll(async () => {
@@ -143,13 +165,14 @@ describe.skipIf(!process.env.RLS_TESTS)('cron dispatch — email_log idempotency
 
   it('a queued row is TERMINAL — it cannot be replaced by a later insert', async () => {
     // regA already has a 'queued' reminder row from the previous test.
-    const { data: existing } = await admin
+    const { data: existing, error: existingErr } = await admin
       .from('email_log')
       .select('status')
       .eq('event_id', eventId)
       .eq('registration_id', regA)
       .eq('purpose', 'reminder')
       .single();
+    expect(existingErr).toBeNull();
     expect(existing?.status).toBe('queued');
 
     const retry = await insertLog(regA, 'reminder');
@@ -164,6 +187,67 @@ describe.skipIf(!process.env.RLS_TESTS)('cron dispatch — email_log idempotency
 
     expect(survey.ok).toBe(true);
     expect(await countLogs('survey')).toBe(1);
+  });
+
+  // A transient Resend error (429, 5xx, network blip) must not cost a
+  // practitioner their QR pass forever. `failed` is the one status the index
+  // lets through, so the next tick makes a fresh attempt rather than counting
+  // the loss as "already handled".
+  it('a failed row is RETRYABLE — the next tick starts a fresh attempt', async () => {
+    expect((await insertLog(regC, 'reminder')).ok).toBe(true);
+    await setStatus(regC, 'failed');
+
+    const retry = await insertLog(regC, 'reminder');
+
+    expect(retry.ok).toBe(true);
+    // Both rows survive: the failure stays on the ledger as evidence (rule 12),
+    // the retry is a new attempt beside it — not an overwrite of the history.
+    const { count } = await admin
+      .from('email_log')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_id', eventId)
+      .eq('registration_id', regC)
+      .eq('purpose', 'reminder');
+    expect(count).toBe(2);
+  });
+
+  // The other half of the same rule: a delivered email is never re-sent. This
+  // is what keeps retryability from becoming a duplicate-send channel.
+  it('a sent row is TERMINAL — retryability never duplicates a delivered email', async () => {
+    expect((await insertLog(regD, 'reminder')).ok).toBe(true);
+    await setStatus(regD, 'sent');
+
+    const retry = await insertLog(regD, 'reminder');
+
+    expect(retry.ok).toBe(false);
+    expect(retry.code).toBe('23505');
+  });
+
+  // runBulkSend's retry cap reads prior failures with exactly this query, and
+  // that read is mocked in every unit test — so this is the only place the real
+  // query shape is exercised against PostgREST. regC ended the retry test with
+  // one 'failed' row and one 'queued' row; only the failed one may be counted,
+  // or a recipient mid-retry would be given up on early.
+  it('the retry-cap read counts failed attempts only, not the queued retry beside them', async () => {
+    const { data, error } = await admin
+      .from('email_log')
+      .select('registration_id')
+      .eq('event_id', eventId)
+      .eq('purpose', 'reminder')
+      .eq('status', 'failed');
+
+    expect(error).toBeNull();
+
+    const attempts = new Map<string, number>();
+    for (const row of (data ?? []) as Array<{ registration_id: string | null }>) {
+      if (!row.registration_id) continue;
+      attempts.set(row.registration_id, (attempts.get(row.registration_id) ?? 0) + 1);
+    }
+
+    expect(attempts.get(regC)).toBe(1);
+    // regA/regB never failed; regD was marked sent, not failed.
+    expect(attempts.get(regD)).toBeUndefined();
+    expect(attempts.get(regA)).toBeUndefined();
   });
 
   it('two concurrent dispatch batches over the same roster produce one row per recipient', async () => {

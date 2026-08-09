@@ -24,7 +24,9 @@ export const SURVEY_GRACE_HOURS = 24;
  * and the QR pass going out are the same beat (see eventLifecycle.ts G11).
  */
 export function selectDue(candidates: DispatchCandidate[], nowMs: number): DueDispatch[] {
-  const due: DueDispatch[] = [];
+  // Carries each window's CLOSING time so the result can be ordered by urgency
+  // before the caller's batch cap slices it.
+  const due: Array<DueDispatch & { closesAtMs: number }> = [];
 
   for (const candidate of candidates) {
     const lifecycle = computeLifecycle(candidate, nowMs);
@@ -34,7 +36,7 @@ export function selectDue(candidates: DispatchCandidate[], nowMs: number): DueDi
     // 'live' already means nowMs >= start − CHECKIN_OPEN_MINUTES; the extra
     // bound stops a "starts soon" mail going out after the event began.
     if (lifecycle === 'live' && nowMs < startMs) {
-      due.push({ eventId: candidate.id, purpose: 'reminder' });
+      due.push({ eventId: candidate.id, purpose: 'reminder', closesAtMs: startMs });
       continue;
     }
 
@@ -43,9 +45,19 @@ export function selectDue(candidates: DispatchCandidate[], nowMs: number): DueDi
       nowMs >= endMs + SURVEY_DELAY_MINUTES * 60_000 &&
       nowMs < endMs + SURVEY_GRACE_HOURS * 3_600_000
     ) {
-      due.push({ eventId: candidate.id, purpose: 'survey' });
+      due.push({
+        eventId: candidate.id,
+        purpose: 'survey',
+        closesAtMs: endMs + SURVEY_GRACE_HOURS * 3_600_000,
+      });
     }
   }
 
-  return due;
+  // Soonest-closing first. The caller caps how many it dispatches per run, so
+  // this ordering decides who gets mailed AT ALL when more are due than fit —
+  // not merely who goes first. A reminder's window shuts at start_time and the
+  // mail is worthless after it; a survey behind it still has hours of grace.
+  due.sort((a, b) => a.closesAtMs - b.closesAtMs);
+
+  return due.map(({ eventId, purpose }) => ({ eventId, purpose }));
 }

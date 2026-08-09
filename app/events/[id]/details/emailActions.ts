@@ -28,11 +28,19 @@ async function authorizeEvent(eventId: string): Promise<{ event: EventRow } | { 
   // the explicit owner/manager gate below; requireStaff already established
   // identity.
   const admin = supabaseAdmin();
-  const { data: event } = await admin
+  const { data: event, error: eventErr } = await admin
     .from('events')
     .select('id, title, status, start_time, end_time, timezone, venue_name, venue_address, created_by')
     .eq('id', eventId)
     .maybeSingle();
+  // A failed read is not a missing event. Telling an organiser their event
+  // does not exist when the database merely blinked sends them looking for the
+  // wrong problem — the same rule-12 collapse just fixed in readRecipients,
+  // which this function calls three lines later.
+  if (eventErr) {
+    console.error('[authorizeEvent] event read failed', { eventId, code: eventErr.code ?? 'unknown' });
+    return { error: 'Could not load the event — nothing was sent. Try again.' };
+  }
   if (!event) return { error: 'Event not found.' };
   const canManage = event.created_by === staff.id || staff.role === 'eventar_staff';
   if (!canManage) return { error: 'You are not authorized for this event.' };
@@ -48,7 +56,11 @@ export async function sendReminderForEvent(eventId: string): Promise<SendResult>
   const gate = await authorizeEvent(eventId);
   if ('error' in gate) return zero(gate.error);
 
-  const result = await sendReminderToRegistrants(gate.event);
+  // manual: a human asked for this send explicitly, so it bypasses the
+  // scheduler's retry budget. This button is the operator's only rescue lever;
+  // if the budget governed it, it would be a silent no-op for exactly the
+  // recipients who need rescuing.
+  const result = await sendReminderToRegistrants(gate.event, { manual: true });
   revalidatePath(`/events/${eventId}/details`);
   return result;
 }
@@ -62,7 +74,8 @@ export async function sendSurveyInviteForEvent(eventId: string): Promise<SendRes
   const gate = await authorizeEvent(eventId);
   if ('error' in gate) return zero(gate.error);
 
-  const result = await sendSurveyInviteToAttendees(gate.event);
+  // manual — see sendReminderForEvent above.
+  const result = await sendSurveyInviteToAttendees(gate.event, { manual: true });
   revalidatePath(`/events/${eventId}/details`);
   return result;
 }

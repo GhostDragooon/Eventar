@@ -51,9 +51,40 @@ describe('lib/resend.sendEmail', () => {
       subject: 'x',
       html: '<p>x</p>',
     });
+    // statusCode is carried through so callers can distinguish a 409
+    // idempotency conflict (already submitted) from an ordinary failure.
     expect(result).toEqual({
-      error: { code: 'validation_error', message: 'Invalid recipient' },
+      error: { code: 'validation_error', message: 'Invalid recipient', statusCode: 422 },
     });
+  });
+
+  // A network error is caught and returned as { error }, INDISTINGUISHABLE from
+  // a provider rejection — so a send Resend actually accepted can be recorded
+  // as failed and retried. Since 20260805000000 made failed rows retryable,
+  // that race would deliver a second QR pass to a regulated professional. The
+  // idempotency key closes it provider-side: same key, one delivery.
+  it('passes the caller idempotency key to Resend as a second-argument option', async () => {
+    mockSend.mockResolvedValueOnce({ data: { id: 're_idem' }, error: null });
+
+    await sendEmail({
+      to: 'a@x.com',
+      subject: 's',
+      html: '<p>h</p>',
+      idempotencyKey: 'evt-1:reminder:reg-9',
+    });
+
+    expect(mockSend).toHaveBeenCalledWith(
+      expect.objectContaining({ to: 'a@x.com' }),
+      { idempotencyKey: 'evt-1:reminder:reg-9' },
+    );
+  });
+
+  it('omits the options argument entirely when no idempotency key is given', async () => {
+    mockSend.mockResolvedValueOnce({ data: { id: 're_plain' }, error: null });
+
+    await sendEmail({ to: 'a@x.com', subject: 's', html: '<p>h</p>' });
+
+    expect(mockSend.mock.calls[0]).toHaveLength(1);
   });
 
   it('returns { error } when the SDK throws (network failure)', async () => {
