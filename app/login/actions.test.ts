@@ -93,6 +93,31 @@ describe('sendMagicLink', () => {
     expectPkceOtpRequest();
   });
 
+  // ADDED 2026-08-09, reversing a 2026-08-06 note that is no longer true.
+  //
+  // That note rejected this exact case (recovered from the unmerged `709cd6a`
+  // on claude/gifted-jemison-31b671) as vacuous, on the grounds that `c43fd95`
+  // had stripped the review-mode branch, so "supabaseServer() now
+  // unconditionally delegates to supabaseAnonServer() and the failure mode is
+  // structurally gone". That was true when written and STOPPED BEING TRUE THE
+  // SAME DAY: review mode was reinstated, and lib/supabase/server.ts routes to
+  // supabaseAdmin() again whenever it is on.
+  //
+  // So the failure mode is reachable once more. A plain supabase-js admin
+  // client sends no code_challenge and writes no verifier cookie, so if anyone
+  // swaps this action back to supabaseServer() while review mode is on, magic
+  // links die at /login?error=missing_code — the original bug, exactly.
+  //
+  // Mutation-tested before landing, not assumed: with the swap applied this
+  // case FAILS (no code_challenge) while the other two stay green. It guards
+  // something real now.
+  it('uses the PKCE anon client even when review mode is on', async () => {
+    vi.stubEnv('EVENTAR_REVIEW_MODE', 'true');
+    const res = await sendMagicLink(makeFormData('staff@example.com'));
+    expect(res).toEqual({ ok: true });
+    expectPkceOtpRequest();
+  });
+
   it('rejects an invalid email without calling GoTrue', async () => {
     const res = await sendMagicLink(makeFormData('not-an-email'));
     expect(res).toEqual({ error: 'Please enter a valid email address.' });

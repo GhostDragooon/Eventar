@@ -27,7 +27,11 @@ export async function requireStaff(client?: SupabaseClient): Promise<Staff> {
     // read `staff` with; that is the whole point of the bypass.
     const { supabaseAdmin } = await import('@/lib/supabase/admin');
     const staff = await resolveReviewStaff(supabaseAdmin());
-    console.warn('[review-mode] AUTH BYPASSED — acting as', staff.email);
+    // Hard rule 10: UUIDs only, never PII. This logged staff.email until
+    // 2026-08-09 — a real address, since resolveReviewStaff borrows a live
+    // staff row rather than inventing one. The id identifies the borrowed
+    // identity just as well for anyone reading the log.
+    console.warn('[review-mode] AUTH BYPASSED — acting as staff id', staff.id);
     return staff as Staff;
   }
 
