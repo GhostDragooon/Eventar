@@ -583,7 +583,13 @@ async function main() {
     } else {
       console.log(`  ⛔ CHECK IN — the event is still a DRAFT; publish it first (see above).`);
     }
-    console.log('     Self-serve is on, so the pass shows a "Confirm I\'m here" button.');
+    // Was: 'Self-serve is on, so the pass shows a "Confirm I'm here" button.'
+    // Orphaned residue from the 2026-08-06 flip that set self_serve:false above
+    // (see checkin_modes, ~line 382). It told the demo operator a path was live
+    // that the same file had turned off — rule 12, in the script Ivan drives
+    // live demos from. self_check_in has no location check, which is WHY it is
+    // off; see DEFERRED 74 and docs/plans/2026-08-06-venue-scan-checkin-spec.md.
+    console.log('     Self-serve is OFF — check in from the staff Roster, not the pass.');
     console.log(`     That check-in posts a real CPD credit (${CPD_HOURS} hrs @ ${CPD_BODY_SHORT_NAME}).`);
     console.log(`  ✅ ROSTER  — ${site}/events/${event.id}/checkin  (watch it tick over)`);
     console.log('  ⛔ REGISTER — closed; registration always closes when check-in opens.');

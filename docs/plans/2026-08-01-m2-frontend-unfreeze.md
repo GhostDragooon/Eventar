@@ -213,7 +213,17 @@ Run before Stage 4, against the `ui-ux-pro-max` Quick Reference (§1 Accessibili
 2. **Retired palette values still on the public home page.** Stage 1 remapped tokens, but `app/page.tsx` carries *hardcoded* hex: `#0070F3` (the retired Vercel accent) ×2, `#79B8FF` (a blue not in the ramp), `#4ADE80` (the pre-ramp success green). These sit on a deliberately dark-always marketing hero, so fixed hex is defensible — being the **old palette's** fixed hex is not. Mapped to current equivalents (`#0E79EC`, `#7FB0F4`, `#4CC47D`).
 3. **Dead code** — `isActive()` still branched on `/events` after the nav item was removed.
 
-### The structural finding — NOT fixed, needs a decision
+### ~~The structural finding — NOT fixed, needs a decision~~ ✅ **RESOLVED — corrected 2026-08-06**
+
+> **This section was stale and is kept only for the record. Do not act on it.**
+> `ddc144e fix(a11y): make /settings → Text size actually scale the whole UI` did the sweep.
+> Re-measured independently on 2026-08-06 (not taken from the 2026-08-05 frontend review that
+> first flagged the staleness): **1** arbitrary `text-[Npx]` remains against **193**
+> `text-[calc(Npx*var(--text-scale))]` uses. The single holdout is in
+> `app/(public)/events/[id]/poster/page.tsx` — a fixed-size print artifact that *should not*
+> scale, so it is correct, not debt.
+> **The Text size setting works.** The paragraphs below describe a world that no longer exists;
+> a session reading them would redo finished work.
 
 **190 arbitrary `text-[Npx]` values across 47 files bypass the type scale entirely.** Most common: `text-[11px]` ×38, `text-[16px]` ×35, `text-[18px]` ×34.
 

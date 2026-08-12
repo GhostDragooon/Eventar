@@ -2,9 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "beta-local",
+      "name": "eventar",
       "runtimeExecutable": "bash",
-      "runtimeArgs": ["/Users/ivan/Eventar-demo/scripts/demo/dev-local.sh"],
+      "runtimeArgs": ["/Users/ivan/Eventar/scripts/demo/dev-local.sh"],
       "port": 3100
     }
   ]

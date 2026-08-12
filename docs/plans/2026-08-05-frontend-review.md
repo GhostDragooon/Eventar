@@ -216,15 +216,49 @@ accrediting body, and a misquoted question misrepresents what the responses unde
    the "22 of 59" the older doc claims; token uses now outnumber them 48 to 14. Real but narrow.
 4. **`staff.role` accepted by `StaffShell` and never used** (carried). Dead prop; removing it is
    cleanup, surfacing it as a badge is a design decision. Neither is this run's remit.
-5. **`generateMetadata` still swallows its query error** — deliberate, see §2.2.
-6. **`/dashboard`, `/events/[id]/checkin`, `/events/[id]/edit`, `/poster`, `calendar.ics` still
-   swallow errors on their *single-row* `event` lookups**, falling through to `notFound()`. Lower
-   severity than the list queries (a 404 is wrong but not a fabricated number) and it is six more
-   sites. Folded into §6's proposal instead of patched piecemeal.
+5. ~~**`generateMetadata` still swallows its query error**~~ — **✅ CLOSED 2026-08-06.** Still
+   swallowed, now *deliberately and visibly*: it carries an `eslint-disable` naming the reason
+   (throwing would replace a working page with an error boundary over a link preview).
+6. ~~**`/dashboard`, `/events/[id]/checkin`, `/events/[id]/edit`, `/poster`, `calendar.ics` still
+   swallow errors on their *single-row* `event` lookups**~~ — **✅ CLOSED 2026-08-06** along with
+   every other production site, by the §6 Option A pass. `/dashboard` turned out to have been
+   fixed already in `c20b2ad`; the rest now throw (or, for `calendar.ics`, return 503 rather than
+   a permanent 404 to a calendar client that may stop retrying).
 
 ---
 
 ## 4. Decisions for Ivan
+
+### Decision 1 — ❌ **PREMISE REJECTED BY IVAN, 2026-08-06 — read the correction before the table**
+
+> This section asked how to *label* two capture paths it treated as equally legitimate. Ivan rejected
+> that framing: the product model is **an attendee scans a QR at the venue, or staff scan their QR, or
+> staff key their code — nothing else.** Checked against the code, and he is right:
+>
+> - **The venue-scan path does not exist.** The poster/event QR encodes `/events/{id}`, a content page
+>   (`lib/qr.ts:21`). Nothing displayed at a venue checks anyone in.
+> - **What shipped as "self-serve" is a tappable button on the attendee's own phone** —
+>   `ConfirmButton.tsx`, "Confirm I'm here", subtitle "Tap when you arrive".
+> - **`self_check_in()` has no location check of any kind.** Grepped the repo for geolocation, venue
+>   token, proximity, NFC, beacon — none present. The tap works from anywhere inside the event window.
+>
+> So the real defect was never labelling; it was that self-serve was **built as a tap instead of a
+> scan**. This section's four options all presuppose the tap is a legitimate path, and none of them
+> should be actioned as written.
+>
+> **What happened instead:** the tap is contained (`checkin_modes` defaults false; the demo seed, the
+> only place it was on, was flipped off), the replacement is specified in
+> `2026-08-06-venue-scan-checkin-spec.md`, and the build is deferred past Stage 8 per the
+> block-architecture admission checklist. Option B below — a distinct `check_in_method` value —
+> survives as a *component* of that spec (§4), not as a standalone decision.
+>
+> **Process note, worth more than the fix:** this section was written from the code that *consumed*
+> `check_in_method` without ever reading the code that *produced* it, and I then repeated it to Ivan
+> as established fact. That is the exact failure CLAUDE.md rule 14 was added for on 2026-08-05, one
+> day earlier. Second occurrence in two days.
+
+<details>
+<summary>Original section, kept for the record — do not action</summary>
 
 ### Decision 1 — a self-serve tap and a staff scan are the same value in the database
 
@@ -247,11 +281,17 @@ attendance are different evidentiary categories, and Stage 9's body review is li
 during a deploy-gated stage, and this repo's convention is to write the trigger down rather than
 build ahead of the answer.
 
-### Decision 2 — how to stop the swallowed-error class recurring
+</details>
+
+### Decision 2 — how to stop the swallowed-error class recurring — ✅ **DECIDED + SHIPPED 2026-08-06**
 
 Six instances this run; the repo's history records the same class twice before. Fixing instance
 seven by hand is not a strategy. Full options in §6 — it needs one call from you, so it is a
 decision, not a finding.
+
+> **Ivan chose A** (with B, then C as fallbacks), plus "off under `tests/`" for the scope question
+> that the measurement raised. Shipped the same night — see §6's closing note. **Nothing left to
+> decide here; read it as a record.**
 
 ### Decision 3 — what `high-end-visual-design` and `gpt-taste` wanted, that decision 1 rules out
 
@@ -346,6 +386,36 @@ failed collapse twice, and by this specific query shape at least three times.
 posture — grant-level revokes, negative tests asserting `42501`, definer-only writes — is
 "make the wrong thing impossible rather than discouraged." A lint rule is that posture applied to
 the frontend. C is worth doing anyway as the cleanup pass.
+
+> ### ✅ Outcome — 2026-08-06 (Ivan chose A; A **and** C shipped)
+>
+> **A cost ~8 lines, not the ~1h estimated above.** No custom rule was needed: ESLint's built-in
+> `no-restricted-syntax` takes an esquery selector, and esquery supports `:has()`/`:not()`, so the
+> whole rule is config in `eslint.config.mjs` — no plugin package, no dependency. Two selector
+> details that matter if it ever needs editing: the subject is the rightmost compound (so the error
+> points at `{ data }`, not the statement), and the await is matched with `:has(AwaitExpression)`
+> rather than `init.type` so it still catches `const { data } = (await …) as { data: T }`.
+>
+> **C shipped too, as A's forcing function**: 18 production sites, 17 fixed here (the 18th,
+> `emailActions.ts`, was fixed independently by the concurrent cron session). Six carry a
+> deliberate `eslint-disable` + written reason. `eslint .` is back to its 0-error/5-warning
+> baseline. Two of the fixes are behavioural, not cosmetic: `requireStaff` now throws the
+> underlying error instead of `NotAuthorizedError` when the staff read fails (still fails closed —
+> it just stops telling a real staff member they are not on the list), and `proxy.ts` redirects to
+> `?error=unavailable` **without signing the user out**, since the old path destroyed a valid
+> session over a database blip.
+>
+> **One claim in this section did not survive measurement.** The scope question "should the rule
+> also run under `tests/`?" was argued to Ivan on the basis that 14 (later refined to 9) test
+> read-backs were genuine false greens — a test asserting an empty result passing when the query
+> had actually failed. That was **wrong, and the fixes made on it were reverted.** supabase-js
+> returns `data: null` on failure, never `[]`, and every matcher the suite uses on a read-back
+> rejects null: `toHaveLength(0)`, `toEqual([])`, and `toBeNull()` on `row?.field` (→ `undefined`)
+> all throw. Verified in a scratch vitest run rather than reasoned about. **There are zero false
+> greens in the suite** — all 80 test hits would have been ceremony. Same failure mode this review
+> named in §"The instrument lied twice": a confident number that nobody measured. It is logged in
+> `DEFERRED.md`, whose re-entry trigger is now the thing that would actually make it real — a
+> supabase-js major changing the failure return from `null` to `[]`.
 
 ---
 

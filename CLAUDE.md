@@ -5,7 +5,7 @@
 
 ---
 
-# Coding Behavior Contract (13 Rules)
+# Coding Behavior Contract (14 Rules)
 
 ## Core
 1. Think before coding. State your assumptions. Surface tradeoffs.
@@ -41,6 +41,28 @@
     building. Confirm explicitly before changing the active task.
     Active phase + carried-forward considerations live in
     `docs/plans/PROJECT_STATE.md`. Read it first.
+14. Investigate before you escalate. When a bug, issue, correction
+    or flag surfaces — your own, a review agent's, a lint rule's,
+    a user report — dispatch an agent to establish (a) whether it
+    is actually valid, (b) its full extent, and (c) a proposed
+    mitigation or fix, BEFORE presenting the case to Ivan. Bring
+    him the investigated case, not the raw finding.
+    Why: a finding presented raw asks him to decide on incomplete
+    information, and a fix scoped to the reported symptom leaves
+    every sibling broken (see the ponytail root-cause rule). Both
+    failure modes are on the record here — six instances of "a
+    control one layer above where the write happens", and on
+    2026-08-05 three safety claims asserted from reading only the
+    code that CONSUMED a value, never the code that produced it.
+    One of those reached Ivan as a guarantee and he decided on it;
+    it was false.
+    Not a stall, and not for typos or one-line obvious fixes —
+    judgement applies. Mark clearly in the write-up what was
+    verified by execution versus what rests on vendor docs or
+    inference.
+    NOTE for future sessions: some harnesses default to "do not
+    spawn agents unless the user asks". Ivan asked, here, on
+    2026-08-05 — this rule IS that standing request.
 
 ## Project-specific rules below this line
 
@@ -48,7 +70,9 @@
 
 ## What this repo is
 
-> ⚠️ **PIVOT — 2026-07-03.** Eventar pivoted from internal workshop manager to a **CPD/CME/CE event + credit platform** for regulated professions (HK launch, HKCP first accrediting body). Canonical record + frozen design baseline: vault `20 — Roadmap/Pivot — CPD Platform (2026-07-03).md` + Decisions Log **Q20**. Active plan: vault `20 — Roadmap/CPD Roadmap — Backend First.md` — **backend first, frontend FROZEN** (no new surfaces, no restyles) until the Milestone-M2 review. Current phase: `docs/plans/PROJECT_STATE.md`. Pre-pivot vault notes are historical unless they say otherwise.
+> ⚠️ **PIVOT — 2026-07-03.** Eventar pivoted from internal workshop manager to a **CPD/CME/CE event + credit platform** for regulated professions (HK launch, HKCP first accrediting body). Canonical record + frozen design baseline: vault `20 — Roadmap/Pivot — CPD Platform (2026-07-03).md` + Decisions Log **Q20**. Active plan: vault `20 — Roadmap/CPD Roadmap — Backend First.md` — backend first. ⚠️ **That note's frontend freeze is LIFTED (2026-08-01) — see the pivot-era rules below.** The vault note has not been updated and still reads "post-M4"; it is wrong on this point. Until 2026-08-10 this sentence said "frontend FROZEN", contradicting the rule 12 lines further down and the row in the table below — two of the three statements in this contract told a fresh session not to touch a frontend Ivan had just had rebuilt. Current phase: `docs/plans/PROJECT_STATE.md`. Pre-pivot vault notes are historical unless they say otherwise.
+
+> **📛 Roadmap vocabulary is Stage 1–13 ONLY. `docs/plans/STAGES.md` is the authority.** "M1–M4", "Sprint 0–5", "Milestone A–E" and "Phase 7/8/9" are retired — translate via its table. Historical handoffs keep their original wording; every live instruction document does not. Note that `STAGES.md` was itself unreferenced by this file and by the vault until 2026-08-10, which is how four naming axes stayed alive after being retired.
 
 **Eventar** — CPD platform (post-pivot). **Next.js 16** (App Router) + Tailwind v4 + Supabase + Resend.
 *Note: vault notes were written assuming Next 15; if you find a discrepancy between vault and Next 16 reality, the Next 16 docs win.*
@@ -81,7 +105,7 @@ Before implementing any feature, **read the relevant vault notes**:
 | Where files live, naming, route groups | `10 — Architecture/Repo Structure.md` |
 | What we're building next | `20 — Roadmap/Phased Roadmap.md`, `20 — Roadmap/Phase N — *.md` |
 | Library choices + alternatives considered | `30 — Reference/Stack.md` |
-| Frontend component/token work resumes (currently FROZEN — see pivot banner above) — need real design tokens, component reference, motion/animation (GSAP), or a design-review/polish pass | `design-system-libraries` skill for tokens (global, `~/.claude/skills/design-system-libraries/SKILL.md`); also see `gsap-*`, `emil-design-eng`, `emilkowalski-motion`, `web-design-guidelines`, `impeccable-design-polish`, `redesign-existing-projects`, `minimalist-ui`, `industrial-brutalist-ui` — all global skills under `~/.claude/skills/` |
+| **ANY frontend work** — colour, tokens, components, layout, motion, or a design review | ==**vault `30 — Reference/Frontend Design Standard.md` FIRST**== (locked 2026-08-09, Decisions Log **Q32**). It is the authority and supersedes `Design Language.md` on colour doctrine, wordmark and navigation — that older note is still marked `locked` and is wrong on three of its four contested points. Then `docs/plans/2026-07-12-organiser-ia-spec.md` for staff IA. Skills: `design-system-libraries` (tokens), `gsap-*`, `emil-design-eng`, `emilkowalski-motion`, `web-design-guidelines`, `impeccable-design-polish`, `redesign-existing-projects`, `minimalist-ui`, `industrial-brutalist-ui` — all global under `~/.claude/skills/` |
 | Env vars, key rotation | `30 — Reference/Credentials.md` |
 | "Can we just add X?" — check if it's deferred | `30 — Reference/Out of Scope.md` |
 
@@ -103,7 +127,7 @@ The four pre-public-deploy gates are resolved; retained so they aren't re-litiga
 3. ✅ Host-header spoofing on QR origin — `NEXT_PUBLIC_SITE_URL` via `lib/origin.ts` (`561d2cb`).
 4. ✅ Migration history drift — reconciled 26/26 local↔remote (`8c8e7d9`, 2026-07-04).
 
-Deploy status post-pivot: old Phase 8 (workshop-MVP deploy) is **PAUSED** — needs an explicit user go decision; never deploy by momentum. The CPD deploy path is Milestone M4 of the backend-first roadmap. Live Supabase project is Seoul (`ap-northeast-2`); canonical prod will be a fresh **Singapore (`ap-southeast-1`)** project provisioned at Sprint 1 start.
+Deploy status post-pivot: old Phase 8 (workshop-MVP deploy) is **PAUSED** — needs an explicit user go decision; never deploy by momentum. The CPD deploy path is **Stage 8** (`docs/plans/STAGES.md`). Live Supabase project is Seoul (`ap-northeast-2`); canonical prod will be a fresh **Singapore (`ap-southeast-1`)** project, **still unprovisioned** — an open Stage-8 precondition, not something already done. Until 2026-08-10 this sentence said "Milestone M4" (which translates to Stage **12**) and "provisioned at Sprint 1 start" (Stage 1, shipped 2026-07-04) — both halves wrong, in opposite directions. Its blocking precondition, a green replay-from-zero, was closed 2026-08-10 (`d60b596`).
 
 ---
 
