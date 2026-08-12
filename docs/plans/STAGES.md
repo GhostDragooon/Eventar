@@ -16,11 +16,13 @@
 | **6** | Organiser frontend & scheduler | token fusion, staff shell, CPD config surface, `/api/cron/dispatch`, Text size actually scaling | ✅ shipped 2026-08-03 |
 | **7** | Hardening & pre-flight | full backend + frontend review, the fired deferrals closed, unaudited publish path, check-in mode reachable | ✅ shipped 2026-08-04 |
 | **8** | Deploy & field-proven | ← **CURRENT.** Singapore → hosting → Resend cutover → Turnstile → privacy notice; ≥3 real events, ≥50 check-ins, 0 integrity incidents | 🟡 open; blocked only on credentials Ivan supplies |
-| **9** | Body engaged | review meeting held; the 7+2 questions answered; Q26 resolvable; pilot proposal delivered | external — their calendar |
-| **10** | CPD engine | versioned `body_rules`/`body_cycles`, the deterministic evaluator, roster ingestion, issuance against real rules | gated on Stage 9 |
+| **9** | **Colleges engaged** | MCHK Administrator + pilot Specialty Colleges confirmed; CSV column list locked; rule-pack numbers sourced against primary documents | external — their calendar |
+| **10** | **Dual-track engine (provisional rules)** | MCHK/HKAM split at registration, minute-level proration, 2026–28 taxonomy, lightweight per-body rule packs, certificates, College export | ← **rescoped 2026-08-10** |
 | **11** | Signed & verifiable | KMS-signed certificate verifies against the published key; public verify-this-record URL; staff TOTP mandatory | after Stage 10 |
-| **12** | Pilot | 1 body onboarded with real rules, 2 real accredited events, evidence pack accepted, **invoice paid** | after Stage 11 |
-| **13** | Platform | external activities + evidence locker, session/track model, auditor portal, zh-HK, body #2 unaided | post-pilot |
+| **12** | **Pilot (soft → public launch)** | 1–2 Specialty Colleges + 1 MCHK provider on provisional rule packs, 2 real accredited events, College export accepted, **invoice paid** | after Stage 11 · target Nov–Dec 2026 |
+| **13** | **CPD engine (versioned rules) + platform** | the **deferred** work: versioned `body_rules`/`body_cycles`, the deterministic evaluator (**Q26**), roster ingestion, per-body ledger chains — plus evidence locker, session/track model, auditor portal, zh-HK | post-pilot |
+
+> **Rescope logged 2026-08-10 (Ivan) — Decisions Log Q33.** Stages 9, 10, 12 and 13 were re-pointed at the dual-track CME/CPD launch. The versioned `body_rules` evaluator that used to be Stage 10 moved to **Stage 13**; it stays gated on Q26 and doctrine D.1. Rule 1 below forbids *silent* renumbering — this is the logged kind, and the alternative (appending as Stage 14, which would then run *before* 9–13 in calendar time) was considered and rejected as worse for the next reader. Scope record: `docs/plans/2026-08-10-dual-track-stage-scope.md`.
 
 ## Translating the old names
 
