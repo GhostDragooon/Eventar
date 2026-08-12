@@ -135,13 +135,18 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
   beforeAll(async () => {
     const { data: body, error: bodyErr } = await admin
       .from('accrediting_bodies')
-      .insert({
+      // SENTINEL, reused across runs — see roster_eligibility for the full note.
+      // A per-run `RLS-CPD-${ts}` body becomes undeletable the moment this suite
+      // issues its first credit (credit_ledger.body_id is NO ACTION), so every
+      // run permanently widened the table. This suite is the biggest offender:
+      // it is excluded from `test:rls` precisely because it writes real ledger rows.
+      .upsert({
         organisation_id: DEFAULT_ORG,
-        short_name: `RLS-CPD-${ts}`,
+        short_name: 'RLS-CPD-FIXTURE',
         full_name: 'RLS Test Body (attendance_issuance fixture)',
         cycle_config: {},
         category_taxonomy: {},
-      })
+      }, { onConflict: 'organisation_id,short_name' })
       .select('id')
       .single();
     if (bodyErr || !body) throw new Error(`body fixture: ${bodyErr?.message}`);

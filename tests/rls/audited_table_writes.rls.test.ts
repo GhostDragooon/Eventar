@@ -141,13 +141,14 @@ describe.skipIf(!process.env.RLS_TESTS)('audited-table write guard (service_role
       // real definer write path, then confirm the row is actually gone.
       const { data: body, error: bodyErr } = await admin
         .from('accrediting_bodies')
-        .insert({
+        // SENTINEL, reused across runs — see roster_eligibility for the full note.
+        .upsert({
           organisation_id: DEFAULT_ORG,
-          short_name: `GUARD-${Date.now()}`,
+          short_name: 'GUARD-FIXTURE',
           full_name: 'Write-guard test body',
           cycle_config: {},
           category_taxonomy: {},
-        })
+        }, { onConflict: 'organisation_id,short_name' })
         .select('id')
         .single();
       if (bodyErr || !body) throw new Error(`body fixture: ${bodyErr?.message}`);
@@ -215,13 +216,13 @@ describe.skipIf(!process.env.RLS_TESTS)('audited-table write guard (service_role
     it('service_role retains the seeding path (positive round-trip)', async () => {
       const { data: body, error: bodyErr } = await admin
         .from('accrediting_bodies')
-        .insert({
+        .upsert({
           organisation_id: DEFAULT_ORG,
-          short_name: `OBA-GUARD-${Date.now()}`,
+          short_name: 'OBA-GUARD-FIXTURE',
           full_name: 'RLS Test Body (allow-list guard fixture)',
           cycle_config: {},
           category_taxonomy: {},
-        })
+        }, { onConflict: 'organisation_id,short_name' })
         .select('id')
         .single();
       if (bodyErr || !body) throw new Error(`body fixture: ${bodyErr?.message}`);

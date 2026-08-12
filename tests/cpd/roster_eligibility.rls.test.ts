@@ -68,15 +68,22 @@ describe.skipIf(!process.env.RLS_TESTS)('event_registration_eligibility', () => 
     const { data: s } = await admin.from('staff').select('id').eq('email', owner.email).single();
     ownerStaffId = s!.id as string;
 
-    const { data: body, error: bodyErr } = await admin.from('accrediting_bodies').insert({
-      organisation_id: DEFAULT_ORG, short_name: `ELIG-${ts}`, full_name: 'Eligibility Test Body',
+    // SENTINEL, not a per-run body. This used to be `ELIG-${ts}`, which minted a
+    // new row every run — and because credit_ledger.body_id is a NO ACTION FK,
+    // any body that ever earns a credit is undeletable forever. Seoul accumulated
+    // 19 fixture bodies that way, 8 of them status='active' and therefore visible
+    // in the production organiser picker. Status has to stay 'active' (the CPD
+    // config gate requires it), so the fix is one row reused, not one per run.
+    const { data: body, error: bodyErr } = await admin.from('accrediting_bodies').upsert({
+      organisation_id: DEFAULT_ORG, short_name: 'ELIG-FIXTURE', full_name: 'Eligibility Test Body',
       status: 'active', cycle_config: {}, category_taxonomy: {},
-    }).select('id').single();
+    }, { onConflict: 'organisation_id,short_name' }).select('id').single();
     if (bodyErr) throw new Error(`body fixture: ${bodyErr.message}`);
     bodyId = body!.id as string;
 
     await admin.from('organisation_body_authorisations')
-      .insert({ organisation_id: DEFAULT_ORG, body_id: bodyId, status: 'active' });
+      .upsert({ organisation_id: DEFAULT_ORG, body_id: bodyId, status: 'active' },
+              { onConflict: 'organisation_id,body_id' });
 
     // Started 10 min ago, ends in 50 — inside its own check-in window, so the
     // real check-in at the end of this file is legitimate.

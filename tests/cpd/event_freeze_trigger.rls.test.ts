@@ -59,13 +59,14 @@ describe.skipIf(!process.env.RLS_TESTS)('freeze_cpd_config_if_credited — event
   beforeAll(async () => {
     const { data: body, error: bodyErr } = await admin
       .from('accrediting_bodies')
-      .insert({
+      // SENTINEL, reused across runs — see roster_eligibility for the full note.
+      .upsert({
         organisation_id: DEFAULT_ORG,
-        short_name: `RLS-FREEZE-${ts}`,
+        short_name: 'RLS-FREEZE-FIXTURE',
         full_name: 'RLS Test Body (freeze-trigger fixture)',
         cycle_config: {},
         category_taxonomy: {},
-      })
+      }, { onConflict: 'organisation_id,short_name' })
       .select('id')
       .single();
     if (bodyErr || !body) throw new Error(`body fixture: ${bodyErr?.message}`);
@@ -133,13 +134,13 @@ describe.skipIf(!process.env.RLS_TESTS)('freeze_cpd_config_if_credited — event
 
     const { data: otherBody } = await admin
       .from('accrediting_bodies')
-      .insert({
+      .upsert({
         organisation_id: DEFAULT_ORG,
-        short_name: `RLS-FREEZE-OTHER-${ts}`,
+        short_name: 'RLS-FREEZE-OTHER-FIXTURE',
         full_name: 'RLS Test Body (freeze-trigger, unreferenced)',
         cycle_config: {},
         category_taxonomy: {},
-      })
+      }, { onConflict: 'organisation_id,short_name' })
       .select('id')
       .single();
     const { error: bodyIdErr } = await admin
