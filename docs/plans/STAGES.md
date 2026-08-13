@@ -15,9 +15,9 @@
 | **5** | Attendance-verified issuance | `award_attendance_credit`, event-config freeze trigger, reconcile path, the closed loop | ✅ shipped 2026-07-25 |
 | **6** | Organiser frontend & scheduler | token fusion, staff shell, CPD config surface, `/api/cron/dispatch`, Text size actually scaling | ✅ shipped 2026-08-03 |
 | **7** | Hardening & pre-flight | full backend + frontend review, the fired deferrals closed, unaudited publish path, check-in mode reachable | ✅ shipped 2026-08-04 |
-| **8** | Deploy & field-proven | ← **CURRENT.** Singapore → hosting → Resend cutover → Turnstile → privacy notice; ≥3 real events, ≥50 check-ins, 0 integrity incidents | 🟡 open; blocked only on credentials Ivan supplies |
+| **8** | Deploy & field-proven | Singapore → hosting → Resend cutover → Turnstile → privacy notice; ≥3 real events, ≥50 check-ins, 0 integrity incidents | 🟡 open; **deferred to Oct/Nov 2026** (Ivan, 2026-08-10) — October dress-rehearsal deploy budgeted instead, see `docs/plans/2026-08-10-dual-track-stage-scope.md` |
 | **9** | **Colleges engaged** | MCHK Administrator + pilot Specialty Colleges confirmed; CSV column list locked; rule-pack numbers sourced against primary documents | external — their calendar |
-| **10** | **Dual-track engine (provisional rules)** | MCHK/HKAM split at registration, minute-level proration, 2026–28 taxonomy, lightweight per-body rule packs, certificates, College export | ← **rescoped 2026-08-10** |
+| **10** | **Dual-track engine (provisional rules)** | MCHK/HKAM split at registration, minute-level proration, 2026–28 taxonomy, lightweight per-body rule packs, certificates, College export | ← **CURRENT** (rescoped 2026-08-10; Task 1 shipped 2026-08-13, see `docs/plans/PROJECT_STATE.md`) |
 | **11** | Signed & verifiable | KMS-signed certificate verifies against the published key; public verify-this-record URL; staff TOTP mandatory | after Stage 10 |
 | **12** | **Pilot (soft → public launch)** | 1–2 Specialty Colleges + 1 MCHK provider on provisional rule packs, 2 real accredited events, College export accepted, **invoice paid** | after Stage 11 · target Nov–Dec 2026 |
 | **13** | **CPD engine (versioned rules) + platform** | the **deferred** work: versioned `body_rules`/`body_cycles`, the deterministic evaluator (**Q26**), roster ingestion, per-body ledger chains — plus evidence locker, session/track model, auditor portal, zh-HK | post-pilot |
@@ -36,7 +36,7 @@
 | "M2 frontend unfreeze" · "Stage C / Stage T" | Stage 6 |
 | Milestone B | Stage 8 |
 | Milestone C | Stage 9 |
-| **"M2" in `roadmap-to-mvp.md`** · Sprint 3b | **Stage 10** ← the collision: this was never the same as "M2 frontend unfreeze" |
+| **"M2" in `roadmap-to-mvp.md`** · Sprint 3b (the versioned-evaluator/body_rules content) | **Stage 13** ← corrected 2026-08-14; this row said "Stage 10" until then, which the Q33 rescope note two sections up directly contradicts (Stage 10 is now the *newer* "dual-track provisional-rules" work — different content, not a renumber of Sprint 3b) |
 | M3 · Sprint 4 | Stage 11 |
 | D / M4 · Sprint 5 | Stage 12 |
 | E | Stage 13 |

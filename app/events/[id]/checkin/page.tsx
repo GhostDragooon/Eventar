@@ -75,7 +75,12 @@ export default async function StaffCheckinPage({
   // registration_id + enum only — no PII.
   // Non-fatal: the roster is the operating surface at a live door and must
   // render even if this read fails. Visible, not silent (rule 12).
-  const eligRes = await supabase.rpc('event_registration_eligibility', { p_event_id: id });
+  // p_actor_override: inert for a real session, makes this callable under
+  // review mode too — see 20260814030000.
+  const eligRes = await supabase.rpc('event_registration_eligibility', {
+    p_event_id: id,
+    p_actor_override: staff.id,
+  });
   if (eligRes.error) {
     console.error('[checkin] eligibility read failed', { code: eligRes.error.code });
   }

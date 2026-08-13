@@ -48,8 +48,9 @@ export async function setEventCpdConfig(
   _prevState: CpdConfigResult,
   formData: FormData,
 ): Promise<CpdConfigResult> {
+  let staff;
   try {
-    await requireStaff();
+    staff = await requireStaff();
   } catch (e) {
     if (e instanceof NotAuthorizedError) return { error: 'Not authorised.' };
     throw e;
@@ -68,10 +69,13 @@ export async function setEventCpdConfig(
   }
 
   const supabase = await supabaseServer();
+  // p_actor_override: inert for a real session, makes this callable under
+  // review mode too — see 20260814020000.
   const { error } = await supabase.rpc('set_event_cpd_config', {
     p_event_id: parsed.data.eventId,
     p_body_id: parsed.data.bodyId,
     p_cpd_hours: parsed.data.cpdHours,
+    p_actor_override: staff.id,
   });
 
   if (error) {

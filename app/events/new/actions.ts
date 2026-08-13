@@ -130,10 +130,13 @@ export async function createEvent(input: {
   // redirecting as though everything succeeded (rule 12).
   const cpd = cpdSchema.safeParse(input.cpd);
   if (cpd.success && cpd.data && cpd.data.bodyId) {
+    // p_actor_override: inert for a real session, makes this callable under
+    // review mode too — see 20260814020000.
     const { error: cpdErr } = await supabase.rpc('set_event_cpd_config', {
       p_event_id: data,
       p_body_id: cpd.data.bodyId,
       p_cpd_hours: cpd.data.hours,
+      p_actor_override: staff.id,
     });
     if (cpdErr) {
       const reason =

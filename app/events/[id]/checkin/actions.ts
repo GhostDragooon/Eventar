@@ -38,12 +38,15 @@ export async function markAttended(
   | { error: string; alreadyAttendedAt?: string }
 > {
   const supabase = await supabaseServer();
-  await requireStaff(supabase);
+  const staff = await requireStaff(supabase);
   if (!isValidRegistrationCode(code)) return { error: 'Invalid code format.' };
 
+  // p_actor_override: inert for a real session, makes this callable under
+  // review mode too — see 20260814020000.
   const { data, error } = await supabase.rpc('mark_attended', {
     p_code: code,
     p_method: method,
+    p_actor_override: staff.id,
   });
   if (error) throw error;
   const row = Array.isArray(data) ? data[0] : data;

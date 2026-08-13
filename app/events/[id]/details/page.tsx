@@ -185,9 +185,9 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
         : 'Not set',
       state: accredited ? 'ok' : hasConfig ? 'blocked' : 'warn',
       note: accredited
-        ? 'points confirmed'
+        ? 'hours confirmed'
         : hasConfig ? 'body not authorised for this org'
-        : 'no body or points',
+        : 'no body or hours',
     },
     {
       label: 'passes sent',

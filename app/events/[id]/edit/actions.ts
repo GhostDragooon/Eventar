@@ -9,12 +9,15 @@ import { buildCsv } from '@/lib/csv';
 import { slugifyTitle } from '@/lib/slugify';
 
 export async function publishEvent(id: string) {
-  await requireStaff();
+  const staff = await requireStaff();
   const supabase = await supabaseServer();
   // Atomic + audited via publish_event() (SECURITY DEFINER): owner-exclusive
   // check happens in-function now, so a 42501 means "not found or not owned"
   // — preserved as the same thrown message as before (CLAUDE.md rule 12).
-  const { error } = await supabase.rpc('publish_event', { p_event_id: id });
+  // p_actor_override: inert for a real session (only honoured when
+  // auth.role()='service_role', which a forged JWT cannot produce) — makes
+  // this callable under review mode too, see 20260814020000.
+  const { error } = await supabase.rpc('publish_event', { p_event_id: id, p_actor_override: staff.id });
   if (error) {
     if (error.code === '42501') {
       throw new Error('Cannot publish: event not found or not owned by you.');

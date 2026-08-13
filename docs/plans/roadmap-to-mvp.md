@@ -1,5 +1,7 @@
 # Roadmap to MVP — CPD Platform
 
+> **⚠️ SUPERSEDED — historical.** Milestone vocabulary (M1–M4, A–E) retired 2026-08-03 — translate via `docs/plans/STAGES.md`, the current authority. The "frontend freeze" this doc names as a standing gate below was LIFTED 2026-08-01 for S-Organiser (see repo `CLAUDE.md`). Current phase: `docs/plans/PROJECT_STATE.md` (Stage 10 as of 2026-08-14).
+
 > **CONSOLIDATED ROADMAP (2026-07-12)** — one milestone spine unifying the backend milestones (M1–M4), the POC/engagement milestones (A–D from `2026-07-11-poc-engagement-plan.md`), and the market-realignment backlog (`2026-07-12-market-realignment.md`). Naming per vault Q29: the practitioner module is the **CPD Ledger**.
 
 | # | Milestone | It's hit when… | In flight during it | Ivan-critical |

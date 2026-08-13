@@ -108,15 +108,22 @@ Before implementing any feature, **read the relevant vault notes**:
 | **ANY frontend work** — colour, tokens, components, layout, motion, or a design review | ==**vault `30 — Reference/Frontend Design Standard.md` FIRST**== (locked 2026-08-09, Decisions Log **Q32**). It is the authority and supersedes `Design Language.md` on colour doctrine, wordmark and navigation — that older note is still marked `locked` and is wrong on three of its four contested points. Then `docs/plans/2026-07-12-organiser-ia-spec.md` for staff IA. Skills: `design-system-libraries` (tokens), `gsap-*`, `emil-design-eng`, `emilkowalski-motion`, `web-design-guidelines`, `impeccable-design-polish`, `redesign-existing-projects`, `minimalist-ui`, `industrial-brutalist-ui` — all global under `~/.claude/skills/` |
 | Env vars, key rotation | `30 — Reference/Credentials.md` |
 | "Can we just add X?" — check if it's deferred | `30 — Reference/Out of Scope.md` |
+| CPD domain vocabulary — body, track, licence, point vs hour, FCAA, cycle | `CONTEXT.md` (glossary, keep implementation detail out of it) |
+| Categories, points, tracks, the cycle return — the 2026 regulator-source corrections | `docs/adr/0001-model-the-regulators-taxonomy-not-a-simplification.md` |
+| Whether Q26 / the versioned `body_rules` evaluator is still deferrable | `docs/doctrine.md` (doctrine D.1 is load-bearing here) |
+
+`10 — Architecture/Data Model.md`'s coverage ends at Slice 0.9 (2026-07-09) — it does not mention `credit_ledger`, `organisation_body_authorisations`, `credit_disputes`, `rate_limits`, or `speaker_checkins`. For those, read the migration that created them plus this file's Hard Rule 11.
 
 ## Executable phase plans live in this repo
 
 Bite-sized TDD plans (with full code and commands) live in `docs/plans/`:
 
-- `docs/plans/2026-05-13-eventar-mvp-design.md` — high-level design (mirrors the vault)
-- `docs/plans/2026-05-13-eventar-phase-1-foundation.md` — Phase 1 executable plan
+- `docs/plans/2026-05-13-eventar-mvp-design.md` — high-level design (mirrors the vault), **pre-pivot, historical**
+- `docs/plans/2026-05-13-eventar-phase-1-foundation.md` — Phase 1 executable plan, **pre-pivot, historical**
 
-When executing a phase, follow its plan task-by-task. Use `superpowers:executing-plans` or `superpowers:subagent-driven-development`.
+Both predate the 2026-07-03 pivot. For the live plan, read `docs/plans/STAGES.md` (the stage authority) → `docs/plans/PROJECT_STATE.md` (current phase) → the active `~/.claude/plans/*` plan file PROJECT_STATE.md names, in that order.
+
+When executing a phase, follow its plan task-by-task. Per `~/.claude/CLAUDE.md`'s skill-scoping rule, `superpowers:*` (including `executing-plans` and `subagent-driven-development`) is reserved for new-project planning — do not invoke it by default for ongoing Eventar work; reach for it only if this task is genuinely new-project-scale or Ivan names it.
 
 ## Pre-deploy gates — ALL CLOSED (kept for the record)
 
@@ -142,7 +149,7 @@ These are mirrored from the vault but worth restating because breaking any of th
 4. **Service-role key only in `lib/supabase/admin.ts`** with `'server-only'` import. Never expose to browser.
 5. **RLS enabled on every table.** Public writes use **Server Actions** with the service-role client *inside* the action; `/api/*` reserved for Phase 9 cron callbacks + external integration. Anon RLS policies remain enabled as defense in depth. See `02 — Decisions Log#Q11`.
 6. **Single `main` branch.** "Min number of branches" per user direction. Atomic commits per logical unit.
-7. **Don't add external services prematurely.** Resend wired in phase 7; Vercel in phase 8; pg_cron in phase 9. All emails stubbed (console.log) until phase 7. See `20 — Roadmap/Phased Roadmap.md`.
+7. **Don't add external services prematurely.** Resend is wired (`lib/resend.ts`, Stage 6) and Vercel/pg_cron are not (Stage 8, deferred to Oct/Nov 2026). The stub-vs-real email switch is `lib/email/eventEmails.ts` checking whether `RESEND_API_KEY` is set in `.env.local` — not a phase gate. Currently unset, so sends are stubbed (console.log) regardless of stage.
 8. **Three-layer validation** (form → Zod → DB constraint) for every mutation. See `10 — Architecture/Security + Robustness.md` §1.
 9. **Three-layer auth** (middleware → `requireStaff` → RLS) for every staff action. Same note §4.
 10. **No PII in logs.** UUIDs only. See `Security + Robustness.md` §12.
@@ -179,6 +186,7 @@ If a previous Claude session worked on **CENA** (`/Users/ivan/Desktop/cena`), th
 The user-global rules in `~/.claude/CLAUDE.md` (skill-library-first, phase-completion-protocol) apply here. Eventar-specific concretions:
 
 - **Static gates** for the phase-completion-protocol means: `pnpm exec tsc --noEmit && pnpm exec eslint . && pnpm exec vitest run && pnpm exec next build`. The vitest count + next.js route count are the running invariants; check the latest phase note for the current expected numbers.
+- **⚠️ `.env.local` points at the Seoul production project**, not a local stack. `pnpm test:rls` and anything in `tests/cpd/` therefore write to production — the latter posts real, permanently-undeletable `credit_ledger` rows. Point `.env.local` at the local stack (or use `scripts/demo/dev-local.sh`, port 3100, which derives local env vars live from `supabase status`) before running either. `pnpm dev` is the Seoul-pointed server; never assume a "the dev server" reference means local.
 - **Backtest** for mutation surfaces means executing the Server Action and querying the row back. **CLI `supabase db push --linked` works** — corrected 2026-08-04, after this file had claimed for a month that it was "blocked by migration history drift". The drift was reconciled in July; six migrations were pushed cleanly that day. Prefer it over MCP `apply_migration`, which assigns its own version from server time and forces a local rename afterwards, and which does NOT wrap a migration in a transaction the way `db push` does (a raw `psql -f` leaves a half-applied migration behind when a trailing assertion fails).
 - **Do not assume a dev server is on port 3000.** This file previously asserted one always is; on 2026-08-04 nothing was listening there and the running server was on **:3200**, which sent a review agent chasing a phantom outage. Check with `lsof -nP -iTCP -sTCP:LISTEN | grep -E ':(3000|3100|3200) '` before using a port, and still never start a second server in the same project directory — Next 16 allows one per directory.
 - **Vault note and handoff doc** are the "summary docs" the protocol says must come AFTER the three checks. Vault notes go to `/Users/ivan/Desktop/Eventar/20 — Roadmap/Phase X — *.md`; handoffs go to `docs/plans/handoff_DDMMYYYY.md`.

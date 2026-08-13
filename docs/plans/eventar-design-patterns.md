@@ -4,7 +4,7 @@ _Started 2026-06-05 during the Geist + Vercel-canonical redesign._
 
 ---
 
-## Source-of-truth tokens
+## Source-of-truth tokens (SUPERSEDED 2026-08-09 by vault `30 — Reference/Frontend Design Standard.md` / Decisions Log Q32 — kept for the June redesign record; do not use these values for new work)
 
 | Token | Light | Dark | Notes |
 |---|---|---|---|
