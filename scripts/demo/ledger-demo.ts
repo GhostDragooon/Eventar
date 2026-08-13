@@ -13,18 +13,18 @@
 //      DOES rewrite the row — and verify_ledger_chain() catches it. That's the
 //      whole point: even an actor who bypasses the grant can't do so invisibly.
 //
-// Body note: the pivot narrative names HKCP as the launch body, but the seeded
-// accrediting_bodies reference set (20260709240000) has no HKCP row — the
-// medical body present is HKAM (Hong Kong Academy of Medicine), which fits this
-// clinical seminar and the practitioner's FHKCP/MBBS credential. Using HKAM;
-// swap the short_name below if HKCP is ever seeded.
+// Body note: HKCP (Hong Kong College of Physicians) is the pivot narrative's
+// launch body, seeded 2026-08-13 (dual-track Task 1) along with HKAM's other
+// 14 Colleges + MCHK. HKAM itself stays 'active' but deliberately unauthorised
+// for any org — it's the parent Academy, not an accrediting body — so this
+// was HKAM until that migration, per the old note here.
 //
 // Leaves a deliberately-tampered ledger behind (checkpoint 6) — run
 // reset-demo.ts afterwards to restore a clean chain.
 
 import { admin, anonClient, signedInClient, sqlLocal } from './lib';
 
-const BODY_SHORT_NAME = 'HKAM';
+const BODY_SHORT_NAME = 'HKCP';
 const EVENT_TITLE = 'Clinical Update Seminar 2026';
 const DEMO_ATTENDEE_EMAIL = 'k.lau@demo.test';
 const OPERATOR_EMAIL = 'demo-staff@local.test';

@@ -69,9 +69,11 @@ const EVENT_TIMEZONE = 'Asia/Hong_Kong';
 // at that body (award_attendance_credit resolves registration.email -> a real
 // auth.users row -> an active practitioner_licences row; most real attendees
 // won't have either yet, pre-self-serve — this fixture models the one that
-// does). HKAM, not HKCP: the seeded accrediting_bodies reference set
-// (20260709240000) has no HKCP row — see ledger-demo.ts's same note.
-const CPD_BODY_SHORT_NAME = 'HKAM';
+// does). HKCP, not HKAM: HKAM is the parent Academy, seeded 'active' but
+// deliberately unauthorised for any org (only its 15 Colleges + MCHK accredit
+// events — 2026-08-13 dual-track Task 1). Was HKAM until that migration, per
+// the old note here — see ledger-demo.ts's same fix.
+const CPD_BODY_SHORT_NAME = 'HKCP';
 const CPD_HOURS = 3;
 const VENUE_NAME = 'HKCEC — Room 2';
 const VENUE_ADDRESS = '1 Expo Drive, Wan Chai, Hong Kong';
