@@ -1,0 +1,27 @@
+# One event, many accrediting bodies
+
+The schema has assumed, since Sprint 3a (2026-07-09/10), that an event answers to at most one accrediting body: `events.accrediting_body_id` is a single scalar `uuid` column (`references public.accrediting_bodies(id)`, added `20260724155845`), and `set_event_cpd_config()` writes exactly one body + one `cpd_hours` value per event. Real evidence forced a reversal of that assumption: **an event can be accredited by many bodies simultaneously, each awarding its own point value, and that value can itself vary by day within the same event.** This is now settled architecture for 2026 (Ivan, 2026-08-14), not deferred work — it lands inside Stage 10 (`docs/plans/STAGES.md`), the current dual-track engine stage.
+
+## Why
+
+- **The ICI (Innovative Cardiovascular Initiative) Summit 2026 is one event, accredited by 13 bodies at once.** Its real accreditation sheet lists 11 HKAM Specialty Colleges plus MCHK plus CNE as simultaneous accrediting bodies for the same conference — not 13 separate events, not a primary body with secondary reciprocity, 13 concurrent accreditations of one FCAA.
+- **Point values are split by day, not fixed per event.** The same sheet awards different point totals for Day 1, Day 2, and "Both Days" attendance, per body. A single `cpd_hours` scalar on the event row cannot represent this even for one body, let alone thirteen.
+- **A scalar FK is structurally incapable of this shape.** `events.accrediting_body_id uuid` (confirmed against `information_schema.columns`) can hold exactly one body id. There is no way to widen a single foreign key into "many bodies, each with its own day-scoped point rule" without a genuine data-model change — this is not a validation gap or a UI limitation, it is the column's own cardinality.
+
+This reversal does not touch ADR-0001's own decision. ADR-0001 settled that *category* (which of a body's own categories a participation falls under) is captured **per registration**, not per event, because participation role is a property of the person, not the meeting. That placement is unaffected by how many bodies accredit the event — it becomes, if anything, more clearly correct: a chair at a 13-body summit still chairs once, and each of the 13 bodies independently maps that one role into its own category vocabulary (see the proposed consequence below).
+
+Eventar's relationship to iCMECPD (HKAM's own CME/CPD portal) is **coexistence, not integration** (D-C, settled): Eventar produces evidence a College or Fellow can submit into iCMECPD themselves; it does not write to iCMECPD directly, and multi-body accreditation does not change that boundary.
+
+## Consequences
+
+An event's relationship to accrediting bodies moves from "one FK" to "many, each carrying its own day-scoped point terms" — the natural data-model consequence of the finding above. `set_event_cpd_config()` and every reader of `events.accrediting_body_id`/`events.cpd_hours` (the freeze trigger, the CPD readiness strip, the organiser CPD-config surface) will need to be re-derived against a one-to-many shape rather than the current scalar pair; the exact table/function design is implementation work for Stage 10, not decided by this ADR.
+
+Provisional per-body rule packs (already planned for Stage 10) now need to run once per accrediting body on the event, not once per event. Because credit is posted **eagerly at check-in** (Decision 10, already settled, unrelated to this reversal), a single attendee's check-in at a 13-body event could produce up to 13 immutable `credit_ledger` rows in one transaction, each computed from a provisional (unconfirmed) rule pack. That fan-out is a real consequence of this ADR and is tracked as a **proposed, unbuilt dependency** in `docs/doctrine.md`'s OPEN forks (M4/R5): it is safe only if a provisional-vs-confirmed attestation tier ships alongside it, so a wrong provisional row stays findable-by-hash and correctable. Not built; do not treat eager multi-body posting as safe until that dependency resolves.
+
+`docs/architecture/BLOCK-ARCHITECTURE.md`'s B2 (Professional Registry) and B3 (Credit Engine) rows have been updated to carry this as in-scope work, referencing this ADR.
+
+### Proposed consequence (not yet built)
+
+**R1 — proposal, not decided.** Under multi-body accreditation, the 13 bodies on a single sheet do not share one category vocabulary: HKAM Colleges use codes 6.1–6.16 (per ADR-0001); MCHK and CNE, both on the ICI Summit sheet, don't use HKAM's numbering at all; and HKCP's own Operational Guidelines use point tables keyed by category **A–F** — a different alphabet from HKAM's 6.1–6.16, for the **same** Fellow at the **same** event, because HKCP is a College *under* HKAM. One event-wide category value cannot serve all of that.
+
+The proposal under consideration is to store a `role` (attendee / chair / presenter) on the registration — the same per-registration placement ADR-0001 already settled — and let each accrediting body's own rule pack map that role into *that body's* category vocabulary independently. This does **not** re-litigate ADR-0001's placement decision (category-bearing information still lives on the registration, not the event); it is a proposal about which vocabulary a given body draws that category from once more than one body is reading the same registration. Not settled, not built — flagged here as the natural next question this reversal raises, for a deliberate decision before Stage 10 implements the per-body rule-pack read path.

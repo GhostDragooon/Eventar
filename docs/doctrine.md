@@ -131,6 +131,36 @@ Data-model question (each licence-cycle instance as a row). Untangled from chain
 scoping — only becomes load-bearing if per-stream chains are ever adopted. Decide
 when balance-projection needs it.
 
+### M1 — Cycle-cap visibility limit (partial-view advisory-only)
+**Proposed, not settled** (2026-08-14 prospect/strategy session finding — see
+`docs/adr/0002-multi-body-accreditation.md`). Per-cycle caps (e.g. HKAM's 90
+points/3yr, ≥30 active + 30 passive, the 75-point passive ceiling) can only ever
+be **advisory** in Eventar, because Eventar only ever sees the fraction of a
+practitioner's CPD activity that runs through Eventar itself — a Fellow also
+attends other providers' events, publishes, teaches, and examines elsewhere,
+none of which Eventar observes. Only **per-event** caps (≤8pts/day, ≤35/
+conference, per-event hour ceilings, exclusions) are things Eventar can actually
+enforce, since the event itself is fully visible to it. Recommendation under
+consideration: never render a cycle-scoped figure (e.g. "62/90 points") as
+though it were the practitioner's true compliance status — this is the same
+deferral already in force for practitioner compliance math (Q26/Milestone C,
+now Stage 13), restated here with a data-visibility justification rather than
+only a scope one. Not yet logged as a vault Q-entry; decide deliberately before
+any UI ever surfaces a cycle-scoped total.
+
+### Multi-body eager-posting depends on a provisional/confirmed split (proposed, unbuilt)
+The architecture already posts credit **eagerly at check-in time** (Decision
+10, settled, unrelated to the 2026-08-14 session). Under multi-body-per-event
+(ADR-0002, D-A), that could mean up to ~13 immutable `credit_ledger` rows per
+attendee per event, computed from provisional (unconfirmed) per-body rule
+packs — see finding M4 in `docs/adr/0002-multi-body-accreditation.md`. Eager
+posting at that fan-out is safe only **if** a proposed `body_confirmed`
+attestation tier (finding R5, not built) ships alongside it, making a wrong
+provisional row findable-by-hash and correctable via the existing
+compensating-entry path. Neither M4 nor R5 is settled — flagged here so
+eager-posting under multi-body isn't implemented without this dependency being
+resolved first.
+
 ---
 
 ## Discarded / DO NOT REVIVE

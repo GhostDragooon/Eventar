@@ -3,6 +3,8 @@
 > **Status: SETTLED 2026-08-10. This is Stage 10, via a logged rescope of Stages 9–13 — Decisions Log Q33.**
 > Full implementation plan: `~/.claude/plans/target-product-for-2026-proud-castle.md`.
 > Terminology is Stage 1–13 per `docs/plans/STAGES.md`.
+>
+> **Amended 2026-08-14 (Ivan, D-A/D-B, prospect/strategy session):** multi-body-per-event moves to explicitly IN SCOPE for 2026 — forced by the ICI Summit 2026's 13-accrediting-body sheet — as new Workstream E below, and a prior-approval deadline advisory (S3) is added as Workstream F, built FIRST. Stage 10's task total is now **9** (was 7); see `docs/plans/PROJECT_STATE.md`'s 2026-08-14 section and `~/.claude/plans/target-product-for-2026-proud-castle.md` Tasks 10.8–10.9 for detail. This is distinct from, and does not reopen, the multi-track/session-model exclusion in §3 below (rule 13), which stays deferred. §1's numbering-question record and §2/§3's original text are historical and left as written; the amendments are additive.
 
 ## 1. The numbering question — DECIDED (Ivan, 2026-08-10): option B, logged as Q33
 
@@ -38,10 +40,14 @@ Four workstreams, sequenced Aug→Dec. Detail in the plan file.
 | **B** | Minute-level proration | B3 | `check_out_at` / `minutes_attended` on `registrations`; prorated hours; **venue-scan ships with it** |
 | **C** | Taxonomy + rule packs | B3 | Three event fields + freeze-trigger widening; provisional per-body packs as code, not tables |
 | **D** | Certificates + College export | B6 | CSV export first (it is what Colleges need); stored certificates after event end |
+| **E** *(added 2026-08-14, D-A)* | Multi-body-per-event | B3 | Task 10.8/10.9 — new `event_accreditations` table (event × body × `applies_from`/`applies_to` × `credit_value`); `award_attendance_credit` reworked to iterate every accreditation row and post one `credit_ledger` row per body the practitioner holds a verified licence at. Forced by the ICI Summit 2026's 13-accrediting-body sheet |
+| **F** *(added 2026-08-14, D-B/S3)* | Prior-approval deadline advisory | B3 | Task 10.9/10.9 — built FIRST, ahead of A's Task 10.2 and of E. A `prior_approval` key added into the existing `accrediting_bodies.cycle_config` jsonb; a pure-function deriving `(start_time, cycle_config) → {deadline, passed, unknown}`, surfaced advisory-only at body-selection time, never blocking the save |
+
+> **Proposal, unconfirmed (R1 — Claude's recommendation from the 2026-08-14 session, not Ivan's decision):** store a `role` (attendee/chair/presenter) on the registration and let each body's rule pack map role → its own category code, instead of Workstream C's single category-column design — because HKAM's 6.1–6.16 codes, MCHK, and CNE (all on the ICI Summit's real accreditation sheet) don't share one vocabulary. This is a proposed reshaping of Task 10.3/10.9's design, not a decision, and Task 10.3/10.9 itself is left unedited here — see `docs/DEFERRED.md` (R1) and `~/.claude/plans/target-product-for-2026-proud-castle.md` for the task's actual detail.
 
 ## 3. What this stage deliberately does NOT do
 
-- **The versioned `body_rules` evaluator and Q26 stay deferred.** Rule packs live in `accrediting_bodies.category_taxonomy` (existing not-null jsonb, per Decision 11 in the Task 10.1–10.7 plan — corrected 2026-08-14; this line said `lib/cpd/rulePacks/` until then, which never matched what Task 10.1 actually shipped), and the ledger stores their **output plus a pack hash as values** — never a reference to a mutable config row. That is what keeps doctrine **D.1** intact: *"nothing config-referencing gets built into `credit_ledger` before this is decided."*
+- **The versioned `body_rules` evaluator and Q26 stay deferred.** Rule packs live in `accrediting_bodies.category_taxonomy` (existing not-null jsonb, per Decision 11 in the Task 10.1–10.9 plan — corrected 2026-08-14; this line said `lib/cpd/rulePacks/` until then, which never matched what Task 10.1 actually shipped), and the ledger stores their **output plus a pack hash as values** — never a reference to a mutable config row. That is what keeps doctrine **D.1** intact: *"nothing config-referencing gets built into `credit_ledger` before this is decided."*
 - **No `credit_ledger` migration.** The hash envelope is a hardcoded 18-key `jsonb_build_object` with no version marker; adding a column would retroactively invalidate every row. `points`, `category` and `reason` are already hashed and permanently NULL, and `hours` is unconstrained numeric — all four carry the new data for free.
 - **No session/multi-track model.** Proration is per event, one in one out (rule 13's deferred data-model decision stays deferred).
 

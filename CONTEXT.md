@@ -40,6 +40,10 @@ _Avoid_: time, duration, contact hour
 An activity a College has approved for CPD. The thing Eventar calls an event, seen from the body's side.
 _Avoid_: approved activity, accredited event
 
+**Prior approval**:
+The accrediting body's required lead time to apply for FCAA accreditation before an event — or, for an overseas meeting, the retrospective window after it. Missing the deadline means the event cannot be accredited at all, not merely accredited late.
+_Avoid_: approval deadline, submission window, accreditation lead time
+
 **Activity category**:
 Which of the body's numbered categories an individual's participation falls under — HKAM defines sixteen (6.1–6.16), each with its own cap. **A property of a person's participation, not of the event**: an attendee at a meeting is 6.1, the chair of that same meeting is 6.2.
 _Avoid_: activity type, taxonomy tag, participation type
@@ -52,15 +56,27 @@ _Avoid_: attendance credit, passive learning
 Chairing or presenting (HKAM 6.2). Worth more than attendance, and the multiplier is set by each College.
 _Avoid_: contribution, faculty role
 
+**Exclusion**:
+An activity type a body's rules explicitly decline to credit, distinct from "no rule matched" (the activity isn't addressed by any rule) or "no licence at that body" (the practitioner isn't eligible to be credited there at all).
+_Avoid_: ineligible activity, disallowed category, rejection
+
 **Cycle**:
 The period over which a body measures compliance. HKAM's is three years, minimum 90 points. **A Fellow holding Fellowships at several Colleges must satisfy each College separately.**
 _Avoid_: period, term, reporting window
+
+**Cycle anchor**:
+The date a specific practitioner's compliance cycle begins for them at a given body — typically their admission date — as distinct from the cycle's length and shape (how long it runs, its minimums, any first-cycle proration), which the body's own rules define the same way for every practitioner.
+_Avoid_: cycle start, anniversary date, enrolment date
 
 ### Credit and evidence
 
 **Credit ledger entry**:
 One immutable, hash-chained record that a practitioner earned (or had adjusted) credit for an activity. Keyed to a licence, because compliance is owed per body.
 _Avoid_: credit record, transaction, award
+
+**Claimed** (vs **Earned**):
+Earned is recorded in Eventar's own credit ledger once attendance (or another qualifying activity) is verified. Claimed is the practitioner's or body's own act of submitting that credit into their own system of record — iCMECPD or equivalent — a separate lifecycle Eventar does not control and does not replace.
+_Avoid_: submitted, reported, filed
 
 **Attestation**:
 How strongly the platform can vouch for a credit — from an organiser's assertion, through verified attendance, to a body's confirmation.
