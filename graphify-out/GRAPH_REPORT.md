@@ -1,890 +1,904 @@
-# Graph Report - .  (2026-08-12)
+# Graph Report - .  (2026-08-15)
 
 ## Corpus Check
-- 242 files · ~481,315 words
+- 37 files · ~499,468 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2236 nodes · 3216 edges · 267 communities (160 shown, 107 thin omitted)
-- Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 165 edges (avg confidence: 0.82)
+- 2274 nodes · 3272 edges · 253 communities (156 shown, 97 thin omitted)
+- Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 148 edges (avg confidence: 0.82)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
-- [[_COMMUNITY_Spec-Kit SDD Pipeline|Spec-Kit SDD Pipeline]]
-- [[_COMMUNITY_Event Lifecycle & Status UI|Event Lifecycle & Status UI]]
-- [[_COMMUNITY_Login & Auth Surfaces|Login & Auth Surfaces]]
-- [[_COMMUNITY_Cron Dispatch & Deferred Debt|Cron Dispatch & Deferred Debt]]
-- [[_COMMUNITY_Analytics & Arrival Latency|Analytics & Arrival Latency]]
-- [[_COMMUNITY_Event Form — Basics|Event Form — Basics]]
-- [[_COMMUNITY_Audit Chain & Sprint-1 Foundations|Audit Chain & Sprint-1 Foundations]]
-- [[_COMMUNITY_CPD Doctrine & Body Rules|CPD Doctrine & Body Rules]]
-- [[_COMMUNITY_Root Layout & Dashboard Shell|Root Layout & Dashboard Shell]]
-- [[_COMMUNITY_Survey Questions & Outcomes|Survey Questions & Outcomes]]
-- [[_COMMUNITY_Draft Edit & Update Action|Draft Edit & Update Action]]
-- [[_COMMUNITY_Build Tooling & Dependencies|Build Tooling & Dependencies]]
-- [[_COMMUNITY_Design Language Heritage|Design Language Heritage]]
-- [[_COMMUNITY_Analytics & Check-in Routes|Analytics & Check-in Routes]]
-- [[_COMMUNITY_Event Form — Agenda|Event Form — Agenda]]
-- [[_COMMUNITY_Settings Client|Settings Client]]
-- [[_COMMUNITY_QR, Poster & Cal.diy Harvest|QR, Poster & Cal.diy Harvest]]
-- [[_COMMUNITY_Block Architecture Guardrail|Block Architecture Guardrail]]
-- [[_COMMUNITY_shadcn Component Config|shadcn Component Config]]
-- [[_COMMUNITY_Pass Delivery Panel|Pass Delivery Panel]]
-- [[_COMMUNITY_Email Actions & Reminders|Email Actions & Reminders]]
-- [[_COMMUNITY_Public Registration & Resend|Public Registration & Resend]]
-- [[_COMMUNITY_Community 22|Community 22]]
-- [[_COMMUNITY_Community 23|Community 23]]
-- [[_COMMUNITY_Community 24|Community 24]]
-- [[_COMMUNITY_Community 25|Community 25]]
-- [[_COMMUNITY_Community 26|Community 26]]
-- [[_COMMUNITY_Community 27|Community 27]]
-- [[_COMMUNITY_Community 28|Community 28]]
-- [[_COMMUNITY_Community 29|Community 29]]
-- [[_COMMUNITY_Community 30|Community 30]]
-- [[_COMMUNITY_Community 31|Community 31]]
-- [[_COMMUNITY_Community 32|Community 32]]
-- [[_COMMUNITY_Community 33|Community 33]]
-- [[_COMMUNITY_Community 34|Community 34]]
-- [[_COMMUNITY_Community 35|Community 35]]
-- [[_COMMUNITY_Community 36|Community 36]]
-- [[_COMMUNITY_Community 37|Community 37]]
-- [[_COMMUNITY_Community 38|Community 38]]
-- [[_COMMUNITY_Community 39|Community 39]]
-- [[_COMMUNITY_Community 40|Community 40]]
-- [[_COMMUNITY_Community 41|Community 41]]
-- [[_COMMUNITY_Community 42|Community 42]]
-- [[_COMMUNITY_Community 43|Community 43]]
-- [[_COMMUNITY_Community 44|Community 44]]
-- [[_COMMUNITY_Community 45|Community 45]]
-- [[_COMMUNITY_Community 46|Community 46]]
-- [[_COMMUNITY_Community 47|Community 47]]
-- [[_COMMUNITY_Community 48|Community 48]]
-- [[_COMMUNITY_Community 49|Community 49]]
-- [[_COMMUNITY_Community 50|Community 50]]
-- [[_COMMUNITY_Community 51|Community 51]]
-- [[_COMMUNITY_Community 52|Community 52]]
-- [[_COMMUNITY_Community 53|Community 53]]
-- [[_COMMUNITY_Community 54|Community 54]]
-- [[_COMMUNITY_Community 55|Community 55]]
-- [[_COMMUNITY_Community 56|Community 56]]
-- [[_COMMUNITY_Community 57|Community 57]]
-- [[_COMMUNITY_Community 58|Community 58]]
-- [[_COMMUNITY_Community 59|Community 59]]
-- [[_COMMUNITY_Community 60|Community 60]]
-- [[_COMMUNITY_Community 61|Community 61]]
-- [[_COMMUNITY_Community 62|Community 62]]
-- [[_COMMUNITY_Community 63|Community 63]]
-- [[_COMMUNITY_Community 64|Community 64]]
-- [[_COMMUNITY_Community 65|Community 65]]
-- [[_COMMUNITY_Community 66|Community 66]]
-- [[_COMMUNITY_Community 67|Community 67]]
-- [[_COMMUNITY_Community 68|Community 68]]
-- [[_COMMUNITY_Community 69|Community 69]]
-- [[_COMMUNITY_Community 70|Community 70]]
-- [[_COMMUNITY_Community 71|Community 71]]
-- [[_COMMUNITY_Community 72|Community 72]]
-- [[_COMMUNITY_Community 73|Community 73]]
-- [[_COMMUNITY_Community 74|Community 74]]
-- [[_COMMUNITY_Community 75|Community 75]]
-- [[_COMMUNITY_Community 76|Community 76]]
-- [[_COMMUNITY_Community 77|Community 77]]
-- [[_COMMUNITY_Community 78|Community 78]]
-- [[_COMMUNITY_Community 79|Community 79]]
-- [[_COMMUNITY_Community 80|Community 80]]
-- [[_COMMUNITY_Community 81|Community 81]]
-- [[_COMMUNITY_Community 82|Community 82]]
-- [[_COMMUNITY_Community 83|Community 83]]
-- [[_COMMUNITY_Community 84|Community 84]]
-- [[_COMMUNITY_Community 85|Community 85]]
-- [[_COMMUNITY_Community 86|Community 86]]
-- [[_COMMUNITY_Community 87|Community 87]]
-- [[_COMMUNITY_Community 88|Community 88]]
-- [[_COMMUNITY_Community 89|Community 89]]
-- [[_COMMUNITY_Community 90|Community 90]]
-- [[_COMMUNITY_Community 91|Community 91]]
-- [[_COMMUNITY_Community 92|Community 92]]
-- [[_COMMUNITY_Community 93|Community 93]]
-- [[_COMMUNITY_Community 94|Community 94]]
-- [[_COMMUNITY_Community 95|Community 95]]
-- [[_COMMUNITY_Community 96|Community 96]]
-- [[_COMMUNITY_Community 97|Community 97]]
-- [[_COMMUNITY_Community 98|Community 98]]
-- [[_COMMUNITY_Community 99|Community 99]]
-- [[_COMMUNITY_Community 100|Community 100]]
-- [[_COMMUNITY_Community 101|Community 101]]
-- [[_COMMUNITY_Community 102|Community 102]]
-- [[_COMMUNITY_Community 103|Community 103]]
-- [[_COMMUNITY_Community 104|Community 104]]
-- [[_COMMUNITY_Community 105|Community 105]]
-- [[_COMMUNITY_Community 106|Community 106]]
-- [[_COMMUNITY_Community 107|Community 107]]
-- [[_COMMUNITY_Community 108|Community 108]]
-- [[_COMMUNITY_Community 109|Community 109]]
-- [[_COMMUNITY_Community 110|Community 110]]
-- [[_COMMUNITY_Community 111|Community 111]]
-- [[_COMMUNITY_Community 112|Community 112]]
-- [[_COMMUNITY_Community 113|Community 113]]
-- [[_COMMUNITY_Community 114|Community 114]]
-- [[_COMMUNITY_Community 115|Community 115]]
-- [[_COMMUNITY_Community 116|Community 116]]
-- [[_COMMUNITY_Community 117|Community 117]]
-- [[_COMMUNITY_Community 118|Community 118]]
-- [[_COMMUNITY_Community 119|Community 119]]
-- [[_COMMUNITY_Community 120|Community 120]]
-- [[_COMMUNITY_Community 121|Community 121]]
-- [[_COMMUNITY_Community 122|Community 122]]
-- [[_COMMUNITY_Community 123|Community 123]]
-- [[_COMMUNITY_Community 124|Community 124]]
-- [[_COMMUNITY_Community 125|Community 125]]
-- [[_COMMUNITY_Community 126|Community 126]]
-- [[_COMMUNITY_Community 127|Community 127]]
-- [[_COMMUNITY_Community 128|Community 128]]
-- [[_COMMUNITY_Community 129|Community 129]]
-- [[_COMMUNITY_Community 130|Community 130]]
-- [[_COMMUNITY_Community 131|Community 131]]
-- [[_COMMUNITY_Community 132|Community 132]]
-- [[_COMMUNITY_Community 133|Community 133]]
-- [[_COMMUNITY_Community 134|Community 134]]
-- [[_COMMUNITY_Community 135|Community 135]]
-- [[_COMMUNITY_Community 136|Community 136]]
-- [[_COMMUNITY_Community 137|Community 137]]
-- [[_COMMUNITY_Community 138|Community 138]]
-- [[_COMMUNITY_Community 139|Community 139]]
-- [[_COMMUNITY_Community 140|Community 140]]
-- [[_COMMUNITY_Community 141|Community 141]]
-- [[_COMMUNITY_Community 142|Community 142]]
-- [[_COMMUNITY_Community 143|Community 143]]
-- [[_COMMUNITY_Community 144|Community 144]]
-- [[_COMMUNITY_Community 145|Community 145]]
-- [[_COMMUNITY_Community 146|Community 146]]
-- [[_COMMUNITY_Community 147|Community 147]]
-- [[_COMMUNITY_Community 148|Community 148]]
-- [[_COMMUNITY_Community 149|Community 149]]
-- [[_COMMUNITY_Community 150|Community 150]]
-- [[_COMMUNITY_Community 151|Community 151]]
-- [[_COMMUNITY_Community 152|Community 152]]
-- [[_COMMUNITY_Community 153|Community 153]]
-- [[_COMMUNITY_Community 154|Community 154]]
-- [[_COMMUNITY_Community 155|Community 155]]
-- [[_COMMUNITY_Community 156|Community 156]]
-- [[_COMMUNITY_Community 157|Community 157]]
-- [[_COMMUNITY_Community 158|Community 158]]
-- [[_COMMUNITY_Community 159|Community 159]]
-- [[_COMMUNITY_Community 160|Community 160]]
-- [[_COMMUNITY_Community 161|Community 161]]
-- [[_COMMUNITY_Community 162|Community 162]]
-- [[_COMMUNITY_Community 163|Community 163]]
-- [[_COMMUNITY_Community 164|Community 164]]
-- [[_COMMUNITY_Community 165|Community 165]]
-- [[_COMMUNITY_Community 169|Community 169]]
-- [[_COMMUNITY_Community 170|Community 170]]
-- [[_COMMUNITY_Community 171|Community 171]]
-- [[_COMMUNITY_Community 172|Community 172]]
-- [[_COMMUNITY_Community 173|Community 173]]
-- [[_COMMUNITY_Community 174|Community 174]]
-- [[_COMMUNITY_Community 175|Community 175]]
-- [[_COMMUNITY_Community 176|Community 176]]
-- [[_COMMUNITY_Community 177|Community 177]]
-- [[_COMMUNITY_Community 178|Community 178]]
-- [[_COMMUNITY_Community 179|Community 179]]
-- [[_COMMUNITY_Community 180|Community 180]]
-- [[_COMMUNITY_Community 181|Community 181]]
-- [[_COMMUNITY_Community 182|Community 182]]
-- [[_COMMUNITY_Community 185|Community 185]]
-- [[_COMMUNITY_Community 186|Community 186]]
-- [[_COMMUNITY_Community 187|Community 187]]
-- [[_COMMUNITY_Community 188|Community 188]]
-- [[_COMMUNITY_Community 189|Community 189]]
-- [[_COMMUNITY_Community 190|Community 190]]
-- [[_COMMUNITY_Community 191|Community 191]]
-- [[_COMMUNITY_Community 192|Community 192]]
-- [[_COMMUNITY_Community 193|Community 193]]
-- [[_COMMUNITY_Community 194|Community 194]]
-- [[_COMMUNITY_Community 195|Community 195]]
-- [[_COMMUNITY_Community 196|Community 196]]
-- [[_COMMUNITY_Community 197|Community 197]]
-- [[_COMMUNITY_Community 198|Community 198]]
-- [[_COMMUNITY_Community 199|Community 199]]
-- [[_COMMUNITY_Community 200|Community 200]]
-- [[_COMMUNITY_Community 201|Community 201]]
-- [[_COMMUNITY_Community 202|Community 202]]
-- [[_COMMUNITY_Community 203|Community 203]]
-- [[_COMMUNITY_Community 204|Community 204]]
-- [[_COMMUNITY_Community 205|Community 205]]
-- [[_COMMUNITY_Community 206|Community 206]]
-- [[_COMMUNITY_Community 207|Community 207]]
-- [[_COMMUNITY_Community 208|Community 208]]
-- [[_COMMUNITY_Community 209|Community 209]]
-- [[_COMMUNITY_Community 210|Community 210]]
-- [[_COMMUNITY_Community 211|Community 211]]
-- [[_COMMUNITY_Community 212|Community 212]]
-- [[_COMMUNITY_Community 213|Community 213]]
-- [[_COMMUNITY_Community 214|Community 214]]
-- [[_COMMUNITY_Community 215|Community 215]]
-- [[_COMMUNITY_Community 216|Community 216]]
-- [[_COMMUNITY_Community 217|Community 217]]
-- [[_COMMUNITY_Community 218|Community 218]]
-- [[_COMMUNITY_Community 219|Community 219]]
-- [[_COMMUNITY_Community 220|Community 220]]
-- [[_COMMUNITY_Community 221|Community 221]]
-- [[_COMMUNITY_Community 222|Community 222]]
-- [[_COMMUNITY_Community 223|Community 223]]
-- [[_COMMUNITY_Community 224|Community 224]]
-- [[_COMMUNITY_Community 225|Community 225]]
-- [[_COMMUNITY_Community 226|Community 226]]
-- [[_COMMUNITY_Community 227|Community 227]]
-- [[_COMMUNITY_Community 228|Community 228]]
-- [[_COMMUNITY_Community 229|Community 229]]
-- [[_COMMUNITY_Community 230|Community 230]]
-- [[_COMMUNITY_Community 231|Community 231]]
-- [[_COMMUNITY_Community 232|Community 232]]
-- [[_COMMUNITY_Community 233|Community 233]]
-- [[_COMMUNITY_Community 234|Community 234]]
-- [[_COMMUNITY_Community 235|Community 235]]
-- [[_COMMUNITY_Community 236|Community 236]]
-- [[_COMMUNITY_Community 237|Community 237]]
-- [[_COMMUNITY_Community 238|Community 238]]
-- [[_COMMUNITY_Community 239|Community 239]]
-- [[_COMMUNITY_Community 240|Community 240]]
-- [[_COMMUNITY_Community 241|Community 241]]
-- [[_COMMUNITY_Community 242|Community 242]]
-- [[_COMMUNITY_Community 243|Community 243]]
-- [[_COMMUNITY_Community 244|Community 244]]
-- [[_COMMUNITY_Community 245|Community 245]]
-- [[_COMMUNITY_Community 246|Community 246]]
-- [[_COMMUNITY_Community 247|Community 247]]
-- [[_COMMUNITY_Community 248|Community 248]]
-- [[_COMMUNITY_Community 249|Community 249]]
-- [[_COMMUNITY_Community 250|Community 250]]
-- [[_COMMUNITY_Community 251|Community 251]]
-- [[_COMMUNITY_Community 252|Community 252]]
-- [[_COMMUNITY_Community 253|Community 253]]
-- [[_COMMUNITY_Community 254|Community 254]]
-- [[_COMMUNITY_Community 255|Community 255]]
-- [[_COMMUNITY_Community 256|Community 256]]
-- [[_COMMUNITY_Community 257|Community 257]]
-- [[_COMMUNITY_Community 258|Community 258]]
-- [[_COMMUNITY_Community 259|Community 259]]
+- [[_COMMUNITY_speckit-converge|speckit-converge]]
+- [[_COMMUNITY_RegistrationSection.tsx|RegistrationSection.tsx]]
+- [[_COMMUNITY_SettingsClient.tsx|SettingsClient.tsx]]
+- [[_COMMUNITY_StaffShell.tsx|StaffShell.tsx]]
+- [[_COMMUNITY_Repo Rules & Block Architecture|Repo Rules & Block Architecture]]
+- [[_COMMUNITY_CPD Sprint 2 Implementation Plan|CPD Sprint 2 Implementation Plan]]
+- [[_COMMUNITY_sessionDistribution.ts|sessionDistribution.ts]]
+- [[_COMMUNITY_seed-demo.ts|seed-demo.ts]]
+- [[_COMMUNITY_RegisterCard.tsx|RegisterCard.tsx]]
+- [[_COMMUNITY_cn()|cn()]]
+- [[_COMMUNITY_CPD Sprint 1 — Multi-tenancy + Identity|CPD Sprint 1 — Multi-tenancy + Identity ]]
+- [[_COMMUNITY_page.tsx|page.tsx]]
+- [[_COMMUNITY_CPD Glossary & Vocabulary|CPD Glossary & Vocabulary]]
+- [[_COMMUNITY_accrediting_bodies table|accrediting_bodies table]]
+- [[_COMMUNITY_DownloadQrButton.tsx|DownloadQrButton.tsx]]
+- [[_COMMUNITY_updateAction.ts|updateAction.ts]]
+- [[_COMMUNITY_NewEventForm.tsx|NewEventForm.tsx]]
+- [[_COMMUNITY_Ledger & Audit Tables|Ledger & Audit Tables]]
+- [[_COMMUNITY_AgendaSection.tsx|AgendaSection.tsx]]
+- [[_COMMUNITY_page.tsx|page.tsx]]
+- [[_COMMUNITY_Handoff 2026-05-23 (Phase 3.5 + Phase 4|Handoff 2026-05-23 (Phase 3.5 + Phase 4 ]]
+- [[_COMMUNITY_Stage 10 Roadmap & Pivot|Stage 10 Roadmap & Pivot]]
+- [[_COMMUNITY_components.json|components.json]]
+- [[_COMMUNITY_deliveryStatus.ts|deliveryStatus.ts]]
+- [[_COMMUNITY_Blue Ramp with Fixed Roles (Decisions Lo|Blue Ramp with Fixed Roles (Decisions Lo]]
+- [[_COMMUNITY_Handoff 2026-06-11 (Redesign implementat|Handoff 2026-06-11 (Redesign implementat]]
+- [[_COMMUNITY_requireStaff()|requireStaff()]]
+- [[_COMMUNITY_createEvent() Server Action (Phase 1.5,|createEvent() Server Action (Phase 1.5, ]]
+- [[_COMMUNITY_devDependencies|devDependencies]]
+- [[_COMMUNITY_compilerOptions|compilerOptions]]
+- [[_COMMUNITY_surveyTemplate.ts|surveyTemplate.ts]]
+- [[_COMMUNITY_Handoff 2026-06-20 (Full cross-surface m|Handoff 2026-06-20 (Full cross-surface m]]
+- [[_COMMUNITY_dependencies|dependencies]]
+- [[_COMMUNITY_DateTimeSection.tsx|DateTimeSection.tsx]]
+- [[_COMMUNITY_2026-08-14 Full-Stack Review|2026-08-14 Full-Stack Review]]
+- [[_COMMUNITY_Handoff 2026-05-20 (Phase 2 registration|Handoff 2026-05-20 (Phase 2 registration]]
+- [[_COMMUNITY_Handoff 2026-05-24 (phase-completion-pro|Handoff 2026-05-24 (phase-completion-pro]]
+- [[_COMMUNITY_RosterClient.tsx|RosterClient.tsx]]
+- [[_COMMUNITY_ADR-0001 Regulator Taxonomy|ADR-0001 Regulator Taxonomy]]
+- [[_COMMUNITY_Frontend review — 2026-08-05|Frontend review — 2026-08-05]]
+- [[_COMMUNITY_common.sh|common.sh]]
+- [[_COMMUNITY_supabaseServer()|supabaseServer()]]
+- [[_COMMUNITY_docssource-buildpackREADME.md — Slice|docs/source-buildpack/README.md — Slice ]]
+- [[_COMMUNITY_eventsidanalytics route|/events/[id]/analytics route]]
+- [[_COMMUNITY_emailActions.ts|emailActions.ts]]
+- [[_COMMUNITY_actions.ts|actions.ts]]
+- [[_COMMUNITY_Doctrine Open Forks (M1D.1)|Doctrine Open Forks (M1/D.1)]]
+- [[_COMMUNITY_route.test.ts|route.test.ts]]
+- [[_COMMUNITY_page.tsx|page.tsx]]
+- [[_COMMUNITY_nominatim.ts|nominatim.ts]]
+- [[_COMMUNITY_Design → Implementation Gap Review — 202|Design → Implementation Gap Review — 202]]
+- [[_COMMUNITY_ADR-0002 Multi-Body Accreditation|ADR-0002 Multi-Body Accreditation]]
+- [[_COMMUNITY_EmailSendControls.tsx|EmailSendControls.tsx]]
+- [[_COMMUNITY_page.tsx|page.tsx]]
+- [[_COMMUNITY_actions.ts|actions.ts]]
+- [[_COMMUNITY_Cut Bolt-Ons (TSAVC) & Admission Checklist|Cut Bolt-Ons (TSA/VC) & Admission Checklist]]
+- [[_COMMUNITY_withSecurity.ts|withSecurity.ts]]
+- [[_COMMUNITY_Deterministic Evaluator evaluate_complia|Deterministic Evaluator evaluate_complia]]
+- [[_COMMUNITY_Three-lens phase-completion review (dev,|Three-lens phase-completion review (dev,]]
+- [[_COMMUNITY_Eventar MVP Design (2026-05-13)|Eventar MVP Design (2026-05-13)]]
+- [[_COMMUNITY_CLAUDE.md Hard Rules 1-6|CLAUDE.md Hard Rules 1-6]]
+- [[_COMMUNITY_Market Realignment analysis|Market Realignment analysis]]
+- [[_COMMUNITY_Handoff 2026-06-05 (Geist + Vercel redes|Handoff 2026-06-05 (Geist + Vercel redes]]
+- [[_COMMUNITY_Credit is (event, body, days_attended),|Credit is (event, body, days_attended), ]]
+- [[_COMMUNITY_scripts|scripts]]
+- [[_COMMUNITY_render-emails.ts|render-emails.ts]]
+- [[_COMMUNITY_Handoff 2026-05-16 (Phase 1.5 mid-execut|Handoff 2026-05-16 (Phase 1.5 mid-execut]]
+- [[_COMMUNITY_selfCheckIn()|selfCheckIn()]]
+- [[_COMMUNITY_page.tsx|page.tsx]]
+- [[_COMMUNITY_Handoff 2026-08-03 — Stage 6 closed, Sta|Handoff 2026-08-03 — Stage 6 closed, Sta]]
+- [[_COMMUNITY_Defect Class — Control One Layer Above t|Defect Class — Control One Layer Above t]]
+- [[_COMMUNITY_award_attendance_credit() SECURITY DEFIN|award_attendance_credit() SECURITY DEFIN]]
+- [[_COMMUNITY_eventEmails.ts|eventEmails.ts]]
+- [[_COMMUNITY_rateLimit.ts|rateLimit.ts]]
+- [[_COMMUNITY_page.tsx|page.tsx]]
+- [[_COMMUNITY_speakerActions.ts|speakerActions.ts]]
+- [[_COMMUNITY_Phase P1 POCDemo-Ready|Phase P1 POC/Demo-Ready]]
+- [[_COMMUNITY_Handoff 2026-08-02 — M2 frontend unfreez|Handoff 2026-08-02 — M2 frontend unfreez]]
+- [[_COMMUNITY_Eventar Design Patterns (Historical, Sup|Eventar Design Patterns (Historical, Sup]]
+- [[_COMMUNITY_apicrondispatch Scheduler Route|/api/cron/dispatch Scheduler Route]]
+- [[_COMMUNITY_dispatch-stress.ts|dispatch-stress.ts]]
+- [[_COMMUNITY_Handoff 2026-05-30 (Phase 4.6 reskin com|Handoff 2026-05-30 (Phase 4.6 reskin com]]
+- [[_COMMUNITY_emailActions.test.ts|emailActions.test.ts]]
+- [[_COMMUNITY_NewEventForm.test.tsx|NewEventForm.test.tsx]]
+- [[_COMMUNITY_Handoff 2026-05-21 v2 (Phase 3 QR code s|Handoff 2026-05-21 v2 (Phase 3 QR code s]]
+- [[_COMMUNITY_SurveyForm.tsx|SurveyForm.tsx]]
+- [[_COMMUNITY_isReviewMode()|isReviewMode()]]
+- [[_COMMUNITY_VenueSection.tsx|VenueSection.tsx]]
+- [[_COMMUNITY_The Seven Review Questions (Q1-Q7)|The Seven Review Questions (Q1-Q7)]]
+- [[_COMMUNITY_Execution Plans Index B-E|Execution Plans Index B-E]]
+- [[_COMMUNITY_Stage 7 executable plan (2026-08-03)|Stage 7 executable plan (2026-08-03)]]
+- [[_COMMUNITY_Thread 3 DEFERRED.md backlog, four item|Thread 3: DEFERRED.md backlog, four item]]
+- [[_COMMUNITY_The collateral production mechanism|The collateral production mechanism]]
+- [[_COMMUNITY_calendarLinks.ts|calendarLinks.ts]]
+- [[_COMMUNITY_dev-local.sh|dev-local.sh]]
+- [[_COMMUNITY_actions.ts|actions.ts]]
+- [[_COMMUNITY_DatePicker.tsx|DatePicker.tsx]]
+- [[_COMMUNITY_organisation_body_authorisations Allow-L|organisation_body_authorisations Allow-L]]
+- [[_COMMUNITY_email_log Retry-Failed Index Predicate|email_log Retry-Failed Index Predicate]]
+- [[_COMMUNITY_leadingSession.ts|leadingSession.ts]]
+- [[_COMMUNITY_recordAbuseHitAndMaybeRevoke()|recordAbuseHitAndMaybeRevoke()]]
+- [[_COMMUNITY_CPD Sprint 3b Governance Outline|CPD Sprint 3b Governance Outline]]
+- [[_COMMUNITY_Q26 Config-Hash Fork|Q26 Config-Hash Fork]]
+- [[_COMMUNITY_scriptsbacktest Harnesses (send-ledger,|scripts/backtest Harnesses (send-ledger,]]
+- [[_COMMUNITY_Organiser IA Spec (2026-07-12)|Organiser IA Spec (2026-07-12)]]
+- [[_COMMUNITY_Graph Refresh Complete — 1635 Nodes  26|Graph Refresh Complete — 1635 Nodes / 26]]
+- [[_COMMUNITY_Task 13 — Three-Lens Phase-Completion Pr|Task 13 — Three-Lens Phase-Completion Pr]]
+- [[_COMMUNITY_requireStaff() as the staff-surface chok|requireStaff() as the staff-surface chok]]
+- [[_COMMUNITY_reminder.tsx|reminder.tsx]]
+- [[_COMMUNITY_agenda.ts|agenda.ts]]
+- [[_COMMUNITY_dispatchDue.ts|dispatchDue.ts]]
+- [[_COMMUNITY_textSize.ts|textSize.ts]]
+- [[_COMMUNITY_create-new-feature.sh|create-new-feature.sh]]
+- [[_COMMUNITY_event_checkin_modes.rls.test.ts|event_checkin_modes.rls.test.ts]]
+- [[_COMMUNITY_actions.ts|actions.ts]]
+- [[_COMMUNITY_page.tsx|page.tsx]]
+- [[_COMMUNITY_CLAUDE.md Hard Rules 7-14|CLAUDE.md Hard Rules 7-14]]
+- [[_COMMUNITY_actions.test.ts|actions.test.ts]]
+- [[_COMMUNITY_page.tsx|page.tsx]]
+- [[_COMMUNITY_ringDashArray()|ringDashArray()]]
+- [[_COMMUNITY_ReadinessStrip.tsx|ReadinessStrip.tsx]]
+- [[_COMMUNITY_Eventar CPD Ledger (product pitch)|Eventar CPD Ledger (product pitch)]]
+- [[_COMMUNITY_Eventar — Privacy Policy  PICS (draft v|Eventar — Privacy Policy / PICS (draft v]]
+- [[_COMMUNITY_buildEventQrPng()|buildEventQrPng()]]
+- [[_COMMUNITY_Phase P2 Engagement (internal to NGO to|Phase P2 Engagement (internal to NGO to ]]
+- [[_COMMUNITY_Cross-cutting landmines (8 learned-the-h|Cross-cutting landmines (8 learned-the-h]]
+- [[_COMMUNITY_Adopting a token's value without its rol|Adopting a token's value without its rol]]
+- [[_COMMUNITY_Orphaned Worktree Recovery|Orphaned Worktree Recovery]]
+- [[_COMMUNITY_Replay-From-Zero Green (fixed in init_st|Replay-From-Zero Green (fixed in init_st]]
+- [[_COMMUNITY_HIGH-3 false finding that tamper-eviden|HIGH-3: false finding that tamper-eviden]]
+- [[_COMMUNITY_demo-run-sheet.md (Beat 4.6 CPD readout)|demo-run-sheet.md (Beat 4.6 CPD readout)]]
+- [[_COMMUNITY_send-ledger.ts|send-ledger.ts]]
+- [[_COMMUNITY_self_check_in.rls.test.ts|self_check_in.rls.test.ts]]
+- [[_COMMUNITY_docsarchitectureBASELINE-DELTAS|docs/architecture/BASELINE-DELTAS.md]]
+- [[_COMMUNITY_The photograph-and-forward threat|The photograph-and-forward threat]]
+- [[_COMMUNITY_surveyInvite.tsx|surveyInvite.tsx]]
+- [[_COMMUNITY_startsInLabel.ts|startsInLabel.ts]]
+- [[_COMMUNITY_registrationWindow.ts|registrationWindow.ts]]
+- [[_COMMUNITY_reminder-payload.ts|reminder-payload.ts]]
+- [[_COMMUNITY_reset-demo.ts|reset-demo.ts]]
+- [[_COMMUNITY_licence_mutations.test.ts|licence_mutations.test.ts]]
+- [[_COMMUNITY_dispatch_idempotency.rls.test.ts|dispatch_idempotency.rls.test.ts]]
+- [[_COMMUNITY_mark_attended.rls.test.ts|mark_attended.rls.test.ts]]
+- [[_COMMUNITY_schema.ts|schema.ts]]
+- [[_COMMUNITY_LiveScoreboard.tsx|LiveScoreboard.tsx]]
+- [[_COMMUNITY_SignOutButton.tsx|SignOutButton.tsx]]
+- [[_COMMUNITY_Abuse-control design (final, replaces Sl|Abuse-control design (final, replaces Sl]]
+- [[_COMMUNITY_CPD Passport (the incumbent competitor)|CPD Passport (the incumbent competitor)]]
+- [[_COMMUNITY_events.accrediting_body_id + cpd_hours (|events.accrediting_body_id + cpd_hours (]]
+- [[_COMMUNITY_The swallowed-Supabase-error defect clas|The swallowed-Supabase-error defect clas]]
+- [[_COMMUNITY_cameraError.test.ts|cameraError.test.ts]]
+- [[_COMMUNITY_buildCheckinQrPng()|buildCheckinQrPng()]]
+- [[_COMMUNITY_buildCsv()|buildCsv()]]
+- [[_COMMUNITY_arrivalBuckets.ts|arrivalBuckets.ts]]
+- [[_COMMUNITY_checkin_throughput.rls.test.ts|checkin_throughput.rls.test.ts]]
+- [[_COMMUNITY_publish_event.rls.test.ts|publish_event.rls.test.ts]]
+- [[_COMMUNITY_page.tsx|page.tsx]]
+- [[_COMMUNITY_layout.tsx|layout.tsx]]
+- [[_COMMUNITY_ConfirmButton.tsx|ConfirmButton.tsx]]
+- [[_COMMUNITY_StickyLiveBar.tsx|StickyLiveBar.tsx]]
+- [[_COMMUNITY_Global app shell (top bar + sidebar-is-n|Global app shell (top bar + sidebar-is-n]]
+- [[_COMMUNITY_Participants directory (not a CRM, PDPO|Participants directory (not a CRM, PDPO ]]
+- [[_COMMUNITY_seed-demo.ts Registration-Window Timing|seed-demo.ts Registration-Window Timing ]]
+- [[_COMMUNITY_replay-verify CI Workflow|replay-verify CI Workflow]]
+- [[_COMMUNITY_name.ts|name.ts]]
+- [[_COMMUNITY_next.config.ts|next.config.ts]]
+- [[_COMMUNITY_pnpm-workspace.yaml|pnpm-workspace.yaml]]
+- [[_COMMUNITY_replay-and-verify.sh|replay-and-verify.sh]]
+- [[_COMMUNITY_Sprint 2 Finding 1 anon retained EXECUT|Sprint 2 Finding 1: anon retained EXECUT]]
+- [[_COMMUNITY_Finding 3 self-check-in per-event keyin|Finding 3: self-check-in per-event keyin]]
+- [[_COMMUNITY_email_log held a table SELECT grant to a|email_log held a table SELECT grant to a]]
+- [[_COMMUNITY_CI Replay + Tamper Harness|CI Replay + Tamper Harness]]
+- [[_COMMUNITY_NewEventForm.test.tsx concurrency flake|NewEventForm.test.tsx concurrency flake]]
+- [[_COMMUNITY_eslint.config.mjs|eslint.config.mjs]]
+- [[_COMMUNITY_.mcp.json|.mcp.json]]
+- [[_COMMUNITY_postcss.config.mjs|postcss.config.mjs]]
+- [[_COMMUNITY_check-prerequisites.sh|check-prerequisites.sh]]
+- [[_COMMUNITY_setup-plan.sh|setup-plan.sh]]
+- [[_COMMUNITY_setup-tasks.sh|setup-tasks.sh]]
+- [[_COMMUNITY_staff_role_mutations.rls.test.ts|staff_role_mutations.rls.test.ts]]
+- [[_COMMUNITY_AGENTS.md — Next 16 breaking-changes war|AGENTS.md — Next 16 breaking-changes war]]
+- [[_COMMUNITY_Eventar App Icon (SVG)|Eventar App Icon (SVG)]]
+- [[_COMMUNITY_Bulk-verify endpoint for accreditors (sc|Bulk-verify endpoint for accreditors (sc]]
+- [[_COMMUNITY_middleware.ts → proxy.ts rename (Next 16|middleware.ts → proxy.ts rename (Next 16]]
+- [[_COMMUNITY_Fixed design pseudonymise_user privileg|Fixed design: pseudonymise_user privileg]]
+- [[_COMMUNITY_Supabase Auth native replaces custom aut|Supabase Auth native replaces custom aut]]
+- [[_COMMUNITY_Sprint 2 Finding 2 Turnstile-deferral w|Sprint 2 Finding 2: Turnstile-deferral w]]
+- [[_COMMUNITY_PDPO posture (consent, DSR, pseudonymisa|PDPO posture (consent, DSR, pseudonymisa]]
+- [[_COMMUNITY_5-role staff enum widen|5-role staff enum widen]]
+- [[_COMMUNITY_supersede_licence() (from-state guarded)|supersede_licence() (from-state guarded)]]
+- [[_COMMUNITY_verify_licence() (staff-actor)|verify_licence() (staff-actor)]]
+- [[_COMMUNITY_CI replay-and-verify harness|CI replay-and-verify harness]]
+- [[_COMMUNITY_Collateral drafts (CPD Ledger naming)|Collateral drafts (CPD Ledger naming)]]
+- [[_COMMUNITY_scriptsdemolib.ts local-only helper|scripts/demo/lib.ts local-only helper]]
+- [[_COMMUNITY_Residual grant hygiene batch|Residual grant hygiene batch]]
+- [[_COMMUNITY_Hard Rule 11 grant posture|Hard Rule 11 grant posture]]
+- [[_COMMUNITY_ledger-demo.ts trust-moment driver|ledger-demo.ts trust-moment driver]]
+- [[_COMMUNITY_Milestone A Executable Plan|Milestone A Executable Plan]]
+- [[_COMMUNITY_Phase-completion protocol (three lenses|Phase-completion protocol (three lenses ]]
+- [[_COMMUNITY_render-emails.ts|render-emails.ts]]
+- [[_COMMUNITY_reset-demo.ts|reset-demo.ts]]
+- [[_COMMUNITY_seed-demo.ts fixture|seed-demo.ts fixture]]
+- [[_COMMUNITY_set_staff_role() audited definer functio|set_staff_role() audited definer functio]]
+- [[_COMMUNITY_Accreditation & Compliance (organiser vi|Accreditation & Compliance (organiser vi]]
+- [[_COMMUNITY_Organiser Dashboard (is anything on fire|Organiser Dashboard (is anything on fire]]
+- [[_COMMUNITY_Data presentation rules (intuition layer|Data presentation rules (intuition layer]]
+- [[_COMMUNITY_Eight organiser nav areas|Eight organiser nav areas]]
+- [[_COMMUNITY_Eligibility flag (property of the row)|Eligibility flag (property of the row)]]
+- [[_COMMUNITY_Left sidebar app-shell + counted pill-ta|Left sidebar app-shell + counted pill-ta]]
+- [[_COMMUNITY_Needs-attention queue|Needs-attention queue]]
+- [[_COMMUNITY_Participants (person-level, PDPO purpose|Participants (person-level, PDPO purpose]]
+- [[_COMMUNITY_Per-event readiness strip|Per-event readiness strip]]
+- [[_COMMUNITY_Block map (K1-K3 kernel  B1-B8 domain b|Block map (K1-K3 kernel / B1-B8 domain b]]
+- [[_COMMUNITY_Cross-phase invariants|Cross-phase invariants]]
+- [[_COMMUNITY_End-state commitment (production-ready c|End-state commitment (production-ready c]]
+- [[_COMMUNITY_Phase A Demo-ready|Phase A Demo-ready]]
+- [[_COMMUNITY_Phase B Field-proven|Phase B Field-proven]]
+- [[_COMMUNITY_Phase C Body engaged|Phase C Body engaged]]
+- [[_COMMUNITY_Phase DM4 Pilot-complete lean cut|Phase D/M4 Pilot-complete lean cut]]
+- [[_COMMUNITY_Phase E Production-ready|Phase E Production-ready]]
+- [[_COMMUNITY_Phase M2 CPD engine live|Phase M2 CPD engine live]]
+- [[_COMMUNITY_Phase M3 Signed & verifiable|Phase M3 Signed & verifiable]]
+- [[_COMMUNITY_Q30 Payments (Stripe pass-through, HKMA-|Q30 Payments (Stripe pass-through, HKMA-]]
+- [[_COMMUNITY_Landing option D — White stage (default|Landing option D — White stage (default ]]
+- [[_COMMUNITY_Practitioner CPD Ledger surface|Practitioner CPD Ledger surface]]
+- [[_COMMUNITY_createupdate_event_with_blocks are SECU|create/update_event_with_blocks are SECU]]
+- [[_COMMUNITY_N1 — full-stack backend review (the syst|N1 — full-stack backend review (the syst]]
+- [[_COMMUNITY_The naming trap — two different things c|The naming trap — two different things c]]
+- [[_COMMUNITY_Re-entry criterion — build after Stage 8|Re-entry criterion — build after Stage 8]]
+- [[_COMMUNITY_Audit-insert-last convention|Audit-insert-last convention]]
+- [[_COMMUNITY_D1 — write_audit_event authenticity clos|D1 — write_audit_event authenticity clos]]
+- [[_COMMUNITY_Grant-hygiene bug class (revoke PUBLIC n|Grant-hygiene bug class (revoke PUBLIC n]]
+- [[_COMMUNITY_Migration filename drift (apply_migratio|Migration filename drift (apply_migratio]]
+- [[_COMMUNITY_Self-check-in brute-force rate-limit reg|Self-check-in brute-force rate-limit reg]]
+- [[_COMMUNITY_HowItWorks Walkthrough Section|HowItWorks Walkthrough Section]]
+- [[_COMMUNITY_roadmap-to-mvp.md (milestone spine A→E)|roadmap-to-mvp.md (milestone spine A→E)]]
+- [[_COMMUNITY_sprint-3b governance design outline|sprint-3b governance design outline]]
+- [[_COMMUNITY_Q30 — pass-through payments posture|Q30 — pass-through payments posture]]
+- [[_COMMUNITY_I1 supabaseAdmin() outside the try (res|I1: supabaseAdmin() outside the try (res]]
+- [[_COMMUNITY_body_role_mappings table|body_role_mappings table]]
+- [[_COMMUNITY_Definer functions passing raw role liter|Definer functions passing raw role liter]]
+- [[_COMMUNITY_Three role-resolution indirection points|Three role-resolution indirection points]]
+- [[_COMMUNITY_Platform-role enum vs body-specific labe|Platform-role enum vs body-specific labe]]
+- [[_COMMUNITY_Role-Split Refactor (scoped inventory)|Role-Split Refactor (scoped inventory)]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `requireStaff()` - 54 edges
-2. `supabaseServer()` - 50 edges
+1. `requireStaff()` - 40 edges
+2. `supabaseServer()` - 36 edges
 3. `CPD Sprint 2 Implementation Plan` - 30 edges
 4. `cn()` - 26 edges
-5. `NotAuthorizedError` - 17 edges
-6. `compilerOptions` - 16 edges
-7. `markAttended()` - 15 edges
-8. `accrediting_bodies table` - 14 edges
-9. `selfCheckIn()` - 14 edges
-10. `rateLimitByIp()` - 14 edges
+5. `CONTEXT.md — CPD Glossary` - 25 edges
+6. `DEFERRED.md — Technical Debt Tracker` - 20 edges
+7. `PROJECT_STATE.md — Eventar Active-Phase Record` - 20 edges
+8. `CLAUDE.md — Eventar Repo Contract` - 19 edges
+9. `STAGES.md — Roadmap Stage Authority` - 18 edges
+10. `compilerOptions` - 16 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `POST()` --semantically_similar_to--> `public.record_session_revocation()`  [INFERRED] [semantically similar]
   app/api/security/csp-report/route.ts → docs/plans/2026-07-04-cpd-sprint-2-implementation.md
 - `supabaseAdmin()` --conceptually_related_to--> `requireStaff() load-bearing helper (design)`  [INFERRED]
   lib/supabase/admin.ts → docs/plans/2026-05-13-eventar-mvp-design.md
-- `Server-derived timezone rationale` --rationale_for--> `tzFromCoords()`  [EXTRACTED]
-  docs/plans/2026-05-16-eventar-phase-1.5-design.md → lib/tz.ts
 - `Eventar Phase 1: Foundation + Create-Event Slice (plan)` --references--> `requireStaff()`  [EXTRACTED]
   docs/plans/2026-05-13-eventar-phase-1-foundation.md → lib/auth.ts
 - `publishEvent() Server Action (Phase 1)` --calls--> `requireStaff()`  [EXTRACTED]
   docs/plans/2026-05-13-eventar-phase-1-foundation.md → lib/auth.ts
+- `Registration-closed CSV export gate` --rationale_for--> `exportRegistrantsCsv()`  [EXTRACTED]
+  docs/plans/2026-05-22-eventar-phase-3.5-poster-csv-design.md → app/events/[id]/edit/actions.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (267 total, 107 thin omitted)
+## Hyperedges (group relationships)
+- **Multi-Body Accreditation Design & Decision Thread** — docs_adr_0002_multi_body_accreditation_decision, docs_adr_0002_ici_summit_2026_evidence, docs_adr_0002_event_accreditations_table_proposal, docs_plans_project_state_da_multi_body_in_scope, docs_plans_2026_08_10_dual_track_stage_scope_workstream_e_multi_body, docs_plans_handoff_14082026_v3_multi_body_design, docs_deferred_m4_eager_posting_depends_on_r5 [EXTRACTED 0.90]
+- **Structural Integrity Enforcement Doctrine** — claude_hard_rule_11_audited_mutation_grants, docs_doctrine_hard_rule_integrity_structural, docs_architecture_block_architecture_k2_integrity_substrate, claude_credit_ledger_table, claude_audit_events_table [INFERRED 0.80]
+- **Stage 10 Dual-Track Engine Build** — docs_plans_stages_stage10_dual_track_engine, docs_plans_2026_08_10_dual_track_stage_scope_q33_rescope, docs_plans_project_state_stage_10_current, docs_plans_project_state_task1_seed_hkam_mchk, docs_plans_handoff_13082026_task1_shipped [EXTRACTED 0.90]
+- **Spec-Driven Development Command Pipeline** — _claude_skills_speckit_specify_skill_speckit_specify, _claude_skills_speckit_clarify_skill_speckit_clarify, _claude_skills_speckit_plan_skill_speckit_plan, _claude_skills_speckit_tasks_skill_speckit_tasks, _claude_skills_speckit_analyze_skill_speckit_analyze, _claude_skills_speckit_implement_skill_speckit_implement, _claude_skills_speckit_converge_skill_speckit_converge [EXTRACTED 1.00]
+- **Constitution Governance Chain** — _specify_memory_constitution_project_constitution, _specify_templates_constitution_template_constitution_template, _claude_skills_speckit_constitution_skill_speckit_constitution, _claude_skills_speckit_constitution_skill_consistency_propagation, _specify_templates_plan_template_constitution_check, _claude_skills_speckit_analyze_skill_constitution_authority [EXTRACTED 1.00]
+- **Requirement Traceability Chain (FR/SC to task IDs to GitHub issues)** — _specify_templates_spec_template_functional_requirements, _specify_templates_spec_template_success_criteria, _claude_skills_speckit_tasks_skill_checklist_format, _claude_skills_speckit_analyze_skill_requirements_inventory, _claude_skills_speckit_converge_skill_convergence_phase, _claude_skills_speckit_taskstoissues_skill_issue_deduplication [INFERRED 0.85]
+- **CPD attendance-verified issuance flow (attendance → guard → identity → ledger)** — docs_plans_2026_07_23_cpd_issuance_execution_plan_fresh_transition_gate, docs_plans_2026_07_23_cpd_mvp_architecture_eligibility_guard, docs_plans_2026_07_23_cpd_mvp_architecture_identity_resolution, docs_plans_2026_07_23_cpd_mvp_architecture_record_credit_entry, docs_plans_2026_07_23_cpd_mvp_architecture_credit_ledger, docs_plans_2026_07_23_cpd_issuance_execution_plan_credit_ledger_attendance_uniq [EXTRACTED 1.00]
+- **M2 frontend unfreeze — the five-stage staging** — docs_plans_2026_08_01_m2_frontend_unfreeze_stage_1_design_language_fusion, docs_plans_2026_08_01_m2_frontend_unfreeze_stage_2_shell_fusion, docs_plans_2026_08_01_m2_frontend_unfreeze_stage_3_cpd_reachable, docs_plans_2026_08_01_m2_frontend_unfreeze_stage_4_roster_eligibility, docs_plans_2026_08_01_m2_frontend_unfreeze_stage_5_new_surfaces, docs_plans_2026_08_01_m2_frontend_unfreeze_scope_call [EXTRACTED 1.00]
+- **The venue-token option space Ivan must choose from** — docs_plans_2026_08_06_venue_scan_checkin_spec_option_a_static_token, docs_plans_2026_08_06_venue_scan_checkin_spec_option_b_rotating_qr, docs_plans_2026_08_06_venue_scan_checkin_spec_option_c_rotating_short_code, docs_plans_2026_08_06_venue_scan_checkin_spec_photograph_and_forward_threat, docs_plans_2026_08_06_venue_scan_checkin_spec_check_in_method_venue_value [EXTRACTED 1.00]
+- **Every gate green while the thing is broken** — docs_plans_2026_08_05_frontend_review_swallowed_error_class, docs_plans_project_state_control_one_layer_above_the_write, docs_plans_handoff_03082026_token_layer_reach_lesson, docs_plans_handoff_03082026_email_log_anon_select_grant, docs_plans_2026_08_03_stage_7_plan_three_lens_protocol [INFERRED 0.85]
+- **Recurring defect class — a control one layer above where the write happens** — docs_plans_handoff_04082026_control_one_layer_above, docs_plans_handoff_04082026_deferred_56, docs_plans_handoff_04082026_mark_attended_cancelled_credit, docs_plans_handoff_05082026_manual_send_flag, docs_plans_handoff_09082026_sidebar_deletion_failure [EXTRACTED 1.00]
+- **Retryable-but-not-duplicating email dispatch chain** — docs_plans_handoff_05082026_email_log_retry_failed, docs_plans_handoff_05082026_idempotency_key, docs_plans_handoff_05082026_scheduled_countdown_label, docs_plans_handoff_05082026_409_as_delivered, docs_plans_handoff_05082026_email_log_origin [EXTRACTED 1.00]
+- **Replay-from-zero gate — broken, diagnosed, made green** — docs_plans_handoff_17072026_ci_replay_tamper_script, docs_plans_handoff_08082026_replay_from_zero_broken, docs_plans_handoff_10082026_default_privileges_by_creating_role, docs_plans_handoff_10082026_replay_from_zero_green, docs_plans_handoff_22072026_replay_verify_workflow [EXTRACTED 1.00]
+- **CPD attendance-verified issuance mechanism** — docs_plans_handoff_25072026_award_attendance_credit, docs_plans_handoff_25072026_awardattendancecredit_wrapper, docs_plans_handoff_25072026_credit_ledger_attendance_uniq, docs_plans_handoff_25072026_reconcile_event_script, docs_plans_handoff_25072026_cpd_issuance_enabled_kill_switch, docs_plans_handoff_25072026_attendance_verified_tier [EXTRACTED 1.00]
+- **Authorisation holes and regressions found by lenses + live runs, not gates** — docs_plans_handoff_25072026_v2_three_lens_review, docs_plans_handoff_25072026_v2_high_1_organiser_accreditation_hole, docs_plans_handoff_25072026_v2_high_2_self_check_in_hole, docs_plans_handoff_25072026_v2_seed_sql_grant_regression, docs_plans_handoff_25072026_v2_over_revoke_regression, docs_plans_handoff_25072026_v2_verify_findings_live_lesson [EXTRACTED 1.00]
+- **Collateral displacement thesis (live views replacing frozen PDFs)** — docs_research_4icreative_competitor_osint_collateral_mechanism, docs_research_4icreative_competitor_osint_ici_summit_2026, docs_research_4icreative_competitor_osint_frozen_pdf_failure_modes, docs_research_4icreative_competitor_osint_poster_page_beachhead, docs_research_4icreative_competitor_osint_business_model_constraint, docs_research_4icreative_competitor_osint_design_acquisition_surface [EXTRACTED 1.00]
+- **Audit hash-chain integrity mechanism (K2)** — claude_hard_rule_11_audited_mutation_grant_revocation, docs_architecture_baseline_deltas_audit_hash_chain_fix, docs_architecture_block_architecture_k2_integrity_substrate, claude_audit_events_table [INFERRED 0.85]
+- **Measurement-vs-inference enforcement doctrine** — docs_architecture_baseline_deltas_measurement_vs_inference_doctrine, docs_architecture_block_architecture_k3_security_shell, docs_architecture_block_architecture_b8_behavioural_detection [INFERRED 0.85]
+- **Audited SECURITY DEFINER mutation functions (gate → mutation → write_audit_event LAST)** — supabase_migrations_20260704140200_consent_audited_fns_grant_consent, supabase_migrations_20260704140200_consent_audited_fns_withdraw_consent, supabase_migrations_20260704140300_dsr_audited_fn_transition_dsr, supabase_migrations_20260704140400_session_revocation_audit_record_session_revocation, supabase_migrations_20260704140500_self_check_in_fn_self_check_in, supabase_migrations_20260704140600_mark_attended_fn_mark_attended, supabase_migrations_20260704140700_publish_event_fn_publish_event [EXTRACTED 0.95]
+- **Pinned P5 API-verification findings table** — docs_plans_2026_07_04_cpd_sprint_2_implementation_p5_1_finding, docs_plans_2026_07_04_cpd_sprint_2_implementation_p5_2_finding, docs_plans_2026_07_04_cpd_sprint_2_implementation_p5_3_finding, docs_plans_2026_07_04_cpd_sprint_2_implementation_p5_4_finding [EXTRACTED 0.95]
+- **Sprint 2 cross-cutting security invariants** — docs_plans_2026_07_04_cpd_sprint_2_implementation_audit_insert_last_rule, docs_plans_2026_07_04_cpd_sprint_2_implementation_q18_rls_silent_fail_guard, docs_plans_2026_07_04_cpd_sprint_2_implementation_frontend_freeze, docs_plans_2026_07_04_cpd_sprint_2_implementation_default_acl_grant_issue [INFERRED 0.75]
+- **QR generation reuse chain (staff download, public page, poster)** — lib_qr_buildeventqrpng, app_events_id_edit_actions_geteventqrpng, app_public_events_id_poster_page, components_downloadqrbutton, lib_slugify_slugifytitle [EXTRACTED 0.90]
+- **Check-in idempotent race-safety pattern (staff tablet + self-checkin)** — app_events_id_checkin_actions_markattended, app_public_checkin_confirm_actions_selfcheckin, lib_registrationcode_isvalid, docs_plans_phase4_checkin_idempotent_update_pattern, docs_plans_phase4_cross_event_scan_decision [EXTRACTED 0.90]
+- **Check-in convergence: staff scan + manual entry + self-checkin all update one registration row** — app_events_id_checkin_actions_markattended, app_public_checkin_confirm_actions_selfcheckin, app_events_id_checkin_rosterclient, concept_idempotent_checkin_pattern [EXTRACTED 1.00]
+- **Audit chain atomicity: gate → mutation → write_audit_event LAST, in one transaction, under advisory lock** — fn_write_audit_event, fn_compute_audit_hash, fn_pseudonymise_user, concept_audit_insert_last_pattern, concept_p2_global_audit_chain_lock_discipline [EXTRACTED 1.00]
+- **Phase-completion protocol: dev-review + user-review + backtest** — phase_completion_protocol_concept, two_lens_review_pattern, eventar_backtest_recipe_memory, docs_plans_handoff_15062026_h2_three_checks [EXTRACTED 0.90]
+- **Registration flow mutation surface: action, tables, RLS footgun** — registerforevent_action, registrations_table, email_log_table, rls_returning_footgun_rationale, supabase_admin_client [EXTRACTED 0.90]
+- **Design system evolution: M3 indigo to Vercel-canonical Geist** — m3_indigo_design_tokens, docs_plans_handoff_05062026_vercel_canonical_palette, docs_plans_handoff_05062026_geist_font_system, instructional_color_system_7a [INFERRED 0.85]
 
-### Community 0 - "Spec-Kit SDD Pipeline"
+## Communities (253 total, 97 thin omitted)
+
+### Community 0 - "speckit-converge"
 Cohesion: 0.06
 Nodes (69): check-prerequisites.sh, Constitution Authority, Cross-Artifact Detection Passes, Extension Hooks Protocol (.specify/extensions.yml), Progressive Disclosure Artifact Loading, Read-Only Analysis Constraint, Requirements Inventory (FR-###/SC-### stable keys), Analysis Severity Rubric (CRITICAL/HIGH/MEDIUM/LOW) (+61 more)
 
-### Community 1 - "Event Lifecycle & Status UI"
+### Community 1 - "RegistrationSection.tsx"
 Cohesion: 0.05
 Nodes (39): livePillBgPulse keyframe (.live-pill-pulse), EventRowStrip component (Phase 6 dashboard per-row strip — later removed Phase 6.5), LayerOneTiles component (Phase 6 dashboard aggregate — later removed Phase 6.5), AttendanceSection(), CheckInRecord, countdown(), fmtDay(), fmtHM() (+31 more)
 
-### Community 2 - "Login & Auth Surfaces"
+### Community 2 - "SettingsClient.tsx"
+Cohesion: 0.05
+Nodes (35): geistMono, geistSans, metadata, THEME_INIT_SCRIPT, RadioOption, ROLE_LABELS, SettingsClient(), subscribeStorage() (+27 more)
+
+### Community 3 - "StaffShell.tsx"
 Cohesion: 0.06
-Nodes (27): fd(), LoginForm(), URL_ERROR_MESSAGES, metadata, FEATURES, metadata, CATEGORIES, EventsListClient() (+19 more)
+Nodes (29): URL_ERROR_MESSAGES, metadata, FEATURES, metadata, CATEGORIES, EventsListClient(), PublicEventCard, metadata (+21 more)
 
-### Community 3 - "Cron Dispatch & Deferred Debt"
-Cohesion: 0.07
-Nodes (37): AGENTS.md (Next 16 breaking changes), POST(), BASELINE-DELTAS.md, docs/DEFERRED.md, docs/legal/privacy-policy.md, docs/legal/terms-and-conditions.md, Audit-insert-last invariant, 200-concurrent burst throughput backtest (+29 more)
+### Community 4 - "Repo Rules & Block Architecture"
+Cohesion: 0.05
+Nodes (46): Hard Rule 10: No PII in Logs, Rule 13: Expand the Mental Model, Not Redirect Action, B5 Communications, The Fitting Rules, /api/cron/dispatch Has No Trigger, Locked blue ramp with fixed roles (v3, replaces teal), Eligibility flag primitive (Licence lapsed — credits will not post), Multi-track schedule (data-model decision, carried not decided) (+38 more)
 
-### Community 4 - "Analytics & Arrival Latency"
+### Community 5 - "CPD Sprint 2 Implementation Plan"
+Cohesion: 0.08
+Nodes (36): AGENTS.md (Next 16 breaking changes), POST(), publishEvent(), BASELINE-DELTAS.md, docs/DEFERRED.md, docs/legal/privacy-policy.md, docs/legal/terms-and-conditions.md, Audit-insert-last invariant (+28 more)
+
+### Community 6 - "sessionDistribution.ts"
 Cohesion: 0.07
 Nodes (25): Phase 6 — Analytics Implementation Plan, Phase 6 — Analytics (design), arrivalLatency(), Row, START, countBySlug(), Distribution, labels (+17 more)
 
-### Community 5 - "Event Form — Basics"
+### Community 7 - "seed-demo.ts"
+Cohesion: 0.10
+Nodes (24): fail(), main(), step(), AdminClient, AttendeeFixture, ATTENDEES, ensureVerifiedLicence(), EventFixture (+16 more)
+
+### Community 8 - "RegisterCard.tsx"
+Cohesion: 0.07
+Nodes (26): registerForEvent(), { colCapture }, EventRow, { mockSendReal, mockSendStub }, valid, FormState, Props, baseProps (+18 more)
+
+### Community 9 - "cn()"
 Cohesion: 0.10
 Nodes (24): BasicsValue, Props, Accordion(), AccordionContent(), AccordionItem(), AccordionTrigger(), Input(), SelectContent() (+16 more)
 
-### Community 6 - "Audit Chain & Sprint-1 Foundations"
+### Community 10 - "CPD Sprint 1 — Multi-tenancy + Identity "
 Cohesion: 0.08
 Nodes (24): ADR Finding 1 — PostgREST RPCs run as separate transactions, Audit-insert-last, same-transaction rule, BASELINE-DELTAS §3.2 — chain_seq drawn inside advisory lock, D1 — Restrict write_audit_event grant (revoke authenticated EXECUTE), P2 — Global audit-chain lock discipline, P3 — Behaviour-preserving TDD on rewritten surfaces, CPD Sprint 1 — Multi-tenancy + Identity + Audit-Chain Foundations, CPD Sprint 2 — Design: Security wrapper + audit path + attendee identity (+16 more)
 
-### Community 7 - "CPD Doctrine & Body Rules"
-Cohesion: 0.06
-Nodes (37): HKCP — Hong Kong College of Physicians, Per-body retention modelling, Tamper-evidence by mathematics (hash chain), D.1 config-hash fork (pinned-in-hash vs chained-version-table), Hard Rule: Configuration is data; scaling is row-based, Hard Rule: Integrity is structural; domain is configuration, Q26 — config-hash fork (OPEN), RFC 8785 JSON canonicalization (never hash raw JSONB) (+29 more)
-
-### Community 8 - "Root Layout & Dashboard Shell"
-Cohesion: 0.07
-Nodes (23): geistMono, geistSans, metadata, THEME_INIT_SCRIPT, CATEGORY_LABEL, DashboardMetrics, DashboardWorkstation(), FilterKey (+15 more)
-
-### Community 9 - "Survey Questions & Outcomes"
+### Community 11 - "page.tsx"
 Cohesion: 0.08
 Nodes (24): AgendaBlockRow, metadata, Q1_LABELS, Q3_LABELS, Q4_LABELS, Q5_LABELS, RegRow, SurveyRow (+16 more)
 
-### Community 10 - "Draft Edit & Update Action"
+### Community 12 - "CPD Glossary & Vocabulary"
+Cohesion: 0.11
+Nodes (30): Accrediting Body, Active Participation, Activity Category, Check-in, Check-out, Claimed vs Earned, Credit Ledger Entry, Cycle (+22 more)
+
+### Community 13 - "accrediting_bodies table"
 Cohesion: 0.09
-Nodes (27): DraftEditFormPanel(), blockArraySchema, blockFitsEnvelope(), eventIdSchema, mockRpcResult, requireStaffMock, revalidatePathMock, rpcCalls (+19 more)
+Nodes (27): HKCP — Hong Kong College of Physicians, Per-body retention modelling, Tamper-evidence by mathematics (hash chain), accrediting_bodies table, compute_credit_ledger_hash() trigger, credit_disputes table, credit_ledger table + own hash chain, declare_licence() (self-actor) (+19 more)
 
-### Community 11 - "Build Tooling & Dependencies"
-Cohesion: 0.06
-Nodes (31): devDependencies, eslint, eslint-config-next, jsdom, pg, tailwindcss, @tailwindcss/postcss, @testing-library/dom (+23 more)
-
-### Community 12 - "Design Language Heritage"
-Cohesion: 0.07
-Nodes (31): Capacity optional, blank = unlimited decision, Delete events — Deleted bucket (soft delete), Design Language.md (vault) — comprehensive design system, Design Session Log — 2026-06-19.md (vault), Handoff 2026-06-05 (Geist + Vercel redesign exploration), By Eventar footer pattern, Event meta 2-column grid pattern, Geist font system decision (+23 more)
-
-### Community 13 - "Analytics & Check-in Routes"
+### Community 14 - "DownloadQrButton.tsx"
 Cohesion: 0.13
-Nodes (17): AnalyticsIndexPage(), metadata, CheckinIndexPage(), metadata, EventAnalyticsPage(), metadata, SettingsPage(), NotAuthorizedError (+9 more)
+Nodes (17): exportRegistrantsCsv(), getEventQrPng(), EventRow, Staff, DownloadQrButton(), State, ALLOWED_TYPES, HeroImageSection() (+9 more)
 
-### Community 14 - "Event Form — Agenda"
+### Community 15 - "updateAction.ts"
+Cohesion: 0.10
+Nodes (22): DraftEditFormPanel(), blockArraySchema, blockFitsEnvelope(), eventIdSchema, mockRpcResult, requireStaffMock, revalidatePathMock, rpcCalls (+14 more)
+
+### Community 16 - "NewEventForm.tsx"
 Cohesion: 0.13
-Nodes (22): AgendaSection(), agendaSummary(), agendaValid(), BlockDraft, BlockEditor(), BlockErrors, blockHasErrors(), BlockHeader() (+14 more)
+Nodes (19): CpdBodyOption, hhmmLocal(), initialBasicsFrom(), initialBlocksFrom(), initialDateTimeFrom(), initialPartnersFrom(), initialVenueFrom(), Intent (+11 more)
 
-### Community 15 - "Settings Client"
-Cohesion: 0.14
-Nodes (14): RadioOption, ROLE_LABELS, SettingsClient(), subscribeStorage(), STAFF, TEXT_OPTIONS, TextOpt, THEME_OPTIONS (+6 more)
+### Community 17 - "Ledger & Audit Tables"
+Cohesion: 0.12
+Nodes (24): audit_events Table, credit_ledger Table, Hard Rule 11: Audited-Mutation Tables Revoke Direct Writes at Grant Level, practitioner_licences Table, Fixed design: audit hash chain race + ordering (chain_seq + advisory lock), B1 Events & Attendance, B2 Professional Registry, B3 Credit Engine (+16 more)
 
-### Community 16 - "QR, Poster & Cal.diy Harvest"
+### Community 18 - "AgendaSection.tsx"
+Cohesion: 0.15
+Nodes (20): AgendaSection(), agendaSummary(), agendaValid(), BlockDraft, BlockEditor(), BlockErrors, blockHasErrors(), BlockHeader() (+12 more)
+
+### Community 19 - "page.tsx"
+Cohesion: 0.12
+Nodes (14): ConfigSchema, CpdConfigResult, setEventCpdConfig(), fd(), requireStaffMock, rpcMock, metadata, InitialEvent (+6 more)
+
+### Community 20 - "Handoff 2026-05-23 (Phase 3.5 + Phase 4 "
 Cohesion: 0.10
 Nodes (22): lib/qr.ts::buildEventQrPng helper, docs/research/cal-diy-harvest.md, cal.diy (MIT fork of Cal.com, EE code removed), Task G.2 — poster redesign, Handoff 2026-05-23 (Phase 3.5 + Phase 4 + process rules), Cal.diy to Eventar harvest assessment, Cal.diy embed system architecture (embed-core, embed-react, embed-snippet), exportRegistrantsCsv Server Action (+14 more)
 
-### Community 17 - "Block Architecture Guardrail"
-Cohesion: 0.10
-Nodes (22): Block architecture guardrail (2026-07-11), Frontend freeze — LIFTED for S-Organiser 2026-08-01, Definer functions ARE the internal API, The fitting rules (how anything bolts on), Modular monolith — modularity enforced at the data layer, New-work admission checklist (6 questions), Fitting rule 1 — one owner per table, S-Attendee surface (wallet, post-M4) (+14 more)
+### Community 21 - "Stage 10 Roadmap & Pivot"
+Cohesion: 0.11
+Nodes (22): Frontend Freeze (Lifted for S-Organiser, 2026-08-01), The 2026-07-03 CPD Pivot, Q26 — Config-Hash Fork Decision (OPEN), Q33 — Stage 9–13 Rescope Decision, Stage 10 Current Status Banner, Roadmap to MVP — CPD Platform (Superseded), Consolidated Milestone Spine (M1–E), STAGES.md — Roadmap Stage Authority (+14 more)
 
-### Community 18 - "shadcn Component Config"
+### Community 22 - "components.json"
 Cohesion: 0.09
 Nodes (21): aliases, components, hooks, lib, ui, utils, iconLibrary, menuAccent (+13 more)
 
-### Community 19 - "Pass Delivery Panel"
+### Community 23 - "deliveryStatus.ts"
 Cohesion: 0.15
 Nodes (13): COPY, PassDeliveryPanel(), regs, DeliveryLogRow, DeliveryState, DeliverySummary, NEEDS_ATTENTION, Registration (+5 more)
 
-### Community 20 - "Email Actions & Reminders"
-Cohesion: 0.20
-Nodes (19): authorizeEvent(), sendReminderForEvent(), sendSurveyInviteForEvent(), Handoff — 2026-07-01 (MVP email gaps closed), assembleVenue(), buildMapsUrl(), Envelope, EventRow (+11 more)
-
-### Community 21 - "Public Registration & Resend"
-Cohesion: 0.15
-Nodes (16): registerForEvent(), Phase 8 pre-deploy security gates (4 gates), Q19 — Access policy refinement (owner-only mutation surfaces), devEmailStub removal protocol, Phase 7 — Resend Integration Implementation Plan, Phase 7 — Resend Integration (design), Phase 8 — Vercel Deploy Implementation Plan, Phase 8 — Vercel Deploy (design) (+8 more)
-
-### Community 22 - "Community 22"
-Cohesion: 0.18
-Nodes (12): exportRegistrantsCsv(), getEventQrPng(), publishEvent(), EventRow, Staff, metadata, StaffEventEditPage(), DownloadQrButton() (+4 more)
-
-### Community 23 - "Community 23"
-Cohesion: 0.11
-Nodes (20): Hard Rule 10 — no PII in logs, UUIDs only, S-Integration surface (/api/* cron + external API), Attendance-credit ±24h window vs the real check-in window (item 58), Dispatcher batch cap bounds EVENTS not recipients (item 72), self_check_in lifecycle guards (publication, self_serve, window, cancelled), Eligibility flag primitive (Licence lapsed — credits will not post), awardAttendanceCredit helper (lib/cpd/awardAttendanceCredit.ts), effective_date computed in the event's stored timezone (+12 more)
-
-### Community 24 - "Community 24"
+### Community 24 - "Blue Ramp with Fixed Roles (Decisions Lo"
 Cohesion: 0.10
-Nodes (20): dependencies, @base-ui/react, class-variance-authority, clsx, html5-qrcode, lucide-react, @mapbox/search-js-react, next (+12 more)
+Nodes (22): Landing Ported from Artifact Variant D (White Stage), WCAG AA CTA Contrast Fix (#0E79EC → #0D74E2), Browser Pane Mis-Composites (verification hazard), Missing Font preconnect → Invisible Material Symbols, .glass-nav Shared Shell Chrome, Turbopack Dev CSS Drift vs Production Build, Events Nav Option C + Audience-Boundary Rule, Vault Frontend Design Standard (new authority) (+14 more)
 
-### Community 25 - "Community 25"
+### Community 25 - "Handoff 2026-06-11 (Redesign implementat"
+Cohesion: 0.11
+Nodes (21): Decisions Log Q15 — survey schema (5 categorical questions replaces 3-rating spec), Handoff 2026-06-11 (Redesign implementation Phases 0-C.2), Task C.1 — survey Q3 4th option, Task C.2 — survey Q2 to session MC, Handoff 2026-06-15 (Redesign + gap closure complete), H.2 mandatory three checks (phase-completion protocol), Task F.3 — survey restyle (2x2 chip-grid), Task G.1 — email rebuild (Geist fallback, Vercel palette) (+13 more)
+
+### Community 26 - "requireStaff()"
+Cohesion: 0.18
+Nodes (13): AnalyticsIndexPage(), metadata, CheckinIndexPage(), metadata, metadata, SettingsPage(), StaffShell(), Frontend freeze (+5 more)
+
+### Community 27 - "createEvent() Server Action (Phase 1.5, "
+Cohesion: 0.15
+Nodes (18): RosterClient component (staff tablet check-in), blockInputSchema, createEvent() Server Action (Phase 1), createEvent() Server Action (Phase 1.5, calls RPC), eventInputSchema (Phase 1, Zod), eventInputSchema (Phase 1.5, structured venue + blocks), Eventar Phase 1.5 — Create-Event Redesign Implementation Plan, Eventar Phase 1.5 Design (Create-Event Redesign) (+10 more)
+
+### Community 28 - "devDependencies"
+Cohesion: 0.10
+Nodes (20): devDependencies, eslint, eslint-config-next, jsdom, pg, tailwindcss, @tailwindcss/postcss, @testing-library/dom (+12 more)
+
+### Community 29 - "compilerOptions"
 Cohesion: 0.10
 Nodes (19): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModules, jsx, lib, module (+11 more)
 
-### Community 26 - "Community 26"
-Cohesion: 0.15
-Nodes (12): EventDetailsPage(), fmtHM(), metadata, fmtDur(), LiveScoreboard(), DOT, NOTE, ReadinessCell (+4 more)
-
-### Community 27 - "Community 27"
-Cohesion: 0.16
-Nodes (16): CpdBodyOption, hhmmLocal(), initialBasicsFrom(), initialBlocksFrom(), initialDateTimeFrom(), InitialEvent, initialPartnersFrom(), initialVenueFrom() (+8 more)
-
-### Community 28 - "Community 28"
+### Community 30 - "surveyTemplate.ts"
 Cohesion: 0.14
 Nodes (16): SubmitSurveyResult, SurveyInput, surveyInputSchema, Expectation, EXPECTATIONS_OPTIONS, EXPECTATIONS_VALUES, FUTURE_PREFERENCE_OPTIONS, FUTURE_PREFERENCE_VALUES (+8 more)
 
-### Community 29 - "Community 29"
-Cohesion: 0.14
-Nodes (11): EventRow, { mockRenderReminder }, { mockSendReal, mockSendStub }, Reg, Staff, EmailSendControls(), Kind, composeSendMessage() (+3 more)
+### Community 31 - "Handoff 2026-06-20 (Full cross-surface m"
+Cohesion: 0.12
+Nodes (19): Capacity optional, blank = unlimited decision, Delete events — Deleted bucket (soft delete), Design Language.md (vault) — comprehensive design system, Design Session Log — 2026-06-19.md (vault), Handoff 2026-06-19 (Product spec review, MVP scoping locked), Handoff 2026-06-20 (Full cross-surface mockup pass), Email #2 — personal QR reminder gap, Email #3 — survey invite gap (+11 more)
 
-### Community 30 - "Community 30"
+### Community 32 - "dependencies"
+Cohesion: 0.11
+Nodes (19): dependencies, @base-ui/react, class-variance-authority, clsx, html5-qrcode, lucide-react, next, react-dom (+11 more)
+
+### Community 33 - "DateTimeSection.tsx"
+Cohesion: 0.19
+Nodes (15): app/events/new/page.tsx (accordion rewrite), DateTimeSection(), dateTimeSummary(), durationOrNull(), formatDateShort(), Props, ProgramSection component, formatDurationMinutes() (+7 more)
+
+### Community 34 - "2026-08-14 Full-Stack Review"
+Cohesion: 0.14
+Nodes (18): Hard Rule 3: requireStaff() at Top of Every Staff Server Action, Handoff 2026-08-14 — Full-Stack Review, Next.js 16.2.6→16.2.12 CVE Patch, app_private.resolve_actor() Fix, set_event_organisation() Grant-Hygiene Fix, Strategy Document Review (Eventar_Strategy_Detailed_Summary.txt), D-C: iCMECPD Coexistence, Not Integration, D-D: Part A/B Strategy Vision Stays Unscoped (+10 more)
+
+### Community 35 - "Handoff 2026-05-20 (Phase 2 registration"
 Cohesion: 0.18
 Nodes (18): registerForEvent server-side registration window enforcement, Handoff 2026-05-20 (Phase 2 registration flow shipped), Handoff 2026-05-21 (Phase 2 complete, awaiting smoke), email_log table, docs/plans/2026-05-20-full-stack-review.md, D2 — multi-step Server Action over single RPC decision, D3 — email_log row is service-role-only, D5 — registrations status enum (registered/attended/cancelled) (+10 more)
 
-### Community 31 - "Community 31"
+### Community 36 - "Handoff 2026-05-24 (phase-completion-pro"
 Cohesion: 0.15
 Nodes (17): A1-A3 real-DB backtest items (markAttended TZ, selfCheckIn error, CSV count), humanizeCameraError() helper, /checkin/confirm public self-checkin route, Check-in two-path policy (staff-default + self-serve opt-in), /events/[id]/checkin staff tablet page, CSPRNG for registration codes (Math.random to crypto.randomInt), Task B.1 — live = ops window (start - CHECKIN_OPEN_MINUTES), Handoff 2026-05-24 (phase-completion-protocol first exercise) (+9 more)
 
-### Community 32 - "Community 32"
+### Community 37 - "RosterClient.tsx"
 Cohesion: 0.15
-Nodes (9): ELIGIBILITY_NOTE, RosterClient(), RosterRow, Toast, ScanAndManual(), Scoreboard(), countCheckedIn(), SpeakerCheckinRow (+1 more)
+Nodes (8): ELIGIBILITY_NOTE, RosterRow, Toast, ScanAndManual(), Scoreboard(), countCheckedIn(), SpeakerCheckinRow, SpeakersCard()
 
-### Community 33 - "Community 33"
+### Community 38 - "ADR-0001 Regulator Taxonomy"
+Cohesion: 0.15
+Nodes (17): ADR-0001: Model the Regulator's Taxonomy, Not a Simplification, HKAM Principles and Guidelines on CME/CPD, Cycle 2026-2028, No Organiser↔Body Authorisation Model (HIGH-1), organisation_body_authorisations Table, Next Stage — Dual-Track CME/CPD Launch (Scope Record), Live Database Hygiene Finding (Seoul Fixture Bodies), Workstream A — Dual-Track Identity, Workstream B — Minute-Level Proration (+9 more)
+
+### Community 39 - "Frontend review — 2026-08-05"
 Cohesion: 0.17
-Nodes (12): ConfigSchema, CpdConfigResult, setEventCpdConfig(), requireStaffMock, rpcMock, SubmitPayload, metadata, NewEventPage() (+4 more)
+Nodes (17): DEFERRED item 57 — attendance-credit window, Another session editing the same worktree during review, Decision 1 — check_in_method cannot distinguish tap from staff scan, Demo fixture rot + over-promising banner (5530764), Door check-in button had no visible focus ring (7bc7f59), Frontend review — 2026-08-05, Final gate numbers — measured, not assumed, Every QR check-in reported as a 'self-scan' (c739e32) (+9 more)
 
-### Community 34 - "Community 34"
-Cohesion: 0.21
-Nodes (13): Measurement vs inference (deterministic automation only), P5.1 — single-session-targeted revoke verification, recordAbuseHitAndMaybeRevoke(), ARGS, { mockRateLimitByUser, mockSignOut, mockRpc }, composeRateKey(), getClientIp(), parseClientIp() (+5 more)
-
-### Community 35 - "Community 35"
+### Community 40 - "common.sh"
 Cohesion: 0.13
 Nodes (5): get_feature_paths(), get_repo_root(), _persist_feature_json(), resolve_specify_init_dir(), common.sh script
 
-### Community 36 - "Community 36"
-Cohesion: 0.17
-Nodes (16): Text-scale claim corrected by measurement, Locked design values for the token migration, Adopting a token's value without its role, Dead code reported, not deleted, Handoff 2026-08-03 — Stage 6 closed, Stage 7 review, one vocabulary, The token layer only reaches components that use it, Carried-forward considerations, CPD platform pivot (2026-07-03) (+8 more)
+### Community 41 - "supabaseServer()"
+Cohesion: 0.23
+Nodes (9): EventAnalyticsPage(), sendMagicLink(), GET(), deriveInitials(), EventPosterPage(), PrintPosterButton(), getRequestOrigin(), supabaseAnonServer() (+1 more)
 
-### Community 37 - "Community 37"
-Cohesion: 0.28
-Nodes (13): fail(), main(), step(), admin(), anonClient(), localEnv(), signedInClient(), sqlLocal() (+5 more)
-
-### Community 38 - "Community 38"
+### Community 42 - "docs/source-buildpack/README.md — Slice "
 Cohesion: 0.15
 Nodes (15): docs/architecture/decisions/, docs/architecture/BASELINE-DELTAS.md (authoritative amendment list), Decisions Log Q20 — CPD pivot canonical decision, docs/data/, docs/security/, docs/source-buildpack/README.md — Slice 0.x build pack source documents, 20 — Roadmap/Pivot — CPD Platform (2026-07-03).md (vault), docs/architecture/sad.md (+7 more)
 
-### Community 39 - "Community 39"
-Cohesion: 0.13
-Nodes (13): Eventar MVP Design (2026-05-13), email_log insert-before-send idempotency pattern, requireStaff() load-bearing helper (design), Eventar Phase 1: Foundation + Create-Event Slice (plan), Full-stack review — 2026-05-20, C4 — proxy signOut() cookie/response-object mismatch, MVP gap analysis — 2026-05-20, Phase 3 — Publish + Static QR (Design) (+5 more)
-
-### Community 40 - "Community 40"
-Cohesion: 0.14
-Nodes (10): app/events/new/page.tsx (accordion rewrite), ProgramSection component, Props, venueValid(), HK_VIEWBOX, Props, Phase 1.5b — New-event form redesign (design doc), Phase 1.5b — Form redesign implementation plan (+2 more)
-
-### Community 41 - "Community 41"
-Cohesion: 0.15
-Nodes (15): Audit insert last (pivot-era hard rule), Hard Rule 11 — audited tables revoke writes at the GRANT level, Stage 8 — CPD deploy path (Singapore project unprovisioned), Fixed design: audit hash chain race + ordering (chain_seq + advisory lock), B6 Audit & Evidence Access, K2 Integrity Substrate (kernel), /api/cron/dispatch has NO trigger — dead scheduler (item 61), Replay-from-zero + chain/tamper standing CI check (+7 more)
-
-### Community 42 - "Community 42"
+### Community 43 - "/events/[id]/analytics route"
 Cohesion: 0.16
-Nodes (15): Color-as-meaning system (one color per concept), G11 — Green pill = live ops window (check-in open → end), G1 — Survey Q2 free-text → MC from schedule, G2 — Survey Q3 4th value-proposition option, G3 — Speaker/host check-in (TC-SPEAKERS), G4 — Real event editor (replace read-only /edit), Staff NAV — single 3-part bar (back link + identity + sign out), Survey — all multiple-choice, no open-ended questions (+7 more)
+Nodes (15): /events/[id]/analytics route, Decisions Log Q16 — analytics two-layer model + no role-branching, Handoff 2026-05-31 (Phase 6 analytics shipped), docs/plans/phase-6.5-mockup.html — Visual decisions (locked picks + variant comparison), docs/plans/phase-6-analytics-q2-mockup.html, lib/analytics/ pure helper functions, live-pill-pulse CSS keyframe animation (locked status pill), Material 3 indigo design tokens (primary #142175) (+7 more)
 
-### Community 43 - "Community 43"
-Cohesion: 0.16
-Nodes (15): RFC 3161 TSA anchor / Sectigo (ADR 0012, cut), W3C Verifiable Credentials + DID:web + Status List 2021 (ADR 0011, cut), B1 Events & Attendance, B2 Professional Registry, B3 Credit Engine (gated on Q26 + body review), B4 Certification & Signing, Eventar CPD Ledger (product pitch), docs/collateral/one-pager.md (+7 more)
+### Community 44 - "emailActions.ts"
+Cohesion: 0.27
+Nodes (13): CandidateRow, dispatch(), presentedSecret(), secretMatches(), authorizeEvent(), sendReminderForEvent(), sendSurveyInviteForEvent(), Handoff — 2026-07-01 (MVP email gaps closed) (+5 more)
 
-### Community 44 - "Community 44"
-Cohesion: 0.13
-Nodes (15): Change-control tiers (kernel / block contract / internals / surfaces), One-way dependency direction (Tier 2 → Tier 1 → Tier 0), credit_ledger.actor_id cannot reference a staff actor (item 59), Global credit_ledger advisory lock + lock_timeout (item 56), credit_ledger NO ACTION FKs make issued-credit fixtures permanent, test:rls exclusion list is undocumented (item 65), tests/cpd/attendance_issuance.rls.test.ts (live invariant tests), credit_ledger_attendance_uniq partial unique index (+7 more)
-
-### Community 45 - "Community 45"
-Cohesion: 0.14
-Nodes (15): BUILD GAP vs INJECTION POINT sorting rule, Task 7.3 — roster licence eligibility, Decision 3 — pipeline recommendations recorded but ruled out, Beat 4.6 — CPD credit logs itself on check-in, Beat 5 — the trust moment (ledger-demo.ts), award_attendance_credit resolves identity at award time, The design artifact IS the real frontend, Frontend↔backend map (+7 more)
-
-### Community 46 - "Community 46"
+### Community 45 - "actions.ts"
 Cohesion: 0.20
-Nodes (15): DEFERRED item 57 — attendance-credit window, Decision 1 — check_in_method cannot distinguish tap from staff scan, Demo fixture rot + over-promising banner (5530764), Door check-in button had no visible focus ring (7bc7f59), Frontend review — 2026-08-05, Every QR check-in reported as a 'self-scan' (c739e32), New 'venue' value for registrations.check_in_method, checkin_modes.self_serve as kill switch (+7 more)
+Nodes (8): { award }, { rpc }, awardAttendanceCredit(), AwardOutcome, ARGS, admin(), loadAwardAttendanceCredit(), main()
 
-### Community 47 - "Community 47"
-Cohesion: 0.14
-Nodes (15): create-or-replace Function Clobber Conflict, organisation_body_authorisations Allow-List Table, Stage 8 — Stops at the First Credential, Worktree Uncommitted-Work Hazard, MAX_RECIPIENTS_PER_RUN = 300, Urgency-Ordered Selection, Orchestrator Hardening Audit, no-restricted-syntax Rule — Swallowed Read Errors, Two-Session Consolidation (no DDL collision) (+7 more)
+### Community 46 - "Doctrine Open Forks (M1/D.1)"
+Cohesion: 0.15
+Nodes (15): Provisional-vs-Confirmed Attestation Dependency, M1: Cycle-Cap Visibility Is Advisory-Only, Cycle as a First-Class Entity, D.1 — The Config-Hash Fork, Engineering Doctrine — Eventar CPD Platform, Evaluator-Versioning Gap, Doctrine Hard Rule 1: Integrity Is Structural, Domain Is Configuration, KMS-Signing vs RFC 3161 (Reverted to Undecided) (+7 more)
 
-### Community 48 - "Community 48"
+### Community 47 - "route.test.ts"
 Cohesion: 0.14
 Nodes (4): GET, POST, { mockSendReminder, mockSendSurvey }, Row
 
-### Community 49 - "Community 49"
-Cohesion: 0.18
-Nodes (11): markAttended(), awardMock, markAttendedRow, SUCCESS, selfCheckIn(), { award }, { rpc }, Idempotent check-in pattern (WHERE status != 'attended') (+3 more)
-
-### Community 50 - "Community 50"
-Cohesion: 0.14
-Nodes (14): publishEvent() Server Action (Phase 1), Coding Behavior Contract (14 Rules), Rule 13 — Expand the mental model, don't redirect the action, Rule 14 — Investigate before you escalate, Recurring defect class — a control one layer above where the write happens, organisation_body_authorisations allow-list table, Organiser↔body authorisation model (item 57), C1 — publishEvent ignored RLS denials (silent failure) (+6 more)
-
-### Community 51 - "Community 51"
+### Community 48 - "page.tsx"
 Cohesion: 0.20
-Nodes (14): blockInputSchema, createEvent() Server Action (Phase 1), createEvent() Server Action (Phase 1.5, calls RPC), eventInputSchema (Phase 1, Zod), eventInputSchema (Phase 1.5, structured venue + blocks), Eventar Phase 1.5 — Create-Event Redesign Implementation Plan, Eventar Phase 1.5 Design (Create-Event Redesign), Server-derived timezone rationale (+6 more)
+Nodes (9): EventCard(), EventRow, formatClock(), formatDate(), formatTimeRange(), metadata, PassView(), SelfCheckinPage() (+1 more)
 
-### Community 52 - "Community 52"
-Cohesion: 0.19
-Nodes (10): Partner, ALLOWED_TYPES, HeroImageSection(), Props, PartnerDraft, PartnersSection(), Props, serializePartners() (+2 more)
-
-### Community 53 - "Community 53"
-Cohesion: 0.14
-Nodes (14): Hard Rule 2 — insert email_log FIRST, send email SECOND, Rule 12 — Fail visibly, not silently, B5 Communications (email templates, email_log, cron), Retry-budget read truncates at PostgREST max_rows (item 69), email_log.origin — manual sends no longer consume the scheduler budget (item 66), Stale queued row rendered as 'already sent' (item 70), Resend cutover (real-user OTP + templates + zh-HK), Resend idempotency — three residual gaps (item 62) (+6 more)
-
-### Community 54 - "Community 54"
+### Community 49 - "nominatim.ts"
 Cohesion: 0.21
 Nodes (10): VenueSearchBox.tsx (Mapbox SearchBox wrapper, v1), VenueSearchBox.tsx (HK-biased proximity + language options), Mapbox HK proximity-bias rationale, Geocoder choice — decision + fallback plan, Nominatim-over-Mapbox decision rationale, extractVenueFromNominatim(), NominatimResult, searchVenues() (+2 more)
 
-### Community 55 - "Community 55"
-Cohesion: 0.30
-Nodes (13): AdminClient, AttendeeFixture, ATTENDEES, ensureVerifiedLicence(), EventFixture, findBodyId(), findOrCreateAuthUser(), findOrCreateEvent() (+5 more)
+### Community 50 - "Design → Implementation Gap Review — 202"
+Cohesion: 0.14
+Nodes (14): G11 — Green pill = live ops window (check-in open → end), G1 — Survey Q2 free-text → MC from schedule, G2 — Survey Q3 4th value-proposition option, G3 — Speaker/host check-in (TC-SPEAKERS), G4 — Real event editor (replace read-only /edit), Mockup-supersedes-vault-data-model conflict resolution (Rule 7), Phase 5 — Survey Flow Implementation Plan, Phase 5 — Survey Flow (design) (+6 more)
 
-### Community 56 - "Community 56"
+### Community 51 - "ADR-0002 Multi-Body Accreditation"
+Cohesion: 0.20
+Nodes (14): Attestation, ADR-0002: One Event, Many Accrediting Bodies, event_accreditations Table Proposal, ICI Summit 2026 — 13-Body Accreditation Evidence, Multi-Body Accreditation Decision, M4: Eager Credit-Posting Under Multi-Body Needs R5, R2: Day-Scoped Accreditation Storage Proposal, R5: body_confirmed Attestation Tier Proposal (+6 more)
+
+### Community 52 - "EmailSendControls.tsx"
 Cohesion: 0.23
-Nodes (6): sendMagicLink(), deriveInitials(), EventPosterPage(), PrintPosterButton(), getRequestOrigin(), supabaseAnonServer()
+Nodes (7): Kind, ConfirmDialog(), baseProps, composeSendMessage(), EmailKind, EmailSendCounts, formatSendResult()
 
-### Community 57 - "Community 57"
-Cohesion: 0.19
-Nodes (9): metadata, StaffCheckinPage(), isActive(), NAV, StaffShell(), StaffShellBackProps, StaffShellBaseProps, StaffShellProps (+1 more)
-
-### Community 58 - "Community 58"
+### Community 53 - "page.tsx"
 Cohesion: 0.22
-Nodes (8): EventCard(), EventRow, formatClock(), formatDate(), formatTimeRange(), metadata, PassView(), { capture }
+Nodes (11): StaffEventEditPage(), blockArraySchema, blockFitsEnvelope(), cpdSchema, createEvent(), statusSchema, zodErrors(), SubmitPayload (+3 more)
 
-### Community 59 - "Community 59"
+### Community 54 - "actions.ts"
 Cohesion: 0.27
 Nodes (8): submitSurvey(), RegRow, Phase 4 — Check-in (Tablet) + Self-checkin Implementation Plan, isSessionBlockKind(), generateRegistrationCode(), isValidRegistrationCode(), supabaseAdmin(), Migration: registration_code + check-in columns
 
-### Community 60 - "CPD Engine — DESIGNED, NOT BUILT (Stage 10)"
-> ⚠️ Extracted from `2026-07-10-cpd-sprint-3b-engine-design.md`. `body_rules`, `body_cycles` and `evaluate_compliance()` DO NOT EXIST — this is a design document, not a shipped subsystem. Gated on Stage 9 per `docs/plans/STAGES.md`.
+### Community 55 - "Cut Bolt-Ons (TSA/VC) & Admission Checklist"
+Cohesion: 0.17
+Nodes (13): Block Architecture Guardrail (2026-07-11), RFC 3161 TSA anchor / Sectigo (ADR 0012, cut), W3C Verifiable Credentials + DID:web + Status List 2021 (ADR 0011, cut), New-Work Admission Checklist, B4 Certification & Signing, B6 Audit & Evidence Access, B7 Assistive AI, B8 Behavioural Detection (+5 more)
+
+### Community 56 - "withSecurity.ts"
+Cohesion: 0.21
+Nodes (10): Q18 RLS-silent-fail guard, Staff, ActionResult, RLS_SILENT_FAIL, SecurityCtx, FAKE_STAFF, { mockRequireStaff, mockRateLimitBySession, mockSupabaseServer, mockGetSession, mockRevalidatePath }, RATE_LIMIT_OPTS (+2 more)
+
+### Community 57 - "Deterministic Evaluator evaluate_complia"
 Cohesion: 0.21
 Nodes (13): ADR 0015 store-all-filter-in-view, Bitemporal rule-version evaluation (valid_domain_time), body_cycles table (E1), body_rules versioned config DDL (E1), Bounded-Grammar Interpreter discipline, Deterministic Evaluator evaluate_compliance() (E2), CPD Sprint 3b Engine Outline, HKCR 16-subtype passive/active cap stress test (+5 more)
 
-### Community 61 - "Community 61"
-Cohesion: 0.21
-Nodes (13): DEFERRED item 56 — organiser↔body authorisation, set_event_cpd_config() audited definer function, Background agents share ONE local Supabase stack, Stage 7 executable plan (2026-08-03), Task 7.1 — land the two background-agent fixes, Task 7.4 — CPD config at event creation, Re-entry criterion — build after Stage 8, create/update_event_with_blocks are SECURITY INVOKER, not DEFINER (+5 more)
-
-### Community 62 - "Community 62"
-Cohesion: 0.18
-Nodes (13): Stage 7 exit criteria, Three-lens phase-completion protocol, Another session editing the same worktree during review, Final gate numbers — measured, not assumed, Full closed-loop verification run + its honest limits, /api/cron/dispatch — the scheduler, The plan never mentioned events.deleted_at, The `queued` arm is terminal, never 'needs sending' (+5 more)
-
-### Community 63 - "Community 63"
+### Community 58 - "Three-lens phase-completion review (dev,"
 Cohesion: 0.17
 Nodes (13): /Users/ivan/Eventar-demo worktree, No automated resume mechanism exists, Standing usage-credit pause instruction, HIGH-1: organiser could self-accredit their own event, Organiser-to-body authorisation model (deferred product question), Self-inflicted over-revoke of service_role on events, The premature 'all stages shipped' claim, seed.sql blanket grant silently re-opened HIGH-1 (+5 more)
 
-### Community 64 - "Community 64"
-Cohesion: 0.27
-Nodes (7): CandidateRow, dispatch(), presentedSecret(), secretMatches(), DispatchCandidate, DueDispatch, selectDue()
-
-### Community 65 - "Community 65"
+### Community 59 - "Eventar MVP Design (2026-05-13)"
 Cohesion: 0.17
-Nodes (12): CPD/CME/CE platform pivot (2026-07-03), Measurement vs inference authority split, Multi-tenancy — organisation_id + RLS on every domain table, B7 Assistive AI (advisory-only), B8 Behavioural Detection (never auto-action), K1 Identity & Access (kernel), K3 Security Shell (kernel), set_staff_role residual hardening (separation of duties) (+4 more)
+Nodes (10): Eventar MVP Design (2026-05-13), email_log insert-before-send idempotency pattern, requireStaff() load-bearing helper (design), Eventar Phase 1: Foundation + Create-Event Slice (plan), Full-stack review — 2026-05-20, C4 — proxy signOut() cookie/response-object mismatch, MVP gap analysis — 2026-05-20, Phase 4 — Check-in (tablet) — Design (+2 more)
 
-### Community 66 - "Community 66"
-Cohesion: 0.32
-Nodes (9): DateTimeSection(), dateTimeSummary(), durationOrNull(), formatDateShort(), Props, formatDurationMinutes(), formatMinutes12h(), formatMinutes24h() (+1 more)
+### Community 60 - "CLAUDE.md Hard Rules 1-6"
+Cohesion: 0.17
+Nodes (12): CLAUDE.md — Eventar Repo Contract, Hard Rule 1: UUID Identity Keying, Hard Rule 2: Insert email_log First, Send Second, Hard Rule 4: Service-Role Key Only in lib/supabase/admin.ts, Hard Rule 5: RLS Enabled on Every Table, Hard Rule 6: Single main Branch, Hard Rule 7: Don't Add External Services Prematurely, Hard Rule 8: Three-Layer Validation (+4 more)
 
-### Community 67 - "Community 67"
-Cohesion: 0.21
-Nodes (12): Decisions Log Q15 — survey schema (5 categorical questions replaces 3-rating spec), Handoff 2026-06-11 (Redesign implementation Phases 0-C.2), Task C.1 — survey Q3 4th option, Task C.2 — survey Q2 to session MC, docs/plans/phase-5-survey-mockup.html, components/analytics/HighlightCommentSlice.tsx, Phase 5 — Survey flow, docs/plans/2026-06-11-redesign-implementation.md (+4 more)
-
-### Community 68 - "Community 68"
+### Community 61 - "Market Realignment analysis"
 Cohesion: 0.17
 Nodes (12): Calendar links (.ics/Google/Outlook), Competitor CPD Passport, CPD Ledger naming (Q29), External activities + evidence locker, Market Realignment analysis, Online-CME MCQ assessment gate, Paid ticketing excluded (Q21), Session-level model (multi-track/per-session) (+4 more)
 
-### Community 69 - "Community 69"
-Cohesion: 0.20
-Nodes (12): WCAG AA CTA Contrast Fix (#0E79EC → #0D74E2), Events Nav Option C + Audience-Boundary Rule, Vault Frontend Design Standard (new authority), Hex-Literal Drift — Two Brand Blues on One Screen, --primary #0070F3 + --primary-ink #1C3C94, Strict §7a Colour Doctrine (green = live/verified only), Vault Decision Q32 — Five Frontend Decisions, Blue Ramp with Fixed Roles (Decisions Log Q31) (+4 more)
+### Community 62 - "Handoff 2026-06-05 (Geist + Vercel redes"
+Cohesion: 0.17
+Nodes (12): Handoff 2026-06-05 (Geist + Vercel redesign exploration), By Eventar footer pattern, Event meta 2-column grid pattern, Geist font system decision, Staff NAV pattern (introduced on DB), Popped registration code — RC-B Strong sunny amber variant, 3-sentence body stack pattern, Spacing rhythm single CSS variable pattern (+4 more)
 
-### Community 70 - "Community 70"
+### Community 63 - "Credit is (event, body, days_attended), "
 Cohesion: 0.20
 Nodes (12): Accrediting-bodies registry gap (OT_BOARD, HKAM Colleges), Thread 2: course-finder / discovery-layer track (paused), Four-level evidence legend (verified / reported / inferred / false), Credit is (event, body, days_attended), not (event, attendance), Per-activity caps live on the body, not the event, ahp-council-ot-2023-24-sample.csv (AHP Council OT Board), Course Finder discovery layer (research stage), Course-finder CSV schema (raw-text fields) (+4 more)
 
-### Community 71 - "Community 71"
+### Community 64 - "scripts"
+Cohesion: 0.17
+Nodes (11): name, private, scripts, build, dev, lint, start, test (+3 more)
+
+### Community 65 - "render-emails.ts"
+Cohesion: 0.30
+Nodes (10): admin(), anonClient(), localEnv(), signedInClient(), sqlLocal(), assembleVenue(), buildMapsUrl(), formatCountdown() (+2 more)
+
+### Community 66 - "Handoff 2026-05-16 (Phase 1.5 mid-execut"
 Cohesion: 0.20
 Nodes (11): agenda_blocks table + RLS, create_event_with_blocks RPC, createEvent Server Action rewrite + Zod, Handoff 2026-05-16 (Phase 1.5 mid-execution), findParallelBlockIds helper (TDD), @mapbox/search-js-react dependency, Mapbox to OSM Nominatim geocoder swap, docs/plans/2026-05-16-eventar-phase-1.5-create-event-redesign.md (+3 more)
 
-### Community 72 - "Community 72"
-Cohesion: 0.29
-Nodes (8): inputSchema, ToggleResult, toggleSpeakerCheckin(), AgendaTopic, BlockTime, deriveSpeakerNames(), findParallelBlockIds(), SpeakerSourceBlock
+### Community 67 - "selfCheckIn()"
+Cohesion: 0.25
+Nodes (9): markAttended(), awardMock, markAttendedRow, SUCCESS, selfCheckIn(), Idempotent check-in pattern (WHERE status != 'attended'), Idempotent UPDATE ... WHERE status != 'attended' race-safety pattern, Cross-event scan tolerance decision (+1 more)
 
-### Community 73 - "Community 73"
-Cohesion: 0.31
-Nodes (6): awardAttendanceCredit(), AwardOutcome, ARGS, admin(), loadAwardAttendanceCredit(), main()
-
-### Community 74 - "Community 74"
+### Community 68 - "page.tsx"
 Cohesion: 0.29
 Nodes (9): formatClock(), formatDate(), formatTimeRange(), generateMetadata(), normalizePartners(), PartnerEntry, PartnerStrip(), PublicEventPage() (+1 more)
 
-### Community 75 - "Community 75"
+### Community 69 - "Handoff 2026-08-03 — Stage 6 closed, Sta"
+Cohesion: 0.18
+Nodes (11): Stage 7 exit criteria, Background agents share ONE local Supabase stack, Task 7.1 — land the two background-agent fixes, Three-lens phase-completion protocol, Full closed-loop verification run + its honest limits, /api/cron/dispatch — the scheduler, Dead code reported, not deleted, The plan never mentioned events.deleted_at (+3 more)
+
+### Community 70 - "Defect Class — Control One Layer Above t"
 Cohesion: 0.20
 Nodes (11): Defect Class — Control One Layer Above the Write, create_event_with_blocks (SECURITY INVOKER), DEFERRED 55 — Ledger Lock Timeout, DEFERRED 56 — Organiser↔Body Authorisation Gate, DEFERRED 57 — Check-in Lifecycle Guard, mark_attended Minted Credit on a Cancelled Registration, Latent Multi-Tenancy Bug — Default Organisation, BEFORE INSERT organisation_id Derivation Trigger (+3 more)
 
-### Community 76 - "Community 76"
-Cohesion: 0.18
-Nodes (11): 409-as-Already-Delivered (keyed on statusCode), email_log Retry-Failed Index Predicate, False Premise — a 'failed' Row Proves Non-Delivery, Resend idempotencyKey (eventId:purpose:registrationId), Vacuous Tests and Mutation Proof, No Organiser-Facing cancel_event Path, Orphaned Worktree Recovery, Review Mode (lib/reviewMode.ts + ReviewBanner) (+3 more)
-
-### Community 77 - "Community 77"
+### Community 71 - "award_attendance_credit() SECURITY DEFIN"
 Cohesion: 0.24
 Nodes (11): tests/cpd/attendance_issuance.rls.test.ts, attendance_verified attestation tier, award_attendance_credit() SECURITY DEFINER function, lib/cpd/awardAttendanceCredit.ts wrapper, CPD_ISSUANCE_ENABLED kill switch (fail-open), credit_ledger_attendance_uniq idempotency partial index, Static gates miss what live drives catch, scripts/cpd/reconcile-event.ts recovery path (+3 more)
 
-### Community 78 - "Community 78"
+### Community 72 - "eventEmails.ts"
+Cohesion: 0.29
+Nodes (10): assembleVenue(), buildMapsUrl(), Envelope, formatCountdown(), isAlreadySubmitted(), readRecipients(), Recipient, runBulkSend() (+2 more)
+
+### Community 73 - "rateLimit.ts"
+Cohesion: 0.40
+Nodes (9): composeRateKey(), getClientIp(), parseClientIp(), rateLimit(), rateLimitByIp(), rateLimitBySession(), rateLimitByUser(), RateLimitResult (+1 more)
+
+### Community 74 - "page.tsx"
 Cohesion: 0.29
 Nodes (8): DashboardPage(), fmtDate(), fmtTime(), metadata, AttentionItem, AttentionTone, NeedsAttention(), TONE
 
-### Community 79 - "Community 79"
-Cohesion: 0.31
-Nodes (6): ReviewBanner(), isReviewMode(), resolveReviewStaff(), REVIEW_STAFF, config, proxy()
+### Community 75 - "speakerActions.ts"
+Cohesion: 0.22
+Nodes (8): inputSchema, BlockRow, eqCalls, mockBlocks, requireStaffMock, revalidatePathMock, ToggleResult, toggleSpeakerCheckin()
 
-### Community 80 - "Community 80"
+### Community 76 - "Phase P1 POC/Demo-Ready"
 Cohesion: 0.20
 Nodes (10): record_credit_entry writer (service_role-only definer), Ledger demo driver (P2), Milestone A Demo-ready, Phase P1 POC/Demo-Ready, Resend cutover, Singapore project provisioning (ap-southeast-1), Turnstile keys + wiring, Workstream D Production Deployment (D0-D7) (+2 more)
 
-### Community 81 - "Community 81"
-Cohesion: 0.20
-Nodes (10): Locked blue ramp with fixed roles (v3, replaces teal), One-colour-one-meaning (§7a status ramp), White ground, colour as highlight (Ivan's v2 correction), Theme default changed from 'system' to 'light' (all three modes kept), Stage 1 — design-language fusion (token value remap), The token layer only reaches components that use it, BUILD GAPS vs INJECTION POINTS (Ivan's governing distinction), Stage C — make the loop self-running (scheduler) (+2 more)
+### Community 77 - "Handoff 2026-08-02 — M2 frontend unfreez"
+Cohesion: 0.22
+Nodes (10): Task 7.3 — roster licence eligibility, Beat 4.6 — CPD credit logs itself on check-in, Beat 5 — the trust moment (ledger-demo.ts), award_attendance_credit resolves identity at award time, Frontend↔backend map, Handoff 2026-08-01 — frontend design exploration, Handoff 2026-08-02 — M2 frontend unfreeze Stages 1–3, NewEventForm flake root-caused after 7 occurrences (+2 more)
 
-### Community 82 - "Community 82"
-Cohesion: 0.20
-Nodes (10): DEFERRED item 55 — credit_ledger advisory-lock timeout, D.1 config-hash fork (pinned-in-hash vs chained-version-table), Evaluator-versioning gap, KMS-signing vs RFC 3161 timestamping, The 'M2' naming collision, Stage 10 — CPD engine, Stage 11 — Signed & verifiable, Stage 12 — Pilot (+2 more)
+### Community 78 - "Eventar Design Patterns (Historical, Sup"
+Cohesion: 0.24
+Nodes (10): Pattern 2: Brand Footer — Single-Line 'By Eventar', Pattern 7a: Color-as-Meaning System, Eventar Design Patterns (Historical, Superseded), Pattern 5: Equal-Gap Rhythm, Pattern 1: Event Meta 2-Row Format, Font Choice — Geist (Locked), Popped Registration Code (RC-B Strong), Pattern 3: 3-Sentence Stack, No Double-Spacing (+2 more)
 
-### Community 83 - "Community 83"
-Cohesion: 0.20
-Nodes (10): Landing Ported from Artifact Variant D (White Stage), Browser Pane Mis-Composites (verification hazard), Missing Font preconnect → Invisible Material Symbols, .glass-nav Shared Shell Chrome, Turbopack Dev CSS Drift vs Production Build, Landing Audience Toggle (Practitioner / Organiser), [hidden] Defeated by Explicit display Values, Landing Aesthetic Option D — White Stage (+2 more)
+### Community 79 - "/api/cron/dispatch Scheduler Route"
+Cohesion: 0.22
+Nodes (10): Seoul Four Migrations Behind (anon PII grants open), /api/cron/dispatch Scheduler Route, email_log.origin — Scheduler vs Manual Budget Split, MAX_RECIPIENTS_PER_RUN = 300, Urgency-Ordered Selection, Migration Version Collision 20260806000000 → …000200, Missing Cron Trigger (comment outlived vercel.json), Orchestrator Hardening Audit, no-restricted-syntax Rule — Swallowed Read Errors (+2 more)
 
-### Community 84 - "Community 84"
+### Community 80 - "dispatch-stress.ts"
 Cohesion: 0.29
 Nodes (9): assertSomethingIsDue(), check(), countLogs(), db, dispatch(), failures, main(), ROUNDS (+1 more)
 
-### Community 85 - "Community 85"
-Cohesion: 0.49
-Nodes (6): admin, createAnonClient(), createTestUser(), deleteTestUser(), TestUser, ChainRow
-
-### Community 86 - "Community 86"
+### Community 81 - "Handoff 2026-05-30 (Phase 4.6 reskin com"
 Cohesion: 0.31
 Nodes (9): agendaValid(blocks, eventStartMinutes, eventEndMinutes) validator, create_event_with_blocks unqualified current_staff_id() bug (500 error), DatePicker (calendar grid) component, Handoff 2026-05-30 (Phase 4.6 reskin complete + Phase 5 survey), Pickers expand inline, not floating popovers (base-ui Accordion.Panel constraint), components/shell/PublicShell.tsx, CREATE OR REPLACE discards search_path pin lesson, components/shell/StaffShell.tsx (+1 more)
 
-### Community 87 - "Community 87"
+### Community 82 - "emailActions.test.ts"
+Cohesion: 0.22
+Nodes (5): EventRow, { mockRenderReminder }, { mockSendReal, mockSendStub }, Reg, Staff
+
+### Community 83 - "NewEventForm.test.tsx"
 Cohesion: 0.22
 Nodes (7): InitialBlock, initialBlocks, initialEvent, initialVenue, pushMock, refreshMock, SubmitPayload
 
-### Community 88 - "Community 88"
+### Community 84 - "Handoff 2026-05-21 v2 (Phase 3 QR code s"
 Cohesion: 0.31
 Nodes (9): Auth helper functions moved to app_private schema, Commercialisation Proposal.md (vault), Handoff 2026-05-21 v2 (Phase 3 QR code shipped), DownloadQrButton client component, 20260521010000_fix_security_lints.sql migration, getEventQrPng server action, Next 16 'use server' non-async export violation (Zod schemas, type literals), qrcode npm dependency (+1 more)
 
-### Community 89 - "Community 89"
-Cohesion: 0.28
-Nodes (5): SelfCheckinPage(), GET(), metadata, SurveyPage(), rateLimitByIp()
-
-### Community 90 - "Community 90"
+### Community 85 - "SurveyForm.tsx"
 Cohesion: 0.22
 Nodes (5): GENERAL_SESSION_OPTION, SessionOption, State, baseProps, { mockSubmitSurvey }
 
-### Community 91 - "Community 91"
-Cohesion: 0.33
-Nodes (6): Phase 3.5 — Public Poster Page + CSV Registrant Export (Design), Phase 3.5 — Poster Page + CSV Export Implementation Plan, Registration-closed CSV export gate, Extract buildEventQrPng to lib/qr.ts decision, buildEventQrPng(), slugifyTitle()
+### Community 86 - "isReviewMode()"
+Cohesion: 0.36
+Nodes (5): ReviewBanner(), isReviewMode(), REVIEW_STAFF, config, proxy()
 
-### Community 92 - "Community 92"
+### Community 87 - "VenueSection.tsx"
+Cohesion: 0.22
+Nodes (4): Props, venueValid(), HK_VIEWBOX, Props
+
+### Community 88 - "The Seven Review Questions (Q1-Q7)"
 Cohesion: 0.22
 Nodes (9): accreditation_submissions table, body_reviewer_permissions table, Body Reviewer Accreditation Workflow (Task 1), Cross-Body Recognition Operational Mechanics (Task 4), organiser_users table, submit/approve/reject_event_accreditation definer functions, Roster ingestion + verification badges (E4), roster_uploads / body_members tables (+1 more)
 
-### Community 93 - "Community 93"
+### Community 89 - "Execution Plans Index B-E"
 Cohesion: 0.25
 Nodes (9): C Body engaged checklist, D/M4 Pilot-complete skeleton, Detailing gate discipline, E Production-ready skeleton, Execution Plans Index B-E, M2 CPD engine (Sprint 3b) skeleton, M3 Signed & verifiable skeleton, E production waves W1-W7 (+1 more)
 
-### Community 94 - "Community 94"
-Cohesion: 0.22
-Nodes (9): Handoff 2026-06-15 (Redesign + gap closure complete), H.2 mandatory three checks (phase-completion protocol), Task F.3 — survey restyle (2x2 chip-grid), Task G.1 — email rebuild (Geist fallback, Vercel palette), Task H.1 — delete 6 mockup scratch files, Eventar backtest recipe (Supabase MCP + curl + Next-Action header), Phase 8 — Vercel deploy, /survey?code=WK-XXXX public route (+1 more)
+### Community 90 - "Stage 7 executable plan (2026-08-03)"
+Cohesion: 0.28
+Nodes (9): BUILD GAP vs INJECTION POINT sorting rule, DEFERRED item 55 — credit_ledger advisory-lock timeout, DEFERRED item 56 — organiser↔body authorisation, set_event_cpd_config() audited definer function, Stage 7 executable plan (2026-08-03), Task 7.4 — CPD config at event creation, The design artifact IS the real frontend, create/update_event_with_blocks are SECURITY INVOKER, not DEFINER (+1 more)
 
-### Community 95 - "Community 95"
+### Community 91 - "Thread 3: DEFERRED.md backlog, four item"
 Cohesion: 0.25
 Nodes (9): Verify findings live; verify your own fixes live, checkin_throughput.rls.test.ts racy staff lookup, declare_licence raw FK-dump leak (red-to-green TDD fix), declare_licence not-found check has no status='active' filter, Thread 3: DEFERRED.md backlog, four items closed, HR11 positive round-trip test (found already shipped), Two not-found philosophies in the licence-mutation functions, Two-agent phase-completion review (dev lens + consumer lens) (+1 more)
 
-### Community 96 - "Community 96"
+### Community 92 - "The collateral production mechanism"
 Cohesion: 0.28
 Nodes (9): 4iCreative Limited, Why an agency cannot copy the replacement, The collateral production mechanism, Design as the acquisition surface, Six failure modes of frozen hand-versioned PDFs, ICI Summit 2026 (three real event artefacts), Existing poster route as displacement beachhead, A company's self-description is evidence of how it wants to be bought (+1 more)
 
-### Community 97 - "Community 97"
+### Community 93 - "calendarLinks.ts"
 Cohesion: 0.39
 Nodes (7): buildIcs(), CalendarEventInput, googleCalendarUrl(), icsEscape(), outlookCalendarUrl(), input, utcStamp()
 
-### Community 98 - "Community 98"
+### Community 94 - "dev-local.sh"
 Cohesion: 0.22
 Nodes (8): CRON_SECRET, EVENTAR_REVIEW_MODE, NEXT_PUBLIC_SITE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, NEXT_PUBLIC_SUPABASE_URL, PATH, dev-local.sh script, SUPABASE_SERVICE_ROLE_KEY
 
-### Community 99 - "Community 99"
+### Community 95 - "actions.ts"
 Cohesion: 0.29
 Nodes (6): inputSchema, mockEventRow, mockUpdatedRow, revalidatePathMock, updateRegistrationClose(), UpdateResult
 
-### Community 100 - "Community 100"
+### Community 96 - "DatePicker.tsx"
 Cohesion: 0.43
 Nodes (6): DatePicker(), formatDateLong(), monthCells(), parseIso(), sameDay(), stripTime()
 
-### Community 101 - "Community 101"
-Cohesion: 0.32
-Nodes (8): docs/plans/phase-6.5-mockup.html — Visual decisions (locked picks + variant comparison), docs/plans/phase-6-analytics-q2-mockup.html, live-pill-pulse CSS keyframe animation (locked status pill), Material 3 indigo design tokens (primary #142175), Material Symbols Outlined icon font, Phase 4.6 — Design System Reskin decision (Material 3 indigo mockups), docs/plans/phase-6-analytics-q2-mockup.html (locked framework), Status pill set — all 6 states (Drafted/Registering/Upcoming/Live/Completed/Cancelled)
+### Community 97 - "organisation_body_authorisations Allow-L"
+Cohesion: 0.25
+Nodes (8): organisation_body_authorisations Allow-List Table, Stage 8 — Stops at the First Credential, organisation_body_authorisations Empty on Seoul (18 accredited events), tests/helpers/mustDelete.ts — Fail-Loud Fixture Cleanup, RLS Suites Unsafe Under Parallel Vitest Execution, Deploy-Readiness Audit, MVP Reframe — Not Engineering-Blocked, NewEventForm Flaky Test Under Full-Suite Concurrency
 
-### Community 102 - "Community 102"
+### Community 98 - "email_log Retry-Failed Index Predicate"
+Cohesion: 0.25
+Nodes (8): 409-as-Already-Delivered (keyed on statusCode), email_log Retry-Failed Index Predicate, False Premise — a 'failed' Row Proves Non-Delivery, Resend idempotencyKey (eventId:purpose:registrationId), Vacuous Tests and Mutation Proof, Review Mode (lib/reviewMode.ts + ReviewBanner), NeedsAttention Queue (href required by the type), A Safety Comment Is a Cache, and Nothing Invalidates It
+
+### Community 99 - "leadingSession.ts"
 Cohesion: 0.29
 Nodes (4): AgendaBlockTitle, deriveLeadingSession(), LeadingSession, SurveyValuableRow
 
-### Community 103 - "Community 103"
+### Community 100 - "recordAbuseHitAndMaybeRevoke()"
 Cohesion: 0.33
-Nodes (7): /events/[id]/analytics route, Decisions Log Q16 — analytics two-layer model + no role-branching, Handoff 2026-05-31 (Phase 6 analytics shipped), lib/analytics/ pure helper functions, narrative.ts (rule-templated insight narrative), Phase 6 — Analytics, SentimentSlice component
+Nodes (5): Measurement vs inference (deterministic automation only), P5.1 — single-session-targeted revoke verification, recordAbuseHitAndMaybeRevoke(), ARGS, { mockRateLimitByUser, mockSignOut, mockRpc }
 
-### Community 104 - "Community 104"
-Cohesion: 0.29
-Nodes (3): FormState, Props, baseProps
-
-### Community 105 - "Community 105"
+### Community 101 - "CPD Sprint 3b Governance Outline"
 Cohesion: 0.43
 Nodes (7): attestation_status field (organiser_attested to body_confirmed), Body-Specific PDF Audit Response Format (Task 3), confirm_event_accreditation definer function, event_accreditation_confirmed audit event, Event Lifecycle decision-state machine, CPD Sprint 3b Governance Outline, Post-Publish Accreditation Confirmation Granularity (Task 2)
 
-### Community 106 - "Community 106"
+### Community 102 - "Q26 Config-Hash Fork"
 Cohesion: 0.29
 Nodes (7): credit_adjusted append mechanism, Q26 Config-Hash Fork, Retroactive-Trust-Upgrade Model (E5), External-Voice Review going-in position, Q5 behavioural framing rule, Three Categories of Review Items, Milestone C Body engaged
 
-### Community 107 - "Community 107"
+### Community 103 - "scripts/backtest Harnesses (send-ledger,"
 Cohesion: 0.29
-Nodes (7): HKCP outreach + MCHK fallback (parallel-track rule), Milestone B Function proven in the field, Milestone D Pilot agreed, Phase P2 Engagement (internal to NGO to body), POC + Engagement Plan, Pre-committed re-evaluation trigger (wedge review), Roadmap to MVP (consolidated spine)
+Nodes (7): scripts/backtest Harnesses (send-ledger, delivery-panel, reminder-payload), skipIf-Without-test:rls Gate Hole, Rule 14 — Investigate Before You Escalate, SCHEDULED_COUNTDOWN_LABEL Payload Determinism, Commit Split — Mine vs the Other Session, lib/delivery/deliveryStatus.ts, PassDeliveryPanel Component
 
-### Community 108 - "Community 108"
-Cohesion: 0.29
-Nodes (7): A failed agenda read rendered as a deleted agenda (2ad5f09), Load failures rendered as 'nothing here' (54cfa83, c20b2ad), Option A — no-restricted-syntax esquery lint rule, The swallowed-Supabase-error defect class, email_log held a table SELECT grant to anon, seed.sql's blanket grant re-opens revoked table grants, 'A control one layer above where the write happens'
-
-### Community 109 - "Community 109"
-Cohesion: 0.29
-Nodes (7): scripts/backtest Harnesses (send-ledger, delivery-panel, reminder-payload), email_log.origin — Scheduler vs Manual Budget Split, Migration Version Collision 20260806000000 → …000200, skipIf-Without-test:rls Gate Hole, Rule 14 — Investigate Before You Escalate, SCHEDULED_COUNTDOWN_LABEL Payload Determinism, Commit Split — Mine vs the Other Session
-
-### Community 110 - "Community 110"
+### Community 104 - "Organiser IA Spec (2026-07-12)"
 Cohesion: 0.29
 Nodes (7): Rule — Never Bundle Structural Change Inside a Stylistic Option, Counted Pill-Tabs on Event Detail (open), Organiser IA Spec (2026-07-12), ReadinessStrip (five fact cells), Sidebar Deletion — Manufactured Authorisation, Wordmark Returns to Shell Chrome, Global Shell Renders Once Per Context
 
-### Community 111 - "Community 111"
+### Community 105 - "Graph Refresh Complete — 1635 Nodes / 26"
 Cohesion: 0.33
 Nodes (7): Graphify Update Aborted Clean (manifest trap avoided), Task 12 Graph Refresh Blocked (session limit, clean abort), Graph Refresh Blocked on Weekly Account Limit, Two False EXTRACTED Edges (rateLimit ↔ abuseTier), Graph Refresh Complete — 1635 Nodes / 2668 Edges, requireStaff() — Degree-50 Chokepoint Bridging 16 Communities, withSecurity() + abuseTier.ts — Built, Zero Live Call Sites
 
-### Community 112 - "Community 112"
+### Community 106 - "Task 13 — Three-Lens Phase-Completion Pr"
 Cohesion: 0.33
 Nodes (7): Milestone A (demo-ready), pseudonymise_user Grant Hygiene (PUBLIC/anon closed), set_staff_role() Definer-Only Role Change, Backtest Answered Every 'Needs Live Probe' Independently, Task 14 — Milestone A Close-Out, Task 13 — Three-Lens Phase-Completion Protocol Run, Hard Rule 11 Positive Round-Trip Test
 
-### Community 113 - "Community 113"
+### Community 107 - "requireStaff() as the staff-surface chok"
 Cohesion: 0.29
 Nodes (7): CPD MVP attendance-verified issuance build (8-stage plan), docs/DEFERRED.md backlog register, requireStaff() as the staff-surface chokepoint, supabaseServer() session lookup, Task 1 split: requireStaff reconciliation (1a shipped / 1b deferred), withSecurity() composes on requireStaff() rather than replacing it, Pre-positioned security substrate with zero call sites
 
-### Community 114 - "Community 114"
+### Community 108 - "reminder.tsx"
 Cohesion: 0.33
 Nodes (4): cardStyle, eyebrowStyle, ReminderEmailProps, renderReminderEmail()
 
-### Community 115 - "Community 115"
+### Community 109 - "agenda.ts"
+Cohesion: 0.48
+Nodes (5): AgendaTopic, BlockTime, deriveSpeakerNames(), findParallelBlockIds(), SpeakerSourceBlock
+
+### Community 110 - "dispatchDue.ts"
+Cohesion: 0.38
+Nodes (3): DispatchCandidate, DueDispatch, selectDue()
+
+### Community 111 - "textSize.ts"
 Cohesion: 0.57
 Nodes (5): applyTextSize(), isTextSize(), readTextSize(), TextSize, writeTextSize()
 
-### Community 116 - "Community 116"
+### Community 112 - "create-new-feature.sh"
 Cohesion: 0.38
 Nodes (3): get_highest_from_specs(), is_feature_number_in_range(), create-new-feature.sh script
 
-### Community 118 - "Community 118"
+### Community 113 - "event_checkin_modes.rls.test.ts"
 Cohesion: 0.33
 Nodes (5): CheckinModes, createVia(), eventInput(), SELF_SERVE, STAFF_ONLY
 
-### Community 119 - "Community 119"
+### Community 114 - "actions.ts"
 Cohesion: 0.53
 Nodes (5): BulkResult, bulkUpdate(), cancelEvents(), restoreEvents(), softDeleteEvents()
 
-### Community 120 - "Community 120"
-Cohesion: 0.60
-Nodes (4): RosterClient component (staff tablet check-in), browserTz(), formatInTz(), tzFromCoords()
+### Community 115 - "page.tsx"
+Cohesion: 0.40
+Nodes (3): EventDetailsPage(), fmtHM(), metadata
 
-### Community 121 - "Community 121"
-Cohesion: 0.33
-Nodes (5): BlockRow, eqCalls, mockBlocks, requireStaffMock, revalidatePathMock
+### Community 116 - "CLAUDE.md Hard Rules 7-14"
+Cohesion: 0.40
+Nodes (6): publishEvent() Server Action (Phase 1), Coding Behavior Contract (14 Rules), Rule 14: Investigate Before You Escalate, Rule 7: Surface Conflicts, Do Not Average, C1 — publishEvent ignored RLS denials (silent failure), Artifact overlays must be absolute, never position:fixed
 
-### Community 122 - "Community 122"
+### Community 117 - "actions.test.ts"
 Cohesion: 0.33
 Nodes (3): captured, { jar }, OtpRequest
 
-### Community 123 - "Community 123"
+### Community 118 - "page.tsx"
 Cohesion: 0.33
-Nodes (4): { colCapture }, EventRow, { mockSendReal, mockSendStub }, valid
+Nodes (3): metadata, SurveyPage(), PublicShell()
 
-### Community 124 - "Community 124"
+### Community 119 - "ringDashArray()"
 Cohesion: 0.80
 Nodes (3): RingGauge(), ringDashArray(), ringFraction()
 
-### Community 125 - "Community 125"
+### Community 120 - "ReadinessStrip.tsx"
+Cohesion: 0.33
+Nodes (4): DOT, NOTE, ReadinessCell, ReadinessState
+
+### Community 121 - "Eventar CPD Ledger (product pitch)"
+Cohesion: 0.40
+Nodes (6): Eventar CPD Ledger (product pitch), docs/collateral/one-pager.md, Founding-partner pilot offer, docs/collateral/outreach-email.md, Founding accrediting-body partner outreach ask, Milestone-A run sheet (Beats 1-6)
+
+### Community 122 - "Eventar — Privacy Policy / PICS (draft v"
 Cohesion: 0.60
 Nodes (6): Eventar — Legal Notice & Disclaimer (draft), Office of the Privacy Commissioner for Personal Data, Hong Kong (PCPD), Personal Data (Privacy) Ordinance (Cap. 486) — PDPO, Eventar — Privacy Policy / PICS (draft v0.2), docs/legal/README.md — legal drafts index, Eventar — Terms & Conditions (draft v0.1)
 
-### Community 126 - "Community 126"
-Cohesion: 0.33
-Nodes (6): Seoul Four Migrations Behind (anon PII grants open), /api/cron/dispatch Scheduler Route, Missing Cron Trigger (comment outlived vercel.json), lib/delivery/deliveryStatus.ts, PassDeliveryPanel Component, Seoul One Migration Behind — Breaks Reminders + Surveys
+### Community 123 - "buildEventQrPng()"
+Cohesion: 0.40
+Nodes (6): Phase 3.5 — Public Poster Page + CSV Registrant Export (Design), Phase 3.5 — Poster Page + CSV Export Implementation Plan, Registration-closed CSV export gate, Extract buildEventQrPng to lib/qr.ts decision, buildEventQrPng(), qrcode
 
-### Community 127 - "Community 127"
+### Community 124 - "Phase P2 Engagement (internal to NGO to "
+Cohesion: 0.33
+Nodes (6): HKCP outreach + MCHK fallback (parallel-track rule), Milestone B Function proven in the field, Milestone D Pilot agreed, Phase P2 Engagement (internal to NGO to body), POC + Engagement Plan, Pre-committed re-evaluation trigger (wedge review)
+
+### Community 125 - "Cross-cutting landmines (8 learned-the-h"
+Cohesion: 0.33
+Nodes (6): Adopting a token's VALUE without its ROLE, WCAG AA contrast regression on every filled CTA (4.55 → 4.23 → 9.89), apply_migration ignores your filename (rename after every call), Column-level REVOKE is a no-op against a table-level grant, Cross-cutting landmines (8 learned-the-hard-way rules), Verification harness — main checkout on :3200 against the local stack
+
+### Community 126 - "Adopting a token's value without its rol"
+Cohesion: 0.33
+Nodes (6): Decision 3 — pipeline recommendations recorded but ruled out, Text-scale claim corrected by measurement, Locked design values for the token migration, Adopting a token's value without its role, WCAG AA regression from adopting #0E79EC for CTAs, The token layer only reaches components that use it
+
+### Community 127 - "Orphaned Worktree Recovery"
+Cohesion: 0.33
+Nodes (6): create-or-replace Function Clobber Conflict, Worktree Uncommitted-Work Hazard, No Organiser-Facing cancel_event Path, Orphaned Worktree Recovery, Self-Serve Check-In Disabled (no location check), Cross-Source Review (handoffs vs vault vs graphify)
+
+### Community 128 - "Replay-From-Zero Green (fixed in init_st"
 Cohesion: 0.40
 Nodes (6): supabase db reset Replay-From-Zero Broken, Default Privileges Differ by Creating Role (postgres = Dxtm), Replay-From-Zero Green (fixed in init_staff migration), Column-Level REVOKE Is a No-Op Against a Table Grant, Supabase CLI 2.75 → 2.109.1 Upgrade + seed.sql Grant Restore, anon staff-Grant Narrowing Migration (prod-apply blocked)
 
-### Community 128 - "Community 128"
+### Community 129 - "HIGH-3: false finding that tamper-eviden"
 Cohesion: 0.47
 Nodes (6): compute_credit_ledger_hash(), HIGH-3: false finding that tamper-evidence was broken, verify_ledger_chain(), Phantom reversed edge: rateLimit -> abuseTier does not exist, rateLimitBySession() (lib/rateLimit.ts), recordAbuseHitAndMaybeRevoke() (lib/abuseTier.ts)
 
-### Community 129 - "Community 129"
+### Community 130 - "demo-run-sheet.md (Beat 4.6 CPD readout)"
 Cohesion: 0.40
 Nodes (6): Generous +/-24h credit window, demo-run-sheet.md (Beat 4.6 CPD readout), HIGH-2: attendance_verified minted by possession of an emailed code, The Karen Lau fixture collision, ledger-demo.ts (bypasses the Server Action), reset-demo.ts
 
-### Community 130 - "Community 130"
-Cohesion: 0.40
-Nodes (3): ConfirmationEmailProps, pillLink, renderConfirmationEmail()
-
-### Community 131 - "Community 131"
+### Community 131 - "send-ledger.ts"
 Cohesion: 0.53
 Nodes (5): check(), db, insertLog(), main(), regIds
 
-### Community 133 - "Community 133"
+### Community 133 - "docs/architecture/BASELINE-DELTAS.md"
 Cohesion: 0.40
 Nodes (5): AI containment (per-invocation caps, budgets, kill switch, provenance), docs/architecture/BASELINE-DELTAS.md, Region decision: Supabase ap-southeast-1 (Singapore), KMS ap-east-1 (HK), Signing key: ECC_NIST_P256, not Ed25519 (ADR 0010 rewritten), Slice 0.x build pack (docs/source-buildpack/*.docx)
 
-### Community 134 - "Community 134"
+### Community 134 - "The photograph-and-forward threat"
 Cohesion: 0.50
 Nodes (5): credit_ledger.actor_id attribution gap, Option A — static per-event venue token, Option B — rotating QR on a staff door display, Option C — rotating short code, no camera, The photograph-and-forward threat
 
-### Community 136 - "Community 136"
-Cohesion: 0.70
-Nodes (3): buildCheckinQrPng(), buildCheckinUrl(), qrcode
-
-### Community 137 - "Community 137"
+### Community 136 - "startsInLabel.ts"
 Cohesion: 0.60
 Nodes (3): formatDuration(), startsInLabel(), START
 
-### Community 138 - "Community 138"
+### Community 137 - "registrationWindow.ts"
 Cohesion: 0.70
 Nodes (3): HK_PUBLIC_HOLIDAYS, registrationWindow, ymdUtc()
 
-### Community 139 - "Community 139"
+### Community 138 - "reminder-payload.ts"
 Cohesion: 0.60
 Nodes (4): check(), main(), reminderProps, sha()
 
-### Community 140 - "Community 140"
+### Community 139 - "reset-demo.ts"
 Cohesion: 0.60
 Nodes (4): assertChainClean(), deleteDemoAuthUsers(), DEMO_AUTH_EMAILS, main()
 
-### Community 144 - "Community 144"
+### Community 143 - "schema.ts"
 Cohesion: 0.50
 Nodes (3): RegisterResult, RegistrationInput, registrationInputSchema
 
-### Community 146 - "Community 146"
+### Community 146 - "Abuse-control design (final, replaces Sl"
 Cohesion: 0.50
 Nodes (4): Abuse-control design (final, replaces Slice 0.5.1 enforcement), Locked rule: measurements can auto-act, inferences produce flags, request_events + pg_cron scoring pipeline → session_flagged audit events, Turnstile automatic IP ladder (unauthenticated endpoints)
 
-### Community 147 - "Community 147"
+### Community 147 - "CPD Passport (the incumbent competitor)"
 Cohesion: 0.50
-Nodes (4): Evaluator-versioning gap, Q27 — evaluator-versioning (OPEN), Deterministic evaluator (bounded-grammar interpreter), sprint-3b engine design outline
+Nodes (4): CPD Passport (the incumbent competitor), Cycle-with-deadline is the unit of meaning, not cumulative total, Evidence provenance is the whole trust game, Provenance chip primitive (Scanned at venue / Self-reported)
 
-### Community 155 - "Community 155"
+### Community 148 - "events.accrediting_body_id + cpd_hours ("
+Cohesion: 0.50
+Nodes (4): [I] Event-field freeze-after-first-attendance trigger, events.accrediting_body_id + cpd_hours (CPD config columns), set_event_cpd_config() audited definer function, Stage 3 — CPD accreditation front to back
+
+### Community 149 - "The swallowed-Supabase-error defect clas"
+Cohesion: 0.50
+Nodes (4): A failed agenda read rendered as a deleted agenda (2ad5f09), Load failures rendered as 'nothing here' (54cfa83, c20b2ad), Option A — no-restricted-syntax esquery lint rule, The swallowed-Supabase-error defect class
+
+### Community 160 - "Global app shell (top bar + sidebar-is-n"
 Cohesion: 0.67
-Nodes (3): Mockup-supersedes-vault-data-model conflict resolution (Rule 7), Phase 5 — Survey Flow Implementation Plan, Phase 5 — Survey Flow (design)
+Nodes (3): Global app shell (top bar + sidebar-is-navigation), Do not fabricate chrome — a shell that lies is worse than a plain one, Stage 2 — shell fusion (StaffShell)
 
-### Community 156 - "Community 156"
-Cohesion: 0.67
-Nodes (3): No organiser-facing way to cancel an event (item 63), events.published_at unreliable pre-20260802182411 (item 74), create/update_event_with_blocks are SECURITY INVOKER (migration comment wrong)
-
-### Community 157 - "Community 157"
-Cohesion: 0.67
-Nodes (3): Bitemporal separation (valid-time vs transaction-time), Config versions strictly append-only, Interpretation-immutability (append-only versioned config)
-
-### Community 158 - "Community 158"
-Cohesion: 0.67
-Nodes (3): Frontend freeze, Staff.role widen to 'eventar_staff' — deferred to Sprint 3, Task 1 split decision: requireStaff reconciliation (1a shipped / 1b deferred)
-
-### Community 159 - "Community 159"
+### Community 161 - "Participants directory (not a CRM, PDPO "
 Cohesion: 0.67
 Nodes (3): Participants directory (not a CRM, PDPO purpose-limitation), Progressive-disclosure rule (row → drawer → page), Stage 5 — Participants directory + Audit log viewer
 
-### Community 160 - "Community 160"
+### Community 162 - "seed-demo.ts Registration-Window Timing "
 Cohesion: 0.67
 Nodes (3): Demo Run Sheet (Beats 1–5), seed-demo.ts Registration-Window Timing Bug, Registration-Window Fix 90 → 180 min
 
-### Community 161 - "Community 161"
+### Community 163 - "replay-verify CI Workflow"
 Cohesion: 0.67
 Nodes (3): scripts/ci/replay-and-verify.sh, Supabase CLI (setup-cli action), replay-verify CI Workflow
 
@@ -893,13 +907,11 @@ Nodes (3): scripts/ci/replay-and-verify.sh, Supabase CLI (setup-cli action), rep
   docs/plans/2026-05-17-eventar-phase-1.5b-form-redesign-impl.md · relation: references
 - `speckit-constitution` → `Eventar Project Constitution (unfilled placeholder template)`  [AMBIGUOUS]
   .specify/memory/constitution.md · relation: conceptually_related_to
-- `B2 Professional Registry` → `Organiser↔body authorisation model (item 57)`  [AMBIGUOUS]
-  docs/DEFERRED.md · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **658 isolated node(s):** `registrationInputSchema`, `RegistrationInput`, `RegisterResult`, `{ mockSubmitSurvey }`, `baseProps` (+653 more)
+- **652 isolated node(s):** `registrationInputSchema`, `RegistrationInput`, `RegisterResult`, `{ mockSubmitSurvey }`, `baseProps` (+647 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **107 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **97 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
@@ -908,13 +920,13 @@ _Questions this graph is uniquely positioned to answer:_
   _Edge tagged AMBIGUOUS (relation: references) - confidence is low._
 - **What is the exact relationship between `speckit-constitution` and `Eventar Project Constitution (unfilled placeholder template)`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **What is the exact relationship between `B2 Professional Registry` and `Organiser↔body authorisation model (item 57)`?**
-  _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **Why does `requireStaff()` connect `Analytics & Check-in Routes` to `Cron Dispatch & Deferred Debt`, `Survey Questions & Outcomes`, `Draft Edit & Update Action`, `Email Actions & Reminders`, `Community 22`, `Community 26`, `Community 158`, `Community 33`, `Community 39`, `Community 49`, `Community 50`, `Community 51`, `Community 56`, `Community 57`, `Community 72`, `Community 74`, `Community 78`, `Community 79`, `Community 99`, `Community 119`?**
-  _High betweenness centrality (0.097) - this node is a cross-community bridge._
-- **Why does `supabaseServer()` connect `Community 22` to `Community 33`, `Login & Auth Surfaces`, `Community 99`, `Cron Dispatch & Deferred Debt`, `Community 39`, `Community 72`, `Survey Questions & Outcomes`, `Community 74`, `Draft Edit & Update Action`, `Analytics & Check-in Routes`, `Community 78`, `Community 79`, `Community 49`, `Public Registration & Resend`, `Community 56`, `Community 89`, `Community 26`, `Community 57`?**
-  _High betweenness centrality (0.053) - this node is a cross-community bridge._
-- **Why does `markAttended()` connect `Community 49` to `Community 32`, `Community 73`, `Analytics & Check-in Routes`, `Public Registration & Resend`, `Community 22`, `Community 120`, `Community 56`, `Community 59`?**
-  _High betweenness centrality (0.053) - this node is a cross-community bridge._
+- **Why does `requireStaff()` connect `requireStaff()` to `page.tsx`, `CPD Sprint 2 Implementation Plan`, `supabaseServer()`, `page.tsx`, `speakerActions.ts`, `page.tsx`, `emailActions.ts`, `Eventar MVP Design (2026-05-13)`, `updateAction.ts`, `actions.ts`, `page.tsx`, `CLAUDE.md Hard Rules 7-14`, `page.tsx`, `isReviewMode()`, `withSecurity.ts`, `createEvent() Server Action (Phase 1.5, `, `actions.ts`?**
+  _High betweenness centrality (0.128) - this node is a cross-community bridge._
+- **Why does `Coding Behavior Contract (14 Rules)` connect `CLAUDE.md Hard Rules 7-14` to `selfCheckIn()`, `Repo Rules & Block Architecture`, `CLAUDE.md Hard Rules 1-6`?**
+  _High betweenness centrality (0.085) - this node is a cross-community bridge._
+- **Why does `CLAUDE.md — Eventar Repo Contract` connect `CLAUDE.md Hard Rules 1-6` to `2026-08-14 Full-Stack Review`, `Repo Rules & Block Architecture`, `ADR-0001 Regulator Taxonomy`, `CPD Glossary & Vocabulary`, `Doctrine Open Forks (M1/D.1)`, `Ledger & Audit Tables`, `CLAUDE.md Hard Rules 7-14`, `Stage 10 Roadmap & Pivot`, `Cut Bolt-Ons (TSA/VC) & Admission Checklist`?**
+  _High betweenness centrality (0.085) - this node is a cross-community bridge._
 - **What connects `registrationInputSchema`, `RegistrationInput`, `RegisterResult` to the rest of the system?**
-  _764 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _757 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `speckit-converge` be split into smaller, more focused modules?**
+  _Cohesion score 0.05754475703324808 - nodes in this community are weakly interconnected._
