@@ -34,6 +34,18 @@ Each body then applies **its own** point values and **its own** caps to that sam
 
 **Prerequisite, not yet built:** `registrations` carries exactly one `check_in_at`/`check_in_method` (`20260523010000_init_checkin_columns.sql`), so fact 3 above is currently unrepresentable — Eventar cannot distinguish "attended Day 1 only" from "attended both days". Day-level attendance capture is a hard prerequisite for day-scoped awarding. It is narrower than the multi-track session model deferred under rule 13: **days are a flat yes/no per registration, not concurrent tracks**, so this does not reopen multi-track scheduling.
 
+#### Attendance units, and what MVP records (Ivan, 2026-08-14)
+
+Attendance is counted in **units**, and the unit is **configuration, not a constant**: **daily by default**, with half-day and session granularities available where a body or event needs them. A five-day event with daily granularity has five units; attending two of them is `2/5`. One day is one unit.
+
+**Two award schemes must both be expressible, because real bodies use both:**
+- **Proportional** — the default. Units attended × the unit's value, or `N/M` of the event total. This is what most bodies need and what a new body gets without configuring anything.
+- **Explicit per-scope schedule** — the body publishes a value per attendance scope, and those values need not be uniform or additive. ICI proves this is not hypothetical: Pathologists award **5 for Day 1 but 6 for Day 2**, so the specific unit attended matters, not merely how many.
+
+The pack declares which scheme that body uses. This is the concrete reason the engine is pack-driven — the same two-day event, the same check-in record, resolved by a proportional pack and an explicit-schedule pack, must legitimately produce different numbers.
+
+**MVP scope:** one check-in per unit, **no check-out**. The out/proration half (Task 10.5's `check_out_at`/`minutes_attended`) is deliberately not part of the MVP path — presence at a unit is a yes/no, not a measured duration. This keeps plan-file Decision 5's spirit ("no session model") intact while making unit-level attendance representable, and Decision 10 (full credit at check-in) still holds: the award is resolvable the moment the last unit is checked in, with no dependency on the scheduler (which has no trigger — DEFERRED 61).
+
 #### Worked example — ICI Summit 2026
 
 Three of the sheet's published schedules (the figures confirmed to date):
