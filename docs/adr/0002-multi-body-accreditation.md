@@ -121,4 +121,26 @@ Note what the table already demonstrates: the three bodies disagree on the value
 
 **R1 — proposal, not decided.** Under multi-body accreditation, the 13 bodies on a single sheet do not share one category vocabulary: HKAM Colleges use codes 6.1–6.16 (per ADR-0001); MCHK and CNE, both on the ICI Summit sheet, don't use HKAM's numbering at all; and HKCP's own Operational Guidelines use point tables keyed by category **A–F** — a different alphabet from HKAM's 6.1–6.16, for the **same** Fellow at the **same** event, because HKCP is a College *under* HKAM. One event-wide category value cannot serve all of that.
 
-The proposal under consideration is to store a `role` (attendee / chair / presenter) on the registration — the same per-registration placement ADR-0001 already settled — and let each accrediting body's own rule pack map that role into *that body's* category vocabulary independently. This does **not** re-litigate ADR-0001's placement decision (category-bearing information still lives on the registration, not the event); it is a proposal about which vocabulary a given body draws that category from once more than one body is reading the same registration. Not settled, not built — flagged here as the natural next question this reversal raises, for a deliberate decision before Stage 10 implements the per-body rule-pack read path.
+#### R1, resolved (Ivan, 2026-08-14): roles are child records, not a column — mappings stay in the live taxonomy, no pack-versioning table for MVP
+
+**Not a single `role` column on the registration.** A practitioner can be both presenter and attendee at the same event, so participation is recorded as child rows, body-independent:
+
+```
+registration_roles (registration_id, role_code, assigned_at, assigned_by,
+                    primary key (registration_id, role_code))
+```
+
+Eventar records **what the person did**, never how any particular body classifies it. This does not re-litigate ADR-0001's placement (category-bearing information still originates at the registration); it resolves which vocabulary a body draws that category from once more than one body reads the same registration.
+
+**Each body's role→category mapping lives inside its own existing `category_taxonomy` jsonb** (Decision 11) — as data, keyed by role code — not in a separate mapping table. `event_accreditation_groups.category` (introduced under Award selection, above) becomes **`category_code`**, interpreted only in the context of that row's own `body_id`; the column already on that table needs no new FK. Two bodies can publish `A` and `6.1` for the same role with no collision, because each is only ever read against its own body's taxonomy. **Eventar does not attempt a universal category vocabulary.**
+
+**No versioned `accreditation_packs` table for MVP.** Considered and rejected for now: one live taxonomy per body, mutated in place, matches Decisions 2/7/11 exactly and adds no new table. The trade-off, accepted deliberately: a mapping change is not separately auditable after the fact from a hash alone — already-posted ledger rows stay correct and immutable regardless (each snapshots its own hash), but reconstructing what a mapping *said* historically is not possible without out-of-band records. **The architecture stays open to adding versioned packs later** if historical reconstruction becomes a real requirement; nothing here forecloses it.
+
+**Award computation:**
+1. Read the registration's `registration_roles`.
+2. Map each role through the body's live `category_taxonomy` to a `category_code`.
+3. Match mapped categories against this event's `event_accreditation_groups` for that `body_id`.
+4. Apply the matched group's `award_scheme` (Award selection, above).
+5. Post to `credit_ledger`, capturing the role, category, credit value, and a hash of the taxonomy content used — **the same content hash the award computation already read**, not a separate lookup, so the two can never drift.
+
+**Multiple-role protection.** A practitioner can qualify for more than one category under one body (e.g. both attendee and chair map to categories that both have satisfied groups). That must not silently multiply into several awards unless the body's pack explicitly permits it. Each body's taxonomy declares a `role_award_rule`: `highest_only`, `cumulative`, or `manual_selection`. Eventar must not assume presenter outranks chair, or that the numerically larger credit value wins — `highest_only` requires the taxonomy to publish its own priority. **Unresolved ties fail closed**, matching Award selection's tie posture exactly: no ledger entry, no resolution by role name, category code, row order, or credit value.
