@@ -46,6 +46,39 @@ The pack declares which scheme that body uses. This is the concrete reason the e
 
 **MVP scope:** one check-in per unit, **no check-out**. The out/proration half (Task 10.5's `check_out_at`/`minutes_attended`) is deliberately not part of the MVP path — presence at a unit is a yes/no, not a measured duration. This keeps plan-file Decision 5's spirit ("no session model") intact while making unit-level attendance representable, and Decision 10 (full credit at check-in) still holds: the award is resolvable the moment the last unit is checked in, with no dependency on the scheduler (which has no trigger — DEFERRED 61).
 
+#### Storage shape (Ivan, 2026-08-14)
+
+Per-unit attendance lives against an **occurrence** — not against the event, and not as repeated date fields on the registration.
+
+```
+event_occurrences (id, event_id, ordinal, occurrence_type, name,
+                   starts_at, ends_at, attendance_points default 1)
+
+registration_checkins (id, registration_id, occurrence_id,
+                       checked_in_at, check_in_method,
+                       unique (registration_id, occurrence_id))
+
+event_accreditations (id, event_id, body_id, credit_value, unit)
+
+event_accreditation_occurrences (accreditation_id, occurrence_id,
+                                 primary key (accreditation_id, occurrence_id))
+```
+
+**Whole points are stored; fractions are computed.** Each occurrence carries `attendance_points`, default 1. A five-day event has five occurrences worth one point each; attending two is stored as two occurrence check-ins and *read* as `2/5` or 40%. **No fractional value such as `0.2` is ever stored.** The model is identical at every granularity — daily, half-day, or session — because only the number and type of occurrences changes, never the arithmetic.
+
+**Accreditation scope uses stable occurrence IDs via a linking table, never ordinals.** An earlier proposal to put `occurrence_ordinals int[]` on the accreditation is **rejected**: the ordinal is a display and ordering value, not an identity. If an organiser inserts a session between occurrence 2 and 3, every later ordinal shifts while the occurrence ID stays stable — an array of ordinals would silently re-point an existing accreditation at different days, and any `credit_ledger` row already computed from it would be wrong with nothing having failed. Ordinals must never become permanent ledger identities. The linking table also expresses, without schema change: one accreditation covering all occurrences, another covering selected days or sessions, several bodies applying different scopes to one event, and an audit query showing exactly which occurrences supported a given award.
+
+**Compatibility.** `registrations.check_in_at` and `check_in_method` are **retained and become legacy summary fields**, maintained as the earliest successful occurrence check-in. This keeps all eight existing read sites working unchanged (dashboard stats, the attendee confirm page, event details, the roster and its Realtime post-image merge, event analytics, `lib/analytics/arrivalLatency.ts`) with no application rewrite. **`registration_checkins` is the authoritative attendance record**; the two columns on `registrations` are a denormalised summary and must not be read as the source of truth for anything award-related.
+
+**Daily is the default and must not be burdensome.** A single-day event gets exactly one occurrence, generated automatically — the organiser never sees the concept. A multi-day event generates one occurrence per calendar day. The first implementation supports **daily occurrence generation through the organiser interface only**; half-day and session occurrences use the same schema but are created through configuration initially. Check-out time and attendance duration stay outside the first implementation.
+
+**Still not the deferred multi-track model.** Occurrences are flat, sequential and non-overlapping. Multi-track means *concurrent* sessions a practitioner chooses between, with per-track capacity and conflict rules. Plan-file Decision 5 stands; state this in the migration comment so a later session does not read occurrences as the deferral quietly reopening.
+
+**Two gaps inside this design, open and not yet decided** — both are places a silently-wrong number could reach the ledger, so they need settling before implementation, not during:
+
+1. **Which accreditation row applies when several are satisfied.** Under the linking table, ICI's Pathologists need three accreditation rows — 5 linked to {Day 1}, 6 linked to {Day 2}, 11 linked to {Day 1, Day 2}. A practitioner attending both days satisfies *all three* (each row's occurrence set is a subset of what they attended). The selection rule must be explicit. Proposed: **take the single row whose occurrence set is the largest subset of what was attended, and never sum rows together** — which yields 11, and is consistent with this ADR's "stored as published, selected not computed" principle. It matters where a body's combined value is not the sum of its parts: if "Both Days" were published as 12, summing the day rows gives 11 and selecting gives 12, and only one of those is what the body actually published.
+2. **How a proportional body is distinguished from an explicit-schedule one.** A proportional body has one accreditation row covering every occurrence, awarding `credit_value × (points earned / points available)`. An explicit-schedule body has several scoped rows and awards the selected row's value outright. Inferring the scheme from the row shape ("one row covering everything means proportional") is fragile — a single-day event makes the two shapes identical. An explicit `award_scheme` column on `event_accreditations`, or on the body's pack, is the safer option.
+
 #### Worked example — ICI Summit 2026
 
 Three of the sheet's published schedules (the figures confirmed to date):
