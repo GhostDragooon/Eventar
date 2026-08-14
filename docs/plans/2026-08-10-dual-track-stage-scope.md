@@ -41,7 +41,7 @@ Four workstreams, sequenced Aug→Dec. Detail in the plan file.
 
 ## 3. What this stage deliberately does NOT do
 
-- **The versioned `body_rules` evaluator and Q26 stay deferred.** Rule packs live in `lib/cpd/rulePacks/` as code, and the ledger stores their **output plus a pack hash as values** — never a reference to a mutable config row. That is what keeps doctrine **D.1** intact: *"nothing config-referencing gets built into `credit_ledger` before this is decided."*
+- **The versioned `body_rules` evaluator and Q26 stay deferred.** Rule packs live in `accrediting_bodies.category_taxonomy` (existing not-null jsonb, per Decision 11 in the Task 10.1–10.7 plan — corrected 2026-08-14; this line said `lib/cpd/rulePacks/` until then, which never matched what Task 10.1 actually shipped), and the ledger stores their **output plus a pack hash as values** — never a reference to a mutable config row. That is what keeps doctrine **D.1** intact: *"nothing config-referencing gets built into `credit_ledger` before this is decided."*
 - **No `credit_ledger` migration.** The hash envelope is a hardcoded 18-key `jsonb_build_object` with no version marker; adding a column would retroactively invalidate every row. `points`, `category` and `reason` are already hashed and permanently NULL, and `hours` is unconstrained numeric — all four carry the new data for free.
 - **No session/multi-track model.** Proration is per event, one in one out (rule 13's deferred data-model decision stays deferred).
 

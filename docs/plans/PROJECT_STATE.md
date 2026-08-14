@@ -1,6 +1,6 @@
 # Project State — Eventar
 
-> ## ⬆️ CURRENT — STAGE 10 (2026 dual-track), Task 1 shipped. Stage 8 deploy deferred to Oct/Nov (Ivan's call, 2026-08-10).
+> ## ⬆️ CURRENT — STAGE 10 (2026 dual-track), Task 10.1/10.7 shipped. Stage 8 deploy deferred to Oct/Nov (Ivan's call, 2026-08-10).
 >
 > ### 2026-08-14 — full-stack review completed: docs, DB/RLS, deps, frontend, response-inversion, tests/CI, full lifecycle backtest
 > Full detail: `docs/plans/handoff_14082026.md`. **First pass** (14 doc-consistency fixes, `set_event_organisation()`'s bare-PUBLIC grant closed, Next.js patched 16.2.6→16.2.12 for a middleware/proxy-bypass CVE, dead `@mapbox/search-js-react` removed) **pushed to Seoul same day, 94 migrations confirmed live.**
