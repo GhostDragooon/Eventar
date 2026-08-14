@@ -20,6 +20,38 @@ Provisional per-body rule packs (already planned for Stage 10) now need to run o
 
 `docs/architecture/BLOCK-ARCHITECTURE.md`'s B2 (Professional Registry) and B3 (Credit Engine) rows have been updated to carry this as in-scope work, referencing this ADR.
 
+### The attribution model (Ivan, 2026-08-14)
+
+What a practitioner earns from one event is resolved **per body**, by intersecting three independent facts. This is the reason the engine has to be an open, pack-driven system rather than a calculator:
+
+1. **Does this body accredit this event?** A practitioner may hold licences at bodies A, B and C; if C has not accredited the event, C simply produces nothing — not zero points, no claim at all. The iteration is over the event's accreditations, not over the practitioner's licences.
+2. **Does the practitioner hold a standing licence at that body?** A body accrediting the event awards nothing to someone who answers to it in no capacity. Credit exists only at the **intersection** of (bodies accrediting the event) × (bodies the practitioner holds a verified licence at).
+3. **What did they actually attend?** Day-level attendance is a **yes/no per day**, taken from the check-in record — not a proration, not an inference from the event's length. Two days attended earns whatever that body publishes for two days; four days earns four days' worth. Events are not assumed to be one or two days long.
+
+Each body then applies **its own** point values and **its own** caps to that same attendance fact. Two bodies reading one identical check-in record can legitimately reach different numbers, and one of them can legitimately reach none. Nothing is summed or averaged across bodies at any point.
+
+**Consequence for the schedule's storage:** a body publishes an award schedule keyed by attendance scope (the ICI sheet's Day 1 / Day 2 / Both Days columns are exactly this). Those values are stored **as published**, and the applicable one is selected by matching the attendance record against each row's scope. An earlier proposal to store only per-day rows and derive multi-day totals by summation was **withdrawn** — it assumed additivity the regime does not guarantee, and a body remains free to publish a combined value that is not the sum of its parts. Whether a given body's multi-day value is additive or explicitly published is a property of that body's pack, which is precisely the variation the pack system exists to absorb.
+
+**Prerequisite, not yet built:** `registrations` carries exactly one `check_in_at`/`check_in_method` (`20260523010000_init_checkin_columns.sql`), so fact 3 above is currently unrepresentable — Eventar cannot distinguish "attended Day 1 only" from "attended both days". Day-level attendance capture is a hard prerequisite for day-scoped awarding. It is narrower than the multi-track session model deferred under rule 13: **days are a flat yes/no per registration, not concurrent tracks**, so this does not reopen multi-track scheduling.
+
+#### Worked example — ICI Summit 2026
+
+Three of the sheet's published schedules (the figures confirmed to date):
+
+| Body | Day 1 | Day 2 | Both Days |
+|---|---|---|---|
+| HK College of Pathologists | 5 | 6 | 11 |
+| HK College of Anaesthesiologists | 4.5 | 5.5 | 10 |
+| CNE (Continuing Nursing Education) | 5 | 5.5 | 10.5 |
+
+Take a practitioner holding verified licences at **three** bodies: the College of Pathologists, the College of Anaesthesiologists, and the College of Psychiatrists. The first two appear on the ICI sheet; **Psychiatrists does not** — the sheet carries 11 of HKAM's 15 Colleges, so four Colleges accredit nothing here.
+
+*Attends both days* → **two** ledger rows: 11 points at Pathologists, 10 at Anaesthesiologists. Psychiatrists produces **no row at all** — not a zero, not an excluded entry, simply no claim, because that body never accredited this event.
+
+*Attends Day 2 only* → the same two bodies, now 6 and 5.5. One identical check-in record, two different numbers, selected by scope.
+
+Note what the table already demonstrates: the three bodies disagree on the value of the *same* day (Day 2 is worth 6, 5.5 and 5.5 respectively), and **CNE is a nursing body sitting alongside ten medical Colleges on one sheet** — cross-profession attribution is present in the very first real event, not a later-market concern. No single per-event scalar, and no arithmetic performed across bodies, can produce these numbers; each comes from its own body's published schedule. That is the case for a pack-driven engine rather than a calculator.
+
 ### Proposed consequence (not yet built)
 
 **R1 — proposal, not decided.** Under multi-body accreditation, the 13 bodies on a single sheet do not share one category vocabulary: HKAM Colleges use codes 6.1–6.16 (per ADR-0001); MCHK and CNE, both on the ICI Summit sheet, don't use HKAM's numbering at all; and HKCP's own Operational Guidelines use point tables keyed by category **A–F** — a different alphabet from HKAM's 6.1–6.16, for the **same** Fellow at the **same** event, because HKCP is a College *under* HKAM. One event-wide category value cannot serve all of that.
