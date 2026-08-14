@@ -74,10 +74,30 @@ event_accreditation_occurrences (accreditation_id, occurrence_id,
 
 **Still not the deferred multi-track model.** Occurrences are flat, sequential and non-overlapping. Multi-track means *concurrent* sessions a practitioner chooses between, with per-track capacity and conflict rules. Plan-file Decision 5 stands; state this in the migration comment so a later session does not read occurrences as the deferral quietly reopening.
 
-**Two gaps inside this design, open and not yet decided** — both are places a silently-wrong number could reach the ledger, so they need settling before implementation, not during:
+#### Award selection (Ivan, 2026-08-14 — settled)
 
-1. **Which accreditation row applies when several are satisfied.** Under the linking table, ICI's Pathologists need three accreditation rows — 5 linked to {Day 1}, 6 linked to {Day 2}, 11 linked to {Day 1, Day 2}. A practitioner attending both days satisfies *all three* (each row's occurrence set is a subset of what they attended). The selection rule must be explicit. Proposed: **take the single row whose occurrence set is the largest subset of what was attended, and never sum rows together** — which yields 11, and is consistent with this ADR's "stored as published, selected not computed" principle. It matters where a body's combined value is not the sum of its parts: if "Both Days" were published as 12, summing the day rows gives 11 and selecting gives 12, and only one of those is what the body actually published.
-2. **How a proportional body is distinguished from an explicit-schedule one.** A proportional body has one accreditation row covering every occurrence, awarding `credit_value × (points earned / points available)`. An explicit-schedule body has several scoped rows and awards the selected row's value outright. Inferring the scheme from the row shape ("one row covering everything means proportional") is fragile — a single-day event makes the two shapes identical. An explicit `award_scheme` column on `event_accreditations`, or on the body's pack, is the safer option.
+Selection needs a grouping concept, or "never sum competing rows" would suppress separate legitimate awards from the same body. Rows within one group **compete**; separate groups each generate their own ledger award.
+
+```
+event_accreditation_groups (id, event_id, body_id, category, unit, award_scheme)
+event_accreditations       (id, accreditation_group_id, credit_value)
+```
+
+**Each accreditation group shall declare an `award_scheme` of either `explicit_schedule` or `proportional`. The scheme shall not be inferred from event duration, occurrence count or accreditation row structure.**
+
+**Under `explicit_schedule`**, the system shall identify all accreditation rows whose linked occurrence sets are fully contained within the participant's attended occurrences. It shall select the row having the largest **uniquely** satisfied occurrence set and award that row's published credit value **without summing competing rows**. If multiple rows tie for the largest satisfied set, **no ledger entry shall be created** until the ambiguity is resolved.
+
+**Under `proportional`**, the system shall apply the group's published credit value in proportion to attendance points earned against attendance points available across its credit-bearing occurrences. **The applicable precision and rounding rule shall be explicitly configured and versioned**, and the calculated result written once to the ledger together with its inputs and the rule version used.
+
+**Selection shall occur independently within each accreditation group.** This permits separate awards from the same accrediting body while preventing alternative schedules within one group from being added together.
+
+Applied to ICI's Pathologists: Day 1 → 5, Day 2 → 6, both days → **11 selected from the published combined row, not computed as 5 + 6**. Had the body published 12 for both days, the award would be 12.
+
+**Ties fail closed, and never resolve by proxy.** Row order, database id and credit value are all forbidden as tie-breakers — none of them represents accreditation authority, and picking the larger value would quietly invent a policy the body never published. Ambiguous configuration requires correction or authorised review.
+
+**Validation sits at both layers, deliberately.** Plan C shall reject an accreditation configuration capable of producing such a tie *before the event is published*, and the ledger-posting path shall retain the same check as a final safeguard. The upstream check alone is not sufficient: this repository has six recorded instances of a control placed one layer above where the write actually happens, and the ledger write is the layer that matters. The fail-closed posture also satisfies rule 12 — a suppressed award is surfaced, never silently skipped.
+
+**Implementation constraint worth naming early.** `credit_ledger`'s hash envelope is a fixed 18-key `jsonb_build_object` with no version marker, so the proportional scheme's required "inputs and rule version" cannot arrive as a new column without retroactively invalidating every existing row. It must land inside the columns already hashed — `points`, `category` and `reason` are hashed and permanently NULL today, and `hours` is unconstrained numeric. This is the same constraint doctrine **D.1** already imposes: snapshot the values and the rule version, never a reference to mutable config.
 
 #### Worked example — ICI Summit 2026
 
