@@ -111,36 +111,40 @@ async function main() {
     return;
   }
 
-  console.log(`Reconciling ${registrations.length} attended registration(s) for event ${eventId}…\n`);
+  console.log(`Reconciling ${registrations.length} attended registration(s) for event ${eventId}…`);
+  console.log('(One event can now carry several accrediting bodies — the counts below are OUTCOMES, one per body evaluated, not registrations.)\n');
 
   const tally: Record<AwardOutcome['status'], number> = { issued: 0, already: 0, skipped: 0, failed: 0 };
-  const failures: { registrationId: string; reason: string }[] = [];
+  const failures: { registrationId: string; bodyId: string | null; reason: string }[] = [];
 
   for (const reg of registrations) {
-    const outcome = await awardAttendanceCredit(client, {
+    const outcomes = await awardAttendanceCredit(client, {
       eventId,
       registrationCode: reg.registration_code,
     });
-    tally[outcome.status] += 1;
-    const detail = 'reason' in outcome ? ` (${outcome.reason})` : '';
-    // registration id, never full_name — Hard Rule 10 (no PII in logs, UUIDs
-    // only). This output lands in scrollback, redirected files and any future
-    // CI/cron invocation.
-    console.log(`  ${outcome.status.padEnd(8)} ${reg.id}${detail}`);
-    if (outcome.status === 'failed') {
-      failures.push({ registrationId: reg.id, reason: outcome.reason });
+    for (const outcome of outcomes) {
+      tally[outcome.status] += 1;
+      const detail = 'reason' in outcome ? ` (${outcome.reason})` : '';
+      const body = outcome.bodyId ? `body=${outcome.bodyId}` : 'body=none';
+      // registration id + body id, never full_name — Hard Rule 10 (no PII in
+      // logs, UUIDs only). This output lands in scrollback, redirected files
+      // and any future CI/cron invocation.
+      console.log(`  ${outcome.status.padEnd(8)} ${reg.id} ${body}${detail}`);
+      if (outcome.status === 'failed') {
+        failures.push({ registrationId: reg.id, bodyId: outcome.bodyId, reason: outcome.reason });
+      }
     }
   }
 
-  console.log('\n=== Reconcile summary ===');
+  console.log('\n=== Reconcile summary (outcome counts, not registration counts) ===');
   console.log(`  issued:  ${tally.issued}  (new credits posted)`);
   console.log(`  already: ${tally.already}  (already had a credit — no-op)`);
-  console.log(`  skipped: ${tally.skipped}  (business guard — not_cpd / no_user / no_licence / disabled)`);
+  console.log(`  skipped: ${tally.skipped}  (business guard — not_cpd / no_user / no_licence / no_role_match / no_occurrences / no_matching_schedule / ambiguous_schedule / disabled)`);
   console.log(`  failed:  ${tally.failed}  (technical error — needs investigation)`);
 
   if (failures.length > 0) {
-    console.error('\nFAILED registrations (see reasons above) — not silently swallowed:');
-    for (const f of failures) console.error(`  ${f.registrationId}: ${f.reason}`);
+    console.error('\nFAILED outcomes (see reasons above) — not silently swallowed:');
+    for (const f of failures) console.error(`  ${f.registrationId} body=${f.bodyId ?? 'none'}: ${f.reason}`);
     process.exit(1);
   }
 }

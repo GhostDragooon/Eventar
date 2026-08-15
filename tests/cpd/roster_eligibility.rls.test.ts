@@ -14,7 +14,7 @@
 // Gated: named explicitly in `pnpm test:rls` alongside the DEFERRED-56 suite.
 // Issues at most one credit, on its own disposable fixtures.
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { admin, createTestUser, deleteTestUser, type TestUser } from '../helpers/clients';
+import { admin, createTestUser, deleteTestUser, sqlSuperuser, type TestUser } from '../helpers/clients';
 
 const DEFAULT_ORG = '00000000-0000-0000-0000-000000000001';
 
@@ -100,6 +100,28 @@ describe.skipIf(!process.env.RLS_TESTS)('event_registration_eligibility', () => 
     if (evErr) throw new Error(`event fixture: ${evErr.message}`);
     eventId = ev!.id as string;
 
+    // Task 10.8/10.9 C4: award_attendance_credit() now iterates
+    // event_accreditation_groups, not events.accrediting_body_id/cpd_hours
+    // above (kept for event_registration_eligibility, which still reads the
+    // legacy columns directly — see the drift note on the last test below).
+    // Mirrors set_event_cpd_config's compatibility bridge: one group, one
+    // accreditation row, linked to the event's auto-created occurrence.
+    // event_accreditation_groups is definer-only (Hard Rule 11) — sqlSuperuser
+    // is the only way a test can write it directly.
+    await sqlSuperuser(`
+      with grp as (
+        insert into public.event_accreditation_groups (event_id, body_id, category_code, unit, award_scheme)
+        values ('${eventId}', '${bodyId}', null, null, 'proportional')
+        returning id
+      ), acc as (
+        insert into public.event_accreditations (accreditation_group_id, credit_value)
+        select id, 2 from grp
+        returning id
+      )
+      insert into public.event_accreditation_occurrences (accreditation_id, occurrence_id)
+      select acc.id, eo.id from acc, public.event_occurrences eo where eo.event_id = '${eventId}';
+    `);
+
     // A verified licence for exactly one of them, through the audited path —
     // service_role cannot write practitioner_licences (Hard Rule 11).
     const { error: decErr } = await licensed.client.rpc('declare_licence', {
@@ -160,6 +182,17 @@ describe.skipIf(!process.env.RLS_TESTS)('event_registration_eligibility', () => 
   it('the prediction matches what award_attendance_credit actually does', async () => {
     // The whole point. Two functions carry independently editable copies of the
     // same identity chain; only this holds them together.
+    //
+    // KNOWN DRIFT (Task 10.8/10.9 C4, not fixed here — out of this task's scope,
+    // see the migration report): event_registration_eligibility still reads
+    // events.accrediting_body_id/cpd_hours directly and has no concept of
+    // event_accreditation_groups at all. This test only still passes because
+    // the fixture event above carries BOTH the legacy scalar columns AND a
+    // matching single compat-bridge group with the same body/value — the two
+    // functions agree here only because this fixture keeps them in sync by
+    // hand. A real multi-body event (several groups, or a group whose body
+    // differs from the legacy columns) would make this function's prediction
+    // wrong without anything here catching it. Flagged, not fixed.
     const before = await eligibilityFor(owner.client);
     const predicted = Object.fromEntries(
       before.rows.map((r) => [r.registration_id, r.eligibility]),
@@ -173,7 +206,7 @@ describe.skipIf(!process.env.RLS_TESTS)('event_registration_eligibility', () => 
       p_event_id: eventId, p_registration_code: codes.licensed,
     });
     expect(predicted[ids.licensed]).toBe('eligible');
-    expect(String(award)).toBe('issued');
+    expect(award).toEqual([{ body_id: bodyId, outcome: 'issued' }]);
 
     // And the negative direction: predicted no_licence really does skip, with
     // the matching reason.
@@ -182,6 +215,6 @@ describe.skipIf(!process.env.RLS_TESTS)('event_registration_eligibility', () => 
       p_event_id: eventId, p_registration_code: codes.unlicensed,
     });
     expect(predicted[ids.unlicensed]).toBe('no_licence');
-    expect(String(skip)).toBe('skipped:no_licence');
+    expect(skip).toEqual([{ body_id: bodyId, outcome: 'skipped:no_licence' }]);
   }, 120_000);
 });

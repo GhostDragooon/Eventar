@@ -340,7 +340,18 @@ describe.skipIf(!process.env.RLS_TESTS)('set_event_cpd_config — multi-body com
   });
 
   describe('tie-validation trigger — ADR-0002 "Award selection"', () => {
-    it('rejects two event_accreditations rows in one explicit_schedule group with equal-cardinality occurrence sets', async () => {
+    // Task 10.8/10.9 C4 (20260815030000) corrected check_accreditation_tie:
+    // ambiguity is now IDENTICAL occurrence sets, not merely equal
+    // cardinality — the original cardinality-only guard rejected ADR-0002's
+    // own worked example (HK College of Pathologists: Day1/Day2 both
+    // cardinality 1, Both Days cardinality 2), reproduced empirically while
+    // building C4 (see that migration's header for the full reasoning).
+    // This test's OLD assertion (pushing acc1 to {ordinal1, ordinal2},
+    // tying acc2's cardinality at {ordinal2, ordinal3} — different content)
+    // is exactly the case the fix now allows through; it is replaced below
+    // with an assertion of the corrected behavior plus a genuine
+    // identical-set duplicate, which must still be rejected.
+    it('allows two same-cardinality rows with DIFFERENT occurrence sets, but rejects an identical-set duplicate', async () => {
       // Hard Rule 11 revokes INSERT on event_accreditation_occurrences from
       // every app role including service_role — only a direct superuser
       // connection can build this fixture (same reasoning as C1's
@@ -414,22 +425,46 @@ describe.skipIf(!process.env.RLS_TESTS)('set_event_cpd_config — multi-body com
         .in('accreditation_id', [acc1.id, acc2.id]);
       expect(linkCounts).toHaveLength(3); // 1 + 2, no tie yet.
 
-      // Now push acc1 to cardinality 2 (link it to ordinal-2's occurrence as
-      // well) — ties acc2's cardinality (2). Single statement = single
-      // implicit transaction, so the DEFERRED check fires at this
-      // statement's own commit and the whole insert is rejected.
+      // Push acc1 to cardinality 2 by linking ordinal-2's occurrence too —
+      // its set becomes {ordinal1, ordinal2}, which TIES acc2's cardinality
+      // (2) but is NOT the same set as acc2's {ordinal2, ordinal3}. The
+      // corrected guard allows this (exactly ADR-0002's Day1/Day2/Both
+      // shape: two different-content, equal-size rows coexisting).
+      await sqlSuperuser(`
+        insert into public.event_accreditation_occurrences (accreditation_id, occurrence_id)
+        select '${acc1.id}', eo.id
+        from public.event_occurrences eo
+        where eo.event_id = '${fixtureEvent!.id}' and eo.ordinal = 2;
+      `);
+      const { data: acc1Links } = await admin.from('event_accreditation_occurrences').select('occurrence_id').eq('accreditation_id', acc1.id);
+      expect(acc1Links).toHaveLength(2); // {ordinal1, ordinal2} — allowed, not rejected.
+
+      // A THIRD row linked to the EXACT SAME set as acc2 ({ordinal2,
+      // ordinal3}) is a genuine identical-set duplicate — still rejected.
+      await sqlSuperuser(`
+        insert into public.event_accreditations (accreditation_group_id, credit_value)
+        select ag.id, 99 from public.event_accreditation_groups ag
+        join public.events e on e.id = ag.event_id where e.title = '${eventTitle}';
+      `);
+      const { data: acc3 } = await admin
+        .from('event_accreditations')
+        .select('id')
+        .eq('accreditation_group_id', fixtureGroup!.id)
+        .eq('credit_value', 99)
+        .single();
+
       await expect(
         sqlSuperuser(`
           insert into public.event_accreditation_occurrences (accreditation_id, occurrence_id)
-          select '${acc1.id}', eo.id
+          select '${acc3!.id}', eo.id
           from public.event_occurrences eo
-          where eo.event_id = '${fixtureEvent!.id}' and eo.ordinal = 2;
+          where eo.event_id = '${fixtureEvent!.id}' and eo.ordinal in (2, 3);
         `),
       ).rejects.toMatchObject({ code: '22023' });
 
       // Confirm no residual link was created by the rejected attempt.
-      const { data: acc1Links } = await admin.from('event_accreditation_occurrences').select('occurrence_id').eq('accreditation_id', acc1.id);
-      expect(acc1Links).toHaveLength(1);
+      const { data: acc3Links } = await admin.from('event_accreditation_occurrences').select('occurrence_id').eq('accreditation_id', acc3!.id);
+      expect(acc3Links).toHaveLength(0);
 
       // Cleanup — group first (event_occurrences has no cascade from
       // event_accreditation_occurrences.occurrence_id).

@@ -1,29 +1,39 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+// One event can now be accredited by several bodies at once (ADR-0002,
+// Task 10.8/10.9 C4) — award_attendance_credit() posts zero, one, or several
+// credit_ledger rows per call, one per body that both accredits the event
+// AND where the practitioner holds a verified licence there. `bodyId` is
+// null for the pre-loop, whole-call outcomes (no_event, not_cpd,
+// outside_window, no_registration, cancelled, no_user, disabled, failed) —
+// those gate the entire call before any body-specific answer exists.
 export type AwardOutcome =
-  | { status: 'issued' } // a fresh attendance-verified credit was written
-  | { status: 'already' } // idempotent no-op — the credit already existed
-  | { status: 'skipped'; reason: string } // a business condition (not_cpd, no_licence, …)
-  | { status: 'failed'; reason: string }; // an unexpected technical error
+  | { bodyId: string | null; status: 'issued' } // a fresh attendance-verified credit was written for this body
+  | { bodyId: string | null; status: 'already' } // idempotent no-op — this body's credit already existed
+  | { bodyId: string | null; status: 'skipped'; reason: string } // a business condition (not_cpd, no_licence, …)
+  | { bodyId: string | null; status: 'failed'; reason: string }; // an unexpected technical error
 
 /**
- * Award an attendance-verified CPD credit for a fresh check-in. Config-free — no
- * body_rules evaluation, just a snapshot-valued tamper-evident credit.
+ * Award attendance-verified CPD credit for a fresh check-in, once per accrediting
+ * body on the event. Config-free — no body_rules evaluation, just snapshot-valued
+ * tamper-evident credits.
  *
  * Runtime contract: attendance is authoritative; this is best-effort and MUST be
  * called AFTER attendance is marked, wrapped so its failure never changes the
  * attendance outcome. Transient misses heal via the reconcile path (Stage 6).
  *
- * All business logic (guard → resolve identity via auth.users → issue, plus the
- * DB-level idempotency backstop) lives in the `award_attendance_credit` SECURITY
- * DEFINER function — identity resolution needs `auth.users`, unreachable from here.
- * This wrapper is only the kill switch + structured, ids-only logging.
+ * All business logic (per-body iteration over event_accreditation_groups, licence
+ * check, role/category resolution, award computation, the DB-level idempotency
+ * backstop) lives in the `award_attendance_credit` SECURITY DEFINER function —
+ * identity resolution needs `auth.users`, unreachable from here. This wrapper is
+ * only the kill switch + structured, ids-only logging + shaping the RPC's set of
+ * (body_id, outcome) rows into AwardOutcome[].
  */
 export async function awardAttendanceCredit(
   admin: SupabaseClient,
   { eventId, registrationCode, actorId }: { eventId: string; registrationCode: string; actorId?: string | null },
-): Promise<AwardOutcome> {
+): Promise<AwardOutcome[]> {
   // Kill switch: fail-OPEN (issuance runs unless explicitly disabled) — a "kill
   // switch" that defaults off would mean the feature never runs anywhere until
   // someone discovers an undocumented env var (found running this live: the
@@ -35,7 +45,7 @@ export async function awardAttendanceCredit(
   // 'FALSE'/' false'/'False' must not silently leave issuance ON.
   if (String(process.env.CPD_ISSUANCE_ENABLED ?? '').trim().toLowerCase() === 'false') {
     console.info('[cpd] attendance credit skipped', { eventId, reason: 'disabled' });
-    return { status: 'skipped', reason: 'disabled' };
+    return [{ bodyId: null, status: 'skipped', reason: 'disabled' }];
   }
 
   const { data, error } = await admin.rpc('award_attendance_credit', {
@@ -47,15 +57,17 @@ export async function awardAttendanceCredit(
   if (error) {
     // ids/enum only — never the email or the registration_code (a capability token).
     console.error('[cpd] award_attendance_credit failed', { eventId, code: error.code });
-    return { status: 'failed', reason: error.code ?? 'unknown' };
+    return [{ bodyId: null, status: 'failed', reason: error.code ?? 'unknown' }];
   }
 
-  const result = String(data); // 'issued' | 'already' | 'skipped:<reason>'
-  if (result === 'issued' || result === 'already') {
-    console.info('[cpd] attendance credit', { eventId, result });
-    return { status: result };
-  }
-  const reason = result.startsWith('skipped:') ? result.slice('skipped:'.length) : result;
-  console.info('[cpd] attendance credit skipped', { eventId, reason });
-  return { status: 'skipped', reason };
+  const rows = (data ?? []) as { body_id: string | null; outcome: string }[];
+  return rows.map(({ body_id: bodyId, outcome: result }) => {
+    if (result === 'issued' || result === 'already') {
+      console.info('[cpd] attendance credit', { eventId, bodyId, result });
+      return { bodyId, status: result };
+    }
+    const reason = result.startsWith('skipped:') ? result.slice('skipped:'.length) : result;
+    console.info('[cpd] attendance credit skipped', { eventId, bodyId, reason });
+    return { bodyId, status: 'skipped', reason };
+  });
 }

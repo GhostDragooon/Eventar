@@ -32,7 +32,7 @@
 // poster's "3-up speaker cards" full with no "+N more" overflow chip
 // (deriveSpeakerNames dedupes across both blocks — see lib/agenda.ts).
 
-import { admin, signedInClient } from './lib';
+import { admin, signedInClient, sqlLocal } from './lib';
 import { generateRegistrationCode } from '../../lib/registrationCode';
 import { formatInTz } from '../../lib/tz';
 import { CHECKIN_OPEN_MINUTES } from '../../lib/lifecycle/eventLifecycle';
@@ -184,6 +184,45 @@ type EventFixture = { id: string; start_time: string; end_time: string };
 // script with a second offset rather than trying to satisfy both at once.
 const START_OFFSET_MIN = Number(process.env.DEMO_START_OFFSET_MIN ?? 180);
 
+// Task 10.8/10.9 C4: award_attendance_credit() now iterates
+// event_accreditation_groups, not events.accrediting_body_id/cpd_hours
+// above — those two columns alone no longer make an event CPD-configured
+// for issuance purposes. Without this, Beat 4.6's automatic credit (the
+// demo's own "trust moment") would silently stop firing. Mirrors
+// set_event_cpd_config's compatibility bridge (one group, one accreditation
+// row, linked to every current occurrence) via sqlLocal — the table is
+// definer-only (Hard Rule 11), so the service-role `admin` client used
+// throughout this script can't write it directly, same reasoning as every
+// RLS test fixture touching these tables.
+// ponytail: only creates once, never updates — if CPD_HOURS or bodyId ever
+// changes between re-runs of an event that already has a group, the group
+// goes stale silently (the scalar columns above update; this doesn't).
+// Matches this script's existing treatment of DEMO_START_OFFSET_MIN as the
+// only constant meant to change between runs; upgrade to a real sync (like
+// set_event_cpd_config's delete-then-reinsert) if that stops being true.
+async function ensureCompatBridgeGroup(eventId: string, bodyId: string, hours: number): Promise<void> {
+  await sqlLocal(`
+    do $$
+    declare
+      v_group_id uuid;
+      v_acc_id   uuid;
+    begin
+      if not exists (select 1 from public.event_accreditation_groups where event_id = '${eventId}') then
+        insert into public.event_accreditation_groups (event_id, body_id, category_code, unit, award_scheme)
+        values ('${eventId}', '${bodyId}', null, null, 'proportional')
+        returning id into v_group_id;
+
+        insert into public.event_accreditations (accreditation_group_id, credit_value)
+        values (v_group_id, ${hours})
+        returning id into v_acc_id;
+
+        insert into public.event_accreditation_occurrences (accreditation_id, occurrence_id)
+        select v_acc_id, eo.id from public.event_occurrences eo where eo.event_id = '${eventId}';
+      end if;
+    end $$;
+  `);
+}
+
 async function findOrCreateEvent(
   client: AdminClient,
   operatorStaffId: string,
@@ -214,6 +253,7 @@ async function findOrCreateEvent(
       );
     }
     if (cpdErr) throw cpdErr;
+    await ensureCompatBridgeGroup(existing.id, bodyId, CPD_HOURS);
 
     // Move the window to the requested offset. WITHOUT this a re-seed reused
     // whatever times the row was first created with, so the fixture silently
@@ -387,6 +427,7 @@ async function findOrCreateEvent(
     })
     .eq('id', eventId);
   if (modesErr) throw modesErr;
+  await ensureCompatBridgeGroup(eventId, bodyId, CPD_HOURS);
 
   return { id: eventId, start_time: event_input.start_time, end_time: event_input.end_time };
 }
