@@ -101,6 +101,14 @@ revoke select on public.organisation_body_authorisations from anon;
 -- Singapore provisioning — would produce a database with the PII grant re-opened.
 revoke all on table public.email_log from anon, authenticated;
 revoke all on table public.rate_limits from anon, authenticated;
+--
+-- event_occurrences / registration_checkins (migration 20260815000000,
+-- Task 10.8/10.9 sub-task C1) — definer-only: C2 hasn't built the check-in
+-- writer RPCs yet, so no app role (including service_role — BYPASSRLS means
+-- RLS gives it no protection) gets a direct write grant. Unlike
+-- practitioner_licences, no role retains a DELETE here.
+revoke insert, update, delete on public.event_occurrences      from anon, authenticated, service_role;
+revoke insert, update, delete on public.registration_checkins  from anon, authenticated, service_role;
 -- ─────────────────────────────────────────────────────────────────────────────
 --
 -- For production / pre-seeded projects: skip this file (the live Seoul project
