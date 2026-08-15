@@ -148,18 +148,33 @@ now Stage 13), restated here with a data-visibility justification rather than
 only a scope one. Not yet logged as a vault Q-entry; decide deliberately before
 any UI ever surfaces a cycle-scoped total.
 
-### Multi-body eager-posting depends on a provisional/confirmed split (proposed, unbuilt)
+### Multi-body eager-posting depends on a provisional/confirmed split (🟡 partially resolved 2026-08-15, Q38)
 The architecture already posts credit **eagerly at check-in time** (Decision
 10, settled, unrelated to the 2026-08-14 session). Under multi-body-per-event
-(ADR-0002, D-A), that could mean up to ~13 immutable `credit_ledger` rows per
-attendee per event, computed from provisional (unconfirmed) per-body rule
-packs — see finding M4 in `docs/adr/0002-multi-body-accreditation.md`. Eager
-posting at that fan-out is safe only **if** a proposed `body_confirmed`
-attestation tier (finding R5, not built) ships alongside it, making a wrong
-provisional row findable-by-hash and correctable via the existing
-compensating-entry path. Neither M4 nor R5 is settled — flagged here so
-eager-posting under multi-body isn't implemented without this dependency being
-resolved first.
+(ADR-0002, D-A, shipped 2026-08-15), that means up to ~13 immutable
+`credit_ledger` rows per attendee per event, computed from provisional
+(unconfirmed) per-body rule packs — see finding M4 in
+`docs/adr/0002-multi-body-accreditation.md`. Eager posting at that fan-out is
+safe only **if** a `body_confirmed` attestation tier (finding R5) is
+reachable, making a wrong provisional row findable-by-hash and correctable
+via the existing compensating-entry path.
+
+**R5 is now partially built.** `confirm_credit_entry()`
+(`supabase/migrations/20260815050000_credit_ledger_body_confirmation.sql`)
+makes `body_confirmed` reachable: a `body_admin`/`eventar_staff` actor at the
+organisation owning a body can post a new `credit_confirmed` row referencing
+an already-posted `credit_earned` row (append-only — never an UPDATE,
+`credit_ledger` has UPDATE revoked from every role including `service_role`
+per Hard Rule 11). This closes the narrow "does a reachable confirmed tier
+exist" half of the dependency.
+
+**What is still open, and why this stays 🟡 not ✅**: nothing surfaces to a
+body reviewer *which* provisional rows exist or need confirming — no queue,
+no UI, no notification. The mechanism is reachable; the workflow around it
+(Sprint 3b's fuller body-reviewer submission/approval design, → Stage 13) is
+not. Confirming a row today requires a body_admin to already know its
+`credit_ledger.id`. Real residual risk until that workflow lands, tracked in
+`docs/DEFERRED.md` under R5/M4.
 
 ---
 
