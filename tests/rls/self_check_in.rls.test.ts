@@ -9,7 +9,7 @@
 //
 // Gated: only runs under `pnpm test:rls` (RLS_TESTS=1).
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
-import { admin } from '../helpers/clients';
+import { admin, sqlSuperuser } from '../helpers/clients';
 import { mustDelete } from '../helpers/mustDelete';
 
 const DEFAULT_ORG = '00000000-0000-0000-0000-000000000001';
@@ -167,7 +167,7 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
   it('valid code succeeds: row becomes attended, event_id matches', async () => {
     const eventId = await makeEventFixture();
     const regCode = code('SCI001');
-    await makeRegistrationFixture(eventId, regCode);
+    const regId = await makeRegistrationFixture(eventId, regCode);
 
     const { data, error } = await admin.rpc('self_check_in', { p_code: regCode, p_ip: FAKE_IP });
     expect(error).toBeNull();
@@ -183,13 +183,24 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
     expect(reg?.status).toBe('attended');
     expect(reg?.check_in_at).not.toBeNull();
     expect(reg?.check_in_method).toBe('qr');
+
+    // C2: the write now goes through registration_checkins (ADR-0002), and
+    // C1's sync trigger is what produced the legacy fields asserted above —
+    // confirm the authoritative row exists and actually drove that sync.
+    const { data: checkins } = await admin
+      .from('registration_checkins')
+      .select('occurrence_id, checked_in_at, check_in_method')
+      .eq('registration_id', regId);
+    expect(checkins).toHaveLength(1);
+    expect(checkins?.[0].check_in_method).toBe('qr');
+    expect(checkins?.[0].checked_in_at).toBe(reg?.check_in_at);
   });
 
   // ---- 2. re-tap the same code ----
   it('re-tapping the same code returns already', async () => {
     const eventId = await makeEventFixture();
     const regCode = code('SCI002');
-    await makeRegistrationFixture(eventId, regCode);
+    const regId = await makeRegistrationFixture(eventId, regCode);
 
     const first = await admin.rpc('self_check_in', { p_code: regCode, p_ip: FAKE_IP });
     const firstRow = Array.isArray(first.data) ? first.data[0] : first.data;
@@ -200,6 +211,60 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
     const secondRow = Array.isArray(second.data) ? second.data[0] : second.data;
     expect(secondRow.result).toBe('already');
     expect(secondRow.event_id).toBe(eventId);
+
+    // Race guard unaffected: the losing call must never have reached the
+    // registration_checkins insert (the atomic UPDATE's WHERE status=
+    // 'registered' already stopped it), so exactly one row exists.
+    const { data: checkins } = await admin
+      .from('registration_checkins')
+      .select('id')
+      .eq('registration_id', regId);
+    expect(checkins).toHaveLength(1);
+  });
+
+  // ---- 2b. ambiguous multi-occurrence event (C2) ----
+  it('a multi-occurrence event with no occurrence covering now() returns no_matching_occurrence and does not check in', async () => {
+    const eventId = await makeEventFixture();
+    const regCode = code('SCI002B');
+    const regId = await makeRegistrationFixture(eventId, regCode);
+
+    // C1's trigger auto-created exactly one occurrence spanning the whole
+    // event (which covers now()). Replace it with two occurrences that
+    // deliberately do NOT cover now(), simulating a multi-day event scanned
+    // outside every day's window — no organiser UI creates multiple
+    // occurrences yet, so this is a direct-SQL fixture per the task brief.
+    // event_occurrences table-level REVOKEs service_role INSERT/DELETE
+    // (Hard Rule 11 — its only writer is the events-insert trigger, C2 adds
+    // no occurrence RPC), so the `admin` Supabase client can't do this;
+    // sqlSuperuser bypasses PostgREST/grants entirely, local-only.
+    await sqlSuperuser(`delete from public.event_occurrences where event_id = '${eventId}'`);
+    await sqlSuperuser(`
+      insert into public.event_occurrences (event_id, ordinal, occurrence_type, starts_at, ends_at)
+      values
+        ('${eventId}', 1, 'day', now() - interval '25 hours', now() - interval '24 hours'),
+        ('${eventId}', 2, 'day', now() + interval '24 hours', now() + interval '25 hours')
+    `);
+
+    const { data, error } = await admin.rpc('self_check_in', { p_code: regCode, p_ip: FAKE_IP });
+    expect(error).toBeNull();
+    const row = Array.isArray(data) ? data[0] : data;
+    expect(row.result).toBe('no_matching_occurrence');
+    expect(row.event_id).toBe(eventId);
+
+    // Must not guess: no checkin row, and the status flip is reverted rather
+    // than left stranded 'attended' with nothing to back it (see migration
+    // header — this revert is a deliberate addition beyond a bare refusal).
+    const { data: reg } = await admin
+      .from('registrations')
+      .select('status')
+      .eq('id', regId)
+      .single();
+    expect(reg?.status).toBe('registered');
+    const { data: checkins } = await admin
+      .from('registration_checkins')
+      .select('id')
+      .eq('registration_id', regId);
+    expect(checkins).toHaveLength(0);
   });
 
   // ---- 3. unknown/nonexistent code ----

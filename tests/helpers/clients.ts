@@ -2,6 +2,7 @@
 // Service-role client sets up fixtures (BYPASSRLS); per-user anon clients
 // authenticate with password sign-in to probe RLS as real JWTs.
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { Client as PgClient } from 'pg';
 import { loadEnvLocal } from './env';
 
 loadEnvLocal();
@@ -79,4 +80,26 @@ export async function createTestUser(localPart: string): Promise<TestUser> {
 export async function deleteTestUser(user: TestUser): Promise<void> {
   await user.client.auth.signOut();
   await admin.auth.admin.deleteUser(user.id); // cascades public.users
+}
+
+// Direct superuser connection to the LOCAL Postgres, bypassing PostgREST and
+// its role grants entirely — needed only for fixtures against definer-only
+// tables that have no INSERT-capable RPC yet (e.g. event_occurrences: its
+// sole writer is the events-insert trigger; C2 doesn't add an
+// organiser-facing occurrence RPC, that's C5). `admin` (the service_role
+// Supabase client) can't do this — event_occurrences table-level REVOKEs
+// service_role INSERT/UPDATE/DELETE by design (Hard Rule 11).
+// Mirrors scripts/demo/lib.ts's sqlLocal(): same hardcoded local connection
+// string, same reasoning. Safe to hardcode here specifically because the
+// module-load guard above already refuses to load this file at all when
+// RLS_TESTS is set against a non-local URL — this helper is unreachable
+// against a hosted project.
+export async function sqlSuperuser(sql: string): Promise<void> {
+  const c = new PgClient({ connectionString: 'postgresql://postgres:postgres@127.0.0.1:54322/postgres' });
+  await c.connect();
+  try {
+    await c.query(sql);
+  } finally {
+    await c.end();
+  }
 }
