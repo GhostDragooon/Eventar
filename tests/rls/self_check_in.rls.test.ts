@@ -251,9 +251,10 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
     expect(row.result).toBe('no_matching_occurrence');
     expect(row.event_id).toBe(eventId);
 
-    // Must not guess: no checkin row, and the status flip is reverted rather
-    // than left stranded 'attended' with nothing to back it (see migration
-    // header — this revert is a deliberate addition beyond a bare refusal).
+    // Must not guess: no checkin row. Status is untouched (not reverted —
+    // 20260815040000 moved occurrence resolution ahead of any write, so
+    // there is nothing to revert; the earlier "revert the flip" comment this
+    // replaced described a mechanism that no longer exists).
     const { data: reg } = await admin
       .from('registrations')
       .select('status')
@@ -265,6 +266,65 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
       .select('id')
       .eq('registration_id', regId);
     expect(checkins).toHaveLength(0);
+  });
+
+  // ---- 2c. genuine multi-occurrence check-in (20260815040000 fix) ----
+  it('checking in on two different occurrences of the same registration succeeds both times — the bug this migration fixes', async () => {
+    const eventId = await makeEventFixture();
+    const regCode = code('SCI002C');
+    const regId = await makeRegistrationFixture(eventId, regCode);
+
+    // C1's trigger auto-created occurrence 1 spanning the whole event
+    // (covers now()). Shrink its window to just now, so the first check-in
+    // resolves to it unambiguously.
+    await sqlSuperuser(`
+      update public.event_occurrences
+         set starts_at = now() - interval '5 minutes', ends_at = now() + interval '5 minutes'
+       where event_id = '${eventId}' and ordinal = 1
+    `);
+
+    const first = await admin.rpc('self_check_in', { p_code: regCode, p_ip: FAKE_IP });
+    expect(first.error).toBeNull();
+    const firstRow = Array.isArray(first.data) ? first.data[0] : first.data;
+    expect(firstRow.result).toBe('ok');
+
+    // Simulate day 2: move occurrence 1 out of "now" (no credit exists for
+    // this event, so freeze_occurrence_window_if_credited is a no-op here)
+    // and add occurrence 2 covering "now" instead.
+    await sqlSuperuser(`
+      update public.event_occurrences
+         set starts_at = now() - interval '2 days', ends_at = now() - interval '2 days' + interval '1 hour'
+       where event_id = '${eventId}' and ordinal = 1
+    `);
+    await sqlSuperuser(`
+      insert into public.event_occurrences (event_id, ordinal, occurrence_type, starts_at, ends_at)
+      values ('${eventId}', 2, 'day', now() - interval '5 minutes', now() + interval '5 minutes')
+    `);
+
+    // Before the fix, this returned 'already' immediately (registrations.status
+    // was already 'attended' from the first call) and never reached occurrence
+    // resolution — no second registration_checkins row was ever written.
+    const second = await admin.rpc('self_check_in', { p_code: regCode, p_ip: FAKE_IP });
+    expect(second.error).toBeNull();
+    const secondRow = Array.isArray(second.data) ? second.data[0] : second.data;
+    expect(secondRow.result).toBe('ok');
+
+    const { data: checkins } = await admin
+      .from('registration_checkins')
+      .select('occurrence_id')
+      .eq('registration_id', regId);
+    expect(checkins).toHaveLength(2);
+
+    // A third tap resolving to the same (second) occurrence is still
+    // correctly idempotent.
+    const third = await admin.rpc('self_check_in', { p_code: regCode, p_ip: FAKE_IP });
+    const thirdRow = Array.isArray(third.data) ? third.data[0] : third.data;
+    expect(thirdRow.result).toBe('already');
+    const { data: checkinsAfter } = await admin
+      .from('registration_checkins')
+      .select('id')
+      .eq('registration_id', regId);
+    expect(checkinsAfter).toHaveLength(2);
   });
 
   // ---- 3. unknown/nonexistent code ----

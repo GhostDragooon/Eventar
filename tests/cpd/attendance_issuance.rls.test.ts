@@ -747,6 +747,122 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
       expect(await ledgerRowsFor(practitionerOrphan.id, icEventId)).toHaveLength(0);
     }, 30_000);
 
+    // ---- 20260815040000 fix: proportional zero-earned must skip, not post a
+    // zero-value row. Different from the test above (bodyOrphan's group has
+    // ZERO occurrences at all — v_available=0); this is a group WITH real
+    // occurrences that the registration simply didn't attend any of
+    // (v_available>0, v_earned=0). Self-contained fixture, not the shared
+    // icEventId one, since this issues no credit and is fully cleanable.
+    it('proportional, group has occurrences but the registration attended none of them -> skipped:no_attendance, not a zero-value row', async () => {
+      const zeTs = Date.now();
+      const { data: body, error: bodyErr } = await admin
+        .from('accrediting_bodies')
+        .insert({
+          organisation_id: DEFAULT_ORG,
+          short_name: `MB-ZEROEARN-${zeTs}`,
+          full_name: 'RLS Test Body (zero-earned proportional fixture)',
+          status: 'active',
+          cycle_config: {},
+          category_taxonomy: {},
+        })
+        .select('id')
+        .single();
+      if (bodyErr || !body) throw new Error(`body fixture: ${bodyErr?.message}`);
+      const zeBodyId = body.id as string;
+
+      const zePractitioner = await createTestUser(`zeroearn-${zeTs}`);
+      const { data: declared, error: declErr } = await zePractitioner.client.rpc('declare_licence', {
+        p_body_id: zeBodyId,
+        p_licence_number: `ZE-${zeTs}`,
+      });
+      if (declErr || !declared) throw new Error(`declare_licence: ${declErr?.message}`);
+      const { error: verErr } = await bodyAdmin.client.rpc('verify_licence', { p_licence_id: (declared as { id: string }).id });
+      if (verErr) throw new Error(`verify_licence: ${verErr.message}`);
+
+      const start = new Date();
+      const { data: ev, error: evErr } = await admin
+        .from('events')
+        .insert({
+          title: `attendance_issuance ZERO-EARNED fixture — DELETE ME ${zeTs}`,
+          start_time: start.toISOString(),
+          end_time: new Date(start.getTime() + 3_600_000).toISOString(),
+          timezone: 'Asia/Hong_Kong',
+          created_by: bodyAdminStaffId,
+          venue_name: 'Test Venue',
+          city: 'Hong Kong',
+          country: 'HK',
+          latitude: 22.3,
+          longitude: 114.2,
+          status: 'published',
+        })
+        .select('id')
+        .single();
+      if (evErr || !ev) throw new Error(`event fixture: ${evErr?.message}`);
+      const zeEventId = ev.id as string;
+
+      // Occurrence 2 alongside the auto-created occurrence 1.
+      await sqlSuperuser(`
+        insert into public.event_occurrences (event_id, ordinal, occurrence_type, starts_at, ends_at)
+        select id, 2, 'day', end_time, end_time + interval '1 hour' from public.events where id = '${zeEventId}';
+      `);
+
+      // Group scoped ONLY to occurrence 2.
+      await sqlSuperuser(`
+        with grp as (
+          insert into public.event_accreditation_groups (event_id, body_id, category_code, unit, award_scheme)
+          values ('${zeEventId}', '${zeBodyId}', null, 'points', 'proportional')
+          returning id
+        ), acc as (
+          insert into public.event_accreditations (accreditation_group_id, credit_value)
+          select id, 10 from grp returning id
+        )
+        insert into public.event_accreditation_occurrences (accreditation_id, occurrence_id)
+        select acc.id, eo.id from acc, public.event_occurrences eo
+        where eo.event_id = '${zeEventId}' and eo.ordinal = 2;
+      `);
+
+      const { data: reg, error: regErr } = await admin
+        .from('registrations')
+        .insert({
+          event_id: zeEventId,
+          email: zePractitioner.email,
+          full_name: 'RLS Zero-Earned Test Attendee',
+          status: 'attended',
+          registration_code: `WK-ZE${zeTs}`,
+        })
+        .select('id, registration_code')
+        .single();
+      if (regErr || !reg) throw new Error(`registration fixture: ${regErr?.message}`);
+
+      // Attend ONLY occurrence 1 — the group covers ONLY occurrence 2.
+      await checkin(reg.id as string, zeEventId, [1]);
+
+      const { data, error } = await admin.rpc('award_attendance_credit', {
+        p_event_id: zeEventId,
+        p_registration_code: reg.registration_code as string,
+      });
+      expect(error).toBeNull();
+      expect(outcomeFor(data as AwardRow[], zeBodyId)).toEqual({ body_id: zeBodyId, outcome: 'skipped:no_attendance' });
+
+      const { data: ledgerRows } = await admin
+        .from('credit_ledger')
+        .select('id')
+        .eq('user_id', zePractitioner.id)
+        .eq('event_id', zeEventId);
+      expect(ledgerRows).toHaveLength(0);
+
+      // No credit was ever issued here — fully cleanable, unlike the rest of
+      // this file's fixtures (see header). event_accreditation_groups is
+      // Hard Rule 11 definer-only — service_role has no direct DELETE, same
+      // reasoning as its INSERT above — so sqlSuperuser, not admin, clears it.
+      await mustDelete(admin.from('registrations').delete().eq('id', reg.id as string), 'zero-earned registration fixture');
+      await sqlSuperuser(`delete from public.event_accreditation_groups where event_id = '${zeEventId}'`);
+      await mustDelete(admin.from('events').delete().eq('id', zeEventId), 'zero-earned event fixture');
+      await mustDelete(admin.from('practitioner_licences').delete().eq('body_id', zeBodyId), 'zero-earned licence fixture');
+      await mustDelete(admin.from('accrediting_bodies').delete().eq('id', zeBodyId), 'zero-earned body fixture');
+      await deleteTestUser(zePractitioner);
+    }, 30_000);
+
     it("role -> category resolution: a matching role lets the group apply and the posted row carries the resolved category", async () => {
       const { data, error } = await admin.rpc('award_attendance_credit', {
         p_event_id: icEventId,

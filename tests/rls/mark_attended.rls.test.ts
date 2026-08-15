@@ -299,9 +299,10 @@ describe.skipIf(!process.env.RLS_TESTS)('mark_attended RLS + audit', () => {
     expect(row.result).toBe('no_matching_occurrence');
     expect(row.registration_id).toBe(regId);
 
-    // Must not guess: no checkin row, and the status flip is reverted rather
-    // than left stranded 'attended' with nothing to back it (see migration
-    // header — this revert is a deliberate addition beyond a bare refusal).
+    // Must not guess: no checkin row. Status is untouched (not reverted —
+    // 20260815040000 moved occurrence resolution ahead of any write, so
+    // there is nothing to revert; the earlier "revert the flip" comment this
+    // replaced described a mechanism that no longer exists).
     const { data: reg } = await admin
       .from('registrations')
       .select('status')
@@ -313,6 +314,54 @@ describe.skipIf(!process.env.RLS_TESTS)('mark_attended RLS + audit', () => {
       .select('id')
       .eq('registration_id', regId);
     expect(checkins).toHaveLength(0);
+  });
+
+  // ---- 3c. genuine multi-occurrence check-in (20260815040000 fix) ----
+  it('checking in on two different occurrences of the same registration succeeds both times — the bug this migration fixes', async () => {
+    const eventId = await makeEventFixture();
+    const regCode = code('MA003C');
+    const regId = await makeRegistrationFixture(eventId, regCode);
+
+    await sqlSuperuser(`
+      update public.event_occurrences
+         set starts_at = now() - interval '5 minutes', ends_at = now() + interval '5 minutes'
+       where event_id = '${eventId}' and ordinal = 1
+    `);
+
+    const first = await owner.client.rpc('mark_attended', { p_code: regCode, p_method: 'qr' });
+    expect(first.error).toBeNull();
+    const firstRow = Array.isArray(first.data) ? first.data[0] : first.data;
+    expect(firstRow.result).toBe('ok');
+
+    await sqlSuperuser(`
+      update public.event_occurrences
+         set starts_at = now() - interval '2 days', ends_at = now() - interval '2 days' + interval '1 hour'
+       where event_id = '${eventId}' and ordinal = 1
+    `);
+    await sqlSuperuser(`
+      insert into public.event_occurrences (event_id, ordinal, occurrence_type, starts_at, ends_at)
+      values ('${eventId}', 2, 'day', now() - interval '5 minutes', now() + interval '5 minutes')
+    `);
+
+    // Before the fix: 'already' immediately (status already 'attended' from
+    // the first call), never reaching occurrence resolution — no second row.
+    const second = await owner.client.rpc('mark_attended', { p_code: regCode, p_method: 'manual' });
+    expect(second.error).toBeNull();
+    const secondRow = Array.isArray(second.data) ? second.data[0] : second.data;
+    expect(secondRow.result).toBe('ok');
+
+    const { data: checkins } = await admin
+      .from('registration_checkins')
+      .select('occurrence_id, check_in_method')
+      .eq('registration_id', regId)
+      .order('checked_in_at');
+    expect(checkins).toHaveLength(2);
+    expect(checkins?.[0].check_in_method).toBe('qr');
+    expect(checkins?.[1].check_in_method).toBe('manual');
+
+    const third = await owner.client.rpc('mark_attended', { p_code: regCode, p_method: 'qr' });
+    const thirdRow = Array.isArray(third.data) ? third.data[0] : third.data;
+    expect(thirdRow.result).toBe('already');
   });
 
   // ---- 4. non-staff authenticated user is denied by the DB-level gate ----
