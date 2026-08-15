@@ -39,6 +39,8 @@ describe.skipIf(!process.env.RLS_TESTS)('licence mutation functions', () => {
   let otherOrgBodyAdmin: TestUser;
   let otherOrgId: string;
   let bodyId: string;
+  let bodyId2: string; // second ACTIVE body — Task 10.2/10.9 cross-body primary tests
+  let onboardingBodyId: string; // non-active body — DEFERRED item 30 tests
   const staffEmails: string[] = [];
   const ts = Date.now();
 
@@ -131,6 +133,7 @@ describe.skipIf(!process.env.RLS_TESTS)('licence mutation functions', () => {
         organisation_id: DEFAULT_ORG,
         short_name: `RLS-LM-${ts}`,
         full_name: 'RLS Test Body (licence_mutations fixture)',
+        status: 'active', // declare_licence now requires an active body (DEFERRED item 30)
         cycle_config: {},
         category_taxonomy: {},
       })
@@ -138,6 +141,36 @@ describe.skipIf(!process.env.RLS_TESTS)('licence mutation functions', () => {
       .single();
     if (bodyErr || !body) throw new Error(`body fixture: ${bodyErr?.message}`);
     bodyId = body.id as string;
+
+    const { data: body2, error: body2Err } = await admin
+      .from('accrediting_bodies')
+      .insert({
+        organisation_id: DEFAULT_ORG,
+        short_name: `RLS-LM2-${ts}`,
+        full_name: 'RLS Test Body 2 (licence_mutations cross-body fixture)',
+        status: 'active',
+        cycle_config: {},
+        category_taxonomy: {},
+      })
+      .select('id')
+      .single();
+    if (body2Err || !body2) throw new Error(`body2 fixture: ${body2Err?.message}`);
+    bodyId2 = body2.id as string;
+
+    const { data: onboardingBody, error: onboardingBodyErr } = await admin
+      .from('accrediting_bodies')
+      .insert({
+        organisation_id: DEFAULT_ORG,
+        short_name: `RLS-LM-ONBOARDING-${ts}`,
+        full_name: 'RLS Test Body (non-active, licence_mutations fixture)',
+        status: 'onboarding',
+        cycle_config: {},
+        category_taxonomy: {},
+      })
+      .select('id')
+      .single();
+    if (onboardingBodyErr || !onboardingBody) throw new Error(`onboarding body fixture: ${onboardingBodyErr?.message}`);
+    onboardingBodyId = onboardingBody.id as string;
 
     userA = await createTestUser('lm-user-a');
     userB = await createTestUser('lm-user-b');
@@ -152,6 +185,15 @@ describe.skipIf(!process.env.RLS_TESTS)('licence mutation functions', () => {
     );
     if (bodyId) {
       await mustDelete(admin.from('accrediting_bodies').delete().eq('id', bodyId), 'accrediting_bodies fixture');
+    }
+    if (bodyId2) {
+      await mustDelete(admin.from('accrediting_bodies').delete().eq('id', bodyId2), 'accrediting_bodies fixture 2');
+    }
+    if (onboardingBodyId) {
+      await mustDelete(
+        admin.from('accrediting_bodies').delete().eq('id', onboardingBodyId),
+        'onboarding accrediting_bodies fixture',
+      );
     }
     for (const email of staffEmails) {
       await mustDelete(admin.from('staff').delete().eq('email', email), `staff ${email}`);
@@ -216,6 +258,51 @@ describe.skipIf(!process.env.RLS_TESTS)('licence mutation functions', () => {
       expect(error?.message).not.toMatch(/violates foreign key constraint/i);
       expect(error?.message).toMatch(/not found/i);
     });
+
+    // DEFERRED.md item 30 — a real (existing) but non-active body id used to
+    // sail past the not-found check above and create a real licence row.
+    // Distinct error message from the not-found case (both P0002) so the
+    // two failure modes stay distinguishable.
+    it('a real but non-active body fails with P0002 and a distinct "not active" message (DEFERRED item 30)', async () => {
+      const { data, error } = await userA.client.rpc('declare_licence', {
+        p_body_id: onboardingBodyId,
+        p_licence_number: `LM-DECLARE-INACTIVE-${ts}`,
+      });
+      expect(data).toBeNull();
+      expect(error).not.toBeNull();
+      expect(error?.code).toBe('P0002');
+      expect(error?.message).not.toMatch(/violates foreign key constraint/i);
+      expect(error?.message).toMatch(/not active/i);
+      expect(error?.message).not.toMatch(/not found/i);
+    });
+
+    it('p_track and p_cycle_started_on are stored on the row when supplied', async () => {
+      const { data, error } = await userA.client.rpc('declare_licence', {
+        p_body_id: bodyId,
+        p_licence_number: `LM-DECLARE-TRACK-${ts}`,
+        p_track: 'hkam',
+        p_cycle_started_on: '2026-01-15',
+      });
+      expect(error).toBeNull();
+      const row = data as LicenceRow & { track: string | null; cycle_started_on: string | null };
+      expect(row.track).toBe('hkam');
+      expect(row.cycle_started_on).toBe('2026-01-15');
+
+      const ev = await auditEventFor('licence_declared', row.id);
+      expect(ev?.payload.track).toBe('hkam');
+      expect(ev?.payload.cycle_started_on).toBe('2026-01-15');
+    });
+
+    it('p_track and p_cycle_started_on default to null when omitted (unaffected callers keep working)', async () => {
+      const { data, error } = await userA.client.rpc('declare_licence', {
+        p_body_id: bodyId,
+        p_licence_number: `LM-DECLARE-NOTRACK-${ts}`,
+      });
+      expect(error).toBeNull();
+      const row = data as LicenceRow & { track: string | null; cycle_started_on: string | null };
+      expect(row.track).toBeNull();
+      expect(row.cycle_started_on).toBeNull();
+    });
   });
 
   describe('set_primary_licence', () => {
@@ -243,6 +330,47 @@ describe.skipIf(!process.env.RLS_TESTS)('licence mutation functions', () => {
       const ev = await auditEventFor('licence_marked_primary', toPromote);
       expect(ev).not.toBeNull();
       expect(ev?.payload.licence_id).toBe(toPromote);
+    });
+
+    // Task 10.2/10.9 — the actual point of this task. Before the fix,
+    // set_primary_licence demoted EVERY is_primary row for the user
+    // regardless of body, so promoting a primary at body 2 would silently
+    // strip the primary at body 1. A Fellow with two College Fellowships
+    // (ADR-0001 §4(b)) must be able to hold both at once.
+    it('promoting a primary at a SECOND body does not demote the primary at the first body', async () => {
+      const { data: licenceAtBody1, error: err1 } = await userA.client.rpc('declare_licence', {
+        p_body_id: bodyId,
+        p_licence_number: `LM-CROSSBODY-1-${ts}`,
+      });
+      if (err1 || !licenceAtBody1) throw new Error(`declare (body1): ${err1?.message}`);
+      const licenceId1 = (licenceAtBody1 as LicenceRow).id;
+
+      const { data: licenceAtBody2, error: err2 } = await userA.client.rpc('declare_licence', {
+        p_body_id: bodyId2,
+        p_licence_number: `LM-CROSSBODY-2-${ts}`,
+      });
+      if (err2 || !licenceAtBody2) throw new Error(`declare (body2): ${err2?.message}`);
+      const licenceId2 = (licenceAtBody2 as LicenceRow).id;
+
+      const { error: primary1Err } = await userA.client.rpc('set_primary_licence', {
+        p_licence_id: licenceId1,
+      });
+      expect(primary1Err).toBeNull();
+
+      const { data: row2, error: primary2Err } = await userA.client.rpc('set_primary_licence', {
+        p_licence_id: licenceId2,
+      });
+      expect(primary2Err).toBeNull();
+      expect((row2 as LicenceRow).is_primary).toBe(true);
+
+      const { data: bothRows } = await admin
+        .from('practitioner_licences')
+        .select('id, body_id, is_primary')
+        .in('id', [licenceId1, licenceId2]);
+      const row1After = bothRows?.find((r) => r.id === licenceId1);
+      const row2After = bothRows?.find((r) => r.id === licenceId2);
+      expect(row1After?.is_primary, 'body 1 primary must survive promoting body 2 to primary').toBe(true);
+      expect(row2After?.is_primary).toBe(true);
     });
 
     it("a different authenticated user cannot set another user's licence as primary (42501)", async () => {

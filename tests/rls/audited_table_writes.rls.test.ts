@@ -146,6 +146,7 @@ describe.skipIf(!process.env.RLS_TESTS)('audited-table write guard (service_role
           organisation_id: DEFAULT_ORG,
           short_name: 'GUARD-FIXTURE',
           full_name: 'Write-guard test body',
+          status: 'active', // declare_licence now requires an active body (DEFERRED item 30)
           cycle_config: {},
           category_taxonomy: {},
         }, { onConflict: 'organisation_id,short_name' })

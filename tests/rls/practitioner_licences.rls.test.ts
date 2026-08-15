@@ -45,6 +45,7 @@ describe.skipIf(!process.env.RLS_TESTS)('practitioner_licences RLS', () => {
         organisation_id: DEFAULT_ORG,
         short_name: `RLS-LICENCES-${Date.now()}`,
         full_name: 'RLS Test Body (practitioner_licences fixture)',
+        status: 'active', // declare_licence now requires an active body (DEFERRED item 30)
         cycle_config: {},
         category_taxonomy: {},
       })
@@ -193,10 +194,15 @@ describe.skipIf(!process.env.RLS_TESTS)('practitioner_licences RLS', () => {
   // index is ever evaluated) — this test would just re-prove the grant
   // revoke, not the index. The invariant itself is double-covered instead:
   // Task 5's own migration assert confirmed the partial unique index
-  // exists at apply time, and this file's two set_primary_licence tests
-  // above prove the only two writer paths (declare_licence never sets
-  // is_primary=true; set_primary_licence always demotes any other primary
-  // in the same transaction before promoting) can never produce two
-  // is_primary=true rows for one user — the constraint is now structurally
-  // unreachable via any granted credential, not just index-enforced.
+  // exists at apply time (Task 10.2/10.9's migration re-confirms the
+  // re-scoped shape), and this file's two set_primary_licence tests above
+  // prove the only two writer paths (declare_licence never sets
+  // is_primary=true; set_primary_licence demotes only the OTHER primary at
+  // the SAME body in the same transaction before promoting — Task 10.2/
+  // 10.9 scoped this to body_id, since one practitioner can legitimately
+  // hold is_primary=true at more than one body simultaneously) can never
+  // produce two is_primary=true rows for one (user, body) pair — the
+  // constraint is now structurally unreachable via any granted credential,
+  // not just index-enforced. Cross-body coexistence is covered in
+  // tests/audit/licence_mutations.test.ts.
 });
