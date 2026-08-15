@@ -140,6 +140,7 @@ export default async function StaffEventEditPage({
       <div className="mb-lg">
         <CpdAccreditationSection
           eventId={event.id}
+          startTime={event.start_time}
           bodies={authorised.bodies}
           currentBodyId={event.accrediting_body_id}
           currentHours={event.cpd_hours}

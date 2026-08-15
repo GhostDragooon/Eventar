@@ -265,6 +265,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
 
       <CpdAccreditationSection
         eventId={event.id}
+        startTime={event.start_time}
         bodies={accreditingBodies}
         currentBodyId={event.accrediting_body_id}
         currentHours={event.cpd_hours}

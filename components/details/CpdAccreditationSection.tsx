@@ -2,11 +2,20 @@
 
 import { useActionState, useState } from 'react';
 import { setEventCpdConfig } from '@/app/events/[id]/details/cpdActions';
+import { priorApprovalDeadline } from '@/lib/cpd/priorApproval';
+import { formatInTz } from '@/lib/tz';
 
-export type AccreditingBodyOption = { id: string; full_name: string; short_name: string | null };
+export type AccreditingBodyOption = {
+  id: string;
+  full_name: string;
+  short_name: string | null;
+  cycle_config: unknown;
+};
 
 export type CpdAccreditationSectionProps = {
   eventId: string;
+  /** The event's own start time — the deadline advisory is derived from this. */
+  startTime: string;
   bodies: AccreditingBodyOption[];
   currentBodyId: string | null;
   currentHours: number | null;
@@ -25,6 +34,7 @@ export type CpdAccreditationSectionProps = {
 
 export function CpdAccreditationSection({
   eventId,
+  startTime,
   bodies,
   currentBodyId,
   currentHours,
@@ -51,6 +61,13 @@ export function CpdAccreditationSection({
   // showing an accredited event as unaccredited, and clearing its body on the
   // next save. Surface the current binding as its own option instead.
   const currentIsMissing = currentBodyId !== null && !bodies.some((b) => b.id === currentBodyId);
+
+  // Derived, advisory only — recomputed live as the organiser changes the
+  // <select>. `null` (no sourced prior_approval key on this body, or no
+  // body selected) means render nothing: not a placeholder, not a zero-date.
+  const selectedBody = bodies.find((b) => b.id === bodyId) ?? null;
+  const approval = selectedBody ? priorApprovalDeadline(startTime, selectedBody.cycle_config) : null;
+  const approvalBodyLabel = selectedBody ? (selectedBody.short_name ?? selectedBody.full_name) : '';
 
   return (
     <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
@@ -91,6 +108,26 @@ export function CpdAccreditationSection({
         <p className="mt-md rounded-lg bg-warning-container px-md py-sm text-body-md text-on-warning-container">
           <strong>{creditsIssued}</strong> credit{creditsIssued === 1 ? ' has' : 's have'} already been issued for this
           event, so its accreditation is locked. Changing it now would alter records an accrediting body already holds.
+        </p>
+      )}
+
+      {approval && (
+        <p className="mt-md rounded-lg bg-primary-container px-md py-sm text-body-md text-on-primary-container">
+          {approval.passed ? (
+            <>
+              The suggested prior-approval application deadline for {approvalBodyLabel} was{' '}
+              <strong>{formatInTz(approval.deadline.toISOString(), 'Asia/Hong_Kong')} (HKT)</strong>, and has passed.
+              This is advisory only &mdash; saving still works; confirm directly with the body whether a late
+              application is possible.
+            </>
+          ) : (
+            <>
+              Apply to {approvalBodyLabel} by{' '}
+              <strong>{formatInTz(approval.deadline.toISOString(), 'Asia/Hong_Kong')} (HKT)</strong> to meet its
+              prior-approval requirement. This is advisory only &mdash; Eventar doesn&rsquo;t track applications, so
+              saving here is never blocked by it.
+            </>
+          )}
         </p>
       )}
 

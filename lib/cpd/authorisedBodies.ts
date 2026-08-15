@@ -50,7 +50,7 @@ export async function listAuthorisedBodies(
   // moved to onboarding/retired is stale, and set_event_cpd_config refuses it.
   const bodiesRes = await admin
     .from('accrediting_bodies')
-    .select('id, full_name, short_name')
+    .select('id, full_name, short_name, cycle_config')
     .eq('status', 'active')
     .in('id', bodyIds)
     .order('short_name');
