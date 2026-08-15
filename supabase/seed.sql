@@ -109,6 +109,17 @@ revoke all on table public.rate_limits from anon, authenticated;
 -- practitioner_licences, no role retains a DELETE here.
 revoke insert, update, delete on public.event_occurrences      from anon, authenticated, service_role;
 revoke insert, update, delete on public.registration_checkins  from anon, authenticated, service_role;
+--
+-- event_accreditation_groups / event_accreditations /
+-- event_accreditation_occurrences / registration_roles (migration
+-- 20260815020000, Task 10.8/10.9 sub-task C3) — same posture as the
+-- event_occurrences block above: definer-only (the compatibility bridge
+-- inside set_event_cpd_config is the sole writer today), no role — including
+-- service_role — gets a direct write grant, no role retains a DELETE.
+revoke insert, update, delete on public.event_accreditation_groups      from anon, authenticated, service_role;
+revoke insert, update, delete on public.event_accreditations            from anon, authenticated, service_role;
+revoke insert, update, delete on public.event_accreditation_occurrences from anon, authenticated, service_role;
+revoke insert, update, delete on public.registration_roles              from anon, authenticated, service_role;
 -- ─────────────────────────────────────────────────────────────────────────────
 --
 -- For production / pre-seeded projects: skip this file (the live Seoul project
