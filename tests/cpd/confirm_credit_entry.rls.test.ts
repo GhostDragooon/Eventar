@@ -299,6 +299,48 @@ describe.skipIf(!process.env.RLS_TESTS)('confirm_credit_entry — body-confirmat
     expect(error?.code).toBe('P0002');
   }, 30_000);
 
+  it('confirmation still succeeds when a compensating entry already exists, and flags it via audit_events (Q39, 2026-08-16)', async () => {
+    const eventId = await makeEvent(`confirm-compensating-flag fixture — DELETE ME ${ts}`);
+    const original = await makeCreditEarned(eventId);
+
+    const { data: adjusted, error: adjustErr } = await admin.rpc('record_credit_entry', {
+      p_licence_id: original.licence_id,
+      p_user_id: original.user_id,
+      p_event_id: original.event_id,
+      p_body_id: original.body_id,
+      p_entry_type: 'credit_adjusted',
+      p_points: null,
+      p_hours: 1,
+      p_category: null,
+      p_effective_date: original.effective_date,
+      p_attestation_status: original.attestation_status,
+      p_references_entry_id: original.id,
+      p_reason: 'compensating-flag fixture: pre-existing adjustment',
+    });
+    if (adjustErr || !adjusted) throw new Error(`credit_adjusted fixture: ${adjustErr?.message}`);
+
+    const { data, error } = await bodyAdmin.client.rpc('confirm_credit_entry', { p_entry_id: original.id });
+    expect(error).toBeNull();
+    const row = data as LedgerRow;
+    expect(row.entry_type).toBe('credit_confirmed');
+    expect(row.references_entry_id).toBe(original.id);
+
+    const { data: flags, error: flagErr } = await admin
+      .from('audit_events')
+      .select('event_type, subject_type, subject_id, payload')
+      .eq('event_type', 'credit_confirmation_flagged')
+      .eq('subject_id', original.id);
+    expect(flagErr).toBeNull();
+    expect(flags).toHaveLength(1);
+    expect(flags![0].subject_type).toBe('credit_ledger');
+    expect(flags![0].payload).toMatchObject({
+      original_entry_id: original.id,
+      confirmed_entry_id: row.id,
+      compensating_entry_id: (adjusted as LedgerRow).id,
+      compensating_entry_type: 'credit_adjusted',
+    });
+  }, 30_000);
+
   it('confirming a non-credit_earned row (e.g. an already-confirmed one) fails with P0002', async () => {
     const eventId = await makeEvent(`confirm-wrongtype fixture — DELETE ME ${ts}`);
     const original = await makeCreditEarned(eventId);
