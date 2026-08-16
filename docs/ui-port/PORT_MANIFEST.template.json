@@ -1,0 +1,19 @@
+{
+  "foundationVersion": "1.0.0",
+  "category": "NN",
+  "name": "Category name",
+  "sourceIds": [],
+  "productionTargets": [],
+  "preservedBehaviours": [],
+  "deviations": [],
+  "existingPrimitivesReused": [],
+  "newSharedPrimitives": [],
+  "serviceDependencies": [],
+  "tests": [],
+  "colourContract": {
+    "source": "app/globals.css",
+    "prototypeColoursCopied": false,
+    "newColourVariables": false,
+    "parallelThemeLogic": false
+  }
+}
