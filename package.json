@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:rls": "RLS_TESTS=1 vitest run tests/rls tests/audit tests/cron tests/cpd/organisation_body_authorisation.rls.test.ts tests/cpd/roster_eligibility.rls.test.ts"
+    "test:rls": "RLS_TESTS=1 vitest run tests/rls tests/audit tests/cron tests/cpd/organisation_body_authorisation.rls.test.ts tests/cpd/roster_eligibility.rls.test.ts",
+    "check:ui-colours": "node scripts/check-ui-colours.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
