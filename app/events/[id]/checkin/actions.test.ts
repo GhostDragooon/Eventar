@@ -25,8 +25,11 @@ vi.mock('@/lib/auth', () => ({
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 
 const EVENT_ID = '11111111-2222-4333-8444-555555555555';
+let checkinResult = 'ok';
 const markAttendedRow = {
-  result: 'ok',
+  get result() {
+    return checkinResult;
+  },
   event_id: EVENT_ID,
   registration_id: 'reg-1',
   full_name: 'Test Attendee',
@@ -75,6 +78,7 @@ describe('markAttended — attendance stays authoritative when credit fails', ()
   beforeEach(() => {
     adminThrows = false;
     awardRejects = false;
+    checkinResult = 'ok';
     awardMock.mockClear();
   });
 
@@ -93,6 +97,14 @@ describe('markAttended — attendance stays authoritative when credit fails', ()
     // Pre-fix this rejected, inverting the response for an already-committed
     // check-in. The award is never reached, so nothing should have been called.
     await expect(markAttended('WK-ABC234', 'qr')).resolves.toEqual(SUCCESS);
+    expect(awardMock).not.toHaveBeenCalled();
+  });
+
+  it('gives no_matching_occurrence its own message, distinct from the generic default', async () => {
+    checkinResult = 'no_matching_occurrence';
+    const res = await markAttended('WK-ABC234', 'qr');
+    expect(res).toEqual({ error: 'No matching session for this check-in time — check the event schedule.' });
+    expect(res).not.toEqual({ error: 'Code not recognised.' });
     expect(awardMock).not.toHaveBeenCalled();
   });
 

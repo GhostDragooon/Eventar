@@ -65,6 +65,10 @@ export async function selfCheckIn(
       return { error: 'This registration was cancelled.' };
     case 'unavailable':
       return { error: "This event isn't accepting check-ins." };
+    case 'no_matching_occurrence':
+      // Multi-occurrence events only: no session/day matches this check-in
+      // time. Distinct from the generic default — the code IS valid.
+      return { error: 'No matching session found for this check-in time. Please see a member of staff.' };
     default:
       return { error: 'This registration is no longer valid.' };
   }

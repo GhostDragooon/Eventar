@@ -100,6 +100,10 @@ export async function markAttended(
       return { error: 'This registration was cancelled — it can’t be checked in. Re-register the attendee first.' };
     case 'unavailable':
       return { error: 'This event isn’t accepting check-ins (it isn’t published, or it was deleted).' };
+    case 'no_matching_occurrence':
+      // Multi-occurrence events only: no session/day matches this check-in
+      // time. Distinct from the default — the code IS recognised.
+      return { error: 'No matching session for this check-in time — check the event schedule.' };
     default:
       return { error: 'Code not recognised.' };
   }

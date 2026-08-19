@@ -46,6 +46,7 @@ describe('selfCheckIn — result code to attendee copy', () => {
     ['unavailable', /isn't accepting check-ins/i],
     ['already', /already checked in/i],
     ['rate_limited', /too many attempts/i],
+    ['no_matching_occurrence', /no matching session/i],
   ])('maps %s to its own message', async (code, expected) => {
     resolvesTo(code);
     const res = await selfCheckIn(CODE);
@@ -54,7 +55,7 @@ describe('selfCheckIn — result code to attendee copy', () => {
   });
 
   it('never awards a credit on a refusal', async () => {
-    for (const code of ['not_open_yet', 'closed', 'self_serve_off', 'cancelled', 'unavailable']) {
+    for (const code of ['not_open_yet', 'closed', 'self_serve_off', 'cancelled', 'unavailable', 'no_matching_occurrence']) {
       resolvesTo(code);
       await selfCheckIn(CODE);
     }
@@ -63,7 +64,7 @@ describe('selfCheckIn — result code to attendee copy', () => {
 
   it('gives every refusal a distinct message', async () => {
     const seen: string[] = [];
-    for (const code of ['not_open_yet', 'closed', 'self_serve_off', 'cancelled', 'unavailable', 'already', 'rate_limited']) {
+    for (const code of ['not_open_yet', 'closed', 'self_serve_off', 'cancelled', 'unavailable', 'already', 'rate_limited', 'no_matching_occurrence']) {
       resolvesTo(code);
       const res = await selfCheckIn(CODE);
       seen.push((res as { error: string }).error);
