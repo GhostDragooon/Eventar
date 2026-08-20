@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eventar.app/schema/evidence-claim.schema.json",
+  "title": "Eventar evidence claim",
+  "description": "A single falsifiable evidence claim emitted by an Eventar evidence subagent. Compatible with the existing credit_ledger and freeze model. The four falsifiability fields are mandatory.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "claim_type",
+    "question",
+    "event_id",
+    "subject_id",
+    "status",
+    "evidence_refs",
+    "rule_version",
+    "observation",
+    "depends_on",
+    "how_would_we_know_this_failed",
+    "leading_indicator",
+    "human_review_required",
+    "agent",
+    "agent_version",
+    "generated_at"
+  ],
+  "properties": {
+    "claim_type": {
+      "type": "string",
+      "enum": ["accreditation", "participation", "submission"],
+      "description": "Which specialist produced the claim."
+    },
+    "question": {
+      "type": "integer",
+      "enum": [1, 2, 3],
+      "description": "The permanently separate question this claim addresses. 1 approval, 2 completion, 3 acceptance."
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "subject_id": {
+      "type": "string",
+      "description": "UUID of the claim subject. Accrediting body for Q1, practitioner licence for Q2, target authority for Q3. Never a person name."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "not_applicable",
+        "not_submitted",
+        "application_in_preparation",
+        "submitted",
+        "organiser_declared_approved",
+        "approval_evidence_attached",
+        "approval_confirmed_by_accreditor",
+        "attendance_verified",
+        "not_confirmed",
+        "accepted",
+        "rejected",
+        "withdrawn",
+        "expired",
+        "error"
+      ],
+      "description": "Controlled status. Q3 accepted requires a confirmation artefact in evidence_refs."
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "IDs or references substantiating the claim. Document ids, approval references, credit_ledger entry ids, confirmation artefact ids. No free text personal data."
+    },
+    "rule_version": {
+      "type": "string",
+      "description": "The frozen completion rule version, or the versioned mapping pack for a submission claim."
+    },
+    "observation": {
+      "type": "string",
+      "minLength": 1,
+      "description": "First principle observation the claim rests on."
+    },
+    "depends_on": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "States or other claims this claim depends on."
+    },
+    "how_would_we_know_this_failed": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Explicit falsification check. The condition under which this claim is wrong."
+    },
+    "leading_indicator": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Metric to monitor for early signs of failure."
+    },
+    "human_review_required": {
+      "type": "boolean",
+      "description": "True when a dependency is unverified or a required field is missing. Trips the orchestrator gate."
+    },
+    "agent": {
+      "type": "string",
+      "enum": ["eventar-accreditation", "eventar-participation", "eventar-submission"]
+    },
+    "agent_version": {
+      "type": "string",
+      "description": "Version of the emitting subagent, stamped at call time."
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Optional model confidence. Never a substitute for the deterministic checks."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "claim_type": { "const": "submission" },
+          "status": { "const": "accepted" }
+        }
+      },
+      "then": {
+        "properties": {
+          "evidence_refs": {
+            "minItems": 1
+          }
+        },
+        "required": ["evidence_refs"]
+      }
+    }
+  ]
+}
