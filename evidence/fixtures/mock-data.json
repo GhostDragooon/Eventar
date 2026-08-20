@@ -1,0 +1,86 @@
+{
+  "events": [
+    {
+      "event_id": "event-accredited-clean",
+      "pathway": "accredited",
+      "frozen_rule_version": "rule-v3-frozen"
+    },
+    {
+      "event_id": "event-accredited-messy",
+      "pathway": "accredited",
+      "frozen_rule_version": "rule-v3-frozen"
+    },
+    {
+      "event_id": "event-not-frozen",
+      "pathway": "accredited",
+      "frozen_rule_version": null
+    },
+    {
+      "event_id": "event-ordinary",
+      "pathway": "ordinary",
+      "frozen_rule_version": null
+    }
+  ],
+  "entries": [
+    {
+      "entry_id": "ledger-1001",
+      "event_id": "event-accredited-clean",
+      "practitioner_licence_id": "lic-aaaa",
+      "attestation_status": "attendance_verified",
+      "rule_version": "rule-v3-frozen",
+      "chain_verified": true,
+      "registration_count": 1,
+      "checkin_count": 1
+    },
+    {
+      "entry_id": "ledger-1002",
+      "event_id": "event-accredited-clean",
+      "practitioner_licence_id": "lic-bbbb",
+      "attestation_status": "attendance_verified",
+      "rule_version": "rule-v3-frozen",
+      "chain_verified": true,
+      "registration_count": 1,
+      "checkin_count": 1
+    },
+    {
+      "entry_id": "ledger-2001",
+      "event_id": "event-accredited-messy",
+      "practitioner_licence_id": "lic-cccc",
+      "attestation_status": "attendance_verified",
+      "rule_version": "rule-v2-OLD",
+      "chain_verified": true,
+      "registration_count": 1,
+      "checkin_count": 1
+    },
+    {
+      "entry_id": "ledger-2002",
+      "event_id": "event-accredited-messy",
+      "practitioner_licence_id": "lic-dddd",
+      "attestation_status": "attendance_verified",
+      "rule_version": "rule-v3-frozen",
+      "chain_verified": null,
+      "registration_count": 1,
+      "checkin_count": 1
+    },
+    {
+      "entry_id": "ledger-2003",
+      "event_id": "event-accredited-messy",
+      "practitioner_licence_id": "lic-eeee",
+      "attestation_status": "attendance_verified",
+      "rule_version": "rule-v3-frozen",
+      "chain_verified": false,
+      "registration_count": 1,
+      "checkin_count": 2
+    },
+    {
+      "entry_id": "ledger-3001",
+      "event_id": "event-not-frozen",
+      "practitioner_licence_id": "lic-ffff",
+      "attestation_status": "attendance_verified",
+      "rule_version": "rule-v3-frozen",
+      "chain_verified": true,
+      "registration_count": 1,
+      "checkin_count": 1
+    }
+  ]
+}
