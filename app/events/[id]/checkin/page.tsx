@@ -3,6 +3,8 @@ import { requireStaff, NotAuthorizedError } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { formatInTz } from '@/lib/tz';
 import { StaffShell } from '@/components/shell/StaffShell';
+import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
+import { LayoutDashboardIcon, CalendarDaysIcon, UserCheckIcon } from 'lucide-react';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 import { deriveSpeakerNames } from '@/lib/agenda';
 import RosterClient from './RosterClient';
@@ -69,6 +71,18 @@ export default async function StaffCheckinPage({
       .eq('event_id', id),
   ]);
 
+  // C5: what each registrant DID (chair/presenter), independent of any body's
+  // category vocabulary (ADR-0002 "R1, resolved"). registration_roles has no
+  // event_id column, so the filter goes through the FK embed (!inner makes it
+  // restrict the top-level rows, not just decorate them) rather than an
+  // .in(registration_id, [...ids]) — a large event would otherwise push one
+  // UUID per registrant into the query string, and a query-string-length
+  // failure here degrades to every role chip silently rendering blank.
+  const rolesRes = await supabase
+    .from('registration_roles')
+    .select('registration_id, role_code, registrations!inner(event_id)')
+    .eq('registrations.event_id', id);
+
   // Read-time CPD eligibility (Stage 7). Definer RPC: every hop of the identity
   // chain (registration email → auth.users → verified licence) is invisible to
   // an organiser's session, so this cannot be a join above. Returns
@@ -92,6 +106,14 @@ export default async function StaffCheckinPage({
   if (rosterRes.error) throw rosterRes.error;
   if (blocksRes.error) throw blocksRes.error;
   if (checkinsRes.error) throw checkinsRes.error;
+  if (rolesRes.error) {
+    console.error('[checkin] registration_roles read failed', { code: rolesRes.error.code });
+  }
+  const roles: Record<string, ('chair' | 'presenter')[]> = {};
+  for (const row of (rolesRes.data ?? []) as { registration_id: string; role_code: string }[]) {
+    if (row.role_code === 'attendee') continue;
+    (roles[row.registration_id] ??= []).push(row.role_code as 'chair' | 'presenter');
+  }
 
   const speakerNames = deriveSpeakerNames(blocksRes.data ?? []);
   const initialSpeakerCheckins = checkinsRes.data ?? [];
@@ -102,9 +124,15 @@ export default async function StaffCheckinPage({
 
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role }} backHref={`/events/${id}/details`} backLabel="Event">
-      {/* Per patterns §8 the StaffShell's NAV owns all back-navigation; this
-          header only carries the page title (no breadcrumb — that would
-          duplicate the top NAV's "Back to Event" link). */}
+      <Breadcrumbs
+        items={[
+          { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboardIcon },
+          { label: event.title, href: `/events/${id}/details`, icon: CalendarDaysIcon },
+          { label: 'Check-in', icon: UserCheckIcon },
+        ]}
+        className="mb-sm"
+      />
+
       <header className="mb-lg">
         {/* Function-leads eyebrow (locked naming rule). */}
         <p className="text-label-md font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-xs">
@@ -135,6 +163,7 @@ export default async function StaffCheckinPage({
         initialRoster={rosterRes.data ?? []}
         eligibility={eligibility}
         eligibilityUnavailable={Boolean(eligRes.error)}
+        roles={roles}
         maxAttendees={event.max_attendees}
         speakerNames={speakerNames}
         initialSpeakerCheckins={initialSpeakerCheckins}
