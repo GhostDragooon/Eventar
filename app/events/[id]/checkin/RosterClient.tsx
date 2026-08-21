@@ -1,15 +1,17 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/browser';
 import { formatInTz } from '@/lib/tz';
 import { isValidRegistrationCode } from '@/lib/registrationCode';
 import { humanizeCameraError } from '@/lib/cameraError';
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
 import { markAttended } from './actions';
+import { setRegistrationRole, removeRegistrationRole } from '../details/multiBodyActions';
 import { Scoreboard } from './Scoreboard';
 import { ScanAndManual } from './ScanAndManual';
 import { SpeakersCard, type SpeakerCheckinRow } from './SpeakersCard';
+import { Button } from '@/components/ui/button';
 
 type RosterRow = {
   id: string;
@@ -50,6 +52,7 @@ export default function RosterClient({
   initialRoster,
   eligibility,
   eligibilityUnavailable,
+  roles,
   maxAttendees: _maxAttendees,
   speakerNames,
   initialSpeakerCheckins,
@@ -62,6 +65,8 @@ export default function RosterClient({
   /** registration_id → eligibility enum from event_registration_eligibility. */
   eligibility: Record<string, string>;
   eligibilityUnavailable: boolean;
+  /** registration_id → non-default roles (attendee is implicit, never listed here). */
+  roles: Record<string, ('chair' | 'presenter')[]>;
   /**
    * Capacity, currently unused — the Scoreboard renders attended/registered.
    * Kept on the prop contract so the page can pass it without divergence; a
@@ -73,6 +78,7 @@ export default function RosterClient({
   initialSpeakerCheckins: SpeakerCheckinRow[];
 }) {
   const [roster, setRoster] = useState<RosterRow[]>(initialRoster);
+  const [roleState, setRoleState] = useState(roles);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'attended' | 'registered'>('all');
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -80,6 +86,10 @@ export default function RosterClient({
   // For the "recent" row state — bump every 30s so the accent fades out
   // without a full re-render of unrelated tablet state.
   const [nowMs, setNowMs] = useState<number>(() => Date.now());
+  // One shared useTransition would grey out all 400 chips on a 400-person
+  // roster while a single toggle round-trips — track pending per row+role.
+  const [pendingRoleKeys, setPendingRoleKeys] = useState<Set<string>>(new Set());
+  const [, startTransition] = useTransition();
 
   useEffect(() => {
     const id = setInterval(() => setNowMs(Date.now()), 30_000);
@@ -139,20 +149,52 @@ export default function RosterClient({
   const registeredTotal = roster.length;
   const startMs = useMemo(() => new Date(eventStartTime).getTime(), [eventStartTime]);
 
-  async function handleMark(code: string, method: 'qr' | 'manual') {
+  // Returns the outcome as well as toasting it: the manual-entry dialog shows
+  // its own inline success/error state, so it needs the result rather than
+  // inferring anything from a toast it cannot see.
+  async function handleMark(
+    code: string,
+    method: 'qr' | 'manual',
+  ): Promise<{ ok: true; name: string } | { error: string }> {
     const res = await markAttended(code, method);
     if ('error' in res) {
       const suffix = res.alreadyAttendedAt
         ? ` at ${formatInTz(res.alreadyAttendedAt, eventTimezone)}`
         : '';
-      setToast({ kind: 'err', message: `${res.error.replace(/\.$/, '')}${suffix}.` });
-      return;
+      const message = `${res.error.replace(/\.$/, '')}${suffix}.`;
+      setToast({ kind: 'err', message });
+      return { error: message };
     }
     setToast({
       kind: 'ok',
       message: `Marked ${res.registration.full_name} attended (${res.registration.event_title}).`,
     });
     // Realtime broadcast will update the roster; no optimistic update needed.
+    return { ok: true, name: res.registration.full_name };
+  }
+
+  function toggleRole(registrationId: string, role: 'chair' | 'presenter', has: boolean) {
+    const key = `${registrationId}:${role}`;
+    setPendingRoleKeys((prev) => new Set(prev).add(key));
+    startTransition(async () => {
+      const res = has
+        ? await removeRegistrationRole({ registrationId, eventId, roleCode: role })
+        : await setRegistrationRole({ registrationId, eventId, roleCode: role });
+      setPendingRoleKeys((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+      if ('error' in res) {
+        setToast({ kind: 'err', message: res.error });
+        return;
+      }
+      setRoleState((prev) => {
+        const current = prev[registrationId] ?? [];
+        const next = has ? current.filter((r) => r !== role) : [...current, role];
+        return { ...prev, [registrationId]: next };
+      });
+    });
   }
 
   return (
@@ -238,6 +280,9 @@ export default function RosterClient({
                     nowMs={nowMs}
                     eventTimezone={eventTimezone}
                     onMark={() => handleMark(r.registration_code, 'manual')}
+                    roles={roleState[r.id] ?? []}
+                    pendingRoleKeys={pendingRoleKeys}
+                    onToggleRole={(role, has) => toggleRole(r.id, role, has)}
                   />
                 ))}
               </ul>
@@ -271,19 +316,18 @@ function FilterPill({
   label: string;
 }) {
   return (
-    <button
+    // aria-pressed selection, not a plain action — same pattern as EventCard's
+    // Save. Kept on <Button> rather than the Toggle primitive so the existing
+    // secondary-container "on" colour survives (Toggle's on-state is bg-muted).
+    <Button
       type="button"
+      variant={active ? 'secondary' : 'outline'}
       onClick={onClick}
       aria-pressed={active}
-      className={
-        'font-label-md text-label-md px-md py-sm rounded-full border transition-colors ' +
-        (active
-          ? 'bg-secondary-container text-on-secondary-container border-transparent'
-          : 'bg-transparent text-on-surface-variant border-outline-variant hover:bg-surface-container')
-      }
+      className="font-label-md text-label-md px-md py-sm"
     >
       {label}
-    </button>
+    </Button>
   );
 }
 
@@ -298,12 +342,18 @@ function RosterRowItem({
   nowMs,
   eventTimezone,
   onMark,
+  roles,
+  pendingRoleKeys,
+  onToggleRole,
 }: {
   row: RosterRow;
   eligibility?: string;
   nowMs: number;
   eventTimezone: string;
   onMark: () => void;
+  roles: ('chair' | 'presenter')[];
+  pendingRoleKeys: Set<string>;
+  onToggleRole: (role: 'chair' | 'presenter', has: boolean) => void;
 }) {
   const isAttended = r.status === 'attended';
   const checkInMs = r.check_in_at ? new Date(r.check_in_at).getTime() : null;
@@ -339,6 +389,36 @@ function RosterRowItem({
             <span>{ELIGIBILITY_NOTE[eligibility]}</span>
           </p>
         )}
+        {/* Multi-body role (chair/presenter) — attendee is the implicit
+            default and has no toggle. Same cell as the name, not a 5th
+            column: the roster's 4-column grid is a locked TC spec.
+            Disabled once attended: award_attendance_credit runs synchronously
+            at check-in and credit_ledger_attendance_uniq means a role set
+            afterward can never change what was already posted. */}
+        <div className="mt-[2px] flex gap-xs">
+          {(['chair', 'presenter'] as const).map((role) => {
+            const has = roles.includes(role);
+            const pending = pendingRoleKeys.has(`${r.id}:${role}`);
+            return (
+              <button
+                key={role}
+                type="button"
+                disabled={pending || isAttended}
+                aria-pressed={has}
+                aria-label={`${role} — ${r.full_name}`}
+                title={isAttended ? 'Already checked in — role changes here won’t affect the credit already posted.' : undefined}
+                onClick={() => onToggleRole(role, has)}
+                className={`rounded-full px-xs py-[1px] text-[calc(11px*var(--text-scale))] font-medium capitalize transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary-ink disabled:opacity-50 ${
+                  has
+                    ? 'bg-primary-container text-on-primary-container'
+                    : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'
+                }`}
+              >
+                {role}
+              </button>
+            );
+          })}
+        </div>
       </div>
       <code className="font-body-md text-[calc(13px*var(--text-scale))] text-on-surface-variant tabular-nums">
         {r.registration_code}
@@ -349,13 +429,14 @@ function RosterRowItem({
           {r.check_in_at ? formatInTz(r.check_in_at, eventTimezone) : 'Checked in'}
         </span>
       ) : (
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={onMark}
-          className="justify-self-start min-h-11 rounded-lg px-md py-sm font-label-md text-label-md bg-transparent text-primary-ink border border-outline-variant hover:bg-surface-container-low transition-colors"
+          className="justify-self-start min-h-11 px-md py-sm font-label-md text-label-md text-primary-ink"
         >
           Check in →
-        </button>
+        </Button>
       )}
       <span className="font-label-md text-label-md text-on-surface-variant normal-case tracking-normal">
         {isAttended ? (r.check_in_method === 'qr' ? 'QR' : r.check_in_method === 'manual' ? 'Manual' : '—') : '—'}

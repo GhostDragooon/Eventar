@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react';
 import { setEventCpdConfig } from '@/app/events/[id]/details/cpdActions';
 import { priorApprovalDeadline } from '@/lib/cpd/priorApproval';
 import { formatInTz } from '@/lib/tz';
+import { Button } from '@/components/ui/button';
 
 export type AccreditingBodyOption = {
   id: string;
@@ -30,6 +31,16 @@ export type CpdAccreditationSectionProps = {
    * is out-of-band (DEFERRED 56).
    */
   noAuthorisedBodies?: boolean;
+  /**
+   * A real config exists via MultiBodyAccreditationWizard (event_accreditation_groups),
+   * which set_event_cpd_config's own guard (20260821000000) now refuses to
+   * touch. currentBodyId/currentHours can still be non-null here (whatever
+   * they held before the wizard took over — the bridge doesn't clear them) —
+   * without this flag the badge below reads "Not accredited" for an event
+   * that plainly is, just via the other surface (a confirmed live "did this
+   * work?" bug), and the form would let an organiser resubmit stale values.
+   */
+  multiBodyConfigured?: boolean;
 };
 
 export function CpdAccreditationSection({
@@ -41,6 +52,7 @@ export function CpdAccreditationSection({
   creditsIssued,
   bodiesUnavailable = false,
   noAuthorisedBodies = false,
+  multiBodyConfigured = false,
 }: CpdAccreditationSectionProps) {
   const [bodyId, setBodyId] = useState(currentBodyId ?? '');
   const [hours, setHours] = useState(currentHours != null ? String(currentHours) : '');
@@ -53,7 +65,15 @@ export function CpdAccreditationSection({
   // form is disabled rather than letting the organiser type into fields whose
   // save can only fail. The reason is stated, not just the disabled state.
   const frozen = creditsIssued > 0;
-  const accredited = currentBodyId !== null && currentHours !== null;
+  // multiBodyConfigured locks this field the same way `frozen` does: the DB
+  // guard (20260821000000_set_event_cpd_config_multi_body_guard.sql) already
+  // refuses any save while a wizard config exists, so the form must say so
+  // up front rather than let a submit fail. currentBodyId/currentHours can
+  // still hold a real prior value here (the bridge writes them, and they
+  // aren't cleared when the wizard takes over) — locking, not hiding it, is
+  // consistent with how `frozen` treats existing data.
+  const locked = frozen || multiBodyConfigured;
+  const accredited = (currentBodyId !== null && currentHours !== null) || multiBodyConfigured;
 
   // An event can be bound to a body that is no longer `active` (retired, or
   // moved back to onboarding). The options list only carries active bodies, so
@@ -85,9 +105,16 @@ export function CpdAccreditationSection({
               : 'bg-surface-container-high text-on-surface-variant'
           }`}
         >
-          {accredited ? 'Accredited' : 'Not accredited'}
+          {multiBodyConfigured ? 'Accredited (multiple bodies)' : accredited ? 'Accredited' : 'Not accredited'}
         </span>
       </div>
+
+      {multiBodyConfigured && (
+        <p className="mt-md rounded-lg bg-primary-container px-md py-sm text-body-md text-on-primary-container">
+          This event is accredited via the multiple-body wizard below, so the field here is locked — any value it
+          shows is left over from before the wizard was used and is not what&rsquo;s actually in effect.
+        </p>
+      )}
 
       {bodiesUnavailable && (
         <p className="mt-md rounded-lg bg-error-container px-md py-sm text-body-md text-on-error-container">
@@ -142,7 +169,7 @@ export function CpdAccreditationSection({
             id="cpd-body"
             name="bodyId"
             value={bodyId}
-            disabled={frozen || pending || bodiesUnavailable}
+            disabled={locked || pending || bodiesUnavailable}
             onChange={(e) => setBodyId(e.target.value)}
             className="mt-xs w-full rounded-lg border border-outline-variant bg-surface px-md py-sm text-body-md text-on-surface disabled:opacity-60"
           >
@@ -170,20 +197,20 @@ export function CpdAccreditationSection({
             min="0.5"
             max="24"
             value={hours}
-            disabled={frozen || pending || bodiesUnavailable}
+            disabled={locked || pending || bodiesUnavailable}
             onChange={(e) => setHours(e.target.value)}
             placeholder="—"
             className="mt-xs w-full rounded-lg border border-outline-variant bg-surface px-md py-sm text-body-md text-on-surface disabled:opacity-60"
           />
         </div>
 
-        <button
+        <Button
           type="submit"
-          disabled={frozen || pending || bodiesUnavailable}
-          className="rounded-full bg-primary px-lg py-sm text-label-md font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:opacity-50"
+          disabled={locked || pending || bodiesUnavailable}
+          className="px-lg py-sm text-label-md font-semibold"
         >
           {pending ? 'Saving…' : 'Save'}
-        </button>
+        </Button>
       </form>
 
       {result && (

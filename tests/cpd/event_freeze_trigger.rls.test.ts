@@ -27,6 +27,11 @@ describe.skipIf(!process.env.RLS_TESTS)('freeze_cpd_config_if_credited — event
   // current_staff_id(), so RLS passes and only the grant can deny).
   let eventOwner: TestUser;
   let practitioner: TestUser;
+  // C5's granular CRUD functions require organiser_admin/eventar_staff —
+  // eventOwner's staff role above is body_admin (this file's own fixture,
+  // unrelated to C5), which resolve_actor's role filter rejects before ever
+  // reaching the freeze check. A minimal eventar_staff actor closes that gap.
+  let c5StaffId: string;
   let bodyId: string;
   let creditedEventId: string;
   let uncreditedEventId: string;
@@ -64,6 +69,14 @@ describe.skipIf(!process.env.RLS_TESTS)('freeze_cpd_config_if_credited — event
         organisation_id: DEFAULT_ORG,
         short_name: 'RLS-FREEZE-FIXTURE',
         full_name: 'RLS Test Body (freeze-trigger fixture)',
+        // Pre-existing gap, found running this file on a freshly-reset local
+        // stack: without this, a first-ever insert of this sentinel takes
+        // the column default ('onboarding'), which declare_licence's
+        // active-body check (DEFERRED item 30) correctly rejects. Every
+        // sibling fixture in this test suite sets this explicitly; this one
+        // only worked before because the sentinel row already existed
+        // active from an earlier run.
+        status: 'active',
         cycle_config: {},
         category_taxonomy: {},
       }, { onConflict: 'organisation_id,short_name' })
@@ -118,6 +131,30 @@ describe.skipIf(!process.env.RLS_TESTS)('freeze_cpd_config_if_credited — event
       p_attestation_status: 'attendance_verified',
     });
     if (creditErr) throw new Error(`record_credit_entry fixture: ${creditErr.message}`);
+
+    // add_event_accreditation_group checks org-authorisation before it ever
+    // reaches the freeze check (same guard order as set_event_cpd_config) —
+    // this file's original fixture never needed one, since its own tests
+    // only ever UPDATE events directly via the admin client, bypassing that
+    // check entirely.
+    const { error: authErr } = await admin
+      .from('organisation_body_authorisations')
+      .upsert({ organisation_id: DEFAULT_ORG, body_id: bodyId, status: 'active' }, { onConflict: 'organisation_id,body_id' });
+    if (authErr) throw new Error(`org authorisation fixture: ${authErr.message}`);
+
+    const { data: c5Staff, error: c5StaffErr } = await admin
+      .from('staff')
+      .insert({
+        email: `freeze-c5-staff-${ts}@example.com`,
+        role: 'eventar_staff',
+        full_name: 'RLS Freeze-Trigger C5 Staff',
+        organisation_id: DEFAULT_ORG,
+        status: 'active',
+      })
+      .select('id')
+      .single();
+    if (c5StaffErr || !c5Staff) throw new Error(`c5 staff fixture: ${c5StaffErr?.message}`);
+    c5StaffId = c5Staff.id as string;
   }, 60_000);
 
   afterAll(async () => {
@@ -126,6 +163,7 @@ describe.skipIf(!process.env.RLS_TESTS)('freeze_cpd_config_if_credited — event
     // accepted-debt class as attendance_issuance.rls.test.ts. Only the
     // uncredited control event carries zero credit reference.
     await mustDelete(admin.from('events').delete().eq('id', uncreditedEventId), 'uncredited event fixture');
+    await mustDelete(admin.from('staff').delete().eq('id', c5StaffId), 'c5 staff fixture');
   }, 30_000);
 
   it('blocks changing cpd_hours or accrediting_body_id on an event that already has a credit', async () => {
@@ -208,5 +246,22 @@ describe.skipIf(!process.env.RLS_TESTS)('freeze_cpd_config_if_credited — event
     // Was `> 0` only, so 1e9 was legal and would be snapshotted immutably.
     const { error } = await admin.from('events').update({ cpd_hours: 999 }).eq('id', uncreditedEventId);
     expect(error?.code).toBe('23514');
+  });
+
+  // C5 (Task 10.8/10.9) added a second family of writers to the same three
+  // tables the freeze triggers guard. Those functions deliberately do NOT
+  // duplicate the credit-existence check themselves — this proves the
+  // trigger they rely on instead actually fires for them too, not just for
+  // the legacy set_event_cpd_config path exercised above.
+  it('blocks add_event_accreditation_group on an event that already has a credit', async () => {
+    const { error } = await admin.rpc('add_event_accreditation_group', {
+      p_event_id: creditedEventId,
+      p_body_id: bodyId,
+      p_category_code: null,
+      p_unit: 'hours',
+      p_award_scheme: 'proportional',
+      p_actor_override: c5StaffId,
+    });
+    expect(error?.code).toBe('22023');
   });
 });

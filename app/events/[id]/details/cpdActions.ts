@@ -93,16 +93,24 @@ export async function setEventCpdConfig(
     }
     if (error.code === '23514') return { error: 'CPD hours must be between 0 and 24.' };
     if (error.code === 'P0002') return { error: 'That accrediting body is not available.' };
-    // Two causes raise 42501, and they need opposite remedies. Without the
-    // discriminator an organiser who IS the owner was told they weren't, and
-    // went looking for a colleague instead of for the accrediting body.
-    // `detail` is set by set_event_cpd_config (20260804040000) and surfaced by
-    // PostgREST as `details`.
+    // Three causes raise 42501, and they need three different remedies.
+    // Without the discriminator an organiser who IS the owner was told they
+    // weren't, and went looking for a colleague instead of for the
+    // accrediting body (or, since 20260821000000, instead of the wizard
+    // below — a live-confirmed regression the first time this went out).
+    // `detail` is set by set_event_cpd_config (20260804040000, extended
+    // 20260821000000) and surfaced by PostgREST as `details`.
     if (error.code === '42501') {
       if (error.details === 'not_authorised_for_body') {
         return {
           error:
             'Your organisation isn’t authorised by that accrediting body, so its events can’t be marked as accredited by them. This is arranged with the body directly.',
+        };
+      }
+      if (error.details === 'multi_body_configured') {
+        return {
+          error:
+            'This event already has a multiple-body accreditation set up below — use that section to change accreditation, not this field.',
         };
       }
       return { error: 'Only the event owner can set its accreditation.' };
