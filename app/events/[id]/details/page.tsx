@@ -4,6 +4,8 @@ import { requireStaff, NotAuthorizedError } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { StaffShell } from '@/components/shell/StaffShell';
+import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
+import { LayoutDashboardIcon, CalendarDaysIcon } from 'lucide-react';
 import { ReadinessStrip, type ReadinessCell } from '@/components/details/ReadinessStrip';
 import { StatusPill } from '@/components/lifecycle/StatusPill';
 import { computeLifecycle, type EventLifecycleRow, type Lifecycle } from '@/lib/lifecycle/eventLifecycle';
@@ -13,7 +15,9 @@ import { RegistrationSection } from '@/components/details/RegistrationSection';
 import { AttendanceSection } from '@/components/details/AttendanceSection';
 import { FeedbackSection } from '@/components/details/FeedbackSection';
 import { listAuthorisedBodies } from '@/lib/cpd/authorisedBodies';
+import { isMultiBodyConfigured } from '@/lib/cpd/multiBodyShape';
 import { CpdAccreditationSection } from '@/components/details/CpdAccreditationSection';
+import { MultiBodyAccreditationWizard, type WizardGroup, type WizardOccurrence } from '@/components/details/MultiBodyAccreditationWizard';
 import { PassDeliveryPanel } from '@/components/details/PassDeliveryPanel';
 import { EmailSendControls } from './EmailSendControls';
 import { LiveScoreboard } from '@/components/details/LiveScoreboard';
@@ -42,7 +46,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
   // The accrediting-body list is NOT in this batch: which bodies are offerable
   // depends on the event's organisation (DEFERRED 56), so it cannot be fetched
   // until the event row has resolved.
-  const [eventRes, regsRes, surveysRes, blocksRes, confirmationsRes, creditsRes, deliveryRes] = await Promise.all([
+  const [eventRes, regsRes, surveysRes, blocksRes, confirmationsRes, creditsRes, deliveryRes, accGroupsRes, occurrencesRes] = await Promise.all([
     supabase
       .from('events')
       .select('id, title, start_time, end_time, timezone, venue_name, max_attendees, status, registration_close_at, registration_open_at, created_by, accrediting_body_id, cpd_hours, organisation_id')
@@ -80,11 +84,14 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
     // freeze trigger will refuse any config change, so the form is disabled.
     // credit_ledger reads need the admin client: it is deliberately not
     // readable by an organiser's own session (cross-tenant by design).
+    // No .eq('entry_type', ...) filter — the DB freeze triggers (20260815020000)
+    // check `exists(... where event_id = ...)` with no entry-type filter of
+    // their own, so this predicate must match that exactly or the UI can
+    // show "unfrozen" for an event the DB already refuses to change.
     admin
       .from('credit_ledger')
       .select('id', { count: 'exact', head: true })
-      .eq('event_id', id)
-      .eq('entry_type', 'credit_earned'),
+      .eq('event_id', id),
     // Per-recipient pass delivery. Admin like the sibling reads above:
     // email_log has no anon/authenticated policy at all (service-role only),
     // and this page's auth gate has already run.
@@ -93,6 +100,17 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
       .select('registration_id, purpose, status')
       .eq('event_id', id)
       .not('registration_id', 'is', null),
+    // C5 multi-body wizard's initial state — nested embed follows the FK
+    // chain groups -> accreditations -> occurrence links in one round trip.
+    supabase
+      .from('event_accreditation_groups')
+      .select('id, body_id, category_code, unit, award_scheme, event_accreditations(id, credit_value, event_accreditation_occurrences(occurrence_id))')
+      .eq('event_id', id),
+    supabase
+      .from('event_occurrences')
+      .select('id, ordinal, name, starts_at')
+      .eq('event_id', id)
+      .order('ordinal'),
   ]);
 
   if (eventRes.error) throw eventRes.error;
@@ -111,6 +129,45 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
     console.error('[details] credit_ledger count failed', { code: creditsRes.error.code });
   }
   const creditsIssued = creditsRes.count ?? 0;
+
+  // C5 wizard's initial state. A read failure here must not take the page
+  // down (same posture as credit/delivery above) — the wizard just opens
+  // empty, which is honest (organiser can still add groups; it never claims
+  // "nothing configured" when the read simply failed silently).
+  if (accGroupsRes.error) {
+    console.error('[details] event_accreditation_groups read failed', { code: accGroupsRes.error.code });
+  }
+  if (occurrencesRes.error) {
+    console.error('[details] event_occurrences read failed', { code: occurrencesRes.error.code });
+  }
+  type RawGroup = {
+    id: string;
+    body_id: string;
+    category_code: string | null;
+    unit: string | null;
+    award_scheme: 'proportional' | 'explicit_schedule';
+    event_accreditations: Array<{ id: string; credit_value: number; event_accreditation_occurrences: Array<{ occurrence_id: string }> }>;
+  };
+  const wizardGroups: WizardGroup[] = ((accGroupsRes.data ?? []) as RawGroup[]).map((g) => ({
+    id: g.id,
+    bodyId: g.body_id,
+    categoryCode: g.category_code,
+    unit: g.unit,
+    awardScheme: g.award_scheme,
+    rows: g.event_accreditations.map((a) => ({
+      id: a.id,
+      credit_value: a.credit_value,
+      occurrenceIds: a.event_accreditation_occurrences.map((o) => o.occurrence_id),
+    })),
+  }));
+  const wizardOccurrences: WizardOccurrence[] = (occurrencesRes.data ?? []) as WizardOccurrence[];
+
+  // "Has any accreditation group" is NOT the same question as "is a real
+  // multi-body config" — the compatibility bridge writes one group for every
+  // plain single-body save too. See lib/cpd/multiBodyShape.ts for why
+  // conflating them breaks in both directions, and for the correspondence
+  // with set_event_cpd_config's own guard.
+  const multiBodyConfigured = isMultiBodyConfigured(wizardGroups, wizardOccurrences.length);
 
   // Same posture as the credit count: one panel failing must not take the page
   // down, but it must not read as "everyone got their pass" either (rule 12).
@@ -131,6 +188,25 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
   const accreditingBodies = authorised.bodies;
   const bodiesUnavailable = authorised.unavailable;
   const noAuthorisedBodies = !authorised.unavailable && authorised.bodies.length === 0;
+
+  // bodyDirectory: accreditingBodies (offerable, for the add-body picker) plus
+  // any body already bound to an existing group whose org-authorisation has
+  // since lapsed — same "still show the real binding" posture as
+  // CpdAccreditationSection's own currentIsMissing handling, generalised to
+  // N groups instead of one scalar column.
+  const authorisedIds = new Set(accreditingBodies.map((b) => b.id));
+  const missingBodyIds = [...new Set(wizardGroups.map((g) => g.bodyId).filter((bid) => !authorisedIds.has(bid)))];
+  let bodyDirectory = accreditingBodies;
+  if (missingBodyIds.length > 0) {
+    const missingRes = await admin
+      .from('accrediting_bodies')
+      .select('id, full_name, short_name, cycle_config')
+      .in('id', missingBodyIds);
+    if (missingRes.error) {
+      console.error('[details] missing accrediting_bodies lookup failed', { code: missingRes.error.code });
+    }
+    bodyDirectory = [...accreditingBodies, ...(missingRes.data ?? [])];
+  }
   const regs = regsRes.data ?? [];
   const surveys = surveysRes.data ?? [];
   const blocks = blocksRes.data ?? [];
@@ -159,7 +235,13 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
   // say so rather than print a placeholder and a green "confirmed".
   const configuredBody = accreditingBodies.find((b) => b.id === event.accrediting_body_id);
   const hasConfig = event.accrediting_body_id != null && event.cpd_hours != null;
-  const accredited = hasConfig && configuredBody != null;
+  const singleBodyAccredited = hasConfig && configuredBody != null;
+  // A real config built via the wizard (event_accreditation_groups) is
+  // equally "accredited" — its bodies were validated at add time by
+  // add_event_accreditation_group, so no separate not-authorised check is
+  // needed the way the legacy scalar columns require one.
+  const multiBodyAccredited = multiBodyConfigured;
+  const accredited = singleBodyAccredited || multiBodyAccredited;
 
   const readiness: ReadinessCell[] = [
     {
@@ -179,13 +261,15 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
     },
     {
       label: 'accreditation',
-      value: accredited
-        ? `${configuredBody.short_name} ${event.cpd_hours}`
+      value: multiBodyAccredited
+        ? `${wizardGroups.length} ${wizardGroups.length === 1 ? 'body' : 'bodies'}`
+        : singleBodyAccredited ? `${configuredBody.short_name} ${event.cpd_hours}`
         : hasConfig ? 'Unverified'
         : 'Not set',
       state: accredited ? 'ok' : hasConfig ? 'blocked' : 'warn',
-      note: accredited
-        ? 'hours confirmed'
+      note: multiBodyAccredited
+        ? 'via multi-body accreditation'
+        : singleBodyAccredited ? 'hours confirmed'
         : hasConfig ? 'body not authorised for this org'
         : 'no body or hours',
     },
@@ -214,6 +298,14 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
 
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role }} backHref="/dashboard" backLabel="Dashboard">
+      <Breadcrumbs
+        items={[
+          { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboardIcon },
+          { label: event.title, icon: CalendarDaysIcon },
+        ]}
+        className="mb-sm"
+      />
+
       {/* Live-only sticky strip — separate element from the toolbar (locked). */}
       {lifecycle === 'live' && (
         <StickyLiveBar
@@ -266,12 +358,23 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
       <CpdAccreditationSection
         eventId={event.id}
         startTime={event.start_time}
+        endTime={event.end_time}
         bodies={accreditingBodies}
         currentBodyId={event.accrediting_body_id}
         currentHours={event.cpd_hours}
+        multiBodyConfigured={multiBodyConfigured}
         creditsIssued={creditsIssued}
         bodiesUnavailable={bodiesUnavailable}
         noAuthorisedBodies={noAuthorisedBodies}
+      />
+
+      <MultiBodyAccreditationWizard
+        eventId={event.id}
+        bodies={accreditingBodies}
+        bodyDirectory={bodyDirectory}
+        occurrences={wizardOccurrences}
+        initialGroups={wizardGroups}
+        frozen={creditsIssued > 0}
       />
 
       <RegistrationSection

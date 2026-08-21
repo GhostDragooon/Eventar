@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import { notFound, redirect } from 'next/navigation';
 import { requireStaff, NotAuthorizedError } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
@@ -10,8 +11,12 @@ import DownloadQrButton from '@/components/DownloadQrButton';
 import ExportRegistrantsButton from '@/components/ExportRegistrantsButton';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { CpdAccreditationSection } from '@/components/details/CpdAccreditationSection';
+import { MultiBodyAccreditationWizard, type WizardGroup, type WizardOccurrence } from '@/components/details/MultiBodyAccreditationWizard';
+import { isMultiBodyConfigured } from '@/lib/cpd/multiBodyShape';
 import { listAuthorisedBodies } from '@/lib/cpd/authorisedBodies';
 import { StaffShell } from '@/components/shell/StaffShell';
+import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
+import { LayoutDashboardIcon, CalendarDaysIcon, SquarePenIcon } from 'lucide-react';
 import NewEventForm, {
   type InitialEvent,
   type InitialBlock,
@@ -100,16 +105,76 @@ export default async function StaffEventEditPage({
   // Only bodies this organisation may actually claim (DEFERRED 56). Offering
   // every active body meant most choices failed at save, AFTER the organiser
   // had picked one and typed the hours.
-  const [authorised, creditsRes] = await Promise.all([
+  const [authorised, creditsRes, accGroupsRes, occurrencesRes] = await Promise.all([
     listAuthorisedBodies(event.organisation_id as string),
     supabaseAdmin()
       .from('credit_ledger')
       .select('id', { count: 'exact', head: true })
+      .eq('event_id', event.id),
+    // C5 wizard state, mirroring app/events/[id]/details/page.tsx — the two
+    // pages must stay in step. Rendering the wizard on only one of them is
+    // exactly what produced the defect this fixes.
+    supabase
+      .from('event_accreditation_groups')
+      .select('id, body_id, category_code, unit, award_scheme, event_accreditations(id, credit_value, event_accreditation_occurrences(occurrence_id))')
+      .eq('event_id', event.id),
+    supabase
+      .from('event_occurrences')
+      .select('id, ordinal, name, starts_at')
       .eq('event_id', event.id)
-      .eq('entry_type', 'credit_earned'),
+      .order('ordinal'),
   ]);
   if (creditsRes.error) {
     console.error('[edit] credit_ledger count failed', { code: creditsRes.error.code });
+  }
+  // Neither read may take the page down — an organiser must still be able to
+  // edit an event when the accreditation panel's data is unavailable — but
+  // neither may fail silently either (rule 12).
+  if (accGroupsRes.error) {
+    console.error('[edit] event_accreditation_groups read failed', { code: accGroupsRes.error.code });
+  }
+  if (occurrencesRes.error) {
+    console.error('[edit] event_occurrences read failed', { code: occurrencesRes.error.code });
+  }
+
+  type RawGroup = {
+    id: string;
+    body_id: string;
+    category_code: string | null;
+    unit: string | null;
+    award_scheme: 'proportional' | 'explicit_schedule';
+    event_accreditations: Array<{ id: string; credit_value: number; event_accreditation_occurrences: Array<{ occurrence_id: string }> }>;
+  };
+  const wizardGroups: WizardGroup[] = ((accGroupsRes.data ?? []) as RawGroup[]).map((g) => ({
+    id: g.id,
+    bodyId: g.body_id,
+    categoryCode: g.category_code,
+    unit: g.unit,
+    awardScheme: g.award_scheme,
+    rows: g.event_accreditations.map((a) => ({
+      id: a.id,
+      credit_value: a.credit_value,
+      occurrenceIds: a.event_accreditation_occurrences.map((o) => o.occurrence_id),
+    })),
+  }));
+  const wizardOccurrences: WizardOccurrence[] = (occurrencesRes.data ?? []) as WizardOccurrence[];
+  const multiBodyConfigured = isMultiBodyConfigured(wizardGroups, wizardOccurrences.length);
+
+  // Same "still show the real binding" posture as details: a body bound to an
+  // existing group whose org-authorisation has since lapsed must remain
+  // nameable, or the wizard renders a group labelled by a missing id.
+  const authorisedIds = new Set(authorised.bodies.map((b) => b.id));
+  const missingBodyIds = [...new Set(wizardGroups.map((g) => g.bodyId).filter((bid) => !authorisedIds.has(bid)))];
+  let bodyDirectory = authorised.bodies;
+  if (missingBodyIds.length > 0) {
+    const missingRes = await supabaseAdmin()
+      .from('accrediting_bodies')
+      .select('id, full_name, short_name, cycle_config')
+      .in('id', missingBodyIds);
+    if (missingRes.error) {
+      console.error('[edit] missing accrediting_bodies lookup failed', { code: missingRes.error.code });
+    }
+    bodyDirectory = [...authorised.bodies, ...(missingRes.data ?? [])];
   }
 
   const ended = new Date(event.end_time).getTime() < new Date().getTime();
@@ -119,9 +184,15 @@ export default async function StaffEventEditPage({
 
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role }} backHref="/dashboard" backLabel="Dashboard">
-      {/* Per patterns §8 the StaffShell's NAV owns all back-navigation; this
-          header only carries the page title (no breadcrumb — that would
-          duplicate the top NAV's "Back to Dashboard" link). */}
+      <Breadcrumbs
+        items={[
+          { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboardIcon },
+          { label: event.title, href: `/events/${id}/details`, icon: CalendarDaysIcon },
+          { label: 'Edit', icon: SquarePenIcon },
+        ]}
+        className="mb-sm"
+      />
+
       <header className="mb-lg">
         <div className="flex items-center gap-md mb-sm flex-wrap">
           <StatusPill status={event.status} />
@@ -141,12 +212,28 @@ export default async function StaffEventEditPage({
         <CpdAccreditationSection
           eventId={event.id}
           startTime={event.start_time}
+          endTime={event.end_time}
           bodies={authorised.bodies}
           currentBodyId={event.accrediting_body_id}
           currentHours={event.cpd_hours}
+          multiBodyConfigured={multiBodyConfigured}
           creditsIssued={creditsRes.count ?? 0}
           bodiesUnavailable={authorised.unavailable}
           noAuthorisedBodies={!authorised.unavailable && authorised.bodies.length === 0}
+        />
+
+        {/* Decision 9: parity with /details. Without this an organiser could
+            only ever configure a second accrediting body from the details
+            page, and the legacy field above sat unlocked on a wizard-
+            configured event — offering stale single-body values whose save
+            the DB then refused with 42501. */}
+        <MultiBodyAccreditationWizard
+          eventId={event.id}
+          bodies={authorised.bodies}
+          bodyDirectory={bodyDirectory}
+          occurrences={wizardOccurrences}
+          initialGroups={wizardGroups}
+          frozen={(creditsRes.count ?? 0) > 0}
         />
       </div>
 
@@ -175,12 +262,9 @@ export default async function StaffEventEditPage({
                   await publishEvent(event.id);
                 }}
               >
-                <button
-                  type="submit"
-                  className="w-full bg-primary text-on-primary font-label-md text-label-md rounded-full py-sm px-lg hover:opacity-90 transition-opacity"
-                >
+                <Button type="submit" className="w-full font-label-md text-label-md">
                   Publish event
-                </button>
+                </Button>
               </form>
             </ActionCard>
           </aside>
@@ -260,28 +344,13 @@ export default async function StaffEventEditPage({
 
         {/* Right (4 cols): sticky action panel */}
         <aside className="lg:col-span-4 lg:sticky lg:top-[72px] space-y-md self-start">
-          {event.status === 'draft' && (
-            <ActionCard
-              icon="publish"
-              title="Ready to publish?"
-              body="Publishing makes the registration page live. The QR also unlocks."
-            >
-              <form
-                action={async () => {
-                  'use server';
-                  await publishEvent(event.id);
-                }}
-              >
-                <button
-                  type="submit"
-                  className="w-full bg-primary text-on-primary font-label-md text-label-md rounded-full py-sm px-lg hover:opacity-90 transition-opacity"
-                >
-                  Publish event
-                </button>
-              </form>
-            </ActionCard>
-          )}
-
+          {/* No `event.status === 'draft'` publish card here: this whole
+              branch only renders in the ternary's ELSE, which already
+              guarantees status !== 'draft'. A guard for it was dead code —
+              found while sweeping this file for the primitive gate, removed
+              per rule 12 (a condition that can never be true is worse than
+              no condition; it reads as live). The draft path's own Publish
+              card lives in the ternary's other branch, ~40 lines up. */}
           {event.status === 'published' && (
             <>
               <ActionCard

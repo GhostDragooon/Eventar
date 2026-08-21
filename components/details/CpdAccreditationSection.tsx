@@ -41,11 +41,52 @@ export type CpdAccreditationSectionProps = {
    * work?" bug), and the form would let an organiser resubmit stale values.
    */
   multiBodyConfigured?: boolean;
+  /**
+   * Event end, used only to PREFILL an unset hours field (Decision 8).
+   * Optional so an omitting caller degrades to today's blank field rather
+   * than breaking.
+   */
+  endTime?: string | null;
 };
+
+/**
+ * Default the CPD-hours field to the event's wall-clock duration — Ivan's
+ * "CPD hour is how long the event is (for now)", implemented as a PREFILL,
+ * never a derivation (Decision 8, docs/plans/2026-08-21-grant-mvp-work-plan.md).
+ *
+ * `cpd_hours` stays a stored, declared value because it is credit-bearing:
+ * set_event_cpd_config's compatibility bridge writes it straight into
+ * `event_accreditations.credit_value`, and the freeze trigger
+ * (20260725073250) rejects any change to it once a single credit_ledger row
+ * exists for the event. Deriving it would therefore make awarded credit a
+ * function of wall-clock time AND turn every later start/end edit on a
+ * credited event into a hard error.
+ *
+ * Returns '' (a blank field) rather than a number when:
+ *  - either timestamp is missing or unparseable,
+ *  - the duration is not positive,
+ *  - the duration exceeds 24h. cpdActions.ts validates `.max(24)`, so
+ *    prefilling e.g. a two-day congress would hand the organiser a value that
+ *    fails its own save. Multi-day events are exactly the ICI Summit case the
+ *    multi-body wizard exists for, so they get the wizard, not this field.
+ *
+ * Rounded to the field's own 0.5 step so the prefilled value is one the input
+ * actually accepts.
+ */
+export function durationPrefill(startTime: string, endTime?: string | null): string {
+  if (!endTime) return '';
+  const start = Date.parse(startTime);
+  const end = Date.parse(endTime);
+  if (Number.isNaN(start) || Number.isNaN(end)) return '';
+  const hours = (end - start) / 3_600_000;
+  if (hours <= 0 || hours > 24) return '';
+  return String(Math.round(hours * 2) / 2);
+}
 
 export function CpdAccreditationSection({
   eventId,
   startTime,
+  endTime,
   bodies,
   currentBodyId,
   currentHours,
@@ -55,7 +96,20 @@ export function CpdAccreditationSection({
   multiBodyConfigured = false,
 }: CpdAccreditationSectionProps) {
   const [bodyId, setBodyId] = useState(currentBodyId ?? '');
-  const [hours, setHours] = useState(currentHours != null ? String(currentHours) : '');
+  // A SAVED value always wins — the prefill fills an empty field, it never
+  // recomputes over a number the organiser chose deliberately (reopening this
+  // page must not silently rewrite their input).
+  //
+  // And never prefill into a field that cannot be saved: once credits exist the
+  // freeze trigger rejects the write, and once a wizard config exists the
+  // multi_body_configured guard (42501) does. Putting a plausible number into a
+  // disabled field there would state an accreditation value that is not real
+  // and that no save could ever establish.
+  const [hours, setHours] = useState(() => {
+    if (currentHours != null) return String(currentHours);
+    if (creditsIssued > 0 || multiBodyConfigured) return '';
+    return durationPrefill(startTime, endTime);
+  });
   // useActionState + <form action={...}>: submission works with or without
   // client JS, so a click that lands before hydration is handled instead of
   // silently falling back to a native GET.
