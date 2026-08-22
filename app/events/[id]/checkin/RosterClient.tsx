@@ -34,14 +34,14 @@ type Toast = { kind: 'ok' | 'err'; message: string };
 // with. That distinction is the whole reason the RPC returns an enum instead
 // of licence rows (Hard Rule 10).
 const ELIGIBILITY_NOTE: Record<string, string> = {
-  no_licence: 'No verified licence with this event’s accrediting body — checking in won’t post a CPD credit.',
-  no_account: 'No practitioner account for this email — checking in won’t post a CPD credit.',
-  cancelled: 'Registration cancelled — this attendee can’t be checked in.',
+  no_licence: 'No verified licence with this event\u2019s accrediting body \u2014 checking in won\u2019t post a CPD credit.',
+  no_account: 'No practitioner account for this email \u2014 checking in won\u2019t post a CPD credit.',
+  cancelled: 'Registration cancelled \u2014 this attendee can\u2019t be checked in.',
 };
 
-// "Recent" window for the accent-fading roster row state (§ E.4 row states).
-// 5 minutes balances "still feels fresh" against "the tablet isn't a party
-// trick" — a longer window dilutes the affordance.
+// "Recent" window for the accent-fading roster row state (\u00a7 E.4 row states).
+// 5 minutes balances "still feels fresh" against "the tablet isn\u2019t a party
+// trick" \u2014 a longer window dilutes the affordance.
 const RECENT_WINDOW_MS = 5 * 60_000;
 
 export default function RosterClient({
@@ -62,7 +62,7 @@ export default function RosterClient({
   eventStartTime: string;
   lifecycle: Lifecycle;
   initialRoster: RosterRow[];
-  /** registration_id → eligibility enum from event_registration_eligibility. */
+  /** registration_id \u2192 eligibility enum from event_registration_eligibility. */
   eligibility: Record<string, string>;
   eligibilityUnavailable: boolean;
   /** registration_id → non-default roles (attendee is implicit, never listed here). */
@@ -83,8 +83,6 @@ export default function RosterClient({
   const [statusFilter, setStatusFilter] = useState<'all' | 'attended' | 'registered'>('all');
   const [scannerOpen, setScannerOpen] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
-  // For the "recent" row state — bump every 30s so the accent fades out
-  // without a full re-render of unrelated tablet state.
   const [nowMs, setNowMs] = useState<number>(() => Date.now());
   // One shared useTransition would grey out all 400 chips on a 400-person
   // roster while a single toggle round-trips — track pending per row+role.
@@ -96,8 +94,6 @@ export default function RosterClient({
     return () => clearInterval(id);
   }, []);
 
-  // Realtime: subscribe to postgres_changes on registrations for this event.
-  // Authenticated channel (uses the staff session cookie via @supabase/ssr).
   useEffect(() => {
     const client = supabaseBrowser();
     const channel = client
@@ -126,7 +122,6 @@ export default function RosterClient({
     };
   }, [eventId]);
 
-  // Auto-dismiss toast after 3s.
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 3000);
@@ -139,7 +134,6 @@ export default function RosterClient({
       statusFilter === 'all' ? true : statusFilter === 'attended' ? r.status === 'attended' : r.status === 'registered',
     );
     if (!q) return byStatus;
-    // Locked TC spec: the roster carries no email — search by name or code.
     return byStatus.filter(
       r => r.full_name.toLowerCase().includes(q) || r.registration_code.toLowerCase().includes(q),
     );
@@ -165,9 +159,10 @@ export default function RosterClient({
       setToast({ kind: 'err', message });
       return { error: message };
     }
+    const creditLines = res.credit?.lines?.length ? ` \u00b7 ${res.credit.lines.join(' \u00b7 ')}` : '';
     setToast({
-      kind: 'ok',
-      message: `Marked ${res.registration.full_name} attended (${res.registration.event_title}).`,
+      kind: res.credit?.allSkipped ? 'err' : 'ok',
+      message: `Marked ${res.registration.full_name} attended (${res.registration.event_title})${creditLines}.`,
     });
     // Realtime broadcast will update the roster; no optimistic update needed.
     return { ok: true, name: res.registration.full_name };
@@ -199,7 +194,6 @@ export default function RosterClient({
 
   return (
     <div className="flex flex-col gap-grid-gutter">
-      {/* Scoreboard — status pill + checked-in fraction + bar + countdown */}
       <Scoreboard
         lifecycle={lifecycle}
         startMs={startMs}
@@ -207,13 +201,11 @@ export default function RosterClient({
         registered={registeredTotal}
       />
 
-      {/* Scan square + manual entry card */}
       <ScanAndManual
         onScanClick={() => setScannerOpen(true)}
         onManualSubmit={(code) => handleMark(code, 'manual')}
       />
 
-      {/* Speakers card (G3) */}
       <SpeakersCard
         eventId={eventId}
         eventTimezone={eventTimezone}
@@ -222,7 +214,6 @@ export default function RosterClient({
         onError={(message) => setToast({ kind: 'err', message })}
       />
 
-      {/* Scanner panel (modal-like) — kept inline because it owns scannerOpen state */}
       {scannerOpen && (
         <ScannerPanel
           onScan={code => handleMark(code, 'qr')}
@@ -237,7 +228,6 @@ export default function RosterClient({
         </p>
       )}
 
-      {/* Roster — restyled rows with three states (recent / checked / default) */}
       <section className="bg-surface-container-lowest rounded-[20px] border border-outline-variant p-md overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-md border-b border-outline-variant pb-sm mb-sm">
           <div className="flex gap-sm flex-wrap">
@@ -264,7 +254,6 @@ export default function RosterClient({
             </p>
           ) : (
             <>
-              {/* Locked TC spec: 4 columns — Attendee · Code · Status · Method. */}
               <div className="grid grid-cols-[minmax(0,1fr)_110px_150px_90px] gap-md px-sm pb-xs font-label-md text-label-md text-on-surface-variant uppercase tracking-wider" aria-hidden>
                 <span>Attendee</span>
                 <span>Code</span>
@@ -276,7 +265,7 @@ export default function RosterClient({
                   <RosterRowItem
                     key={r.id}
                     row={r}
-          eligibility={eligibility[r.id]}
+                    eligibility={eligibility[r.id]}
                     nowMs={nowMs}
                     eventTimezone={eventTimezone}
                     onMark={() => handleMark(r.registration_code, 'manual')}
@@ -331,11 +320,6 @@ function FilterPill({
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* Roster row — three states: recent (accent fading) / checked (muted) /       */
-/* default (white surface + "Check in →" button)                              */
-/* -------------------------------------------------------------------------- */
-
 function RosterRowItem({
   row: r,
   eligibility,
@@ -359,16 +343,12 @@ function RosterRowItem({
   const checkInMs = r.check_in_at ? new Date(r.check_in_at).getTime() : null;
   const isRecent = isAttended && checkInMs !== null && nowMs - checkInMs <= RECENT_WINDOW_MS;
 
-  // Three-state visual: recent uses the accent-fading background, checked is
-  // muted surface-container-low, default is the card surface with a CTA.
   const rowBg = isRecent
     ? 'bg-primary-container/60'
     : isAttended
       ? 'bg-surface-container-low'
       : 'bg-transparent hover:bg-surface-container-low';
 
-  // Locked TC spec: 4 columns — Attendee · Code · Status · Method.
-  // No avatar, no email on the roster.
   return (
     <li
       data-row-state={isRecent ? 'recent' : isAttended ? 'checked' : 'default'}
@@ -425,7 +405,7 @@ function RosterRowItem({
       </code>
       {isAttended ? (
         <span className="font-label-md text-label-md text-[color:var(--success)] inline-flex items-center gap-xs">
-          <span aria-hidden>✓</span>
+          <span aria-hidden>\u2713</span>
           {r.check_in_at ? formatInTz(r.check_in_at, eventTimezone) : 'Checked in'}
         </span>
       ) : (
@@ -439,15 +419,11 @@ function RosterRowItem({
         </Button>
       )}
       <span className="font-label-md text-label-md text-on-surface-variant normal-case tracking-normal">
-        {isAttended ? (r.check_in_method === 'qr' ? 'QR' : r.check_in_method === 'manual' ? 'Manual' : '—') : '—'}
+        {isAttended ? (r.check_in_method === 'qr' ? 'QR' : r.check_in_method === 'manual' ? 'Manual' : '\u2014') : '\u2014'}
       </span>
     </li>
   );
 }
-
-/* -------------------------------------------------------------------------- */
-/* Scanner panel — kept inline; owns no public surface beyond onScan/onClose  */
-/* -------------------------------------------------------------------------- */
 
 function ScannerPanel({
   onScan,
@@ -457,10 +433,6 @@ function ScannerPanel({
   onClose: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
-  // useRef (not useState) so the html5-qrcode decoded-text callback — which is
-  // registered ONCE at mount and closes over its initial scope forever — can
-  // read the current debounce state via .current. With useState, the closure
-  // captured `lastScanned = null` permanently and the debounce never fired.
   const lastScannedRef = useRef<{ code: string; at: number } | null>(null);
 
   useEffect(() => {
@@ -469,8 +441,6 @@ function ScannerPanel({
 
     (async () => {
       try {
-        // Dynamic import keeps html5-qrcode (~120KB) out of the staff tablet
-        // page's initial bundle. Only loads when the scanner panel mounts.
         const mod = await import('html5-qrcode');
         if (cancelled) return;
         scanner = new mod.Html5Qrcode('qr-reader');
@@ -478,18 +448,15 @@ function ScannerPanel({
           { facingMode: 'environment' },
           { fps: 10, qrbox: 250 },
           decodedText => {
-            // Extract `code` from URL; QR encodes /checkin/confirm?code=WK-XXXX.
             let code: string | null = null;
             try {
               const u = new URL(decodedText);
               code = u.searchParams.get('code');
             } catch {
-              // Not a URL — maybe a raw code? Be liberal.
               code = decodedText.trim().toUpperCase();
             }
             if (!code || !isValidRegistrationCode(code)) return;
 
-            // Debounce same-code-twice within 3s while QR is held up.
             const now = Date.now();
             const last = lastScannedRef.current;
             if (last && last.code === code && now - last.at < 3000) return;
@@ -507,11 +474,9 @@ function ScannerPanel({
 
     return () => {
       cancelled = true;
-      scanner?.stop().catch(() => {
-        // ignore - panel is closing
-      });
+      scanner?.stop().catch(() => {});
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: we want a fresh scanner per mount, not per render
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: fresh scanner per mount
   }, []);
 
   return (

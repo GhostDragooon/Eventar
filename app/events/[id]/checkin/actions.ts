@@ -5,7 +5,70 @@ import { requireStaff } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { isValidRegistrationCode } from '@/lib/registrationCode';
-import { awardAttendanceCredit } from '@/lib/cpd/awardAttendanceCredit';
+import {
+  awardAttendanceCredit,
+  type AwardOutcome,
+} from '@/lib/cpd/awardAttendanceCredit';
+
+/** Operator-facing summary of the post-check-in credit attempt (ids only). */
+export type CreditSummary = {
+  /** True when at least one body issued a fresh credit. */
+  anyIssued: boolean;
+  /** True when every evaluated body skipped or the whole call failed. */
+  allSkipped: boolean;
+  /** Short human lines for the door toast — never PII. */
+  lines: string[];
+};
+
+function summariseCredit(outcomes: AwardOutcome[]): CreditSummary {
+  const lines: string[] = [];
+  let anyIssued = false;
+  let anyPositive = false;
+
+  for (const o of outcomes) {
+    if (o.status === 'issued') {
+      anyIssued = true;
+      anyPositive = true;
+      lines.push('CPD credit issued');
+    } else if (o.status === 'already') {
+      anyPositive = true;
+      lines.push('CPD credit already on record');
+    } else if (o.status === 'skipped') {
+      const reason = o.reason;
+      if (reason === 'not_cpd') {
+        // Non-accredited event — silence is correct; no line.
+      } else if (reason === 'no_licence') {
+        lines.push('No CPD credit — no verified licence for this body');
+      } else if (reason === 'no_role_match') {
+        lines.push('No CPD credit — role not mapped for this body');
+      } else if (reason === 'disabled') {
+        lines.push('CPD issuance is disabled on this environment');
+      } else if (reason === 'outside_window') {
+        lines.push('No CPD credit — outside the attendance window');
+      } else if (reason === 'cancelled') {
+        lines.push('No CPD credit — registration cancelled');
+      } else if (reason === 'no_user' || reason === 'no_registration') {
+        lines.push('No CPD credit — attendee has no practitioner account');
+      } else if (reason === 'no_occurrences' || reason === 'no_matching_schedule') {
+        lines.push('No CPD credit — no matching session credit');
+      } else if (reason === 'zero_earned') {
+        lines.push('No CPD credit — zero attendance points earned');
+      } else {
+        lines.push(`No CPD credit — ${reason}`);
+      }
+    } else if (o.status === 'failed') {
+      lines.push('CPD credit failed to post — will need reconcile');
+    }
+  }
+
+  // De-dupe identical lines when multi-body returns the same skip twice.
+  const unique = [...new Set(lines)];
+  return {
+    anyIssued,
+    allSkipped: !anyPositive && unique.length > 0,
+    lines: unique,
+  };
+}
 
 /**
  * Mark a registrant as attended by their registration_code.
@@ -29,12 +92,20 @@ import { awardAttendanceCredit } from '@/lib/cpd/awardAttendanceCredit';
  *
  * NEW in this conversion (not a preserved behavior): a per-event rate
  * limit (600/min) inside the DB function. The original action had none.
+ *
+ * Credit summary (2026-08-20): after a fresh check-in the award outcomes are
+ * returned for the door toast. Attendance is still authoritative — a credit
+ * failure never changes the ok/error branch of this response.
  */
 export async function markAttended(
   code: string,
   method: 'qr' | 'manual',
 ): Promise<
-  | { ok: true; registration: { id: string; full_name: string; event_id: string; event_title: string } }
+  | {
+      ok: true;
+      registration: { id: string; full_name: string; event_id: string; event_title: string };
+      credit?: CreditSummary;
+    }
   | { error: string; alreadyAttendedAt?: string }
 > {
   const supabase = await supabaseServer();
@@ -59,6 +130,7 @@ export async function markAttended(
       // so EVERYTHING credit-related lives inside this try: supabaseAdmin() reads
       // process.env with non-null assertions and throws on a misconfigured deploy,
       // which outside the boundary would fail an already-committed check-in.
+      let credit: CreditSummary | undefined;
       try {
         // Attribution only. A failed getUser() degrades actorId to NULL, which
         // award_attendance_credit already handles with a raise warning rather
@@ -67,15 +139,21 @@ export async function markAttended(
         // exactly what this try block exists to prevent.
         // eslint-disable-next-line no-restricted-syntax -- see above: attribution degrades to NULL by design
         const { data: actor } = await supabase.auth.getUser();
-        await awardAttendanceCredit(supabaseAdmin(), {
+        const outcomes = await awardAttendanceCredit(supabaseAdmin(), {
           eventId: row.event_id,
           registrationCode: code,
           // The scanning staff member's auth user id — credit_ledger.actor_id
           // references public.users(id), NOT staff.id (they are unrelated uuids).
           actorId: actor?.user?.id ?? null,
         });
+        credit = summariseCredit(outcomes);
       } catch {
         console.error('[cpd] award threw after staff mark-attended', { eventId: row.event_id });
+        credit = {
+          anyIssued: false,
+          allSkipped: true,
+          lines: ['CPD credit failed to post — will need reconcile'],
+        };
       }
       revalidatePath(`/events/${row.event_id}/checkin`);
       return {
@@ -86,6 +164,7 @@ export async function markAttended(
           event_id: row.event_id,
           event_title: row.event_title,
         },
+        credit,
       };
     }
     case 'already':

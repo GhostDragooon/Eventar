@@ -1,0 +1,73 @@
+{
+  "package_id": "6fbf0548-abfe-4b1a-838d-e6cb7e53f9ec",
+  "event_id": "event-accredited-messy",
+  "package_type": "participation_only",
+  "pathway": "accredited",
+  "rule_version": "rule-v3-frozen",
+  "status": "blocked",
+  "claims": [
+    {
+      "claim_type": "participation",
+      "question": 2,
+      "event_id": "event-accredited-messy",
+      "subject_id": "lic-cccc",
+      "status": "error",
+      "evidence_refs": ["ledger-2001"],
+      "rule_version": "rule-v3-frozen",
+      "observation": "Participation could not be verified without review: entry rule_version rule-v2-OLD differs from frozen rule-v3-frozen.",
+      "depends_on": [
+        "credit_ledger chain verification result for this event",
+        "event rule_version is frozen"
+      ],
+      "how_would_we_know_this_failed": "The same check-in code is reused across two licences, the ledger entry rule_version differs from the frozen version, or the chain check reports a hash mismatch at this entry.",
+      "leading_indicator": "Count of check-ins exceeding registrations for the event, and count of ledger entries whose rule_version does not match the frozen version.",
+      "human_review_required": true,
+      "agent": "eventar-participation",
+      "agent_version": "0.1.0",
+      "generated_at": "2026-08-20T09:00:00.000Z"
+    },
+    {
+      "claim_type": "participation",
+      "question": 2,
+      "event_id": "event-accredited-messy",
+      "subject_id": "lic-dddd",
+      "status": "error",
+      "evidence_refs": ["ledger-2002"],
+      "rule_version": "rule-v3-frozen",
+      "observation": "Participation could not be verified without review: credit ledger chain verification has not run.",
+      "depends_on": [
+        "credit_ledger chain verification result for this event",
+        "event rule_version is frozen"
+      ],
+      "how_would_we_know_this_failed": "The same check-in code is reused across two licences, the ledger entry rule_version differs from the frozen version, or the chain check reports a hash mismatch at this entry.",
+      "leading_indicator": "Count of check-ins exceeding registrations for the event, and count of ledger entries whose rule_version does not match the frozen version.",
+      "human_review_required": true,
+      "agent": "eventar-participation",
+      "agent_version": "0.1.0",
+      "generated_at": "2026-08-20T09:00:00.000Z"
+    },
+    {
+      "claim_type": "participation",
+      "question": 2,
+      "event_id": "event-accredited-messy",
+      "subject_id": "lic-eeee",
+      "status": "error",
+      "evidence_refs": ["ledger-2003"],
+      "rule_version": "rule-v3-frozen",
+      "observation": "Participation could not be verified without review: credit ledger chain check reports a hash mismatch; check-ins exceed registrations for the event.",
+      "depends_on": [
+        "credit_ledger chain verification result for this event",
+        "event rule_version is frozen"
+      ],
+      "how_would_we_know_this_failed": "The same check-in code is reused across two licences, the ledger entry rule_version differs from the frozen version, or the chain check reports a hash mismatch at this entry.",
+      "leading_indicator": "Count of check-ins exceeding registrations for the event, and count of ledger entries whose rule_version does not match the frozen version.",
+      "human_review_required": true,
+      "agent": "eventar-participation",
+      "agent_version": "0.1.0",
+      "generated_at": "2026-08-20T09:00:00.000Z"
+    }
+  ],
+  "generated_at": "2026-08-20T09:00:00.000Z",
+  "generated_by": "cli@eventar",
+  "package_version": "0.1.0"
+}

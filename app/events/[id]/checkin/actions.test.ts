@@ -54,9 +54,12 @@ vi.mock('@/lib/supabase/admin', () => ({
 }));
 
 let awardRejects = false;
+let awardOutcomes: Array<{ bodyId: string | null; status: string; reason?: string }> = [
+  { bodyId: 'body-1', status: 'issued' },
+];
 const awardMock = vi.fn(async () => {
   if (awardRejects) throw new Error('credit issuance exploded');
-  return { status: 'issued' as const };
+  return awardOutcomes;
 });
 vi.mock('@/lib/cpd/awardAttendanceCredit', () => ({
   awardAttendanceCredit: (...args: unknown[]) => awardMock(...(args as [])),
@@ -64,8 +67,8 @@ vi.mock('@/lib/cpd/awardAttendanceCredit', () => ({
 
 import { markAttended } from './actions';
 
-const SUCCESS = {
-  ok: true,
+const SUCCESS_BASE = {
+  ok: true as const,
   registration: {
     id: 'reg-1',
     full_name: 'Test Attendee',
@@ -79,25 +82,45 @@ describe('markAttended — attendance stays authoritative when credit fails', ()
     adminThrows = false;
     awardRejects = false;
     checkinResult = 'ok';
+    awardOutcomes = [{ bodyId: 'body-1', status: 'issued' }];
     awardMock.mockClear();
   });
 
   it('returns the attendance success payload when the credit is issued', async () => {
-    await expect(markAttended('WK-ABC234', 'qr')).resolves.toEqual(SUCCESS);
+    const res = await markAttended('WK-ABC234', 'qr');
+    expect(res).toMatchObject(SUCCESS_BASE);
+    if (!('ok' in res) || !res.ok) throw new Error('expected ok');
+    expect(res.credit?.anyIssued).toBe(true);
+    expect(res.credit?.lines).toContain('CPD credit issued');
     expect(awardMock).toHaveBeenCalledTimes(1);
   });
 
-  it('returns the SAME payload when the award call rejects', async () => {
+  it('returns the SAME attendance payload when the award call rejects', async () => {
     awardRejects = true;
-    await expect(markAttended('WK-ABC234', 'qr')).resolves.toEqual(SUCCESS);
+    const res = await markAttended('WK-ABC234', 'qr');
+    expect(res).toMatchObject(SUCCESS_BASE);
+    if (!('ok' in res) || !res.ok) throw new Error('expected ok');
+    // Credit summary reports the failure; attendance branch is still ok.
+    expect(res.credit?.allSkipped).toBe(true);
+    expect(res.credit?.lines.some((l) => l.includes('reconcile'))).toBe(true);
   });
 
-  it('returns the SAME payload when the admin client itself throws (the I1 regression)', async () => {
+  it('returns the SAME attendance payload when the admin client itself throws (the I1 regression)', async () => {
     adminThrows = true;
     // Pre-fix this rejected, inverting the response for an already-committed
     // check-in. The award is never reached, so nothing should have been called.
-    await expect(markAttended('WK-ABC234', 'qr')).resolves.toEqual(SUCCESS);
+    const res = await markAttended('WK-ABC234', 'qr');
+    expect(res).toMatchObject(SUCCESS_BASE);
     expect(awardMock).not.toHaveBeenCalled();
+  });
+
+  it('surfaces no_licence as an explicit credit line without failing attendance', async () => {
+    awardOutcomes = [{ bodyId: 'body-1', status: 'skipped', reason: 'no_licence' }];
+    const res = await markAttended('WK-ABC234', 'qr');
+    expect(res).toMatchObject(SUCCESS_BASE);
+    if (!('ok' in res) || !res.ok) throw new Error('expected ok');
+    expect(res.credit?.allSkipped).toBe(true);
+    expect(res.credit?.lines.some((l) => l.includes('no verified licence'))).toBe(true);
   });
 
   it('gives no_matching_occurrence its own message, distinct from the generic default', async () => {
