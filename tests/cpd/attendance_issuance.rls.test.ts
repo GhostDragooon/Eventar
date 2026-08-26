@@ -975,5 +975,307 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
         delete from public.events where id = '${ambigEventId}';
       `);
     }, 30_000);
+
+    // -----------------------------------------------------------------
+    // A2 — role_award_rule enforcement (Task 10.4 code half, added
+    // 20260826000000_role_award_rule_enforcement.sql). Four scenarios
+    // per brief §4.4: shipped single-satisfied path unaffected; the
+    // three fail-closed rule branches raise PT002 before any
+    // credit_ledger write.
+    //
+    // ARCHITECTURE CONFLICT SURFACED WHILE WRITING THIS (rule 7, rule 14):
+    // The shipped index `event_accreditation_groups_event_body_uniq`
+    // (added 20260821020000) enforces one-group-per-body-per-event, which
+    // makes ADR-0002 R1's multi-category-per-body scenario unreachable
+    // through the shipped write paths. R1 assumes multiple groups per
+    // body (`3. Match mapped categories against this event's
+    // event_accreditation_groups for that body_id`); 20260821020000
+    // forbids it. The `role_award_rule` enforcement this migration adds
+    // is therefore DORMANT in production: no writer can currently create
+    // the >1-satisfied-per-body configuration that would trigger it.
+    // Reported in full in the dispatch report — do not "reconcile" it
+    // silently in either direction (rule 7).
+    //
+    // For the runtime tests to exercise the pre-pass at all, this nested
+    // describe DROPS `event_accreditation_groups_event_body_uniq` in
+    // beforeAll and re-creates it in afterAll. This proves the
+    // enforcement lands and would fire the moment the schema conflict is
+    // resolved (either by widening this index, or by keeping the
+    // one-group-per-body invariant and dropping the enforcement).
+    //
+    // Fixture shape (shared across the three multi-satisfied cases):
+    //   - one body per rule variant (bodies are pinned by declare_licence
+    //     regardless of credit — same accepted debt as the file header)
+    //   - taxonomy: role_mappings = {chair: 'CAT_CHAIR', attendee: 'CAT_ATT'}
+    //     plus the rule under test (or absent, for the null case)
+    //   - event with TWO groups on that body, category_code = CAT_CHAIR
+    //     and CAT_ATT respectively — both satisfied by a two-role
+    //     practitioner (chair + default attendee)
+    //   - one practitioner with a verified licence AND both roles
+    // -----------------------------------------------------------------
+    // Nested describe so the drop/restore is scoped: the multi-body tests
+    // above rely on the one-group-per-body invariant for correctness.
+    // Wrapping only the A2 cases keeps the outer suite unaffected.
+    describe('A2 — role_award_rule enforcement (schema conflict scoped)', () => {
+      beforeAll(async () => {
+        await sqlSuperuser(
+          `drop index if exists public.event_accreditation_groups_event_body_uniq;`,
+        );
+      }, 15_000);
+      afterAll(async () => {
+        // Restore the invariant so the rest of the test run + subsequent
+        // suites see the shipped schema shape. Guarded with IF NOT EXISTS
+        // so a re-entry (e.g. a re-run without teardown) is a no-op.
+        await sqlSuperuser(
+          `create unique index if not exists event_accreditation_groups_event_body_uniq on public.event_accreditation_groups (event_id, body_id);`,
+        );
+      }, 15_000);
+
+    async function makeA2Fixture(shortName: string, taxonomy: Record<string, unknown>) {
+      const bodyId = await newBody(shortName, {
+        category_taxonomy: {
+          role_mappings: { chair: 'CAT_CHAIR', attendee: 'CAT_ATT' },
+          ...taxonomy,
+        },
+      });
+      const start = new Date();
+      const { data: ev, error: evErr } = await admin
+        .from('events')
+        .insert({
+          title: `A2 ${shortName} fixture — DELETE ME ${mbTs}`,
+          start_time: start.toISOString(),
+          end_time: new Date(start.getTime() + 3_600_000).toISOString(),
+          timezone: 'Asia/Hong_Kong',
+          created_by: bodyAdminStaffId,
+          venue_name: 'Test Venue',
+          city: 'Hong Kong',
+          country: 'HK',
+          latitude: 22.3,
+          longitude: 114.2,
+          status: 'published',
+        })
+        .select('id')
+        .single();
+      if (evErr || !ev) throw new Error(`A2 ${shortName} event fixture: ${evErr?.message}`);
+      const eventId = ev.id as string;
+
+      // Two groups, one per category — a two-role practitioner satisfies both.
+      // proportional/hours matches the other role-tax fixture's shape.
+      await sqlSuperuser(`
+        with grp_chair as (
+          insert into public.event_accreditation_groups (event_id, body_id, category_code, unit, award_scheme)
+          values ('${eventId}', '${bodyId}', 'CAT_CHAIR', 'hours', 'proportional')
+          returning id
+        ), acc_chair as (
+          insert into public.event_accreditations (accreditation_group_id, credit_value)
+          select id, 4 from grp_chair returning id
+        ), grp_att as (
+          insert into public.event_accreditation_groups (event_id, body_id, category_code, unit, award_scheme)
+          values ('${eventId}', '${bodyId}', 'CAT_ATT', 'hours', 'proportional')
+          returning id
+        ), acc_att as (
+          insert into public.event_accreditations (accreditation_group_id, credit_value)
+          select id, 3 from grp_att returning id
+        )
+        insert into public.event_accreditation_occurrences (accreditation_id, occurrence_id)
+        select acc.id, eo.id from acc_chair acc, public.event_occurrences eo where eo.event_id = '${eventId}'
+        union all
+        select acc.id, eo.id from acc_att   acc, public.event_occurrences eo where eo.event_id = '${eventId}';
+      `);
+
+      const user = await createTestUser(`a2-${shortName}-${mbTs}`);
+      await declareAndVerify(user, bodyId, `A2-${shortName}-${mbTs}`);
+      const reg = await regFor(eventId, user, `A2${shortName}${mbTs}`);
+      await checkin(reg.id, eventId, [1]);
+      // BOTH roles explicit — inserting only 'chair' loses the implicit
+      // attendee default (that default only kicks in when registration_roles
+      // has zero rows for a registration; explicit rows fully replace it),
+      // and would leave only CAT_CHAIR satisfied, defeating the multi-satisfied
+      // fixture. Verified live against the DB before writing this comment.
+      await sqlSuperuser(`
+        insert into public.registration_roles (registration_id, role_code) values
+          ('${reg.id}', 'chair'),
+          ('${reg.id}', 'attendee');
+      `);
+
+      return { bodyId, eventId, user, reg };
+    }
+
+    // Post-test cleanup — events/groups/registrations are safe (no credit ever
+    // posted for the fail-closed paths). Bodies and auth users leak per the
+    // file header's accepted-debt pattern.
+    async function cleanupA2({ eventId, reg }: { bodyId: string; eventId: string; user: TestUser; reg: { id: string; code: string } }) {
+      await mustDelete(admin.from('registrations').delete().eq('id', reg.id), 'A2 registration fixture');
+      await sqlSuperuser(`
+        delete from public.event_accreditation_groups where event_id = '${eventId}';
+        delete from public.events where id = '${eventId}';
+      `);
+    }
+
+    // Assertion 1 — the shipped path (a body with a single applicable group)
+    // still awards even when `role_award_rule` is present. This mirrors
+    // 20260820090000's HKCP/MCHK seed (all roles → 'A' + rule='highest_only'),
+    // and would break if the pre-pass conflated "rule present" with "consult
+    // rule". Constructed here as a body with rule='highest_only' but only ONE
+    // matching category — the pre-pass must skip (1 satisfied ≤ 1).
+    it('A2 assertion 1: single-satisfied body with rule="highest_only" still awards (shipped path unaffected)', async () => {
+      const shipSuffix = Math.random().toString(36).slice(2, 8);
+      const shipBody = await newBody(`A2-SHIP-${shipSuffix}`, {
+        category_taxonomy: {
+          role_mappings: { attendee: 'A', chair: 'A', presenter: 'A' },
+          role_award_rule: 'highest_only',
+        },
+      });
+      const start = new Date();
+      const { data: ev, error: evErr } = await admin
+        .from('events')
+        .insert({
+          title: `A2 SHIP fixture — DELETE ME ${mbTs}`,
+          start_time: start.toISOString(),
+          end_time: new Date(start.getTime() + 3_600_000).toISOString(),
+          timezone: 'Asia/Hong_Kong',
+          created_by: bodyAdminStaffId,
+          venue_name: 'Test Venue',
+          city: 'Hong Kong',
+          country: 'HK',
+          latitude: 22.3,
+          longitude: 114.2,
+          status: 'published',
+        })
+        .select('id')
+        .single();
+      if (evErr || !ev) throw new Error(`A2 SHIP event fixture: ${evErr?.message}`);
+      const shipEventId = ev.id as string;
+      await sqlSuperuser(`
+        with grp as (
+          insert into public.event_accreditation_groups (event_id, body_id, category_code, unit, award_scheme)
+          values ('${shipEventId}', '${shipBody}', 'A', 'hours', 'proportional')
+          returning id
+        ), acc as (
+          insert into public.event_accreditations (accreditation_group_id, credit_value)
+          select id, 5 from grp returning id
+        )
+        insert into public.event_accreditation_occurrences (accreditation_id, occurrence_id)
+        select acc.id, eo.id from acc, public.event_occurrences eo where eo.event_id = '${shipEventId}';
+      `);
+      const shipUser = await createTestUser(`a2-ship-${shipSuffix}`);
+      await declareAndVerify(shipUser, shipBody, `A2-SHIP-${shipSuffix}`);
+      const shipReg = await regFor(shipEventId, shipUser, `A2SHIP${shipSuffix}`);
+      await checkin(shipReg.id, shipEventId, [1]);
+
+      const { data, error } = await admin.rpc('award_attendance_credit', {
+        p_event_id: shipEventId,
+        p_registration_code: shipReg.code,
+      });
+
+      expect(error).toBeNull();
+      const rows = data as AwardRow[];
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toEqual({ body_id: shipBody, outcome: 'issued' });
+
+      // A ledger row IS posted here — the "assertion 1 does not break the
+      // shipped path" check. shipBody, shipEventId, and shipUser all become
+      // permanently pinned by that credit (accepted per file header);
+      // event_accreditation_groups is frozen by the freeze trigger too.
+      // Only registrations is safely deletable (no FK from credit_ledger).
+      await mustDelete(admin.from('registrations').delete().eq('id', shipReg.id), 'A2 ship registration');
+    }, 30_000);
+
+    // The three fail-closed variants all use the same shape: two categories,
+    // one two-role practitioner, only the rule varies. On raise, no
+    // credit_ledger row lands — verified explicitly.
+    it('A2 assertion 2: no role_award_rule + two satisfied groups raises role_award_rule_missing (PT422)', async () => {
+      const fx = await makeA2Fixture(`A2-MISS-${Math.random().toString(36).slice(2, 8)}`, { /* no role_award_rule key */ });
+      try {
+        const { error } = await admin.rpc('award_attendance_credit', {
+          p_event_id: fx.eventId,
+          p_registration_code: fx.reg.code,
+        });
+        expect(error).not.toBeNull();
+        expect(error!.code).toBe('PT422');
+        expect(error!.message).toContain('role_award_rule_missing');
+
+        const { data: ledgerRows } = await admin
+          .from('credit_ledger')
+          .select('id')
+          .eq('user_id', fx.user.id)
+          .eq('event_id', fx.eventId);
+        expect(ledgerRows).toHaveLength(0);
+      } finally {
+        await cleanupA2(fx);
+      }
+    }, 30_000);
+
+    it('A2 assertion 3: role_award_rule="highest_only" + two satisfied groups + no priority raises role_award_ambiguous (PT422)', async () => {
+      const fx = await makeA2Fixture(`A2-AMB-${Math.random().toString(36).slice(2, 8)}`, { role_award_rule: 'highest_only' });
+      try {
+        const { error } = await admin.rpc('award_attendance_credit', {
+          p_event_id: fx.eventId,
+          p_registration_code: fx.reg.code,
+        });
+        expect(error).not.toBeNull();
+        expect(error!.code).toBe('PT422');
+        expect(error!.message).toContain('role_award_ambiguous');
+
+        const { data: ledgerRows } = await admin
+          .from('credit_ledger')
+          .select('id')
+          .eq('user_id', fx.user.id)
+          .eq('event_id', fx.eventId);
+        expect(ledgerRows).toHaveLength(0);
+      } finally {
+        await cleanupA2(fx);
+      }
+    }, 30_000);
+
+    // Brief §4.4 assertion 4 as WRITTEN ("posts two ledger rows") is
+    // unimplementable within this dispatch's boundaries: the shipped
+    // credit_ledger_attendance_uniq is (user_id, event_id, body_id) partial
+    // on credit_earned, so a second row per body raises 23505 which the loop
+    // catches as 'already' — turning cumulative into first-satisfied-wins by
+    // iteration order (loop has no ORDER BY). Widening the index touches
+    // credit_ledger, forbidden by brief §4. The pre-pass therefore fails
+    // closed for cumulative too, with a distinct message pointing at the
+    // dependency. This assertion pins that behaviour so a future ledger
+    // widening removes both the raise and this test at the same time.
+    it('A2 assertion 4 (adapted): role_award_rule="cumulative" + two satisfied groups raises role_award_cumulative_needs_ledger_widening (PT422)', async () => {
+      const fx = await makeA2Fixture(`A2-CUM-${Math.random().toString(36).slice(2, 8)}`, { role_award_rule: 'cumulative' });
+      try {
+        const { error } = await admin.rpc('award_attendance_credit', {
+          p_event_id: fx.eventId,
+          p_registration_code: fx.reg.code,
+        });
+        expect(error).not.toBeNull();
+        expect(error!.code).toBe('PT422');
+        expect(error!.message).toContain('role_award_cumulative_needs_ledger_widening');
+
+        const { data: ledgerRows } = await admin
+          .from('credit_ledger')
+          .select('id')
+          .eq('user_id', fx.user.id)
+          .eq('event_id', fx.eventId);
+        expect(ledgerRows).toHaveLength(0);
+      } finally {
+        await cleanupA2(fx);
+      }
+    }, 30_000);
+
+    // A future body publishing manual_selection with no UI to select against
+    // must not silently pick one — same fail-closed posture.
+    it('A2 bonus: role_award_rule="manual_selection" + two satisfied groups raises role_award_requires_manual_selection (PT422)', async () => {
+      const fx = await makeA2Fixture(`A2-MAN-${Math.random().toString(36).slice(2, 8)}`, { role_award_rule: 'manual_selection' });
+      try {
+        const { error } = await admin.rpc('award_attendance_credit', {
+          p_event_id: fx.eventId,
+          p_registration_code: fx.reg.code,
+        });
+        expect(error).not.toBeNull();
+        expect(error!.code).toBe('PT422');
+        expect(error!.message).toContain('role_award_requires_manual_selection');
+      } finally {
+        await cleanupA2(fx);
+      }
+    }, 30_000);
+    });
   });
 });

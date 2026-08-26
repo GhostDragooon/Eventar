@@ -151,10 +151,35 @@ export default async function SelfCheckinPage({
   // Checked-in success state (final v2) — server-rendered when reception (or
   // self-serve) already marked them in.
   if (reg.status === 'attended') {
+    // CPD credit banner: user-lens 2026-08-26 caught that the client-side
+    // ok-state render in ConfirmButton never got a paint frame (revalidatePath
+    // replaces PassView → CheckedInView in the same React 19 transition). The
+    // banner lives here now so it always renders after attendance is marked
+    // — including on a return visit or a staff-driven manual check-in that
+    // the attendee never triggered themselves. Read-only via a definer that
+    // resolves email → auth.users.id (see the migration for the why).
+    let creditStatus: 'posted' | 'missing' | 'silence' = 'silence';
+    const { data: creditData, error: creditErr } = await admin.rpc(
+      'registration_credit_status',
+      { p_event_id: event.id, p_registration_code: code },
+    );
+    if (creditErr) {
+      // Fall silent (rule 12: fail visibly at the LOG, not in the UI). The
+      // banner is a helpful signal — a lookup failure showing "missing" would
+      // send every attendee to reception on a transient RPC error.
+      console.error('[checkin] credit status lookup failed', { code: creditErr.code });
+    } else if (creditData === 'posted' || creditData === 'missing') {
+      creditStatus = creditData;
+    }
     return (
       <PublicShell pill={{ label: 'Checked in', tone: 'success' }}>
         <PageWrap>
-          <CheckedInView event={event} checkInAt={reg.check_in_at} method={reg.check_in_method} />
+          <CheckedInView
+            event={event}
+            checkInAt={reg.check_in_at}
+            method={reg.check_in_method}
+            creditStatus={creditStatus}
+          />
         </PageWrap>
       </PublicShell>
     );
@@ -333,10 +358,14 @@ function CheckedInView({
   event,
   checkInAt,
   method,
+  creditStatus,
 }: {
   event: EventRow;
   checkInAt: string | null;
   method: string | null;
+  /** 'posted' → green success banner, 'missing' → see-reception nudge,
+   *  'silence' → no banner (event is non-CPD, or upstream refused). */
+  creditStatus: 'posted' | 'missing' | 'silence';
 }) {
   const via = method === 'qr' ? 'via self-scan' : method === 'manual' ? 'via reception' : null;
   return (
@@ -363,6 +392,33 @@ function CheckedInView({
           Enjoy the sessions — we&apos;ll email a short survey after it wraps.
         </p>
       </div>
+
+      {/* CPD credit banner — same tone/colour/icon as the old ConfirmButton
+          ok-state; JSX reused verbatim so posted/missing read identically
+          across the surface. Silence renders nothing. */}
+      {creditStatus === 'posted' && (
+        <p
+          role="status"
+          aria-live="polite"
+          className="font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm flex items-start gap-sm m-0"
+        >
+          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden data-fill="1">check_circle</span>
+          <span className="flex-1">CPD credit recorded.</span>
+        </p>
+      )}
+      {creditStatus === 'missing' && (
+        <p
+          role="status"
+          aria-live="polite"
+          className="font-body-md text-body-md text-on-surface-variant bg-surface-container border border-outline-variant rounded-lg px-md py-sm flex items-start gap-sm m-0"
+        >
+          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>info</span>
+          <span className="flex-1">
+            We couldn&apos;t record your CPD credit for this event. Please see
+            reception before you leave.
+          </span>
+        </p>
+      )}
     </>
   );
 }

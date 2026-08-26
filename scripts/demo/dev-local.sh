@@ -10,6 +10,29 @@ cd "$(dirname "$0")/../.."
 # or the nvm node this repo needs (system node is v14).
 export PATH="/Users/ivan/.nvm/versions/node/v24.6.0/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
+# Kill any pre-existing :3100 listener before we start our own. User-lens
+# 2026-08-26 found a `pnpm dev` from four days earlier still on :3100, but
+# pointed at Seoul PRODUCTION (started when this shell was carrying Seoul
+# env). A self-check-in through that server would have posted a real,
+# permanently-undeletable credit_ledger row on prod. This script exists to
+# avoid exactly that, so refuse to co-exist with an unknown :3100 — the whole
+# point is that :3100 means "local-stack Eventar".
+PRE_PID="$(lsof -nP -iTCP:3100 -sTCP:LISTEN -t 2>/dev/null || true)"
+if [ -n "$PRE_PID" ]; then
+  echo "Killing existing :3100 listener (PID $PRE_PID) before starting local-stack server." >&2
+  kill "$PRE_PID" 2>/dev/null || true
+  # Give it a beat to release the port; fall back to SIGKILL if it lingers.
+  for _ in 1 2 3 4 5; do
+    sleep 1
+    lsof -nP -iTCP:3100 -sTCP:LISTEN -t >/dev/null 2>&1 || break
+  done
+  if lsof -nP -iTCP:3100 -sTCP:LISTEN -t >/dev/null 2>&1; then
+    echo "Process $PRE_PID did not release :3100; forcing." >&2
+    kill -9 "$PRE_PID" 2>/dev/null || true
+    sleep 1
+  fi
+fi
+
 eval "$(supabase status -o env 2>/dev/null | grep -E '^(API_URL|ANON_KEY|SERVICE_ROLE_KEY)=')"
 if [ -z "${API_URL:-}" ]; then
   echo "Local Supabase stack is not running. Start it with: supabase start" >&2

@@ -9,7 +9,11 @@ const { rpc } = vi.hoisted(() => ({ rpc: vi.fn() }));
 vi.mock('@/lib/supabase/admin', () => ({ supabaseAdmin: () => ({ rpc }) }));
 vi.mock('@/lib/rateLimit', () => ({ getClientIp: vi.fn(async () => '203.0.113.1') }));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
-const { award } = vi.hoisted(() => ({ award: vi.fn(async () => undefined) }));
+const { award } = vi.hoisted(() => ({
+  award: vi.fn(
+    async () => [] as { bodyId: string | null; status: string; reason?: string }[],
+  ),
+}));
 vi.mock('@/lib/cpd/awardAttendanceCredit', () => ({ awardAttendanceCredit: award }));
 
 import { describe, expect, it, beforeEach } from 'vitest';
@@ -24,15 +28,84 @@ function resolvesTo(result: string) {
 
 beforeEach(() => {
   rpc.mockReset();
-  award.mockClear();
+  award.mockReset();
+  // Default: no CPD groups on the event ("not_cpd") → credit is silent
+  // (no `credit` key on the response). Individual tests override.
+  award.mockResolvedValue([{ bodyId: null, status: 'skipped', reason: 'not_cpd' }]);
 });
 
 describe('selfCheckIn — result code to attendee copy', () => {
-  it('checks in and awards a credit on ok', async () => {
+  it('checks in on ok, and stays silent when the event has no accreditation', async () => {
     resolvesTo('ok');
     const res = await selfCheckIn(CODE);
-    expect(res).toEqual({ ok: true, eventId: EVENT });
+    // The check-in itself succeeds and the award call fires — but a non-CPD
+    // event produces no `credit` key at all (silence is correct).
+    expect(res).toEqual({ ok: true, eventId: EVENT, credit: undefined });
     expect(award).toHaveBeenCalledOnce();
+  });
+
+  it('reports credit posted when at least one body issued', async () => {
+    resolvesTo('ok');
+    award.mockResolvedValueOnce([{ bodyId: 'body-1', status: 'issued' }]);
+    const res = await selfCheckIn(CODE);
+    expect(res).toEqual({
+      ok: true,
+      eventId: EVENT,
+      credit: { kind: 'posted' },
+    });
+  });
+
+  it('reports credit posted on "already" (idempotent re-check)', async () => {
+    resolvesTo('ok');
+    award.mockResolvedValueOnce([{ bodyId: 'body-1', status: 'already' }]);
+    const res = await selfCheckIn(CODE);
+    expect(res).toEqual({
+      ok: true,
+      eventId: EVENT,
+      credit: { kind: 'posted' },
+    });
+  });
+
+  // Rule 12 — a checked-in attendee whose category-coded group has no mapping
+  // must not be silently told "You're checked in" and nothing else.
+  it('surfaces a missing credit when the only body skipped for a non-not_cpd reason', async () => {
+    resolvesTo('ok');
+    award.mockResolvedValueOnce([{ bodyId: 'body-1', status: 'skipped', reason: 'no_role_match' }]);
+    const res = await selfCheckIn(CODE);
+    expect(res).toEqual({
+      ok: true,
+      eventId: EVENT,
+      credit: { kind: 'missing' },
+    });
+  });
+
+  it('surfaces a missing credit when the award threw', async () => {
+    resolvesTo('ok');
+    award.mockRejectedValueOnce(new Error('boom'));
+    const res = await selfCheckIn(CODE);
+    // Attendance is still authoritative — ok:true. The failure is a `missing`
+    // signal to the attendee, not an error branch.
+    expect(res).toEqual({
+      ok: true,
+      eventId: EVENT,
+      credit: { kind: 'missing' },
+    });
+  });
+
+  // Multi-body case: at least one body issued → 'posted', even if others
+  // failed. The attendee is not the reconciler; staff see the per-body detail.
+  it("reports 'posted' when any body issued, even alongside skips", async () => {
+    resolvesTo('ok');
+    award.mockResolvedValueOnce([
+      { bodyId: 'body-1', status: 'issued' },
+      { bodyId: 'body-2', status: 'skipped', reason: 'no_licence' },
+    ]);
+    const res = await selfCheckIn(CODE);
+    expect(res).toEqual({
+      ok: true,
+      eventId: EVENT,
+      credit: { kind: 'posted' },
+    });
   });
 
   // Each refusal implies a DIFFERENT action for someone standing at a door.
