@@ -324,6 +324,10 @@ export default async function EventPosterPage({
               maxAttendees={event.max_attendees}
               currentCount={registrationCount ?? 0}
               lifecycle={lifecycle}
+              // Same env probe the public event page uses — a scannable poster
+              // routes people at the physical event page's register surface,
+              // so the honesty branches must match.
+              deliveryLive={Boolean(process.env.RESEND_API_KEY)}
             />
           </div>
 

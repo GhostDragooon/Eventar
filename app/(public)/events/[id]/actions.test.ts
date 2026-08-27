@@ -227,7 +227,9 @@ describe('registerForEvent — Phase 7 send-side behaviour', () => {
 
     const result = await registerForEvent(valid);
 
-    expect(result).toEqual({ ok: true });
+    // emailDelivery: 'queued_dev' tells the success UI to say "dev mode" rather
+    // than lie about a message having been sent (playbook §1.2.C).
+    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev' });
     expect(mockSendStub).toHaveBeenCalledTimes(1);
     expect(mockSendReal).not.toHaveBeenCalled();
 
@@ -242,7 +244,7 @@ describe('registerForEvent — Phase 7 send-side behaviour', () => {
 
     const result = await registerForEvent(valid);
 
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, emailDelivery: 'sent' });
     expect(mockSendReal).toHaveBeenCalledTimes(1);
     expect(mockSendStub).not.toHaveBeenCalled();
 
@@ -262,7 +264,9 @@ describe('registerForEvent — Phase 7 send-side behaviour', () => {
 
     const result = await registerForEvent(valid);
 
-    expect(result).toEqual({ ok: true });
+    // Registration still succeeds; emailDelivery reports the honest failure so
+    // the success UI can tell the visitor to show the screen to staff.
+    expect(result).toEqual({ ok: true, emailDelivery: 'failed' });
     expect(mockSendReal).toHaveBeenCalledTimes(1);
 
     expect(lastEmailLogUpdate).toEqual({
@@ -322,7 +326,7 @@ describe('registerForEvent — registration window gate', () => {
 
     const result = await registerForEvent(valid);
 
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev' });
     expect(mockSendStub).toHaveBeenCalledTimes(1);
   });
 

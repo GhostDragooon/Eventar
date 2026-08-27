@@ -11,6 +11,7 @@ import {
 import { NeedsAttention, type AttentionItem } from '@/components/dashboard/NeedsAttention';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 import { firstName } from '@/lib/name';
+import { DevEmailStubBanner } from '@/components/dev/DevEmailStubBanner';
 
 export const metadata = {
   title: 'Dashboard',
@@ -237,6 +238,9 @@ export default async function DashboardPage() {
 
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role }}>
+      {/* Playbook item 3: renders nothing when RESEND_API_KEY is set. Standing
+          reminder to operators that email delivery is stubbed on this build. */}
+      <DevEmailStubBanner />
       <DashboardWorkstation events={decorated} greetingName={greetingName} greeting={greeting} metrics={metrics} />
       {/* IA spec puts the attention queue directly under the stat row, above
           the event list: "is anything on fire, what's next". */}

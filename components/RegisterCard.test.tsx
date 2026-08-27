@@ -5,7 +5,7 @@ import { vi } from 'vitest';
 // forbidden in jsdom builds. These tests are about conditional rendering,
 // not the action.
 vi.mock('@/app/(public)/events/[id]/actions', () => ({
-  registerForEvent: vi.fn(async () => ({ ok: true as const })),
+  registerForEvent: vi.fn(async () => ({ ok: true as const, emailDelivery: 'sent' as const })),
 }));
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -20,6 +20,9 @@ const baseProps = {
   eventId: '11111111-2222-4333-8444-555555555555',
   maxAttendees: null,
   currentCount: 0,
+  // These tests are about the lifecycle-gated render branches; the delivery
+  // strip only appears in the success block, which none of them reach.
+  deliveryLive: true,
 };
 
 describe('RegisterCard — registration window (form layer of the 3-layer rule)', () => {

@@ -7,7 +7,7 @@ import { revalidatePath } from 'next/cache';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { rateLimitByIp } from '@/lib/rateLimit';
-import { registrationInputSchema, type RegisterResult } from './schema';
+import { registrationInputSchema, type RegisterResult, type EmailDelivery } from './schema';
 import { generateRegistrationCode } from '@/lib/registrationCode';
 import { CHECKIN_OPEN_MINUTES } from '@/lib/lifecycle/eventLifecycle';
 // TEMP: dual import while RESEND_API_KEY is being set up.
@@ -235,19 +235,26 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
   });
 
   // Step 7 — close the ledger per outcome; registration_id always set.
+  // emailDelivery is what the client renders in the success block: `sent`,
+  // `queued_dev`, or `failed`. Registration itself is authoritative and
+  // returns ok:true regardless — the courtesy email never gates the seat.
   const logUpdate: Record<string, unknown> = { registration_id: reg.id };
+  let emailDelivery: EmailDelivery;
   if ('ok' in sendResult) {
     logUpdate.status = 'sent';
     logUpdate.sent_at = new Date().toISOString();
+    emailDelivery = 'sent';
   } else if ('skipped' in sendResult) {
     // TEMP: this branch goes away when the stub is removed.
     // email_log.status stays 'queued' (set at step 4); no Phase 9 sweep planned.
     console.log(
       `[email queued] confirmation for event ${event.id} registration ${reg.id} — RESEND_API_KEY unset`,
     );
+    emailDelivery = 'queued_dev';
   } else {
     logUpdate.status = 'failed';
     logUpdate.error = `${sendResult.error.code}: ${sendResult.error.message}`;
+    emailDelivery = 'failed';
   }
   const { error: closeErr } = await admin.from('email_log').update(logUpdate).eq('id', log.id);
   if (closeErr) {
@@ -260,5 +267,5 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
   // Step 8 — the public page may show updated counts in future phases.
   revalidatePath(`/events/${event_id}`);
 
-  return { ok: true };
+  return { ok: true, emailDelivery };
 }

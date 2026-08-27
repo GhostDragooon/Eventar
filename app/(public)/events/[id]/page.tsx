@@ -244,6 +244,10 @@ export default async function PublicEventPage({
           maxAttendees={event.max_attendees}
           currentCount={registrationCount ?? 0}
           lifecycle={lifecycle}
+          // Server-side env probe → boolean. The success block uses this to
+          // decide whether to render the "development stub" strip. Boolean-only
+          // so the key value itself never reaches the client (rule 10).
+          deliveryLive={Boolean(process.env.RESEND_API_KEY)}
         />
 
         {/* Share QR — compact, sits inside the rhythm; no separate card chrome. */}

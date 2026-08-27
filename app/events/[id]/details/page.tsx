@@ -19,6 +19,7 @@ import { isMultiBodyConfigured } from '@/lib/cpd/multiBodyShape';
 import { CpdAccreditationSection } from '@/components/details/CpdAccreditationSection';
 import { MultiBodyAccreditationWizard, type WizardGroup, type WizardOccurrence } from '@/components/details/MultiBodyAccreditationWizard';
 import { PassDeliveryPanel } from '@/components/details/PassDeliveryPanel';
+import { EmailDeliveryStrip, type EmailDeliveryRow } from '@/components/details/EmailDeliveryStrip';
 import { EmailSendControls } from './EmailSendControls';
 import { EvidenceExportButton } from './EvidenceExportButton';
 import { LiveScoreboard } from '@/components/details/LiveScoreboard';
@@ -47,7 +48,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
   // The accrediting-body list is NOT in this batch: which bodies are offerable
   // depends on the event's organisation (DEFERRED 56), so it cannot be fetched
   // until the event row has resolved.
-  const [eventRes, regsRes, surveysRes, blocksRes, confirmationsRes, creditsRes, deliveryRes, accGroupsRes, occurrencesRes] = await Promise.all([
+  const [eventRes, regsRes, surveysRes, blocksRes, confirmationsRes, creditsRes, deliveryRes, deliveryAggRes, accGroupsRes, occurrencesRes] = await Promise.all([
     supabase
       .from('events')
       .select('id, title, start_time, end_time, timezone, venue_name, max_attendees, status, registration_close_at, registration_open_at, created_by, accrediting_body_id, cpd_hours, organisation_id')
@@ -101,6 +102,18 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
       .select('registration_id, purpose, status')
       .eq('event_id', id)
       .not('registration_id', 'is', null),
+    // Aggregate for the EmailDeliveryStrip (playbook item 4). Distinct query
+    // from the per-recipient read above because that one filters out rows
+    // without a registration_id — which excludes a confirmation whose
+    // registration insert failed at Step 5. Those rows still belong in the
+    // operator-facing count of failed confirmations. Purpose+status is the
+    // only pair needed; kept as a separate cheap read rather than dropping
+    // the per-recipient read's not-null filter (which would then need
+    // downstream code to handle NULLs).
+    admin
+      .from('email_log')
+      .select('purpose, status')
+      .eq('event_id', id),
     // C5 multi-body wizard's initial state — nested embed follows the FK
     // chain groups -> accreditations -> occurrence links in one round trip.
     supabase
@@ -182,6 +195,14 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
     purpose: string;
     status: 'queued' | 'sent' | 'failed';
   }>;
+
+  // EmailDeliveryStrip aggregate — same failure posture. An empty aggregate on
+  // read-failure renders as "all zeros", which is the honest "we cannot
+  // measure this right now" state rather than a false OK.
+  if (deliveryAggRes.error) {
+    console.error('[details] email_log aggregate read failed', { code: deliveryAggRes.error.code });
+  }
+  const deliveryAggRows: EmailDeliveryRow[] = (deliveryAggRes.data ?? []) as EmailDeliveryRow[];
 
   const event = eventRes.data;
   // Deferred until now: offerable bodies depend on the event's organisation.
@@ -436,6 +457,16 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
           // Same env switch the send core uses to pick devEmailStub. Without
           // it every local run reports the whole roster as pass-less, because
           // the stub leaves rows 'queued' by design.
+          deliveryLive={Boolean(process.env.RESEND_API_KEY)}
+        />
+      )}
+
+      {/* Playbook item 4: raw email_log aggregate across all three purposes,
+          with live/stubbed indicator. Same owner-or-eventar_staff gate as the
+          sibling delivery panels. */}
+      {canSeeConfirmationsSent && (
+        <EmailDeliveryStrip
+          rows={deliveryAggRows}
           deliveryLive={Boolean(process.env.RESEND_API_KEY)}
         />
       )}

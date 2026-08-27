@@ -4,22 +4,32 @@ import { useState, useTransition } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { registerForEvent } from '@/app/(public)/events/[id]/actions';
+import type { EmailDelivery } from '@/app/(public)/events/[id]/schema';
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
+import { DevEmailStubStrip } from '@/components/dev/DevEmailStubBanner';
 
 type Props = {
   eventId: string;
   maxAttendees: number | null;
   currentCount: number;       // count of existing registrations
   lifecycle: Lifecycle;       // form shows only while 'registering'
+  /**
+   * False when RESEND_API_KEY is unset — the send seam lands on devEmailStub
+   * and no real inbox is touched. The success block renders a stub-mode strip
+   * when this is false so the visitor sees the honest state (playbook item 3).
+   * Server-computed by the parent; boolean-only so the key value never reaches
+   * the client (CLAUDE.md rule 10).
+   */
+  deliveryLive: boolean;
 };
 
 type FormState =
   | { kind: 'idle' }
   | { kind: 'submitting' }
-  | { kind: 'success'; email: string }
+  | { kind: 'success'; email: string; emailDelivery: EmailDelivery }
   | { kind: 'error'; message: string };
 
-export default function RegisterCard({ eventId, maxAttendees, currentCount, lifecycle }: Props) {
+export default function RegisterCard({ eventId, maxAttendees, currentCount, lifecycle, deliveryLive }: Props) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [state, setState] = useState<FormState>({ kind: 'idle' });
@@ -66,10 +76,13 @@ export default function RegisterCard({ eventId, maxAttendees, currentCount, life
 
   // ─── State 3: Success (PR — post-register) ────────────────────────────
   // §4 IA order: Pill → Hero → (Event card lives on the page above this
-  // component) → Email confirm → Reg code → CTA → Fine print.
-  // §3 sentence stack: each sentence its own <p>, gap-0 so line-height (1.6)
-  // is the sole rhythm authority between lines.
+  // component) → Email delivery-honest sentence → Pass-later note → Fine print.
+  // Pre-2026-08-27 this block claimed "a confirmation has been sent" regardless
+  // of what actually happened, and gestured at scanning "the QR code" — but
+  // Email #1 carries no QR (that is Email #2, the pass, which arrives closer to
+  // the event). Both lies fixed together per playbook items 1 + 2.
   if (state.kind === 'success') {
+    const deliveryCopy = successDeliveryCopy(state.emailDelivery, state.email);
     return (
       <Section>
         <span className="font-label-md text-label-md px-sm py-xs rounded-full uppercase inline-flex items-center gap-sm bg-success-container text-on-success-container border border-transparent self-start">
@@ -81,17 +94,27 @@ export default function RegisterCard({ eventId, maxAttendees, currentCount, life
         </h2>
         <div className="flex flex-col gap-0">
           <p className="font-body-md text-body-md text-on-surface m-0">
-            A confirmation has been sent to <strong>{state.email}</strong>.
+            {deliveryCopy}
           </p>
+          {/* Item 2: pass timing. The check-in QR + manual code live on Email
+              #2, which fires ~60 min before start — not in the confirmation. */}
           <p className="font-body-md text-body-md text-on-surface m-0">
-            Please scan the QR code at the counter on the day.
-          </p>
-          <p className="font-body-md text-body-md text-on-surface m-0">
-            Alternatively, you may present the code below for manual check-in.
+            Closer to the event we&apos;ll email your personal check-in pass.
           </p>
         </div>
+        {/* Item 3: inline dev-stub marker in the success block. Rendered here
+            only when the parent tells us delivery is stubbed; the same strip
+            appears at the top of the operator dashboard. */}
+        {!deliveryLive && <DevEmailStubStrip />}
+        {/* Cancel fine print: only mention "reply to your confirmation email"
+            when a confirmation email was actually accepted by the provider.
+            In the queued_dev (stub) and failed branches, no email reached the
+            attendee, so directing them at a non-existent inbox is the same
+            class of rule-12 lie the primary copy fix just closed. */}
         <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant m-0">
-          Need to cancel? Reply to your confirmation email.
+          {state.emailDelivery === 'sent'
+            ? 'Need to cancel? Reply to your confirmation email.'
+            : 'Need to cancel? See event staff at check-in — this browser tab is your proof of registration.'}
         </p>
       </Section>
     );
@@ -105,7 +128,11 @@ export default function RegisterCard({ eventId, maxAttendees, currentCount, life
       if ('error' in res) {
         setState({ kind: 'error', message: res.error });
       } else {
-        setState({ kind: 'success', email: email.trim().toLowerCase() });
+        setState({
+          kind: 'success',
+          email: email.trim().toLowerCase(),
+          emailDelivery: res.emailDelivery,
+        });
       }
     });
   }
@@ -175,4 +202,29 @@ export default function RegisterCard({ eventId, maxAttendees, currentCount, life
 // flows with the page, not against it.
 function Section({ children }: { children: React.ReactNode }) {
   return <section className="flex flex-col gap-md">{children}</section>;
+}
+
+/**
+ * Success-block sentence per emailDelivery branch (playbook item 1).
+ * Verbatim from Eventar_Demo_Diagnose_and_Optimize.txt §2.1(1):
+ *   sent    → "A confirmation has been sent to …"
+ *   queued_dev → "You're registered. Email delivery is in dev mode — check the operator console."
+ *   failed  → "You're registered. We couldn't send email; show this screen to staff."
+ * The email string is a JSX fragment only for the `sent` branch (it renders
+ * `<strong>{email}</strong>` inline); the other two never name the recipient,
+ * matching the playbook copy exactly.
+ */
+function successDeliveryCopy(emailDelivery: EmailDelivery, email: string): React.ReactNode {
+  if (emailDelivery === 'sent') {
+    return (
+      <>
+        A confirmation has been sent to <strong>{email}</strong>.
+      </>
+    );
+  }
+  if (emailDelivery === 'queued_dev') {
+    return "You're registered. Email delivery is in dev mode — check the operator console.";
+  }
+  // failed
+  return "You're registered. We couldn't send email; show this screen to staff.";
 }
