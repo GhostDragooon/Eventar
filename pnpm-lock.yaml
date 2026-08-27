@@ -23,6 +23,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.105.4
         version: 2.105.4
+      canonicalize:
+        specifier: 1.0.8
+        version: 1.0.8
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -1799,6 +1802,9 @@ packages:
 
   caniuse-lite@1.0.30001792:
     resolution: {integrity: sha512-hVLMUZFgR4JJ6ACt1uEESvQN1/dBVqPAKY0hgrV70eN3391K6juAfTjKZLKvOMsx8PxA7gsY1/tLMMTcfFLLpw==}
+
+  canonicalize@1.0.8:
+    resolution: {integrity: sha512-0CNTVCLZggSh7bc5VkX5WWPWO+cyZbNd07IHIsSXLia/eAq+r836hgk+8BKoEh7949Mda87VUOitx5OddVj64A==}
 
   chai@6.2.2:
     resolution: {integrity: sha512-NUPRluOfOiTKBKvWPtSD4PhFvWCqOi0BGStNWs57X9js7XGTprSmFoz5F0tWhR4WPjNeR9jXqdC7/UpSJTnlRg==}
@@ -5715,6 +5721,8 @@ snapshots:
   camelcase@5.3.1: {}
 
   caniuse-lite@1.0.30001792: {}
+
+  canonicalize@1.0.8: {}
 
   chai@6.2.2: {}
 

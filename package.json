@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:rls": "RLS_TESTS=1 vitest run tests/rls tests/audit tests/cron tests/cpd/organisation_body_authorisation.rls.test.ts tests/cpd/roster_eligibility.rls.test.ts",
-    "check:ui-colours": "node scripts/check-ui-colours.mjs"
+    "check:ui-colours": "node scripts/check-ui-colours.mjs",
+    "check:ui-primitives": "node scripts/check-ui-primitives.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
@@ -18,6 +19,7 @@
     "@react-email/render": "^2.0.8",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.4",
+    "canonicalize": "1.0.8",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "html5-qrcode": "^2.3.8",

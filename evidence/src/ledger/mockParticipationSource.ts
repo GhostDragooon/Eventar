@@ -5,7 +5,7 @@ import type {
   EventRecord,
   LedgerEntry,
   ParticipationSource,
-} from '../types.js';
+} from '../types';
 
 type MockFile = {
   events: EventRecord[];

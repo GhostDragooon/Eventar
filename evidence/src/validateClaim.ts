@@ -2,7 +2,7 @@
  * Lightweight validator mirroring schema/evidence-claim.schema.json.
  * No ajv/zod — keeps this slice dependency-free for Next.js and CLI.
  */
-import type { EvidenceClaim } from './types.js';
+import type { EvidenceClaim } from './types';
 
 const CLAIM_TYPES = new Set(['accreditation', 'participation', 'submission']);
 const QUESTIONS = new Set([1, 2, 3]);
@@ -40,13 +40,17 @@ export function validateClaim(claim: unknown): ValidationResult {
     'event_id',
     'subject_id',
     'status',
-    'rule_version',
     'agent_version',
     'generated_at',
   ]) {
     if (typeof c[key] !== 'string' || !(c[key] as string).length) {
       errors.push(`${key}: required non-empty string`);
     }
+  }
+  // rule_version: non-empty string OR null (the pack is missing/empty and
+  // the package carries rule_version_status: 'missing').
+  if (c.rule_version !== null && (typeof c.rule_version !== 'string' || !(c.rule_version as string).length)) {
+    errors.push('rule_version: required non-empty string or null');
   }
   if (!Array.isArray(c.evidence_refs)) {
     errors.push('evidence_refs: must be an array');

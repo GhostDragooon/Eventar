@@ -12,11 +12,14 @@ const ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
 // PRNG predictability made codes effectively guessable. See PROJECT_STATE.md.
 const CODE_LENGTH = 6;
 
-// Accepts BOTH the legacy 4-char format (rows backfilled by the Phase-4
-// init_checkin_columns migration + any registrations created before the
-// CSPRNG/length swap) AND the new 6-char format. Once all 4-char
-// registrations belong to ended events the {4}| branch can be dropped.
-const CODE_RE = /^WK-(?:[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{4}|[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6})$/;
+// Historic `WK-` (workshop) prefix removed from NEWLY generated codes 2026-08-27
+// — DEFERRED 51 (Task 10.7 prerequisite). Every export sent to a College
+// carried a workshop branding on the registration code; leaks the tool's
+// pre-pivot origin. Existing rows keep their prefix by design (no migration),
+// so the validator still accepts the prefixed form for the lifetime of those
+// rows. The optional `WK-` in the regex is the compatibility bracket, not a
+// new-code shape. Drops on its own when the last legacy row's event ends.
+const CODE_RE = /^(?:WK-)?(?:[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{4}|[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6})$/;
 
 /**
  * Generate a fresh registration code. Uses `crypto.randomInt` (CSPRNG)
@@ -26,7 +29,7 @@ const CODE_RE = /^WK-(?:[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{4}|[23456789ABCDEFGHJK
  * attack vector.
  */
 export function generateRegistrationCode(): string {
-  let out = 'WK-';
+  let out = '';
   for (let i = 0; i < CODE_LENGTH; i++) {
     out += ALPHABET[randomInt(0, ALPHABET.length)];
   }

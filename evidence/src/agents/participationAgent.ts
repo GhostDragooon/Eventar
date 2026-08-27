@@ -8,8 +8,8 @@ import type {
   EventRecord,
   LedgerEntry,
   ParticipationStatus,
-} from '../types.js';
-import { assertValidClaim } from '../validateClaim.js';
+} from '../types';
+import { assertValidClaim } from '../validateClaim';
 
 export const PARTICIPATION_AGENT = 'eventar-participation' as const;
 export const AGENT_VERSION = '0.1.0';

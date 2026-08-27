@@ -9,8 +9,8 @@
 import { writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { MockParticipationSource } from './ledger/mockParticipationSource.js';
-import { orchestrateParticipation } from './orchestrator.js';
+import { MockParticipationSource } from './ledger/mockParticipationSource';
+import { orchestrateParticipation } from './orchestrator';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const outDir = join(here, '../out');

@@ -20,6 +20,7 @@ import { CpdAccreditationSection } from '@/components/details/CpdAccreditationSe
 import { MultiBodyAccreditationWizard, type WizardGroup, type WizardOccurrence } from '@/components/details/MultiBodyAccreditationWizard';
 import { PassDeliveryPanel } from '@/components/details/PassDeliveryPanel';
 import { EmailSendControls } from './EmailSendControls';
+import { EvidenceExportButton } from './EvidenceExportButton';
 import { LiveScoreboard } from '@/components/details/LiveScoreboard';
 import { StickyLiveBar } from '@/components/details/StickyLiveBar';
 
@@ -376,6 +377,28 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
         initialGroups={wizardGroups}
         frozen={creditsIssued > 0}
       />
+
+      {/* Task 10.7 evidence export — one section per row Step 6 spec, mounted
+          next to the accreditation surfaces because the export IS the
+          hand-over of what those surfaces produced. Owner-or-eventar_staff
+          gate mirrors the confirmations/delivery panels; button disables
+          when nothing is on the ledger yet. */}
+      {canSeeConfirmationsSent && (
+        <section
+          aria-labelledby="evidence-export-heading"
+          className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg mt-lg"
+        >
+          <h2 id="evidence-export-heading" className="text-title-md font-semibold text-on-surface mb-xs">
+            Evidence export
+          </h2>
+          <p className="text-body-sm text-on-surface-variant mb-md">
+            Downloads the Q2 participation claims (JSON) plus a flat one-row-per-credit CSV. Each package
+            carries an RFC 8785 canonical hash of the accrediting body&rsquo;s current rule pack, so a
+            reader can pin the export to the pack version it was generated against.
+          </p>
+          <EvidenceExportButton eventId={event.id} disabled={creditsIssued === 0} />
+        </section>
+      )}
 
       <RegistrationSection
         eventId={event.id}
