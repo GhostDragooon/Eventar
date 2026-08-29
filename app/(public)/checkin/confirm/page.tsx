@@ -168,7 +168,11 @@ export default async function SelfCheckinPage({
       // banner is a helpful signal — a lookup failure showing "missing" would
       // send every attendee to reception on a transient RPC error.
       console.error('[checkin] credit status lookup failed', { code: creditErr.code });
-    } else if (creditData === 'posted' || creditData === 'missing') {
+    } else if (
+      creditData === 'posted' ||
+      creditData === 'pending' ||
+      creditData === 'missing'
+    ) {
       creditStatus = creditData;
     }
     return (

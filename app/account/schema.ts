@@ -44,22 +44,29 @@ export type AccountUpdateInput = z.infer<typeof accountUpdateSchema>;
 // Professional profile fields (public.professional_profiles)
 // ---------------------------------------------------------------------------
 
-const codeString = z.string().max(120);
 const longText = z.string().max(4000);
+
+// Trim then reject whitespace-only. Zod's .trim() runs before validation,
+// so .min(1) after it is the "non-whitespace" gate the F3 evaluator needs.
+// Nulls stay legal (a caller can clear a previously-set field); the
+// non-nullable path only fires on genuine non-empty strings. Mirrors the
+// CHECK constraints in 20260829150000. D4 dev-lens re-review IMPORTANT 2.
+const nonBlankString = (max: number) =>
+  z.string().trim().min(1, 'must not be blank').max(max);
 
 export const professionalProfileUpdateSchema = z
   .object({
-    workplace_text: z.string().max(500).nullable().optional(),
+    workplace_text: nonBlankString(500).nullable().optional(),
     workplace_organisation_id: z.string().uuid().nullable().optional(),
-    position_code: codeString.nullable().optional(),
-    position_other: z.string().max(500).nullable().optional(),
-    profession_code: codeString.nullable().optional(),
-    specialty_code: codeString.nullable().optional(),
-    specialty_other: z.string().max(500).nullable().optional(),
-    department_text: z.string().max(500).nullable().optional(),
+    position_code: nonBlankString(120).nullable().optional(),
+    position_other: nonBlankString(500).nullable().optional(),
+    profession_code: nonBlankString(120).nullable().optional(),
+    specialty_code: nonBlankString(120).nullable().optional(),
+    specialty_other: nonBlankString(500).nullable().optional(),
+    department_text: nonBlankString(500).nullable().optional(),
     biography: longText.nullable().optional(),
-    expertise_codes: z.array(z.string().max(120)).max(64).nullable().optional(),
-    presentation_languages: z.array(z.string().max(16)).max(16).nullable().optional(),
+    expertise_codes: z.array(z.string().trim().min(1).max(120)).max(64).nullable().optional(),
+    presentation_languages: z.array(z.string().trim().min(1).max(16)).max(16).nullable().optional(),
     // Plan §7.2: opt-in is storage only in this slice; no discovery product.
     // Timestamp is maintained by the DB trigger, not by the client.
     speaker_discovery_opt_in: z.boolean().optional(),
