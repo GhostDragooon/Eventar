@@ -149,7 +149,7 @@ async function main() {
   console.log('\n=== Reconcile summary (outcome counts, not registration counts) ===');
   console.log(`  issued:  ${tally.issued}  (new credits posted)`);
   console.log(`  already: ${tally.already}  (already had a credit — no-op)`);
-  console.log(`  skipped: ${tally.skipped}  (business guard — not_cpd / no_user / no_licence / no_role_match / no_occurrences / no_matching_schedule / ambiguous_schedule / disabled)`);
+  console.log(`  skipped: ${tally.skipped}  (business guard — not_cpd / no_user / no_licence / no_role_match / no_occurrences / no_matching_schedule / ambiguous_schedule / disabled / registration_unlinked / email_unverified / missing_consents / profile_incomplete)`);
   console.log(`  failed:  ${tally.failed}  (technical error — needs investigation)`);
 
   if (failures.length > 0) {

@@ -158,7 +158,7 @@ export default async function SelfCheckinPage({
     // — including on a return visit or a staff-driven manual check-in that
     // the attendee never triggered themselves. Read-only via a definer that
     // resolves email → auth.users.id (see the migration for the why).
-    let creditStatus: 'posted' | 'missing' | 'silence' = 'silence';
+    let creditStatus: 'posted' | 'pending' | 'missing' | 'silence' = 'silence';
     const { data: creditData, error: creditErr } = await admin.rpc(
       'registration_credit_status',
       { p_event_id: event.id, p_registration_code: code },
@@ -365,7 +365,7 @@ function CheckedInView({
   method: string | null;
   /** 'posted' → green success banner, 'missing' → see-reception nudge,
    *  'silence' → no banner (event is non-CPD, or upstream refused). */
-  creditStatus: 'posted' | 'missing' | 'silence';
+  creditStatus: 'posted' | 'pending' | 'missing' | 'silence';
 }) {
   const via = method === 'qr' ? 'via self-scan' : method === 'manual' ? 'via reception' : null;
   return (
@@ -404,6 +404,20 @@ function CheckedInView({
         >
           <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden data-fill="1">check_circle</span>
           <span className="flex-1">CPD credit recorded.</span>
+        </p>
+      )}
+      {creditStatus === 'pending' && (
+        <p
+          role="status"
+          aria-live="polite"
+          className="font-body-md text-body-md text-on-surface-variant bg-surface-container border border-outline-variant rounded-lg px-md py-sm flex items-start gap-sm m-0"
+        >
+          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>info</span>
+          <span className="flex-1">
+            CPD credit is pending. Sign in or sign up with the email you
+            registered with to link this attendance to your account and
+            release credit — reception can&apos;t do this for you.
+          </span>
         </p>
       )}
       {creditStatus === 'missing' && (

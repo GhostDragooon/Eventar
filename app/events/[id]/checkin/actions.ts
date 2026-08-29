@@ -38,7 +38,7 @@ function summariseCredit(outcomes: AwardOutcome[]): CreditSummary {
       if (reason === 'not_cpd') {
         // Non-accredited event — silence is correct; no line.
       } else if (reason === 'no_licence') {
-        lines.push('No CPD credit — no verified licence for this body');
+        lines.push('CPD held — attendee has no licence for this body');
       } else if (reason === 'no_role_match') {
         lines.push('No CPD credit — role not mapped for this body');
       } else if (reason === 'disabled') {
@@ -47,12 +47,32 @@ function summariseCredit(outcomes: AwardOutcome[]): CreditSummary {
         lines.push('No CPD credit — outside the attendance window');
       } else if (reason === 'cancelled') {
         lines.push('No CPD credit — registration cancelled');
-      } else if (reason === 'no_user' || reason === 'no_registration') {
-        lines.push('No CPD credit — attendee has no practitioner account');
+      } else if (reason === 'no_registration') {
+        lines.push('No CPD credit — no registration for this code');
+      } else if (reason === 'registration_unlinked') {
+        // F5 fail. Walk-in / guest waiting to claim. Recovery = attendee
+        // signs up with the registration email, then reconcile releases.
+        lines.push('CPD held — attendee will link account after the event');
+      } else if (reason === 'email_unverified') {
+        // F1 fail. Recovery = attendee verifies via the Supabase email.
+        lines.push('CPD held — attendee must verify their email');
+      } else if (reason === 'missing_consents') {
+        // F2 fail. Recovery = attendee accepts current terms + privacy.
+        lines.push('CPD held — attendee has not accepted current terms');
+      } else if (reason === 'profile_incomplete') {
+        // F3 fail. Recovery = attendee fills workplace / position / profession.
+        lines.push('CPD held — attendee must complete their profile');
       } else if (reason === 'no_occurrences' || reason === 'no_matching_schedule') {
         lines.push('No CPD credit — no matching session credit');
-      } else if (reason === 'zero_earned') {
+      } else if (reason === 'zero_earned' || reason === 'no_attendance') {
         lines.push('No CPD credit — zero attendance points earned');
+      } else if (reason === 'no_user') {
+        // Pre-Stage-B4 code path. Under enforce_full_setup=true (the app
+        // default) F5 (registration_unlinked) now fires first for unlinked
+        // registrations; no_user only reaches this branch under
+        // enforce_full_setup=false (reconcile scripts). Kept for
+        // completeness of legacy reconcile output.
+        lines.push('No CPD credit — no auth user matched the registration email');
       } else {
         lines.push(`No CPD credit — ${reason}`);
       }

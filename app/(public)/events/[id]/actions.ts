@@ -61,6 +61,14 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
   // eslint-disable-next-line no-restricted-syntax -- no-session and call-failed collapse to "guest register"
   const { data: authRes } = await anon.auth.getUser();
   const authedUserId = authRes?.user?.id ?? null;
+  const authedEmail = authRes?.user?.email?.toLowerCase().trim() ?? null;
+  // Only attach user_id + snapshot when the form's email matches the caller's
+  // own auth email. Without this guard, a signed-in Bob submitting
+  // alice@work.com would get Bob's user_id + Bob's licence credited on
+  // Alice's check-in (D4 review, both lenses). Case-insensitive comparison
+  // matches the registrations_lowercase_email trigger's normalisation.
+  const canAttachUserId =
+    authedUserId != null && authedEmail != null && authedEmail === email.toLowerCase().trim();
 
   // Step 2 — event must exist and be published. Anon RLS already filters
   // non-published events, but selecting explicit columns lets us read
@@ -160,15 +168,17 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
   // and it has its own handling below). Up to 5 attempts; 31^4 namespace
   // (see lib/registrationCode.ts) makes 5 collisions in a row astronomically
   // rare. The unique constraint in the DB is the source of truth.
-  // If the caller is authenticated, snapshot their profile at INSERT time
-  // (plan §5.2 step 3 + §4.4 shape). build_profile_snapshot returns null
-  // when the user has no professional_profiles row yet (plan §1.4 "snapshot
-  // iff profile exists"); we register with user_id set + snapshot NULL in
-  // that case, and claim_registrations_for_user fills the snapshot later
-  // once the user creates a profile. The RPC call runs via admin
-  // (service_role, the only role with EXECUTE on build_profile_snapshot).
+  // If the caller is authenticated AND registering their own email
+  // (canAttachUserId guard above — plan §5.2 step 1, D4 review both lenses),
+  // snapshot their profile at INSERT time (plan §5.2 step 3 + §4.4 shape).
+  // build_profile_snapshot returns null when the user has no
+  // professional_profiles row yet (plan §1.4 "snapshot iff profile exists");
+  // we register with user_id set + snapshot NULL in that case, and
+  // claim_registrations_for_user fills the snapshot later once the user
+  // creates a profile. The RPC call runs via admin (service_role, the only
+  // role with EXECUTE on build_profile_snapshot).
   let profileSnapshot: unknown = null;
-  if (authedUserId) {
+  if (canAttachUserId) {
     const { data: snap, error: snapErr } = await admin.rpc(
       'build_profile_snapshot',
       { p_user_id: authedUserId },
@@ -202,9 +212,12 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
         // service_role or definer). The registrations_guest_insert_no_user_id
         // trigger blocks any authenticated/anon direct INSERT that carries
         // a user_id; this admin path passes because current_user is
-        // service_role, not in the trigger's blocklist.
-        user_id: authedUserId,
-        profile_snapshot: profileSnapshot,
+        // service_role, not in the trigger's blocklist. When the form email
+        // does not match the caller's own auth email (canAttachUserId
+        // false), user_id + snapshot both stay null — the row lands as a
+        // plain guest.
+        user_id: canAttachUserId ? authedUserId : null,
+        profile_snapshot: canAttachUserId ? profileSnapshot : null,
       })
       .select('id, registration_code')
       .single();

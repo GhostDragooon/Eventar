@@ -25,10 +25,14 @@ grant usage, select on all sequences in schema public
 --   credit_ledger          — 20260709260000_credit_ledger_hardening.sql
 --   practitioner_licences  — 20260709300000_practitioner_licences_append_only.sql
 --                            + 20260709320000 re-grants service_role DELETE
+--   professional_profiles  — 20260829130000_professional_profiles_no_delete_from_authenticated.sql
+--                            (only DELETE is revoked; INSERT/UPDATE stay for RLS self-write)
 revoke insert, update, delete on public.audit_events          from anon, authenticated, service_role;
 revoke insert, update, delete on public.credit_ledger         from anon, authenticated, service_role;
 revoke insert, update, delete on public.practitioner_licences from anon, authenticated, service_role;
 grant  delete                  on public.practitioner_licences to service_role;
+revoke delete                  on public.professional_profiles from anon, authenticated, service_role;
+grant  delete                  on public.professional_profiles to service_role;
 -- staff.role is definer-only (set_staff_role, migration 20260716150855). The
 -- blanket grant above re-granted table-level UPDATE on staff, which would
 -- re-expose the role column locally — re-assert the revoke + non-role column

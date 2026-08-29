@@ -120,7 +120,9 @@ describe('markAttended — attendance stays authoritative when credit fails', ()
     expect(res).toMatchObject(SUCCESS_BASE);
     if (!('ok' in res) || !res.ok) throw new Error('expected ok');
     expect(res.credit?.allSkipped).toBe(true);
-    expect(res.credit?.lines.some((l) => l.includes('no verified licence'))).toBe(true);
+    // Copy tightened 2026-08-29 (Stage B4 broadened F4 to accept declared
+    // OR verified — the old "no verified licence" line was inaccurate).
+    expect(res.credit?.lines.some((l) => l.includes('no licence for this body'))).toBe(true);
   });
 
   it('gives no_matching_occurrence its own message, distinct from the generic default', async () => {
