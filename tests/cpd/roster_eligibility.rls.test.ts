@@ -202,8 +202,15 @@ describe.skipIf(!process.env.RLS_TESTS)('event_registration_eligibility', () => 
       p_code: codes.licensed, p_ip: '203.0.113.77',
     });
     expect((Array.isArray(okRes) ? okRes[0] : okRes).result).toBe('ok');
+    // p_enforce_full_setup: false — this test asserts the engine/prediction
+    // agreement, not the F1-F5 gate (Stage B4, 20260829120000). The gate is
+    // covered by its own tests in Stage D. Without the opt-out the guest
+    // fixture (user_id null on the registration) would return
+    // 'skipped:registration_unlinked' before the engine ever ran, and the
+    // prediction ↔ actual invariant this test exists to hold would be moot.
     const { data: award } = await admin.rpc('award_attendance_credit', {
       p_event_id: eventId, p_registration_code: codes.licensed,
+      p_enforce_full_setup: false,
     });
     expect(predicted[ids.licensed]).toBe('eligible');
     expect(award).toEqual([{ body_id: bodyId, outcome: 'issued' }]);
@@ -213,6 +220,7 @@ describe.skipIf(!process.env.RLS_TESTS)('event_registration_eligibility', () => 
     await admin.rpc('self_check_in', { p_code: codes.unlicensed, p_ip: '203.0.113.78' });
     const { data: skip } = await admin.rpc('award_attendance_credit', {
       p_event_id: eventId, p_registration_code: codes.unlicensed,
+      p_enforce_full_setup: false,
     });
     expect(predicted[ids.unlicensed]).toBe('no_licence');
     expect(skip).toEqual([{ body_id: bodyId, outcome: 'skipped:no_licence' }]);

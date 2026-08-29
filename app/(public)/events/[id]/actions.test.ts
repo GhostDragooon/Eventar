@@ -84,6 +84,13 @@ let lastEmailLogUpdateId: string | null = null;
 
 vi.mock('@/lib/supabase/server', () => ({
   supabaseServer: vi.fn(async () => ({
+    // auth.getUser is used by registerForEvent to detect a logged-in caller
+    // for register-while-logged-in wiring (Stage B2, 2026-08-29). Default:
+    // guest — null user, so the pre-plan tests keep exercising the guest
+    // registration path they were written against.
+    auth: {
+      getUser: vi.fn(async () => ({ data: { user: null }, error: null })),
+    },
     from: (_table: string) => ({
       select: (cols: string) => {
         colCapture.eventCols = cols;

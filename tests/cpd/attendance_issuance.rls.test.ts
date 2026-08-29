@@ -300,7 +300,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
     // registrations (which would collide on registrations_event_id_email_key).
     const code = await makeRegistration(cpdEventId, practitionerA, `SEQ${ts}`);
 
-    const first = await admin.rpc('award_attendance_credit', { p_event_id: cpdEventId, p_registration_code: code });
+    const first = await admin.rpc('award_attendance_credit', { p_event_id: cpdEventId, p_registration_code: code, p_enforce_full_setup: false });
     expect(first.error).toBeNull();
     expect(first.data).toEqual([{ body_id: bodyId, outcome: 'issued' }]);
 
@@ -316,7 +316,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
     expect(broken).toHaveLength(0);
 
     // Repeat call — idempotent, still exactly one credit.
-    const second = await admin.rpc('award_attendance_credit', { p_event_id: cpdEventId, p_registration_code: code });
+    const second = await admin.rpc('award_attendance_credit', { p_event_id: cpdEventId, p_registration_code: code, p_enforce_full_setup: false });
     expect(second.error).toBeNull();
     expect(second.data).toEqual([{ body_id: bodyId, outcome: 'already' }]);
     expect(await creditsFor(practitionerA.id, cpdEventId)).toHaveLength(1);
@@ -325,8 +325,8 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
   it('a true concurrent race on a fresh registration still yields exactly one credit', async () => {
     const code = await makeRegistration(cpdEventId, practitionerB, `RACE${ts}`);
     const [r1, r2] = await Promise.all([
-      admin.rpc('award_attendance_credit', { p_event_id: cpdEventId, p_registration_code: code }),
-      admin.rpc('award_attendance_credit', { p_event_id: cpdEventId, p_registration_code: code }),
+      admin.rpc('award_attendance_credit', { p_event_id: cpdEventId, p_registration_code: code, p_enforce_full_setup: false }),
+      admin.rpc('award_attendance_credit', { p_event_id: cpdEventId, p_registration_code: code, p_enforce_full_setup: false }),
     ]);
     expect(r1.error).toBeNull();
     expect(r2.error).toBeNull();
@@ -341,8 +341,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
     const code = await makeRegistration(nonCpdEventId, practitionerA, `NONCPD${ts}`);
     const { data, error } = await admin.rpc('award_attendance_credit', {
       p_event_id: nonCpdEventId,
-      p_registration_code: code,
-    });
+      p_registration_code: code, p_enforce_full_setup: false });
     expect(error).toBeNull();
     // Zero event_accreditation_groups — the single-outcome equivalent of the
     // old scalar 'skipped:not_cpd', body_id null (nothing was ever evaluated).
@@ -372,8 +371,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
 
     const { data, error } = await admin.rpc('award_attendance_credit', {
       p_event_id: eventId,
-      p_registration_code: code,
-    });
+      p_registration_code: code, p_enforce_full_setup: false });
     expect(error).toBeNull();
     // Pre-loop gate — fires before any group is evaluated, so body_id is null
     // regardless of how many groups the event has.
@@ -388,8 +386,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
     const code = await makeRegistration(eventId, practitionerA, `STALE${ts}`);
     const { data, error } = await admin.rpc('award_attendance_credit', {
       p_event_id: eventId,
-      p_registration_code: code,
-    });
+      p_registration_code: code, p_enforce_full_setup: false });
     expect(error).toBeNull();
     expect(data).toEqual([{ body_id: null, outcome: 'skipped:outside_window' }]);
     expect(await creditsFor(practitionerA.id, eventId)).toHaveLength(0);
@@ -399,8 +396,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
     const code = await makeRegistration(cpdEventId, practitionerNoLicence, `NOLIC${ts}`);
     const { data, error } = await admin.rpc('award_attendance_credit', {
       p_event_id: cpdEventId,
-      p_registration_code: code,
-    });
+      p_registration_code: code, p_enforce_full_setup: false });
     expect(error).toBeNull();
     expect(data).toEqual([{ body_id: bodyId, outcome: 'skipped:no_licence' }]);
 
@@ -645,8 +641,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
     it('the real ICI shape: licensed at 2 of 3 bodies, attends both days -> exactly 2 issued rows with correct values, nothing for the unlicensed body', async () => {
       const { data, error } = await admin.rpc('award_attendance_credit', {
         p_event_id: icEventId,
-        p_registration_code: fullReg.code,
-      });
+        p_registration_code: fullReg.code, p_enforce_full_setup: false });
       expect(error).toBeNull();
       const rows = data as AwardRow[];
       expect(rows).toHaveLength(5); // one outcome per group on this event
@@ -673,8 +668,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
     it('idempotency: a second call returns already for the two credited bodies, unchanged for the rest, no duplicate rows', async () => {
       const { data, error } = await admin.rpc('award_attendance_credit', {
         p_event_id: icEventId,
-        p_registration_code: fullReg.code,
-      });
+        p_registration_code: fullReg.code, p_enforce_full_setup: false });
       expect(error).toBeNull();
       const rows = data as AwardRow[];
       expect(outcomeFor(rows, bodyPath)).toEqual({ body_id: bodyPath, outcome: 'already' });
@@ -703,8 +697,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
 
       const { data, error } = await admin.rpc('award_attendance_credit', {
         p_event_id: icEventId,
-        p_registration_code: fullReg.code,
-      });
+        p_registration_code: fullReg.code, p_enforce_full_setup: false });
       expect(error).toBeNull();
       const rows = data as AwardRow[];
       expect(outcomeFor(rows, bodyPath)).toEqual({ body_id: bodyPath, outcome: 'already' });
@@ -720,8 +713,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
     it('partial attendance (Day 1 only): explicit_schedule matches the smaller satisfied row, proportional produces a real fraction', async () => {
       const { data, error } = await admin.rpc('award_attendance_credit', {
         p_event_id: icEventId,
-        p_registration_code: partialReg.code,
-      });
+        p_registration_code: partialReg.code, p_enforce_full_setup: false });
       expect(error).toBeNull();
       const rows = data as AwardRow[];
       expect(outcomeFor(rows, bodyPath)).toEqual({ body_id: bodyPath, outcome: 'issued' });
@@ -740,8 +732,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
     it('a proportional group whose accreditation links to zero occurrences returns skipped:no_occurrences, not an error', async () => {
       const { data, error } = await admin.rpc('award_attendance_credit', {
         p_event_id: icEventId,
-        p_registration_code: orphanReg.code,
-      });
+        p_registration_code: orphanReg.code, p_enforce_full_setup: false });
       expect(error).toBeNull();
       expect(outcomeFor(data as AwardRow[], bodyOrphan)).toEqual({ body_id: bodyOrphan, outcome: 'skipped:no_occurrences' });
       expect(await ledgerRowsFor(practitionerOrphan.id, icEventId)).toHaveLength(0);
@@ -839,8 +830,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
 
       const { data, error } = await admin.rpc('award_attendance_credit', {
         p_event_id: zeEventId,
-        p_registration_code: reg.registration_code as string,
-      });
+        p_registration_code: reg.registration_code as string, p_enforce_full_setup: false });
       expect(error).toBeNull();
       expect(outcomeFor(data as AwardRow[], zeBodyId)).toEqual({ body_id: zeBodyId, outcome: 'skipped:no_attendance' });
 
@@ -866,8 +856,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
     it("role -> category resolution: a matching role lets the group apply and the posted row carries the resolved category", async () => {
       const { data, error } = await admin.rpc('award_attendance_credit', {
         p_event_id: icEventId,
-        p_registration_code: roleChairReg.code,
-      });
+        p_registration_code: roleChairReg.code, p_enforce_full_setup: false });
       expect(error).toBeNull();
       expect(outcomeFor(data as AwardRow[], bodyRoleTax)).toEqual({ body_id: bodyRoleTax, outcome: 'issued' });
 
@@ -879,8 +868,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
     it("role -> category resolution: no role maps to the group's category -> skipped:no_role_match", async () => {
       const { data, error } = await admin.rpc('award_attendance_credit', {
         p_event_id: icEventId,
-        p_registration_code: roleMismatchReg.code,
-      });
+        p_registration_code: roleMismatchReg.code, p_enforce_full_setup: false });
       expect(error).toBeNull();
       expect(outcomeFor(data as AwardRow[], bodyRoleTax)).toEqual({ body_id: bodyRoleTax, outcome: 'skipped:no_role_match' });
       expect(await ledgerRowsFor(practitionerRoleMismatch.id, icEventId)).toHaveLength(0);
@@ -957,8 +945,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
 
       const { data, error } = await admin.rpc('award_attendance_credit', {
         p_event_id: ambigEventId,
-        p_registration_code: reg.code,
-      });
+        p_registration_code: reg.code, p_enforce_full_setup: false });
       expect(error).toBeNull();
       expect(data).toEqual([{ body_id: ambigBody, outcome: 'skipped:ambiguous_schedule' }]);
       expect(await ledgerRowsFor(practitionerAmbig.id, ambigEventId)).toHaveLength(0);
@@ -1165,8 +1152,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
 
       const { data, error } = await admin.rpc('award_attendance_credit', {
         p_event_id: shipEventId,
-        p_registration_code: shipReg.code,
-      });
+        p_registration_code: shipReg.code, p_enforce_full_setup: false });
 
       expect(error).toBeNull();
       const rows = data as AwardRow[];
@@ -1189,8 +1175,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
       try {
         const { error } = await admin.rpc('award_attendance_credit', {
           p_event_id: fx.eventId,
-          p_registration_code: fx.reg.code,
-        });
+          p_registration_code: fx.reg.code, p_enforce_full_setup: false });
         expect(error).not.toBeNull();
         expect(error!.code).toBe('PT422');
         expect(error!.message).toContain('role_award_rule_missing');
@@ -1211,8 +1196,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
       try {
         const { error } = await admin.rpc('award_attendance_credit', {
           p_event_id: fx.eventId,
-          p_registration_code: fx.reg.code,
-        });
+          p_registration_code: fx.reg.code, p_enforce_full_setup: false });
         expect(error).not.toBeNull();
         expect(error!.code).toBe('PT422');
         expect(error!.message).toContain('role_award_ambiguous');
@@ -1243,8 +1227,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
       try {
         const { error } = await admin.rpc('award_attendance_credit', {
           p_event_id: fx.eventId,
-          p_registration_code: fx.reg.code,
-        });
+          p_registration_code: fx.reg.code, p_enforce_full_setup: false });
         expect(error).not.toBeNull();
         expect(error!.code).toBe('PT422');
         expect(error!.message).toContain('role_award_cumulative_needs_ledger_widening');
@@ -1267,8 +1250,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
       try {
         const { error } = await admin.rpc('award_attendance_credit', {
           p_event_id: fx.eventId,
-          p_registration_code: fx.reg.code,
-        });
+          p_registration_code: fx.reg.code, p_enforce_full_setup: false });
         expect(error).not.toBeNull();
         expect(error!.code).toBe('PT422');
         expect(error!.message).toContain('role_award_requires_manual_selection');

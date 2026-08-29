@@ -2,7 +2,7 @@
 //
 // Runtime Contract (docs/plans/2026-07-23-cpd-mvp-architecture.md): credit
 // issuance is best-effort and eventually consistent — this is the "eventually"
-// half. It heals three real gaps, none of which the inline award at check-in
+// half. It heals four real gaps, none of which the inline award at check-in
 // time can close on its own:
 //   1. A transient technical failure on the inline award (network blip,
 //      momentary DB error) that left a real attendee with no credit.
@@ -12,6 +12,16 @@
 //      event (self-serve identity linking, when that ships) — this is the
 //      only mechanism that can ever award them a credit at all, since the
 //      inline path only fires once, at check-in time.
+//   4. Post-2026-08-29 (Stage B4, F1-F5 gate): an attendee whose CPD was
+//      HELD at check-in because full account setup was incomplete — walk-in
+//      with no user_id, no linked profile, missing consent versions, or no
+//      licence for a body. After they claim (claim_registrations_for_user)
+//      + complete their profile + declare their licence, re-run this to
+//      release the held credit. Idempotent: rows that were 'issued' first
+//      time come back 'already'; rows that were 'skipped:*' and still fail
+//      the gate come back with the same skip code (fresh no-op). No config
+//      change or explicit list-of-held is needed — the DB-side gate is the
+//      single source of truth for release eligibility.
 //
 // Deliberately NOT a diff-then-insert: it just re-calls awardAttendanceCredit
 // for every attended registration, unconditionally. The idempotency backstop
