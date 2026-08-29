@@ -56,6 +56,12 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
   const anon  = await supabaseServer();
   const admin = supabaseAdmin();
 
+  // Register-while-logged-in detection (plan §5.2). Silent when the caller
+  // is not authenticated — the guest path stays byte-for-byte the same.
+  // eslint-disable-next-line no-restricted-syntax -- no-session and call-failed collapse to "guest register"
+  const { data: authRes } = await anon.auth.getUser();
+  const authedUserId = authRes?.user?.id ?? null;
+
   // Step 2 — event must exist and be published. Anon RLS already filters
   // non-published events, but selecting explicit columns lets us read
   // max_attendees + title for the capacity check + stub message.
@@ -154,13 +160,52 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
   // and it has its own handling below). Up to 5 attempts; 31^4 namespace
   // (see lib/registrationCode.ts) makes 5 collisions in a row astronomically
   // rare. The unique constraint in the DB is the source of truth.
+  // If the caller is authenticated, snapshot their profile at INSERT time
+  // (plan §5.2 step 3 + §4.4 shape). build_profile_snapshot returns null
+  // when the user has no professional_profiles row yet (plan §1.4 "snapshot
+  // iff profile exists"); we register with user_id set + snapshot NULL in
+  // that case, and claim_registrations_for_user fills the snapshot later
+  // once the user creates a profile. The RPC call runs via admin
+  // (service_role, the only role with EXECUTE on build_profile_snapshot).
+  let profileSnapshot: unknown = null;
+  if (authedUserId) {
+    const { data: snap, error: snapErr } = await admin.rpc(
+      'build_profile_snapshot',
+      { p_user_id: authedUserId },
+    );
+    if (snapErr) {
+      // Snapshot build should not gate the registration itself. Log for
+      // observability and continue with snapshot NULL — the claim path
+      // (or a future explicit re-snapshot) can fix it.
+      console.warn('[registerForEvent] build_profile_snapshot failed', {
+        code: snapErr.code,
+        message: snapErr.message,
+      });
+    } else if (snap != null) {
+      profileSnapshot = snap;
+    }
+  }
+
   let reg: { id: string; registration_code: string } | null = null;
   let regErr: { code?: string; message: string } | null = null;
   for (let attempt = 0; attempt < 5; attempt++) {
     const candidate = generateRegistrationCode();
     const insertResult = await admin
       .from('registrations')
-      .insert({ event_id, email, full_name, registration_code: candidate })
+      .insert({
+        event_id,
+        email,
+        full_name,
+        registration_code: candidate,
+        // Plan §5.2 / §8.2: user_id and profile_snapshot are set only on
+        // register-while-logged-in and claim paths (both server-side via
+        // service_role or definer). The registrations_guest_insert_no_user_id
+        // trigger blocks any authenticated/anon direct INSERT that carries
+        // a user_id; this admin path passes because current_user is
+        // service_role, not in the trigger's blocklist.
+        user_id: authedUserId,
+        profile_snapshot: profileSnapshot,
+      })
       .select('id, registration_code')
       .single();
     if (insertResult.error) {
