@@ -1,17 +1,7 @@
 /** @vitest-environment jsdom */
-import { vi } from 'vitest';
-
-// Avoid pulling 'server-only' (via SignOutButton → supabase browser client) in
-// jsdom; we only assert that the Sign-out button renders, not its action.
-vi.mock('@/components/shell/SignOutButton', () => ({
-  SignOutButton: ({ className }: { className?: string }) => (
-    <button type="button" className={className}>Sign out</button>
-  ),
-}));
-
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import SettingsClient from './SettingsClient';
+import SettingsClient, { SettingsSignOut } from './SettingsClient';
 import { THEME_STORAGE_KEY } from '@/lib/theme';
 import { TEXT_SIZE_STORAGE_KEY } from '@/lib/textSize';
 
@@ -105,8 +95,25 @@ describe('SettingsClient — Account', () => {
     expect(screen.getByText('Organiser')).toBeTruthy();
   });
 
-  it('renders the Sign out action', () => {
+  // Sign-out does NOT render here — it lives once, in the page's dedicated
+  // "Session" section via SettingsSignOut below. Two separate Sign-out
+  // buttons rendered on the real /settings page before this session (one
+  // here, one on the page itself); this asserts the Account section stays
+  // free of it so the duplicate can't silently come back.
+  it('does not render a Sign out control inside Account', () => {
     render(<SettingsClient staff={STAFF} />);
-    expect(screen.getByRole('button', { name: /sign out/i })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /sign out/i })).not.toBeInTheDocument();
+  });
+});
+
+describe('SettingsSignOut', () => {
+  // The click → supabaseBrowser().auth.signOut() → redirect wiring is a
+  // straight pass-through into SignOutAction's own signOut prop (same shape
+  // MagicLinkSignInForm's submitMagicLink already proves out elsewhere in
+  // this codebase); what's specific to THIS component, and what regressed
+  // before, is that it renders — exactly once, in one place.
+  it('renders the sign-out control', () => {
+    render(<SettingsSignOut />);
+    expect(screen.getByRole('button', { name: /sign out/i })).toBeInTheDocument();
   });
 });

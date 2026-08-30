@@ -27,7 +27,10 @@ const LABELS: Record<Lifecycle, string> = {
 };
 
 export function StatusPill({ lifecycle }: { lifecycle: Lifecycle }) {
-  const base = 'font-label-md text-label-md px-sm py-xs rounded-full uppercase inline-flex items-center gap-sm';
+  // h-8 matches components/ui/button.tsx's default size — this pill sits next
+  // to real Buttons (e.g. EventCard's "View details") and was drifting
+  // shorter without a fixed height.
+  const base = 'h-8 font-label-md text-label-md px-sm rounded-full uppercase inline-flex items-center gap-sm';
   if (lifecycle === 'live') {
     return (
       <span className={`${base} ${STYLES.live}`}>

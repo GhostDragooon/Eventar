@@ -1,0 +1,324 @@
+EVENTAR — DATA CAPTURE, PRESENCE, DWELL & ARCHITECTURE AGREEMENTS
+Locked discussion record: 2026-08-21
+Status: Design agreed; implementation not required to match calendar “this week”
+        except where referenced by Eventar_Week_Todo.txt (sufficiency contract / stubs)
+
+================================================================================
+1. PRODUCT CONTEXT
+================================================================================
+
+Eventar is a CPD/CME compliance platform for professional events (HK launch:
+HKAM Colleges, MCHK, AHP boards, etc.). Core value: reliable attendance → clean
+multi-membership CPD/CME records + organiser hand-off — not a generic workshop
+tool and not a replacement for iCMECPD / College systems.
+
+Dual pathway remains:
+  (1) Ordinary events — registration, attendance, feedback; no credit rules
+  (2) Accredited events — same plus rule packs, dwell sufficiency, credit ledger,
+      evidence export
+
+Presence design supports pathway (2) without breaking (1).
+
+================================================================================
+2. ATTENDEE-FACING PRESENCE MODEL (3 COMPONENTS)
+================================================================================
+
+Only three attendee-side components:
+
+  1. ACTIVE QR
+     - Staff scans attendee QR / enters code, OR attendee scans venue/door QR
+     - Explicit user action at a boundary
+     - Always available; event can run if passive is denied or off
+
+  2. PASSIVE APPROXIMATE GEO
+     - Coarse location (venue-scale), not high-precision trails
+     - Precise location only if granted; default design assumes approx is enough
+     - Periodically sampled while occurrence is live and permission holds
+
+  3. PASSIVE BLE
+     - Presence / dwell via beacon or mesh sightings
+     - Periodically on once permission is given (duty-cycled, not max-rate drain)
+     - Primary indoor signal (geo is weak indoors in HK venues)
+
+Session boundary pings are DERIVED from the above (QR re-scan and/or geo/BLE
+zone change), not a fourth independent sensor class.
+
+Explicitly OUT of capture scope:
+  - High-precision continuous GPS trails
+  - Always-on microphone
+  - Always-on camera (camera only if user chooses in-app self-scan of door QR;
+    prefer display-code + staff scan so many users never grant Camera)
+
+================================================================================
+3. SIGNAL PRIORITY
+================================================================================
+
+Primary (must support for dwell policy):
+  - BLE
+  - Geo (approx; precise optional)
+
+Optional / build in just in case (not primary happy path):
+  - Session or door QR again (mid-event or exit anchors)
+
+Built-in but not primary:
+  - Wi-Fi association (venue SSID join/leave → coarse on-site)
+  - App heartbeat (soft presence while event mode / FG service allowed)
+
+All methods write into the SAME interval / rollup model. Overlapping BLE + geo
+count once toward dwell (union of intervals).
+
+Do NOT require both BLE and geo for Corroborated tier: either passive channel
+can accumulate dwell unless a specific pack configures “min two signals.”
+
+================================================================================
+4. PERIODIC SENSING RULE
+================================================================================
+
+Once the user grants geo and/or BLE permission:
+
+  - Sampling stays PERIODICALLY ON for the live occurrence (event mode)
+  - Not one-shot at check-in only
+  - Duty-cycle for battery (e.g. geo every N minutes; BLE on interval or
+    zone enter/exit)
+  - Stop (or short grace) when occurrence ends
+  - Org can disable passive entirely; platform does not force passive globally
+
+================================================================================
+5. CONSENT & PERMISSIONS (STORE-REALISTIC)
+================================================================================
+
+T&Cs + system permission prompts cover passive collection. Mechanical sensing
+is backend; attendee is not shown live % dwell or sensor dashboards by default.
+
+Permission grouping (aligned with real Play Store patterns e.g. mesh/BLE apps
+and mainstream messengers — declare only what we need):
+
+  Required for basic check-in:
+    - Network (implicit)
+    - Notifications if Android foreground service is used for event mode
+    - Camera ONLY if user opts into “scan door QR myself”
+
+  Optional presence (improves evidence tier):
+    - Approximate location (foreground) during event
+    - Bluetooth nearby / advertise / connect as required by stack
+    - Foreground service + persistent notification while event mode on
+
+  Advanced “continue while locked” (default OFF):
+    - Background location
+    - Ask to ignore battery optimisations (Android OEM reality)
+
+We do NOT request as core presence: microphone, contacts, SMS, call logs, phone,
+broad media storage.
+
+UX principle:
+  - Staff QR / manual always works → Asserted tier
+  - Declining passive never blocks door entry
+  - In-event control to turn sensing off is desirable for trust (beyond T&Cs only)
+
+iOS parity (not shown in Android screenshots but required):
+  - Clear Bluetooth and Location purpose strings
+  - Prefer When-In-Use; Always only if strongly justified
+  - Background modes only if truly needed for passive dwell
+
+================================================================================
+6. DWELL SUFFICIENCY (RECOGNITION RULE)
+================================================================================
+
+Goal: recognise participation when the person stayed a substantial share of the
+occurrence — not a single door tap alone.
+
+  α (min_dwell_ratio):
+    - Configurable PER ACCREDITATION and/or PER OCCURRENCE
+    - Default: 0.60
+    - Allowed band: 0.50–0.75 (product policy)
+    - Future: adjust recommended defaults using aggregated dwell distributions
+      from real events (reference analytics → new rule-pack versions; do not
+      silently mutate live packs mid-cycle)
+
+  Required dwell D = α × T
+    T = scheduled occurrence duration
+    Example: T = 60 min, α = 0.60 → D = 36 min
+
+  Pass when measured dwell_seconds (union of presence intervals inside window,
+  with small gap-merge rules) ≥ D
+
+  Window: occurrence start → end, plus small post-end grace for final samples
+
+Credit / recognition for strict packs:
+  1. Valid check-in (active QR / staff), AND
+  2. Sufficiency pass on dwell
+
+Ordinary events: no α gate required.
+
+================================================================================
+7. EVIDENCE TIERS
+================================================================================
+
+  Asserted
+    - Active QR / staff check-in only
+
+  Corroborated
+    - Check-in + (BLE and/or approx geo) contributing to dwell
+    - Prefer: dwell ≥ α·T for “recognised” under strict packs
+
+  Session-complete (later / when session boundaries exist)
+    - Corroborated + coverage across required session boundaries
+
+Exports and ledger-facing summaries MUST label tier used. Never imply BLE-grade
+evidence when only a single scan exists.
+
+================================================================================
+8. ATTENDEE EXPERIENCE (INVISIBLE MECHANICS)
+================================================================================
+
+What the attendee sees:
+  1. Register → accept T&Cs (on-site time confirmation disclosed)
+  2. Optional Location / Bluetooth system prompts
+  3. At venue: scan or be scanned once
+  4. Phone in pocket; sensing silent under event mode
+  5. Outcome: attended / recorded (no mandatory live “you are at 40%” UI)
+
+What stays backend / organiser / export:
+  - Interval math, α check, signal mix, sufficiency pass/fail
+  - Optional staff roster hints (dwell met / not yet / unknown)
+  - Evidence pack fields for College / pilot reporting
+
+================================================================================
+9. DATA MODEL SHAPE (CONCEPTUAL)
+================================================================================
+
+Keep separation: registration ≠ attendance ≠ credit.
+
+Conceptual additions:
+
+  presence_samples (or equivalent)
+    - registration_id, event_id / occurrence_id, observed_at
+    - signal_type: qr | geo_approx | geo_precise | ble | wifi | heartbeat
+    - coarse geo_bucket / ble_zone (not raw high-precision forever)
+    - method, actor where relevant (active path)
+    - sensitive raw payload handled via encryption layer (see §11)
+
+  presence_intervals (rollup)
+    - first_seen, last_seen, dwell_seconds, sample_count, signal_mix
+
+  attendance_summary (per registration per occurrence / day)
+    - checked_in, methods_used
+    - dwell_seconds / dwell_band
+    - on_time_band (optional analytics)
+    - evidence_tier
+    - sufficiency: pass | fail | pending | unknown
+
+Credit engine consumes summary / sufficiency — not raw BLE noise.
+
+Gap handling (to implement later): short gaps merge; long gaps split intervals.
+Server time authoritative.
+
+================================================================================
+10. ANALYTICS UNLOCKED (BY LAYER)
+================================================================================
+
+Layer 0 (QR only — near-term):
+  - Registered vs checked-in
+  - On-time / late vs start
+  - Method mix (staff QR / manual / venue)
+  - Basic no-show rate
+
+Layer 1 (summary + tier + export):
+  - Sufficiency pass rate
+  - Evidence tier mix
+  - Per-person evidence line in export
+
+Layer 2 (BLE/geo dwell live):
+  - Avg / median dwell
+  - % meeting α·T
+  - Early-leave curve
+  - Arrival histogram / peak window
+
+Layer 3 (session boundaries):
+  - Session crowd / stay-through
+  - Parallel-track splits
+
+Layer 4 (advanced): richer anomaly lists for human review only — never auto-punish.
+
+MVP analytics should not block on Layer 2+ sensors; export + integrity metrics first.
+
+================================================================================
+11. ENCRYPTION LAYER (SEPARATE FROM DOMAIN)
+================================================================================
+
+Presence schema and cryptography are orthogonal.
+
+  - In transit: TLS
+  - At rest: storage encryption + RLS / access control
+  - Optional application-level encryption for sensitive geo/BLE sample payloads
+  - Key management / KMS outside event-attendance domain logic
+
+Honest model for CPD:
+  - Encrypted, access-controlled evidence the organiser (and later body export)
+    can use under authorisation
+  - NOT “only attendee can decrypt the ledger” (that breaks operations and
+    hand-off)
+
+Domain tables hold queryable rollups and tiers; raw sensitive blobs stay behind
+the crypto boundary. Credit engine and roster use authorised decrypted/summary
+views only.
+
+================================================================================
+12. RULE PACK TOUCHPOINTS (FOR ENGINE)
+================================================================================
+
+Pack / accreditation config should carry at least:
+
+  - min_dwell_ratio (α), default 0.60
+  - duration_basis (scheduled)
+  - role → category mappings
+  - caps (per day / conference) as needed per body
+  - whether strict sufficiency is required or Asserted fallback allowed
+
+v1 ingestion for grant path: staff/manual seed of minimal HKCP pack — not full
+RAG or association self-serve upload (those are later).
+
+Future: RAG / document upload to maintain packs; reliability testing of that
+pipeline is a separate workstream.
+
+================================================================================
+13. EDGE CASES (POLICY MUST STAY EXPLICIT)
+================================================================================
+
+  - App killed / battery optimisation kills sensing → dwell may fail α
+  - Indoor geo poor → BLE carries dwell
+  - BLE flaky → optional mid-event QR re-scan as anchor
+  - Walk-in without app → staff QR only → Asserted; strict packs may not credit
+    without audited exception
+  - Passive denied → door still works; credit per pack policy (fail closed vs
+    Asserted-only)
+  - Multi-day congress → apply per occurrence / day unit, not one blob
+
+================================================================================
+14. IMPLEMENTATION STANCE
+================================================================================
+
+Agreed design is LOCKED for product direction.
+
+Build order relative to grant MVP:
+  1. Rule content + sufficiency CONTRACT (can stub dwell in tests)
+  2. Evidence export
+  3. Pilot infra (email/cron)
+  4. Actual BLE/geo client and periodic sampling
+  5. RAG / self-serve document upload / rich session analytics
+
+Do not block rules-engine truth or export on shipping the full sensor client.
+
+================================================================================
+15. ONE-LINE SUMMARY
+================================================================================
+
+Active QR + periodic passive approx geo + periodic passive BLE; optional QR
+re-scan and non-primary Wi-Fi/heartbeat; dwell ≥ configurable α (default 0.60)
+of scheduled duration for recognition on accredited packs; mechanics backend;
+T&Cs + permissions up front; encryption a separate access-control layer;
+evidence tiers honest; ordinary events stay simple.
+
+================================================================================
+END OF AGREED RECORD
+================================================================================

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { Button } from '@/components/ui/button';
 import { updateRegistrationClose } from '@/app/events/[id]/details/actions';
 
 type Props = {
@@ -53,14 +54,14 @@ export function RegistrationCloseEditor({ eventId, current }: Props) {
           onChange={(e) => setValue(e.target.value)}
           className="bg-surface-container-low border border-outline-variant rounded-lg px-sm py-xs font-body-md text-body-md text-on-surface focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
         />
-        <button
+        <Button
           type="button"
           onClick={handleSave}
           disabled={isPending || !dirty}
-          className="bg-primary text-on-primary px-md py-xs rounded-full font-label-md text-label-md hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-md py-xs font-label-md text-label-md"
         >
           {isPending ? 'Saving…' : 'Save'}
-        </button>
+        </Button>
         {value && (
           <button
             type="button"

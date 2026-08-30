@@ -1,7 +1,8 @@
 import Link from 'next/link';
 
 /**
- * The Eventar mark: serif "E" tile + wordmark.
+ * The Eventar mark: "E" tile + wordmark. Sans, not serif — the serif
+ * treatment was dropped app-wide 2026-08-21 at Ivan's request.
  *
  * Extracted 2026-08-09 when Ivan reversed the old "no wordmark in shell chrome"
  * rule for EVERY shell, not just the organiser sidebar. Before that the mark
@@ -30,7 +31,7 @@ export function BrandMark({
       aria-label="Eventar home"
     >
       <span
-        className={`grid place-items-center rounded-lg bg-primary font-serif font-semibold text-on-primary ${
+        className={`grid place-items-center rounded-lg bg-primary font-semibold text-on-primary ${
           compact
             ? 'h-[26px] w-[26px] text-[calc(15px*var(--text-scale))]'
             : 'h-[30px] w-[30px] text-[calc(17px*var(--text-scale))]'
@@ -39,7 +40,7 @@ export function BrandMark({
       >
         E
       </span>
-      <span className="font-serif text-[calc(16px*var(--text-scale))] font-semibold tracking-[-0.01em] text-on-surface">
+      <span className="text-[calc(16px*var(--text-scale))] font-semibold tracking-[-0.01em] text-on-surface">
         Eventar
       </span>
     </Link>

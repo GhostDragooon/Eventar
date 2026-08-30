@@ -1,6 +1,7 @@
 'use client';
 
 import type { Distribution } from '@/lib/analytics/countBySlug';
+import { Button } from '@/components/ui/button';
 
 // One-click CSV export of the post-event review: funnel counts + every
 // question's distribution. Client-side blob — the numbers are already on the
@@ -39,13 +40,13 @@ export function ExportAnalyticsCsv({
   }
 
   return (
-    <button
+    <Button
       type="button"
       onClick={download}
-      className="inline-flex items-center gap-xs bg-primary text-on-primary font-label-md text-label-md rounded-full py-sm px-lg hover:opacity-90 transition-opacity shrink-0"
+      className="gap-xs font-label-md text-label-md py-sm px-lg shrink-0"
     >
       <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>download</span>
       Export CSV
-    </button>
+    </Button>
   );
 }

@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import { LandingNav } from '@/components/landing/LandingNav';
-import { LandingHero } from '@/components/landing/LandingHero';
-import { LedgerWindow } from '@/components/landing/LedgerWindow';
-import { HowItWorks } from '@/components/landing/HowItWorks';
+import { AudienceExperience } from '@/components/landing/AudienceExperience';
+import { WhyEventar } from '@/components/landing/WhyEventar';
 import { SiteFooter } from '@/components/shell/SiteFooter';
 
 /**
@@ -69,16 +68,18 @@ export default function LandingPage() {
       <LandingNav />
 
       <main className="flex-1">
-        <LandingHero />
-        <div className="hero-zone-tail relative px-lg">
-          <LedgerWindow />
-        </div>
+        {/* LedgerWindow now renders inside LandingHero itself (its right
+            column, 2026-08-20) rather than as a page-level child here. */}
+        <AudienceExperience>
+          <WhyEventar />
 
-        {/* Was a bare `id="verification"` on the ledger mockup above: a nav
-            item pointing at a picture, with no heading carrying the word and
-            nothing explaining what verification meant. Replaced by a real
-            walkthrough. */}
-        <HowItWorks />
+          {/* Was a bare `id="verification"` on the ledger mockup: a nav item
+              pointing at a picture, with no heading carrying the word and
+              nothing explaining what verification meant. Replaced by a real
+              walkthrough — and since 2026-08-20 it shares AudienceExperience's
+              toggle, so it renders here as a child alongside WhyEventar rather
+              than as its own sibling. */}
+        </AudienceExperience>
 
         <FeatureBand
           id="platform"
@@ -94,9 +95,9 @@ export default function LandingPage() {
         />
 
         {/* CTA band — one line per audience, so neither is an afterthought. */}
-        <section id="get-started" className="mx-auto mt-[46px] max-w-[980px] px-lg">
+        <section id="get-started" className="mx-auto mt-[46px] max-w-[1200px] px-[15px]">
           <div className="rounded-[18px] border border-outline-variant bg-surface-container-low p-xl text-center">
-            <h2 className="font-serif text-[calc(26px*var(--text-scale))] font-semibold tracking-[-0.01em] text-on-surface">
+            <h2 className="text-[calc(26px*var(--text-scale))] font-semibold tracking-[-0.01em] text-on-surface">
               Your next event keeps your record for you
             </h2>
             <p className="mt-sm text-[calc(13.5px*var(--text-scale))] text-on-surface-variant">
@@ -105,7 +106,7 @@ export default function LandingPage() {
             <div className="mt-lg flex flex-wrap justify-center gap-sm">
               <Link
                 href="/events"
-                className="rounded-full bg-[#0D74E2] px-[19px] py-[9px] text-[calc(13px*var(--text-scale))] font-semibold text-white"
+                className="rounded-full bg-primary px-[19px] py-[9px] text-[calc(13px*var(--text-scale))] font-semibold text-white"
               >
                 Get started
               </Link>
@@ -137,8 +138,8 @@ function FeatureBand({
   sub: string;
 }) {
   return (
-    <section id={id} className="mx-auto mt-[46px] max-w-[980px] px-lg">
-      <h2 className="text-center font-serif text-[calc(26px*var(--text-scale))] font-semibold tracking-[-0.01em] text-on-surface">
+    <section id={id} className="mx-auto mt-[46px] max-w-[1200px] px-[15px]">
+      <h2 className="text-center text-[calc(26px*var(--text-scale))] font-semibold tracking-[-0.01em] text-on-surface">
         {title}
       </h2>
       <p className="mt-[6px] text-center text-[calc(13.5px*var(--text-scale))] text-on-surface-variant">{sub}</p>

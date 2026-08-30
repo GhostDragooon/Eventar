@@ -1,8 +1,7 @@
 import { redirect } from 'next/navigation';
 import { requireStaff, NotAuthorizedError } from '@/lib/auth';
 import { StaffShell } from '@/components/shell/StaffShell';
-import { SignOutButton } from '@/components/shell/SignOutButton';
-import SettingsClient from './SettingsClient';
+import SettingsClient, { SettingsSignOut } from './SettingsClient';
 
 export const metadata = {
   title: 'Settings',
@@ -32,7 +31,7 @@ export default async function SettingsPage() {
           is email + settings only). */}
       <section className="mt-xl border-t border-outline-variant pt-lg">
         <h2 className="font-title-lg text-title-lg text-on-surface mb-sm">Session</h2>
-        <SignOutButton className="inline-flex items-center gap-xs px-md py-sm rounded-full border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50" />
+        <SettingsSignOut />
       </section>
     </StaffShell>
   );

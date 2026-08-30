@@ -53,8 +53,8 @@ const STATUS_LABEL: Record<StatusKey, string> = {
 
 const STATUS_TONE: Record<StatusKey, string> = {
   sent: 'text-on-surface',
-  failed: 'text-[color:var(--error,#B3261E)]',
-  queued: 'text-[color:var(--warning,#B26B00)]',
+  failed: 'text-error',
+  queued: 'text-warning',
 };
 
 export function EmailDeliveryStrip({
@@ -97,7 +97,7 @@ export function EmailDeliveryStrip({
             'ml-auto inline-flex items-center gap-xs rounded-full border px-sm py-[2px] font-label-md text-label-md ' +
             (deliveryLive
               ? 'border-outline-variant text-on-surface-variant'
-              : 'border-[color:var(--warning,#B26B00)] text-[color:var(--warning,#B26B00)] bg-[color:var(--warning-container,#F9EFD9)]')
+              : 'border-warning text-warning bg-warning-container')
           }
         >
           {deliveryLive ? 'live' : 'stubbed'}

@@ -66,6 +66,9 @@ const eslintConfig = defineConfig([
     ".claude/**",
     // Gitignored throwaway backtest/demo scripts — not shipped code.
     "scratch-demo/**",
+    // Archived UI-port components superseded by existing shell components —
+    // reference only, see docs/ui-port/archive/README.md.
+    "docs/ui-port/archive/**",
     "out/**",
     "build/**",
     "next-env.d.ts",

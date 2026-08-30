@@ -1,13 +1,16 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+
 export default function PrintPosterButton() {
   return (
-    <button
+    <Button
       type="button"
+      variant="outline"
       onClick={() => window.print()}
-      className="rounded-lg border border-outline-variant px-md py-sm text-sm font-medium text-on-surface hover:bg-surface-container-high transition-colors"
+      className="px-md py-sm text-sm font-medium"
     >
       Print poster
-    </button>
+    </Button>
   );
 }

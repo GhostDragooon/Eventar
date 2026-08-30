@@ -14,6 +14,7 @@ import {
 } from '@/lib/surveyTemplate';
 import type { SurveyInput } from './schema';
 import { submitSurvey } from './actions';
+import { Button } from '@/components/ui/button';
 
 type State =
   | { kind: 'idle' }
@@ -350,13 +351,13 @@ export default function SurveyForm({
 
                 {/* Action area */}
                 <div className="pt-lg flex justify-end">
-                  <button
+                  <Button
                     type="submit"
                     disabled={state.kind === 'submitting'}
-                    className="w-full sm:w-auto bg-primary text-on-primary font-medium text-body-md shadow-sm hover:opacity-90 transition-all rounded-full px-xl py-3 disabled:opacity-50"
+                    className="w-full sm:w-auto font-medium text-body-md shadow-sm px-xl py-3"
                   >
                     {state.kind === 'submitting' ? 'Submitting…' : 'Submit'}
-                  </button>
+                  </Button>
                 </div>
               </form>
             )}

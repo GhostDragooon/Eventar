@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { SiteShell } from '@/components/shell/SiteShell';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 export const metadata = { title: 'Page not found' };
 
@@ -20,17 +22,11 @@ export default function NotFound() {
           link from an email, double-check you opened the most recent one.
         </p>
         <div className="flex items-center justify-center gap-sm">
-          <Link
-            href="/events"
-            className="inline-flex items-center gap-xs bg-primary text-on-primary font-label-md text-label-md rounded-full py-sm px-lg hover:opacity-90 transition-opacity"
-          >
+          <Link href="/events" className={cn(buttonVariants({ variant: 'default' }), 'gap-xs px-lg')}>
             Upcoming events
             <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>arrow_forward</span>
           </Link>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-xs border border-outline-variant text-on-surface font-label-md text-label-md rounded-full py-sm px-lg hover:bg-surface-container-high transition-colors"
-          >
+          <Link href="/" className={cn(buttonVariants({ variant: 'outline' }), 'px-lg')}>
             Home
           </Link>
         </div>

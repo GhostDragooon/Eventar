@@ -85,6 +85,7 @@ _Avoid_: verification level, trust, proof
 **Rule pack**:
 A body's point rules as Eventar applies them, versioned as code. Its output is snapshotted into the ledger entry; the entry never references it.
 _Avoid_: body rules, rule config, evaluator
+_External name_: pitch/grant material calls this a **"Board Pack"** (see the HKSTP application, vault Decisions Log Q40). Same concept, two audiences — "rule pack" stays the term in code and technical docs. "Board" in "Board Pack" always means **accrediting body** (above), including bodies that are themselves associations (e.g. THKMA). Never let "board"/"Board Pack" blur with **organiser** — the organiser is the paying customer who runs the event, a structurally separate entity (`organisers` table) from the accrediting body whose rules a Board Pack encodes.
 
 **Cycle return**:
 The summary of a Fellow's points that a College submits to the Academy at the end of a cycle. The thing Eventar's export exists to produce.

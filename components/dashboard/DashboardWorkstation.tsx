@@ -6,6 +6,8 @@ import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
 import { softDeleteEvents, restoreEvents, cancelEvents } from '@/app/dashboard/actions';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/toast';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 export type WorkstationEvent = {
   id: string;
@@ -300,24 +302,24 @@ export function DashboardWorkstation({
         <div className="flex items-center justify-between gap-md bg-primary-container/60 border border-[color:var(--primary-fixed-dim)] rounded-lg px-md py-sm mb-md flex-wrap">
           <span className="font-label-md text-label-md text-on-surface font-semibold">{selected.size} selected</span>
           <div className="flex items-center gap-xs flex-wrap">
-            <button type="button" onClick={exportCsv} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-full bg-surface-container-lowest border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50">
+            <Button type="button" variant="outline" onClick={exportCsv} disabled={pending} className="gap-xs px-md py-sm font-label-md text-label-md">
               <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>download</span>Export CSV
-            </button>
+            </Button>
             {inBin ? (
-              <button type="button" onClick={() => runBulk('restore')} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-full bg-surface-container-lowest border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50">
+              <Button type="button" variant="outline" onClick={() => runBulk('restore')} disabled={pending} className="gap-xs px-md py-sm font-label-md text-label-md">
                 <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>restore_from_trash</span>Restore
-              </button>
+              </Button>
             ) : (
               <>
-                <button type="button" onClick={() => runBulk('archive')} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-full bg-surface-container-lowest border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50">
+                <Button type="button" variant="outline" onClick={() => runBulk('archive')} disabled={pending} className="gap-xs px-md py-sm font-label-md text-label-md">
                   <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>archive</span>Archive
-                </button>
-                <button type="button" onClick={() => runBulk('cancel')} disabled={pending} className="inline-flex items-center gap-xs px-md py-sm rounded-full border border-[color:var(--error)] font-label-md text-label-md text-[color:var(--error)] hover:bg-error-container transition-colors disabled:opacity-50">
+                </Button>
+                <Button type="button" variant="destructive" onClick={() => runBulk('cancel')} disabled={pending} className="gap-xs px-md py-sm font-label-md text-label-md">
                   <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>block</span>Cancel
-                </button>
+                </Button>
               </>
             )}
-            <button type="button" onClick={() => setSelected(new Set())} disabled={pending} className="px-md py-sm rounded-full font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors disabled:opacity-50">Clear</button>
+            <Button type="button" variant="ghost" onClick={() => setSelected(new Set())} disabled={pending} className="px-md py-sm font-label-md text-label-md text-on-surface-variant hover:text-on-surface">Clear</Button>
           </div>
         </div>
       )}
@@ -443,17 +445,23 @@ function EventCard({ e, selected, onToggle, onDelete, onRestore, inBin, pending 
         {/* Fixed-width action column — every button the same size. */}
         <div className="flex flex-col gap-xs w-[116px] shrink-0">
           {inBin ? (
-            <button type="button" onClick={onRestore} disabled={pending} className="w-full inline-flex items-center justify-center gap-xs px-sm py-sm rounded-lg border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50">
+            <Button type="button" variant="outline" onClick={onRestore} disabled={pending} className="w-full gap-xs px-sm py-sm font-label-md text-label-md">
               <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>restore_from_trash</span>Restore
-            </button>
+            </Button>
           ) : (
             <>
-              <Link href={isCompleted ? `/events/${e.id}/analytics` : `/events/${e.id}/edit`} className="w-full inline-flex items-center justify-center gap-xs px-sm py-sm rounded-lg border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
+              {/* buttonVariants, not <Button render={<Link/>}> — base-ui stamps
+                  role="button" on a Link rendered through Button's render prop,
+                  which announces a navigation as a button to assistive tech. */}
+              <Link
+                href={isCompleted ? `/events/${e.id}/analytics` : `/events/${e.id}/edit`}
+                className={cn(buttonVariants({ variant: 'outline' }), 'w-full gap-xs px-sm py-sm font-label-md text-label-md')}
+              >
                 <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>{isCompleted ? 'insights' : 'edit'}</span>{isCompleted ? 'Analytics' : 'Edit'}
               </Link>
-              <button type="button" onClick={onDelete} disabled={pending} className="w-full inline-flex items-center justify-center gap-xs px-sm py-sm rounded-lg border border-[color:var(--error)] font-label-md text-label-md text-[color:var(--error)] hover:bg-error-container transition-colors disabled:opacity-50">
+              <Button type="button" variant="destructive" onClick={onDelete} disabled={pending} className="w-full gap-xs px-sm py-sm font-label-md text-label-md">
                 <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>delete</span>Delete
-              </button>
+              </Button>
             </>
           )}
         </div>

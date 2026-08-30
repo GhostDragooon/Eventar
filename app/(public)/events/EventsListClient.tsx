@@ -1,8 +1,8 @@
 'use client';
 
-import Link from 'next/link';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
+import { EventCard, type EventCardStatus } from '@/components/event-discovery/EventCard';
 
 export type PublicEventCard = {
   id: string;
@@ -26,6 +26,14 @@ const CATEGORIES: { key: string; label: string }[] = [
   { key: 'finance', label: 'Finance' },
   { key: 'technology', label: 'Technology' },
 ];
+
+// Green is reserved for live/verified (vault Frontend Design Standard §2);
+// everything else takes the neutral container.
+function lifecycleStatus(lifecycle: Lifecycle): EventCardStatus {
+  if (lifecycle === 'registering') return { label: 'Registering', tone: 'success' };
+  if (lifecycle === 'live') return { label: 'Live', tone: 'success' };
+  return { label: 'Starts soon', tone: 'neutral' };
+}
 
 export function EventsListClient({ events }: { events: PublicEventCard[] }) {
   const [cat, setCat] = useState('all');
@@ -110,53 +118,19 @@ export function EventsListClient({ events }: { events: PublicEventCard[] }) {
         <ul className="flex flex-col gap-sm">
           {visible.map((e) => (
             <li key={e.id}>
-              <article className="flex items-stretch gap-md bg-surface-container-lowest border border-outline-variant rounded-[16px] p-md">
-                {/* Date block */}
-                <div className="flex flex-col items-center justify-center w-[64px] shrink-0 rounded-[12px] bg-surface-container-low border border-outline-variant py-sm" aria-hidden>
-                  <span className="text-[calc(22px*var(--text-scale))] font-extrabold tabular-nums leading-none text-on-surface">{e.day}</span>
-                  <span className="text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-wider text-on-surface-variant mt-[2px]">{e.month}</span>
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  {e.category && (
-                    <p className="text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-[2px]">
-                      {CATEGORIES.find((c) => c.key === e.category)?.label ?? ''}
-                    </p>
-                  )}
-                  <h2 className="font-title-lg text-title-lg font-semibold text-on-surface truncate">{e.title}</h2>
-                  <p className="font-label-md text-label-md text-on-surface-variant normal-case tracking-normal mt-[2px]">
-                    {e.time}{e.venue ? ` · ${e.venue}` : ''}
-                  </p>
-                  {e.organizers.length > 0 && (
-                    <p className="font-label-md text-label-md text-on-surface-variant normal-case tracking-normal mt-[2px] truncate">
-                      By {e.organizers.join(' · ')}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex flex-col items-end justify-between shrink-0 gap-sm">
-                  {e.lifecycle === 'registering' ? (
-                    <span className="inline-flex items-center gap-xs px-sm py-[3px] rounded-full text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-wide bg-success-container text-on-success-container">
-                      <span className="w-[6px] h-[6px] rounded-full bg-[color:var(--success)]" aria-hidden />Registering
-                    </span>
-                  ) : e.lifecycle === 'live' ? (
-                    <span className="inline-flex items-center gap-xs px-sm py-[3px] rounded-full text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-wide bg-success-container text-on-success-container">
-                      <span className="w-[6px] h-[6px] rounded-full bg-[color:var(--success)]" aria-hidden />Live
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center px-sm py-[3px] rounded-full text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-wide bg-surface-container-high text-on-surface-variant">
-                      Starts soon
-                    </span>
-                  )}
-                  <Link
-                    href={`/events/${e.id}`}
-                    className="inline-flex items-center gap-xs px-md py-sm rounded-full bg-primary text-on-primary font-label-md text-label-md hover:opacity-90 transition-opacity"
-                  >
-                    View
-                    <span className="material-symbols-outlined text-[calc(15px*var(--text-scale))]" aria-hidden>arrow_forward</span>
-                  </Link>
-                </div>
-              </article>
+              <EventCard
+                event={{
+                  id: e.id,
+                  title: e.title,
+                  format: e.category ? CATEGORIES.find((c) => c.key === e.category)?.label : undefined,
+                  dateLabel: e.time,
+                  venueLabel: e.venue,
+                  dateBlock: { day: e.day, month: e.month },
+                  status: lifecycleStatus(e.lifecycle),
+                  organizers: e.organizers,
+                }}
+                href={`/events/${e.id}`}
+              />
             </li>
           ))}
         </ul>

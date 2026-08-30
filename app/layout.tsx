@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import Script from "next/script";
 import "./globals.css";
 import { THEME_STORAGE_KEY } from "@/lib/theme";
@@ -29,11 +30,14 @@ const THEME_INIT_SCRIPT = [
 ].join('');
 
 /* Redesign (2026-06-11): single Geist family everywhere. The one sans
-   instance aliases the legacy var name --font-inter; globals.css defines
-   --font-source-serif: var(--font-inter) so every existing Tailwind font
-   utility keeps working with zero downstream edits. Geist is a variable
+   instance aliases the legacy var name --font-inter. Geist is a variable
    font — omitting `weight` loads the full 100–900 axis (the redesign
-   uses 400–800). */
+   uses 400–800).
+   NOTE: the claim below that --font-source-serif aliases --font-inter was
+   true then, not now — the M2 unfreeze (see globals.css) gave it a real
+   serif stack, then 2026-08-20 pointed --font-heading/-display/-headline-*
+   at --font-inter directly instead of re-aliasing --font-source-serif
+   itself. Headings ARE sans again; this comment's mechanism is just stale. */
 const geistSans = Geist({
   subsets: ["latin"],
   variable: "--font-inter",
@@ -44,6 +48,37 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-geist-mono",
   display: "swap",
+});
+
+/* Material Symbols, SELF-HOSTED (2026-08-21).
+   Was a <link> to fonts.googleapis.com. That stylesheet is unlayered, and
+   unlayered author CSS outranks every author layer, so Google's own
+   `.material-symbols-outlined { font-size: 24px }` silently overrode all 96
+   `text-[Npx]` utilities on icon spans across 50 files — every icon in the app
+   rendered 24px regardless of its declared size (measured, not inferred).
+   Self-hosting removes that stylesheet from the page entirely, so the only
+   rule naming this class is ours (globals.css), which deliberately sets no
+   font-size and lets the utilities decide.
+
+   NOT next/font/google: "Material Symbols Outlined" is absent from its
+   catalogue (checked — 1911 fonts, zero matches), so next/font/local + a
+   committed woff2 is the supported path.
+
+   The file is the exact variable woff2 Google was already serving
+   (wght 100..700, FILL 0..1, 1,126,804 bytes) — byte-for-byte what users
+   downloaded before, just from our own origin, so this is not a new payload.
+   Deliberately NOT subsetted via `icon_names=`: several call sites pick the
+   glyph dynamically from data (`{p.icon}`, `{s.icon}`), so a subset silently
+   degrades any icon a future data row names into raw ligature text.
+   display:"block" is kept from the old link for the reason documented in
+   <head> below — for an ICON font, a brief blank beats flashing the ligature
+   text ("arrow_forward") on every glyph. */
+const materialSymbols = localFont({
+  src: "./fonts/MaterialSymbolsOutlined.woff2",
+  variable: "--font-material-symbols",
+  display: "block",
+  weight: "100 700",
+  style: "normal",
 });
 
 export const metadata: Metadata = {
@@ -72,36 +107,24 @@ export default function RootLayout({
       // either — localStorage is client-only — so the difference is intended,
       // not a bug, and this is the documented React escape hatch for it.
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased light`}
+      className={`${geistSans.variable} ${geistMono.variable} ${materialSymbols.variable} h-full antialiased light`}
     >
       <head>
-        {/* Material Symbols Outlined — mockups use it inline throughout.
-            Variable axes (wght, FILL) controlled via CSS in globals.css.
-            eslint rule below is a false positive — this is the root layout,
-            not a per-page font import. */}
-        {/* display=block is deliberate for an ICON font: with swap, every
-            icon flashes as its raw ligature text ("arrow_forward") until the
-            font arrives — the classic weekend-project tell. A short blank is
-            the correct trade for glyphs. */}
-        {/* Preconnect to BOTH hosts. The stylesheet is on fonts.googleapis.com
-            but the woff2 it points at is on fonts.gstatic.com, so without this
-            the browser pays DNS + TCP + TLS twice, serially, before the first
-            glyph can paint — and `display=block` means every icon is INVISIBLE
-            for that entire window, not just unstyled.
+        {/* Material Symbols is SELF-HOSTED as of 2026-08-21 — see the
+            `materialSymbols` localFont() call above for why, and globals.css
+            for the class that consumes it.
 
-            That is the "the dashboard reverted to the old design" report on
-            2026-08-09: nav items, the date/time/venue row and the button
-            glyphs all rendered as empty gaps on a cold load, which reads as a
-            broken page rather than a loading one. crossOrigin is required on
-            the gstatic hint — font fetches are CORS, and a preconnect without
-            it opens a connection the font request cannot reuse. */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* eslint-disable-next-line @next/next/no-page-custom-font, @next/next/google-font-display */}
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block"
-        />
+            The <link rel="stylesheet"> to fonts.googleapis.com and BOTH
+            preconnect hints that used to live here are gone on purpose: there
+            is no third-party font request left to warm up a connection for.
+            That also retires, rather than reintroduces, the cold-load hazard
+            they existed to mitigate (the "dashboard reverted to the old
+            design" report, 2026-08-09 — glyphs invisible while two serial
+            DNS+TCP+TLS handshakes completed, made worse by display:block).
+            Next now emits its own same-origin <link rel="preload"> for the
+            woff2, so the font is discovered earlier than it ever was, with
+            zero cross-origin round trips. Do not "restore" the preconnects;
+            they would open connections nothing uses. */}
         {/* Theme-class init: applies the saved .light/.dark class on <html>
             before paint so there's no flash of system-default. Hardcoded
             string (no user input) — safe. */}

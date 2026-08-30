@@ -3,7 +3,8 @@
 import { useSyncExternalStore } from 'react';
 import { readTheme, writeTheme, type Theme } from '@/lib/theme';
 import { readTextSize, writeTextSize, type TextSize } from '@/lib/textSize';
-import { SignOutButton } from '@/components/shell/SignOutButton';
+import { SignOutAction } from '@/components/auth/SignOutAction';
+import { supabaseBrowser } from '@/lib/supabase/browser';
 
 // SSR snapshot: localStorage doesn't exist on the server, so the initial
 // render uses the defaults. The FOUC script in app/layout.tsx has already
@@ -99,11 +100,26 @@ export default function SettingsClient({
           <Field label="Email" value={staff.email} />
           <Field label="Role" value={ROLE_LABELS[staff.role]} />
         </dl>
-        <div className="mt-lg pt-md border-t border-outline-variant">
-          <SignOutButton className="inline-flex items-center gap-sm bg-surface-container-high text-on-surface font-label-md text-label-md rounded-lg py-sm px-lg hover:bg-surface-container-highest transition-colors" />
-        </div>
       </SettingsSection>
     </div>
+  );
+}
+
+// The page (a Server Component) can't pass a closure into SignOutAction's
+// `signOut` prop — functions don't cross the RSC boundary. This tiny client
+// wrapper is the boundary; the page just renders it. Was two separate
+// "Sign out" buttons before this session (one here, one on the page itself,
+// with no comment explaining why) — consolidated to the page's version,
+// which has a documented reason for its placement ("moved here from the
+// nav... right cluster is email + settings only").
+export function SettingsSignOut() {
+  return (
+    <SignOutAction
+      signOut={async () => {
+        await supabaseBrowser().auth.signOut();
+        window.location.href = '/login';
+      }}
+    />
   );
 }
 

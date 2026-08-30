@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 
 // Branded error boundary. Client component by Next contract; keeps the
 // design language even when a page render throws. The digest (never the raw
@@ -31,14 +32,14 @@ export default function GlobalError({
         {error.digest ? ` and quote error ${error.digest}` : ''}.
       </p>
       <div className="flex items-center gap-sm">
-        <button
+        <Button
           type="button"
           onClick={reset}
-          className="inline-flex items-center gap-xs bg-primary text-on-primary font-label-md text-label-md rounded-full py-sm px-lg hover:opacity-90 transition-opacity"
+          className="gap-xs font-label-md text-label-md py-sm px-lg"
         >
           <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>refresh</span>
           Try again
-        </button>
+        </Button>
         <Link
           href="/"
           className="inline-flex items-center gap-xs border border-outline-variant text-on-surface font-label-md text-label-md rounded-full py-sm px-lg hover:bg-surface-container-high transition-colors"

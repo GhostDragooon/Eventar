@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useRef, useState, useTransition } from 'react';
+import { CheckIcon, ChevronRightIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 import BasicsSection, {
@@ -815,31 +816,55 @@ function ProgressStrip({
   return (
     <ol
       aria-label="Form progress"
-      className="m-0 p-md list-none flex items-center flex-wrap gap-sm rounded-lg border border-outline-variant bg-surface-container-lowest"
+      // `mt-0`, NOT `m-0`: the parent's `space-y-xl` works by setting
+      // margin-block-END on every child except the last (Tailwind v4 changed
+      // space-y from the v3 margin-top-on-siblings form). `m-0` zeroed that
+      // bottom margin — and it wins, because space-y's rule is wrapped in
+      // `:where()` and carries zero specificity. Measured live: every other
+      // sibling gap in this form was 32px, this one was 0px, which is why the
+      // strip sat flush against "1 · Hero image" while "2 · Basics" had a
+      // full gap above it. `mt-0` still cancels the UA stylesheet's default
+      // <ol> top margin, which is all `m-0` was ever needed for here.
+      //
+      // Restyled 2026-08-21 (Ivan's call) to the same visual family as
+      // Breadcrumbs: lucide chevron separators instead of a `·`, 6px item gap,
+      // 14px type, muted by default with emphasis reserved for the steps that
+      // are actually done. It stays a PROGRESS indicator, not a breadcrumb —
+      // the checkmarks report the same `v1`/`v2`/`v4` validation flags that
+      // drive submit-time scroll-to-first-invalid, so the state is real and
+      // must not be flattened into navigation.
+      className="mt-0 flex list-none flex-wrap items-center gap-[6px] rounded-lg border border-outline-variant bg-surface-container-lowest p-md text-[calc(14px*var(--text-scale))] text-on-surface-variant"
     >
       {steps.map((step, i) => {
         const badgeClass = step.complete
           ? 'bg-primary text-on-primary border-transparent'
           : 'bg-surface-container border-outline-variant text-on-surface-variant';
         const labelClass = step.complete
-          ? 'text-on-surface font-medium'
+          ? 'font-medium text-on-surface'
           : 'text-on-surface-variant';
         return (
-          <li key={step.n} className="flex items-center gap-sm">
+          <li key={step.n} className="flex items-center gap-[6px]">
             <span
               aria-hidden
-              className={`inline-flex items-center justify-center w-6 h-6 rounded-full border text-xs font-bold ${badgeClass}`}
+              className={`grid size-[18px] shrink-0 place-items-center rounded-full border text-[calc(10.5px*var(--text-scale))] font-semibold ${badgeClass}`}
             >
-              {step.complete ? '✓' : step.n}
+              {/* lucide, matching Breadcrumbs — and immune to the icon-font
+                  sizing trap by construction: an SVG sizes by width/height,
+                  so it cannot be overridden by a font-size rule the way a
+                  ligature glyph can. */}
+              {step.complete ? <CheckIcon className="size-[11px]" /> : step.n}
             </span>
-            <span className={`text-sm ${labelClass}`}>
+            <span className={labelClass}>
               {step.label}
               {step.optional && (
-                <span className="text-on-surface-variant"> (optional)</span>
+                <span className="font-normal text-on-surface-variant"> (optional)</span>
               )}
             </span>
             {i < steps.length - 1 && (
-              <span aria-hidden className="mx-xs text-on-surface-variant">·</span>
+              <ChevronRightIcon
+                aria-hidden
+                className="size-[calc(14px*var(--text-scale))] shrink-0 text-on-surface-variant/70"
+              />
             )}
           </li>
         );

@@ -1,0 +1,146 @@
+EVENTAR — TO-DO FOR THE COMING WEEK
+Date basis: 2026-08-21
+Scope: Grant-oriented MVP progress (not full platform build)
+
+================================================================================
+PURPOSE
+================================================================================
+
+Close the highest-leverage gaps between current repo state and a defensible
+grant / pilot story:
+
+  1. Rules engine has code but no real rule content → credit path is decorative
+  2. No evidence export → grant line item and organiser hand-off missing
+  3. Presence/dwell design is agreed but not implemented → stub contract only
+  4. Production pilot path (email/cron) still incomplete
+
+Presence client (BLE/geo app work) is PARKED this week unless explicitly pulled
+forward. Design is locked in Eventar_Presence_and_Architecture.txt.
+
+================================================================================
+PRIORITY ORDER (DO IN SEQUENCE WHERE DEPENDENT)
+================================================================================
+
+-------------------------------------------------------------------------------
+P0 — RULES CONTENT PATH (highest leverage)
+-------------------------------------------------------------------------------
+
+[ ] Define v1 rule-pack schema (minimal, engine-readable)
+    - body id / short_name
+    - pack version + hash
+    - min_dwell_ratio (α), default 0.60, allowed range 0.50–0.75
+    - duration_basis (scheduled occurrence length)
+    - role → category mappings (at least attendee; optional chair/speaker)
+    - per-day / per-conference caps if required for HKCP slice
+    - sufficiency mode: pass/fail on dwell ≥ α·T (strict) vs asserted fallback
+
+[ ] Manually seed ONE minimal HKCP pack into backend (not RAG, not self-serve UI)
+    - Source from current HKCP 2026–2028 operational rules (hours/points, caps)
+    - Populate category_taxonomy.role_mappings (or equivalent v1 tables) so
+      award path no longer resolves only to “no rule matched / skip”
+
+[ ] Write test harness (synthetic, no live sensors required)
+    - Fixture: event duration T, check-in, synthetic dwell_seconds
+    - Assert: dwell < α·T → no credit (strict pack)
+    - Assert: dwell ≥ α·T + verified licence → credit_earned path fires
+    - Assert: empty/missing pack still fails closed / skips cleanly
+
+[ ] Document “provisional pack” badge behaviour for organisers
+    - Pack is staff-seeded, not body-confirmed
+    - confirm_credit_entry remains available later; no UI required this week
+
+DONE WHEN: One real (minimal) HKCP pack is loaded; tests prove pass/fail on
+dwell ratio; credit path is no longer empty of rules.
+
+-------------------------------------------------------------------------------
+P1 — SUFFICIENCY GATE CONTRACT (wire design to engine; can stub data)
+-------------------------------------------------------------------------------
+
+[ ] Specify attendance_summary / presence rollup fields used by credit gate
+    - dwell_seconds (or dwell_band)
+    - evidence_tier: asserted | corroborated | session_complete
+    - signal_mix (which methods contributed)
+    - sufficiency: pass | fail | pending | unknown
+
+[ ] Gate award_attendance_credit (or equivalent) for packs with min_dwell_ratio
+    - Strict: sufficiency must be pass
+    - Tests with stubbed dwell (no BLE/geo client yet)
+
+[ ] Keep single check_in_at path working for ordinary (non-accredited) events
+    - Dual pathway unchanged: ordinary vs accredited
+
+DONE WHEN: Accredited path has an explicit sufficiency check in code/tests;
+ordinary path unchanged.
+
+-------------------------------------------------------------------------------
+P2 — EVIDENCE EXPORT v0 (grant line item)
+-------------------------------------------------------------------------------
+
+[ ] Define export contents for one closed event
+    - Event metadata (title, times, body/pack id + hash)
+    - Attendee rows: registration id, licence refs, check-in time/method
+    - Dwell band / sufficiency / evidence tier (stub OK if not live)
+    - Ledger rows: points/hours, attestation status, entry ids
+
+[ ] Implement downloadable CSV + structured JSON from event details (staff)
+    - PDF summary optional this week; CSV/JSON sufficient for grant narrative
+
+[ ] One end-to-end dry run: seed event → check-in → (stub) dwell pass →
+    credit row → export file opens cleanly
+
+DONE WHEN: Organiser can download a reproducible evidence package for one
+accredited test event.
+
+-------------------------------------------------------------------------------
+P3 — PILOT INFRA (parallel if capacity)
+-------------------------------------------------------------------------------
+
+[ ] Confirm Resend path: real key + domain or explicit sandbox limits documented
+[ ] Cron / scheduler: ensure something actually triggers /api/cron/dispatch
+    (or document manual send-only pilot procedure)
+[ ] Turnstile (or equivalent) on public registration if pilot URL is public
+[ ] Basic error tracking enabled on pilot deploy
+
+DONE WHEN: A dress-rehearsal event can run without relying on dev email stub
+alone, with a written pilot runbook.
+
+-------------------------------------------------------------------------------
+EXPLICITLY OUT OF SCOPE THIS WEEK
+-------------------------------------------------------------------------------
+
+- Full RAG pipeline / association document upload UI
+- Production BLE + geo client implementation
+- Multi-body organiser UI (C5)
+- KMS certificates / Stage 11 signing
+- Versioned body_rules evaluator (Q26 / Stage 13)
+- Rich analytics dashboards (peak hour, session curves) beyond export fields
+- Changing public GitHub description (nice-to-have, not blocking)
+
+================================================================================
+DAILY / END-OF-WEEK CHECKLIST
+================================================================================
+
+[ ] P0 schema written and reviewed against existing award engine fields
+[ ] P0 HKCP minimal pack seeded on local (and note Seoul apply if required)
+[ ] P0 tests green for pass/fail dwell
+[ ] P1 gate specified and at least stub-tested
+[ ] P2 export produces CSV+JSON for one fixture event
+[ ] Short written note: what a funder demo shows now vs still slides-only
+
+================================================================================
+SUCCESS CRITERIA FOR THE WEEK
+================================================================================
+
+1. “Rules engine not running” is no longer true for HKCP minimal case.
+2. Credit issuance can be demonstrated with synthetic dwell ≥ 0.60·T.
+3. Evidence pack download exists for grant / organiser hand-off story.
+4. Presence architecture remains design-locked; no scope creep into full
+   sensor client unless deliberately scheduled.
+
+================================================================================
+REFERENCES
+================================================================================
+
+- Repo state / stages: docs/plans/PROJECT_STATE.md, docs/plans/STAGES.md
+- Presence + architecture agreements: Eventar_Presence_and_Architecture.txt
+- Grant scope (Q37): HKCP pack, evidence export, hardening, pilots, case study

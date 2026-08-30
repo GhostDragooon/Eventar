@@ -132,11 +132,17 @@
      --font-source-serif is aliased to Geist in :root below. */
   --font-sans: var(--font-inter), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-source-serif), system-ui, sans-serif;
-  --font-display: var(--font-source-serif), system-ui, sans-serif;
-  --font-headline-lg: var(--font-source-serif), system-ui, sans-serif;
-  --font-headline-md: var(--font-source-serif), system-ui, sans-serif;
-  --font-headline-sm: var(--font-source-serif), system-ui, sans-serif;
+  /* Serif headings reverted 2026-08-20 at Ivan's explicit, repeated request
+     ("I told you many times I don't want that ugly font") — overriding the
+     M2-unfreeze "headings are a real serif again" decision below. Same sans
+     stack as body text, not a new font. The Hero's own italic accent word
+     (`font-serif` Tailwind utility on its <em>) is a different mechanism —
+     untouched, not what was being complained about. */
+  --font-heading: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-inter), system-ui, sans-serif;
+  --font-headline-lg: var(--font-inter), system-ui, sans-serif;
+  --font-headline-md: var(--font-inter), system-ui, sans-serif;
+  --font-headline-sm: var(--font-inter), system-ui, sans-serif;
   --font-title-lg: var(--font-inter), system-ui, sans-serif;
   --font-body-lg: var(--font-inter), system-ui, sans-serif;
   --font-body-md: var(--font-inter), system-ui, sans-serif;
@@ -240,7 +246,15 @@
      and max-w-md = 16px because our spacing scale defines those tokens.
      The --max-width-{key} namespace is the utility-specific override that
      wins regardless of spacing collisions. Values match Tailwind v3 defaults
-     the codebase was written against. */
+     the codebase was written against.
+
+     `xs` was missed when this fix first landed, so `max-w-xs` resolved to
+     --spacing-xs = 4px — measured live 2026-08-21 on /events/new, where it
+     crushed the Category field's <label> to 4px wide (its <select> collapsed
+     to the browser's 34px minimum, showing a bare chevron, and the label text
+     wrapped mid-phrase). Every other max-w-* key was probed at the same time
+     and resolves correctly; xs was the only hole. */
+  --max-width-xs:  20rem;  /* 320px */
   --max-width-sm:  24rem;  /* 384px */
   --max-width-md:  28rem;  /* 448px */
   --max-width-lg:  32rem;  /* 512px */
@@ -270,10 +284,12 @@
      the calc(...px * var(--text-scale)) values defined in @theme above. */
   --text-scale: 1;
 
-  /* M2 unfreeze: headings are a real serif again. The artifact uses a SYSTEM
-     serif stack deliberately — it costs no webfont request and is what the
-     locked design was drawn against. The var keeps its legacy name so every
-     font-heading/-display/-headline-* utility resolves without edits. */
+  /* M2 unfreeze: headings were a real serif again from here — SUPERSEDED
+     2026-08-20 (see the --font-heading/-display/-headline-* block in @theme
+     above, which no longer references this variable's value for those
+     tokens). Left defined because Tailwind's default `font-serif` utility
+     stack is what's actually used for the Hero's italic accent word, and
+     nothing else in the app reads --font-source-serif directly anymore. */
   --font-source-serif: "Iowan Old Style", "Palatino Linotype", Palatino,
     "Book Antiqua", Georgia, serif;
 
@@ -567,9 +583,43 @@
   html {
     @apply font-sans;
   }
-  /* Material Symbols Outlined defaults — mockups use weight 400, fill 0
-     for inline <span class="material-symbols-outlined"> usage. */
+  /* Material Symbols Outlined — the FULL class definition as of 2026-08-21.
+     Everything below except `font-size` is transcribed from the stylesheet
+     Google used to serve (fetched and diffed before deleting the <link>):
+     the `liga` feature is what turns the text "dashboard" into a glyph, and
+     white-space/word-wrap/direction stop a multi-word ligature name from
+     wrapping mid-icon.
+
+     `font-size: 24px` is kept, and keeping it is SAFE here in a way it was not
+     in Google's sheet. That sheet was UNLAYERED, and unlayered author CSS
+     outranks every author layer, so its 24px beat all 94 `text-[Npx]`
+     utilities on icon spans and every icon in the app rendered 24px whatever
+     it declared. This block lives in `@layer base`, which Tailwind's
+     `utilities` layer outranks — so the utilities now win, while icons that
+     declare no size at all (36 spans across 28 files, e.g. WhyEventar's card
+     glyphs) keep the exact 24px default they have always had. Dropping the
+     declaration instead made those 36 inherit their parent's font-size and
+     silently shrink — measured at 16px on the landing page before this line
+     was restored. Keep the value; never move this rule out of @layer base.
+
+     Font family comes from next/font/local (app/layout.tsx). The literal
+     fallback name matters: next/font generates its own family name, so hard-
+     coding 'Material Symbols Outlined' alone would match nothing. */
   .material-symbols-outlined {
+    font-family: var(--font-material-symbols), 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
     font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
   }
   .material-symbols-outlined.filled,
@@ -737,17 +787,16 @@ html {
   .nav-item { transition: none; }
 }
 
-/* The dark bezel + negative margin are what make the product read as sitting
-   ON the page rather than in it; the section below rides up underneath. */
+/* The dark bezel is what makes the product read as sitting ON the page
+   rather than in it. Was full-width below the hero with a -50px negative
+   margin overlapping the next section; moved into the hero's right column
+   2026-08-20, where it sits in normal grid flow instead — the overlap read
+   made sense stacked full-width, not boxed in a column. */
 .ledger-window {
   border: 9px solid #10182d;
   box-shadow:
     0 12px 30px rgba(28, 60, 148, 0.14),
     0 42px 90px rgba(14, 121, 236, 0.2);
-  margin-bottom: -50px;
-}
-.hero-zone-tail + section {
-  padding-top: 94px;
 }
 
 .aud-thumb {
@@ -755,7 +804,11 @@ html {
 }
 
 /* Staggered rise. Reduced-motion users get the end state immediately — the
-   hero must never withhold copy from someone who asked for no animation. */
+   hero must never withhold copy from someone who asked for no animation.
+   Two levels since the 2026-08-20 two-column restructure: the outer rule
+   staggers the hero's two direct children (toggle, then the copy+image row);
+   `.hero-copy` restaggers ITS OWN children (chip/h1/sub/CTAs/stat) so the
+   fine-grained rise survives them moving one level deeper into the grid. */
 @keyframes heroUp {
   from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: none; }
@@ -764,13 +817,18 @@ html {
   animation: heroUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .hero-zone > div > *:nth-child(2) { animation-delay: 0.06s; }
-.hero-zone > div > *:nth-child(3) { animation-delay: 0.12s; }
-.hero-zone > div > *:nth-child(4) { animation-delay: 0.18s; }
-.hero-zone > div > *:nth-child(5) { animation-delay: 0.24s; }
-.hero-zone > div > *:nth-child(6) { animation-delay: 0.32s; }
+
+.hero-copy > * {
+  animation: heroUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.hero-copy > *:nth-child(2) { animation-delay: 0.06s; }
+.hero-copy > *:nth-child(3) { animation-delay: 0.12s; }
+.hero-copy > *:nth-child(4) { animation-delay: 0.18s; }
+.hero-copy > *:nth-child(5) { animation-delay: 0.24s; }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-zone > div > * { animation: none; }
+  .hero-zone > div > *,
+  .hero-copy > * { animation: none; }
   .aud-thumb { transition: none; }
 }
 

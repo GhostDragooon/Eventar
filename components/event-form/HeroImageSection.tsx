@@ -66,7 +66,28 @@ export function HeroImageSection({ value, onChange, eventId }: Props) {
   }
 
   return (
-    <div className="space-y-sm">
+    /* `flex flex-col gap-sm`, NOT `space-y-sm` (2026-08-21). Two measured bugs
+       came from the space-y version, both because it works by putting a
+       margin-block-end on every child except `:last-child`:
+
+       1. The file <input> below is `sr-only`, i.e. position:absolute and
+          invisible — but it is still the LAST CHILD, so the upload Button (the
+          last thing anyone can actually see) was `:not(:last-child)` and got an
+          8px bottom margin with nothing under it. That padded the whole
+          section box, so the gap from this section to "2 · Basics" measured
+          40px while every other section boundary on the page measured 32px.
+          `gap` only applies between IN-FLOW items, so an absolutely-positioned
+          child contributes nothing and no trailing margin is created.
+       2. The <p> carried `m-0`, which cancelled its own share of the rhythm —
+          the description sat flush against the Button at 0px while its
+          siblings were 8px apart. Under `gap` the spacing is the container's
+          job, so `m-0` is now correct rather than destructive, and every gap
+          in here is a uniform 8px.
+
+       `self-start` on the Button preserves its intrinsic width: a flex column
+       stretches children by default, which would otherwise turn a compact
+       button into a full-width one. */
+    <div className="flex flex-col gap-sm">
       <div className="block font-label-md text-label-md uppercase tracking-wider text-on-surface">
         Hero image (optional)
       </div>
@@ -112,6 +133,7 @@ export function HeroImageSection({ value, onChange, eventId }: Props) {
         <Button
           type="button"
           variant="outline"
+          className="self-start"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
         >

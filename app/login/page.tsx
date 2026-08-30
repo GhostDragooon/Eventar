@@ -1,15 +1,11 @@
 'use client';
-import { Suspense, useState, useTransition } from 'react';
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { sendMagicLink } from './actions';
 import { SiteShell } from '@/components/shell/SiteShell';
-
-const URL_ERROR_MESSAGES: Record<string, string> = {
-  missing_code:    'The sign-in link was missing its verification code. Request a new one below.',
-  exchange_failed: 'The sign-in link has expired or already been used. Request a new one below.',
-  not_authorized:  'Your email is not on the staff list. Contact an admin to be added.',
-  unavailable:     'We could not check your staff access just now. This is on our side — please try again in a moment.',
-};
+import { MagicLinkSignInForm } from '@/components/auth/MagicLinkSignInForm';
+import { ControlledAccessNotice } from '@/components/auth/ControlledAccessNotice';
+import { resolveAuthError } from '@/components/auth/auth-error-messages';
 
 export default function LoginPage() {
   // useSearchParams must be inside a Suspense boundary in Next 16 (the page
@@ -43,17 +39,15 @@ function LoginLayout({ children }: { children: React.ReactNode }) {
 }
 
 function LoginForm() {
-  const [pending, start] = useTransition();
-  const [msg, setMsg] = useState<string | null>(null);
-  const [actionErr, setActionErr] = useState<string | null>(null);
-
   // Surface ?error=… from /auth/callback or /proxy redirects so users see why
   // they bounced back here instead of guessing they're stuck in a loop.
+  // resolveAuthError is the shared Category-02 dictionary (components/auth/
+  // auth-error-messages.ts), kept byte-identical to this page's four known
+  // codes; its one behavioural difference is the unknown-code fallback,
+  // which is a fixed generic string here instead of reflecting the raw code
+  // into the page — a deliberate hardening, not a regression.
   const urlErrorCode = useSearchParams().get('error');
-  const urlErr = urlErrorCode
-    ? (URL_ERROR_MESSAGES[urlErrorCode] ?? `Sign-in failed: ${urlErrorCode}`)
-    : null;
-  const err = actionErr ?? urlErr;
+  const urlErr = resolveAuthError(urlErrorCode);
 
   return (
     <LoginLayout>
@@ -73,61 +67,13 @@ function LoginForm() {
         No password here — we&apos;ll email you a one-tap sign-in link.
       </p>
 
-      <form
-        action={(fd) =>
-          start(async () => {
-            setMsg(null);
-            setActionErr(null);
-            const res = await sendMagicLink(fd);
-            if ('error' in res) setActionErr(res.error);
-            else setMsg('Check your inbox for a sign-in link.');
-          })
-        }
-        className="flex flex-col gap-md"
-      >
-        <label className="block">
-          <span className="block font-label-md text-label-md uppercase tracking-wider text-on-surface mb-xs">
-            Email
-          </span>
-          {/* The field announces itself: 2px accent border + soft accent halo. */}
-          <input
-            name="email"
-            type="email"
-            required
-            autoComplete="email"
-            placeholder="you@company.com"
-            className="w-full rounded-lg border-2 border-[color:var(--on-primary-container)] shadow-[0_0_0_4px_rgba(0,112,243,0.08)] bg-surface-container-lowest px-md py-sm font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-[color:var(--on-primary-container)]/40 transition-shadow"
-          />
-        </label>
-        <button
-          disabled={pending}
-          className="w-full inline-flex items-center justify-center gap-sm rounded-full bg-primary text-on-primary font-label-md text-label-md py-md hover:opacity-90 transition-opacity disabled:opacity-50"
-        >
-          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>mail</span>
-          {pending ? 'Sending…' : 'Send magic link'}
-        </button>
-        <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant text-center m-0">
-          The link expires after 15 minutes and works once.
-        </p>
+      <ControlledAccessNotice contactLabel="Contact an admin to be added" />
 
-        {msg && (
-          <p className="font-body-md text-body-md text-on-surface bg-secondary-container border border-secondary-container rounded-lg px-md py-sm flex items-start gap-sm">
-            <span className="material-symbols-outlined text-primary-ink text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>
-              mark_email_read
-            </span>
-            <span>{msg}</span>
-          </p>
-        )}
-        {err && (
-          <p
-            role="alert"
-            className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
-          >
-            <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
-            <span>{err}</span>
-          </p>
-        )}
-      </form>
+      <MagicLinkSignInForm submitMagicLink={sendMagicLink} initialError={urlErr} />
+
+      <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant text-center m-0">
+        The link expires after 15 minutes and works once.
+      </p>
 
       {/* Recovery — "Trouble signing in?" (locked: NOT "Forgot password";
           there is no password in a magic-link flow). */}

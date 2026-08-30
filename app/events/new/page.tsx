@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 import { requireStaff, NotAuthorizedError } from '@/lib/auth';
 import { StaffShell } from '@/components/shell/StaffShell';
+import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
+import { LayoutDashboardIcon, CalendarPlusIcon } from 'lucide-react';
 import NewEventForm, { type SubmitPayload } from './NewEventForm';
 import { createEvent } from './actions';
 import { supabaseAdmin } from '@/lib/supabase/admin';
@@ -40,9 +42,14 @@ export default async function NewEventPage() {
 
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role }} backHref="/dashboard" backLabel="Dashboard">
-      {/* Page header. Per patterns §8 the StaffShell's NAV owns all back-
-          navigation, so this header only carries the page title + intro
-          (no breadcrumb — that would duplicate the top NAV's back link). */}
+      <Breadcrumbs
+        items={[
+          { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboardIcon },
+          { label: 'Create event', icon: CalendarPlusIcon },
+        ]}
+        className="mb-sm"
+      />
+
       <header className="mb-lg">
         <h1 className="font-headline-lg text-headline-lg text-on-surface">Create event</h1>
         <p className="font-body-lg text-body-lg text-on-surface-variant mt-sm">

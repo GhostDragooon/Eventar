@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { formatInTz } from '@/lib/tz';
 import { toggleSpeakerCheckin } from './speakerActions';
+import { Button } from '@/components/ui/button';
 
 export type SpeakerCheckinRow = {
   speaker_name: string;
@@ -114,20 +115,24 @@ export function SpeakersCard({
                     </p>
                   )}
                 </div>
-                <button
+                {/* aria-pressed selection, not a plain action — kept on
+                    <Button> rather than the Toggle primitive so the existing
+                    primary-container "on" colour survives. */}
+                <Button
                   type="button"
+                  variant={isChecked ? 'secondary' : 'outline'}
                   onClick={() => handleToggle(name)}
                   disabled={isBusy}
                   aria-pressed={isChecked}
                   className={
-                    'shrink-0 min-h-11 min-w-24 rounded-lg px-md py-sm font-label-md text-label-md transition-colors disabled:opacity-60 ' +
+                    'shrink-0 min-h-11 min-w-24 px-md py-sm font-label-md text-label-md ' +
                     (isChecked
-                      ? 'bg-primary-container text-on-primary-container hover:opacity-90'
-                      : 'bg-transparent text-primary-ink border border-outline-variant hover:bg-surface-container-low')
+                      ? 'bg-primary-container text-on-primary-container hover:bg-primary-container hover:opacity-90'
+                      : 'text-primary-ink')
                   }
                 >
                   {isChecked ? '✓ Checked in' : 'Check in'}
-                </button>
+                </Button>
               </li>
             );
           })}
