@@ -311,7 +311,9 @@ export function AccountClient({
               href="/account/profile"
               className="text-sm font-medium text-primary-ink hover:underline"
             >
-              {initialProfile ? 'Edit professional profile' : 'Add professional profile'}
+              {initialProfile
+                ? 'Edit professional profile & licences'
+                : 'Add professional profile & licences'}
             </Link>
             <Link
               href="/account/claim"

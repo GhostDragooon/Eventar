@@ -76,6 +76,34 @@ export const professionalProfileUpdateSchema = z
 export type ProfessionalProfileUpdateInput = z.infer<typeof professionalProfileUpdateSchema>;
 
 // ---------------------------------------------------------------------------
+// Licence declare (definer wrapper — declare_licence RPC)
+// ---------------------------------------------------------------------------
+
+// Matches the 5-arg signature landed in 20260814200000_declare_licence_active_body_and_primary_per_body.sql.
+// track / cycle_started_on / licence_type are optional at the RPC and the UI
+// leaves them off for the minimal declare flow — a renewal or multi-track
+// user can be handled by a later, larger surface (per plan §7.2 minimum + Ivan's
+// smallest-viable-surface ask). Kept in the schema so a future UI does not
+// need to re-derive the shape.
+export const licenceDeclareSchema = z
+  .object({
+    body_id: z.string().uuid(),
+    licence_number: z.string().trim().min(1, 'Licence number is required').max(120),
+    licence_type: z.string().trim().min(1).max(120).nullable().optional(),
+    track: z.enum(['mchk', 'hkam']).nullable().optional(),
+    // ISO date (YYYY-MM-DD) — the RPC casts to `date` and rejects malformed
+    // input server-side.
+    cycle_started_on: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
+      .nullable()
+      .optional(),
+  })
+  .strict();
+
+export type LicenceDeclareInput = z.infer<typeof licenceDeclareSchema>;
+
+// ---------------------------------------------------------------------------
 // Read shape (returned by getMyAccountAndProfile)
 // ---------------------------------------------------------------------------
 
@@ -115,6 +143,32 @@ export type AccountAndProfile = {
   profile: ProfessionalProfileView | null;
 };
 
+// Accrediting body row shape for the licence declare picker. Uses the
+// public read policy `accrediting_bodies_public_read_active`.
+export type AccreditingBodyView = {
+  id: string;
+  short_name: string;
+  full_name: string;
+  jurisdiction: string | null;
+};
+
+// Row shape returned by listMyLicences. The `body_short_name` is app-joined
+// (not a real FK column) — the RLS on practitioner_licences is self-read
+// only, so the join happens in the Server Action, not in the DB view.
+export type LicenceRowView = {
+  id: string;
+  body_id: string;
+  body_short_name: string | null;
+  licence_number: string;
+  licence_type: string | null;
+  track: 'mchk' | 'hkam' | null;
+  status: 'declared' | 'verified' | 'lapsed' | 'revoked' | 'superseded';
+  is_primary: boolean;
+  declared_at: string;
+  verified_at: string | null;
+  cycle_started_on: string | null;
+};
+
 // ---------------------------------------------------------------------------
 // Standard action result shape (matches lib/withSecurity's ActionResult)
 // ---------------------------------------------------------------------------
@@ -125,7 +179,15 @@ export type AccountActionError =
   | 'rate_limited'
   | 'invalid_input'
   | 'not_found'
-  | 'db_error';
+  | 'db_error'
+  // Licence-declare specific: declare_licence raises P0002 for two distinct
+  // conditions ("not found" vs "not active"); UI copy differs. Also the
+  // (user_id, body_id, licence_number) unique index raises 23505 on a
+  // duplicate declare — mapped to a friendly "already declared" state
+  // rather than a generic error.
+  | 'body_not_found'
+  | 'body_inactive'
+  | 'already_declared';
 
 export type AccountActionResult<T> =
   | { ok: true; data: T }

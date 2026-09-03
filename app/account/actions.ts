@@ -24,10 +24,12 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { rateLimitBySession } from '@/lib/rateLimit';
 import {
   accountUpdateSchema,
+  licenceDeclareSchema,
   professionalProfileUpdateSchema,
   type AccountActionResult,
   type AccountAndProfile,
   type AccountUpdateInput,
+  type LicenceRowView,
   type ProfessionalProfileUpdateInput,
 } from './schema';
 
@@ -283,4 +285,123 @@ export async function claimMyRegistrations(): Promise<AccountActionResult<{ clai
   revalidatePath('/account');
   revalidatePath('/checkin');
   return { ok: true, data: { claimed } };
+}
+
+// ---------------------------------------------------------------------------
+// listMyLicences — reads the caller's own practitioner_licences rows and
+// app-joins body short_name for display. Practitioner_licences has a
+// `self_read` RLS policy, so this runs under the cookie-bound session and
+// requires no service-role bypass.
+// ---------------------------------------------------------------------------
+
+export async function listMyLicences(): Promise<AccountActionResult<{ licences: LicenceRowView[] }>> {
+  const auth = await requireAuthenticatedSelf();
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from('practitioner_licences')
+    .select(
+      'id, body_id, licence_number, licence_type, track, status, is_primary, declared_at, verified_at, cycle_started_on',
+    )
+    .eq('user_id', auth.userId)
+    .order('is_primary', { ascending: false })
+    .order('declared_at', { ascending: false });
+  if (error) return { ok: false, error: 'db_error' };
+
+  const rows = data ?? [];
+  // Collect body ids to join short_name in one round-trip. accrediting_bodies
+  // has an anon-friendly public-read-active policy; a licence declared
+  // against an inactive body still shows in the caller's list, so we read
+  // the union rather than filtering by status here.
+  const bodyIds = Array.from(new Set(rows.map((r) => r.body_id)));
+  const bodyShortNames = new Map<string, string>();
+  if (bodyIds.length > 0) {
+    // eslint-disable-next-line no-restricted-syntax -- join failure downgrades to null short_name, list still renders
+    const { data: bodies } = await supabase
+      .from('accrediting_bodies')
+      .select('id, short_name')
+      .in('id', bodyIds);
+    for (const b of bodies ?? []) bodyShortNames.set(b.id, b.short_name);
+  }
+
+  const licences: LicenceRowView[] = rows.map((r) => ({
+    id: r.id,
+    body_id: r.body_id,
+    body_short_name: bodyShortNames.get(r.body_id) ?? null,
+    licence_number: r.licence_number,
+    licence_type: r.licence_type,
+    track: r.track,
+    status: r.status,
+    is_primary: r.is_primary,
+    declared_at: r.declared_at,
+    verified_at: r.verified_at,
+    cycle_started_on: r.cycle_started_on,
+  }));
+
+  return { ok: true, data: { licences } };
+}
+
+// ---------------------------------------------------------------------------
+// declareMyLicence — Server Action wrapper around the declare_licence RPC.
+// The 5-arg signature landed in 20260814200000; UI collects the three
+// user-visible fields (body_id, licence_number, and optionally track +
+// cycle_started_on) and forwards. RPC errors mapped explicitly per the
+// tests/audit/licence_mutations.test.ts contract.
+// ---------------------------------------------------------------------------
+
+export async function declareMyLicence(
+  raw: unknown,
+): Promise<AccountActionResult<{ licence_id: string }>> {
+  const auth = await requireAuthenticatedSelf();
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  const rl = await rateLimitBySession('account.licences.declare', auth.userId, {
+    windowMs: 60_000,
+    max: 10,
+  });
+  if (!rl.allowed) return { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+
+  const parsed = licenceDeclareSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: 'invalid_input', issues: parsed.error.issues };
+  const input = parsed.data;
+
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase.rpc('declare_licence', {
+    p_body_id: input.body_id,
+    p_licence_number: input.licence_number,
+    p_licence_type: input.licence_type ?? null,
+    p_track: input.track ?? null,
+    p_cycle_started_on: input.cycle_started_on ?? null,
+  });
+  if (error) {
+    // 23505 = unique_violation on (user_id, body_id, licence_number) — same
+    // licence declared twice at the same body. Not a real error; the UI
+    // treats it as "you already declared this one" and re-reads the list.
+    if (error.code === '23505') return { ok: false, error: 'already_declared' };
+    // P0002 raised for two distinct conditions; the message text
+    // discriminates. Test file tests/audit/licence_mutations.test.ts asserts
+    // both strings. UI copy differs.
+    if (error.code === 'P0002') {
+      if (typeof error.message === 'string' && error.message.includes('not active')) {
+        return { ok: false, error: 'body_inactive' };
+      }
+      return { ok: false, error: 'body_not_found' };
+    }
+    if (error.code === '42501') return { ok: false, error: 'not_authorized' };
+    return { ok: false, error: 'db_error' };
+  }
+
+  const licenceId =
+    data && typeof data === 'object' && 'id' in data && typeof (data as { id: unknown }).id === 'string'
+      ? (data as { id: string }).id
+      : '';
+  // Fail visibly (Hard Rule 12): the audit event has already been written
+  // and the row exists — the RPC succeeded — but we didn't get a usable
+  // handle back. Reporting ok+empty-id would let the client render a React
+  // row with key='' and collide on a second declare in the same session.
+  // Downgrade to db_error; the next listMyLicences read reconciles.
+  if (!licenceId) return { ok: false, error: 'db_error' };
+  revalidatePath('/account/profile');
+  return { ok: true, data: { licence_id: licenceId } };
 }

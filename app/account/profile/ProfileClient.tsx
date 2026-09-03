@@ -12,8 +12,12 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { updateMyProfessionalProfile } from '../actions';
-import type { ProfessionalProfileView } from '../schema';
+import { declareMyLicence, updateMyProfessionalProfile } from '../actions';
+import type {
+  AccreditingBodyView,
+  LicenceRowView,
+  ProfessionalProfileView,
+} from '../schema';
 
 type Status =
   | null
@@ -48,13 +52,103 @@ function toForm(p: ProfessionalProfileView | null): FormState {
 
 export function ProfileClient({
   initialProfile,
+  initialLicences = [],
+  activeBodies = [],
 }: {
   initialProfile: ProfessionalProfileView | null;
+  /**
+   * Caller's own practitioner_licences rows, already app-joined with body
+   * short_name (server-side, see listMyLicences). Renders the "Licences"
+   * SectionCard's list; empty is a valid render (form still shows).
+   */
+  initialLicences?: LicenceRowView[];
+  /**
+   * Active accrediting bodies for the declare picker. A body that goes
+   * inactive after a licence was declared still shows in the list (via its
+   * cached body_short_name), but drops out of the picker.
+   */
+  activeBodies?: AccreditingBodyView[];
 }) {
   const [form, setForm] = useState<FormState>(toForm(initialProfile));
   const [status, setStatus] = useState<Status>(null);
   const [pending, startTransition] = useTransition();
   const isNew = initialProfile === null;
+
+  // Licence declare state — kept local to this component because there is
+  // exactly one licence surface today. If a second consumer emerges, hoist.
+  const [licences, setLicences] = useState<LicenceRowView[]>(initialLicences);
+  const [lBodyId, setLBodyId] = useState<string>('');
+  const [lNumber, setLNumber] = useState<string>('');
+  const [licenceStatus, setLicenceStatus] = useState<Status>(null);
+  const [licencePending, startLicenceTransition] = useTransition();
+
+  function onDeclareLicence(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLicenceStatus(null);
+    startLicenceTransition(async () => {
+      const result = await declareMyLicence({
+        body_id: lBodyId,
+        licence_number: lNumber.trim(),
+      });
+      if (result.ok) {
+        // Optimistic append: the RPC returns the licence id, but not the
+        // full joined row — synthesize one from the picker + form so the
+        // list updates without a page reload. A subsequent server render
+        // (via revalidatePath in the action) will produce the canonical row.
+        // is_primary: false ALWAYS — declare_licence never grants
+        // is_primary=true (migration 20260814200000 omits it from the
+        // INSERT, column default false). Only set_primary_licence and the
+        // supersession primary-carry-forward do. Faking true here (as an
+        // earlier draft did) is the "control one layer above where the
+        // write happens" pattern — the client would show a Primary pill
+        // for state the platform did not actually grant, until a hard
+        // navigation replaced the optimistic row. Dev-lens CRITICAL.
+        const body = activeBodies.find((b) => b.id === lBodyId);
+        setLicences((prev) => [
+          {
+            id: result.data.licence_id,
+            body_id: lBodyId,
+            body_short_name: body?.short_name ?? null,
+            licence_number: lNumber.trim(),
+            licence_type: null,
+            track: null,
+            status: 'declared',
+            is_primary: false,
+            declared_at: new Date().toISOString(),
+            verified_at: null,
+            cycle_started_on: null,
+          },
+          ...prev,
+        ]);
+        setLBodyId('');
+        setLNumber('');
+        setLicenceStatus({
+          kind: 'success',
+          message: 'Licence declared. Credit release also needs a confirmed email, accepted consents, and a complete profile — see the checklist at the top of this page.',
+        });
+      } else {
+        setLicenceStatus({
+          kind: 'error',
+          message:
+            result.error === 'already_declared'
+              ? "You've already declared this licence number at that body."
+              : result.error === 'body_inactive'
+                ? "That body isn't accepting new licences right now."
+                : result.error === 'body_not_found'
+                  // Unreachable via the picker (which lists only active
+                  // bodies), so fold into the generic "refresh and retry"
+                  // rather than dead-end the user with "not found" and no
+                  // next step. User-lens CONFUSING.
+                  ? 'Could not declare right now. Refresh the page and try again.'
+                  : result.error === 'invalid_input'
+                    ? 'Fill both fields — a body and a licence number.'
+                    : result.error === 'rate_limited'
+                      ? 'Too many attempts in a short window. Please wait a moment.'
+                      : 'Could not declare right now. Please try again.',
+        });
+      }
+    });
+  }
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -100,6 +194,13 @@ export function ProfileClient({
     form.workplace_text.trim() !== '' &&
     (form.position_code.trim() !== '' || form.position_other.trim() !== '') &&
     form.profession_code.trim() !== '';
+  // F4 gate — a declared licence in a non-terminal state. Lapsed/revoked/
+  // superseded rows exist in the caller's history but don't unlock credit,
+  // so the "ready" signal must exclude them. Pairing this with f3Ready in
+  // the banner below closes the "profile looks green but the check-in gate
+  // still trips" hazard user-lens caught (BLOCKER).
+  const f4Ready = licences.some((l) => l.status === 'declared' || l.status === 'verified');
+  const gatesReady = f3Ready && f4Ready;
 
   return (
     <div className="space-y-md">
@@ -117,22 +218,53 @@ export function ProfileClient({
         </p>
       </header>
 
+      {/* F3+F4 combined readiness banner. Goes green ONLY when both the
+          profile fields (workplace / position / profession — F3) AND a
+          non-terminal licence (declared or verified — F4) are in place.
+          User-lens BLOCKER: a green banner with no licence declared is a
+          lie — the caller would pass F3 but trip F4 silently at check-in.
+          Bullet list under the green copy names the remaining F1/F2/F5
+          gates so no user reads "green" as "you're done." */}
       <div
         role="status"
         aria-live="polite"
         className={
-          f3Ready
+          gatesReady
             ? 'font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm flex items-start gap-sm'
             : 'font-body-md text-body-md text-on-surface-variant bg-surface-container border border-outline-variant rounded-lg px-md py-sm flex items-start gap-sm'
         }
       >
         <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>
-          {f3Ready ? 'check_circle' : 'info'}
+          {gatesReady ? 'check_circle' : 'info'}
         </span>
         <span className="flex-1">
-          {f3Ready
-            ? 'Your profile meets the CPD release requirements (workplace, position, and profession are set).'
-            : 'To release CPD credit, fill workplace, either a position code or position (other), and profession. Everything else is optional.'}
+          {gatesReady ? (
+            <>
+              Profile and licences are in place. CPD credit at events for
+              your declared bodies will release automatically after
+              check-in, provided your email is confirmed and consents are
+              accepted.
+            </>
+          ) : (
+            <>
+              To release CPD credit you need all of the following:
+              <ul className="list-disc pl-lg mt-xs mb-0">
+                <li>
+                  Workplace + position + profession filled below —{' '}
+                  <span className={f3Ready ? 'text-on-success-container font-semibold' : 'font-semibold'}>
+                    {f3Ready ? 'done' : 'not yet'}
+                  </span>.
+                </li>
+                <li>
+                  At least one active licence declared for the accrediting body —{' '}
+                  <span className={f4Ready ? 'text-on-success-container font-semibold' : 'font-semibold'}>
+                    {f4Ready ? 'done' : 'not yet'}
+                  </span>.
+                </li>
+                <li>Confirmed email address, and platform + privacy consents accepted (handled at sign-in).</li>
+              </ul>
+            </>
+          )}
         </span>
       </div>
 
@@ -202,6 +334,103 @@ export function ProfileClient({
               />
             </FieldGroup>
           </div>
+        </SectionCard>
+
+        <SectionCard icon="verified" title="Licences">
+          {licences.length === 0 ? (
+            <p className="font-body-md text-body-md text-on-surface-variant m-0">
+              No licences declared yet. Declare one below to release CPD
+              credit at that accrediting body once your profile is complete.
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-sm m-0 p-0 list-none">
+              {licences.map((l) => (
+                <li
+                  key={l.id}
+                  className="flex flex-wrap items-baseline gap-sm border-b border-outline-variant pb-sm last:border-b-0 last:pb-0"
+                >
+                  <span className="font-title-md text-title-md text-on-surface">
+                    {l.body_short_name ?? 'Body'}
+                  </span>
+                  <span className="font-mono font-body-md text-body-md text-on-surface-variant">
+                    {l.licence_number}
+                  </span>
+                  <LicenceStatusPill status={l.status} />
+                  {/* Primary badge suppressed when the caller has a single
+                      licence: a lone licence is trivially primary at its
+                      body, and the badge just reads as unexplained jargon.
+                      Shows once a second licence lands, where it starts to
+                      mean something. User-lens CONFUSING. */}
+                  {l.is_primary && licences.length > 1 && (
+                    <span
+                      className="font-label-md text-label-md px-sm py-0 rounded-full uppercase inline-flex items-center gap-sm bg-primary-fixed text-primary-ink border border-transparent"
+                      title="Primary licence at this body — used when multiple licences at the same body are declared."
+                    >
+                      Primary
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+          {/* Declare form — the same three primitives (FieldGroup / Input /
+              Button) the surrounding cards use. Track / cycle_started_on
+              are deliberately omitted from the minimum surface (RPC accepts
+              null for both); add if a real user's regulator requires them. */}
+          <form onSubmit={onDeclareLicence} className="mt-md flex flex-col gap-md">
+            <div className="grid gap-md md:grid-cols-2">
+              <FieldGroup label="Accrediting body">
+                <select
+                  value={lBodyId}
+                  onChange={(e) => setLBodyId(e.target.value)}
+                  required
+                  disabled={licencePending || activeBodies.length === 0}
+                  aria-label="Accrediting body"
+                  className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+                >
+                  <option value="">
+                    {activeBodies.length === 0 ? 'No bodies available' : 'Select a body…'}
+                  </option>
+                  {activeBodies.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.short_name} — {b.full_name}
+                    </option>
+                  ))}
+                </select>
+              </FieldGroup>
+              <FieldGroup label="Licence number">
+                <Input
+                  value={lNumber}
+                  onChange={(e) => setLNumber(e.target.value)}
+                  required
+                  placeholder="e.g. M12345"
+                  maxLength={120}
+                  disabled={licencePending}
+                />
+              </FieldGroup>
+            </div>
+            {licenceStatus && (
+              <div
+                role="status"
+                aria-live="polite"
+                className={
+                  licenceStatus.kind === 'success'
+                    ? 'font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm'
+                    : 'font-body-md text-body-md text-on-error-container bg-error-container border border-error-container rounded-lg px-md py-sm'
+                }
+              >
+                {licenceStatus.message}
+              </div>
+            )}
+            <div className="flex justify-end">
+              <Button
+                type="submit"
+                disabled={licencePending || !lBodyId || !lNumber.trim()}
+              >
+                {licencePending ? 'Declaring…' : 'Declare licence'}
+              </Button>
+            </div>
+          </form>
         </SectionCard>
 
         <SectionCard icon="mic" title="Speaker preferences">
@@ -295,5 +524,42 @@ function FieldGroup({ label, children }: { label: string; children: React.ReactN
       <span className="block font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-xs">{label}</span>
       {children}
     </label>
+  );
+}
+
+// Status pill.
+// - declared (active, counts for F4 credit release): tertiary-container —
+//   visually distinct from the muted "no longer valid" statuses below.
+// - verified: success-container (green, matches the wider "you're done"
+//   affordance across the app).
+// - lapsed / superseded: muted surface-container with an italic label so
+//   they read as "historical, no longer active" — user-lens CONFUSING
+//   flagged that lapsed/superseded/declared all looked the same.
+// - revoked: error-container (destructive terminal state).
+// Each pill carries an aria-label prefix so a screen reader announces
+// "Status: <name>" instead of a bare adjective. User-lens CONFUSING.
+function LicenceStatusPill({ status }: { status: LicenceRowView['status'] }) {
+  const label: Record<LicenceRowView['status'], string> = {
+    declared:   'Status: declared, pending verification',
+    verified:   'Status: verified',
+    lapsed:     'Status: lapsed — no longer active',
+    revoked:    'Status: revoked',
+    superseded: 'Status: superseded by a newer declaration',
+  };
+  const styles: Record<LicenceRowView['status'], string> = {
+    declared:   'bg-tertiary-container text-on-tertiary-container border-transparent',
+    verified:   'bg-success-container text-on-success-container border-transparent',
+    lapsed:     'bg-surface-container text-on-surface-variant border-outline-variant italic',
+    revoked:    'bg-error-container text-on-error-container border-transparent',
+    superseded: 'bg-surface-container text-on-surface-variant border-outline-variant italic',
+  };
+  return (
+    <span
+      role="status"
+      aria-label={label[status]}
+      className={`font-label-md text-label-md px-sm py-0 rounded-full uppercase inline-flex items-center gap-sm border ${styles[status]}`}
+    >
+      {status}
+    </span>
   );
 }
