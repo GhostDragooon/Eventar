@@ -29,7 +29,10 @@ export function SiteShell({
   footer = 'brand',
 }: {
   children: React.ReactNode;
-  active: 'home' | 'events' | 'signin';
+  // 'account' is reachable via direct URL (post sign-in redirect); the
+  // public nav doesn't render an Account item yet — deliberate, plan §7
+  // (minimal UI). The value here just means "none of the visible tabs".
+  active: 'home' | 'events' | 'signin' | 'account';
   footer?: 'brand' | 'none';
 }) {
   return (

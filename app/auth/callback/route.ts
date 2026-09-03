@@ -15,7 +15,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/login?error=missing_code', url));
   }
 
-  const response = NextResponse.redirect(new URL('/dashboard', url));
+  // Same-origin redirect target the sign-in surface passed in
+  // (?next=/account for attendee flows, unset for the pre-plan staff flow
+  // which continues to land on /dashboard). Guard against open-redirect —
+  // only accept a relative path that starts with a single '/'. Anything
+  // else silently falls back to the staff default.
+  const rawNext = url.searchParams.get('next');
+  const nextPath =
+    rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
+      ? rawNext
+      : '/dashboard';
+  const response = NextResponse.redirect(new URL(nextPath, url));
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
