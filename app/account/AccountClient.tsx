@@ -17,7 +17,7 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { updateMyAccount } from './actions';
+import { claimMyRegistrations, updateMyAccount } from './actions';
 import type { AccountView, ProfessionalProfileView } from './schema';
 
 type Status =
@@ -35,13 +35,55 @@ const LANGUAGES: Array<{ value: 'en' | 'zh-Hant' | 'zh-Hans'; label: string }> =
 export function AccountClient({
   initialAccount,
   initialProfile,
+  initialUnlinkedCount = 0,
 }: {
   initialAccount: AccountView;
   initialProfile: ProfessionalProfileView | null;
+  /**
+   * Count of guest registrations matching the caller's email that are still
+   * unlinked (server-computed via getUnlinkedRegistrationCount). > 0 shows
+   * the "we found N registrations" banner; a successful inline claim drops
+   * the local count to 0 and hides it. Defaults to 0 so older callers /
+   * tests do not need to thread it.
+   */
+  initialUnlinkedCount?: number;
 }) {
   const [account, setAccount] = useState<AccountView>(initialAccount);
   const [status, setStatus] = useState<Status>(null);
   const [pending, startTransition] = useTransition();
+  const [unlinkedCount, setUnlinkedCount] = useState<number>(initialUnlinkedCount);
+  const [claimStatus, setClaimStatus] = useState<Status>(null);
+  const [claimPending, startClaimTransition] = useTransition();
+
+  function onClaim() {
+    setClaimStatus(null);
+    startClaimTransition(async () => {
+      const result = await claimMyRegistrations();
+      if (result.ok) {
+        setUnlinkedCount(0);
+        const n = result.data.claimed;
+        setClaimStatus({
+          kind: 'success',
+          message:
+            n === 0
+              ? 'Nothing new to link. Your registrations are already up to date.'
+              : n === 1
+                ? 'Linked 1 registration to your account.'
+                : `Linked ${n} registrations to your account.`,
+        });
+      } else {
+        setClaimStatus({
+          kind: 'error',
+          message:
+            result.error === 'email_unverified'
+              ? 'Confirm your email first (check your inbox for a link from Eventar).'
+              : result.error === 'rate_limited'
+                ? 'Too many attempts in a short window. Please wait a moment.'
+                : 'Could not link right now. Please try again.',
+        });
+      }
+    });
+  }
 
   function set<K extends keyof AccountView>(key: K, value: AccountView[K]) {
     setAccount((prev) => ({ ...prev, [key]: value }));
@@ -93,6 +135,67 @@ export function AccountClient({
           Full name is used for emails, badges, and your event roster.
         </p>
       </header>
+
+      {/* Walk-in flow banner: surfaces the "system checks email → match" step
+          without silent auto-linking (Stage C decision Q3 kept — the claim is
+          still explicit). Renders only when the server-computed count is > 0;
+          a successful claim drops the local count to 0 and hides it without a
+          refresh. */}
+      {unlinkedCount > 0 && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="bg-primary-fixed border border-outline-variant rounded-[20px] p-lg flex flex-col gap-sm sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="flex items-start gap-md">
+            <div
+              aria-hidden
+              className="w-10 h-10 rounded-full bg-surface-container-lowest text-primary-ink flex items-center justify-center shrink-0"
+            >
+              <span className="material-symbols-outlined text-[calc(20px*var(--text-scale))]" data-fill="1">link</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-title-md text-title-md text-on-surface m-0">
+                {unlinkedCount === 1
+                  ? 'We found 1 unlinked registration for your email.'
+                  : `We found ${unlinkedCount} unlinked registrations for your email.`}
+              </p>
+              <p className="font-body-md text-body-md text-on-surface-variant m-0 mt-xs">
+                Link them to your account so CPD credit can be released once your profile is complete.
+              </p>
+            </div>
+          </div>
+          <div className="shrink-0">
+            <Button
+              type="button"
+              onClick={onClaim}
+              disabled={claimPending}
+              aria-label={
+                claimPending
+                  ? 'Linking registrations…'
+                  : unlinkedCount === 1
+                    ? 'Link 1 registration to my account'
+                    : `Link ${unlinkedCount} registrations to my account`
+              }
+            >
+              {claimPending ? 'Linking…' : 'Link them'}
+            </Button>
+          </div>
+        </div>
+      )}
+      {claimStatus && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={
+            claimStatus.kind === 'success'
+              ? 'font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm'
+              : 'font-body-md text-body-md text-on-error-container bg-error-container border border-error-container rounded-lg px-md py-sm'
+          }
+        >
+          {claimStatus.message}
+        </div>
+      )}
 
       <form onSubmit={onSubmit} className="space-y-md">
         <SectionCard icon="badge" title="Identity">

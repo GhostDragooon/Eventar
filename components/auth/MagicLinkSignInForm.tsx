@@ -12,6 +12,14 @@ type Props = {
   initialError?: string | null;
   placeholder?: string;
   submitLabel?: string;
+  /**
+   * Optional post-sign-in destination the caller wants to round-trip through
+   * OTP. Rendered as a hidden field so the Server Action can read it from
+   * formData; the callback route validates it (same guard as the raw
+   * `?next=` param on `/auth/callback`). Omit and the action falls back to
+   * its own default destination.
+   */
+  next?: string;
 };
 
 export function MagicLinkSignInForm({
@@ -19,6 +27,7 @@ export function MagicLinkSignInForm({
   initialError = null,
   placeholder = 'you@company.com',
   submitLabel = 'Send magic link',
+  next,
 }: Props) {
   const [pending, startTransition] = useTransition();
   const [status, setStatus] = useState<AuthStatus | null>(
@@ -44,6 +53,7 @@ export function MagicLinkSignInForm({
   // guarantee.
   return (
     <form action={submit} className="space-y-md">
+      {next && <input type="hidden" name="next" value={next} />}
       <label className="block space-y-xs">
         <span className="font-label-md text-label-md text-on-surface">Email address</span>
         {/* The field announces itself: 2px accent border + soft accent halo

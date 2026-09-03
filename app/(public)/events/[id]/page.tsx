@@ -9,6 +9,7 @@ import { PublicShell } from '@/components/shell/PublicShell';
 import { StatusPill } from '@/components/lifecycle/StatusPill';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 import { requireStaff, NotAuthorizedError } from '@/lib/auth';
+import { getUnlinkedRegistrationCount } from '@/app/account/actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -107,6 +108,51 @@ export default async function PublicEventPage({
     .from('registrations')
     .select('id', { count: 'exact', head: true })
     .eq('event_id', id);
+
+  // Self-serve walk-in flow: a signed-in visitor's registration attaches
+  // user_id + profile_snapshot at INSERT time (see (public)/events/[id]/
+  // actions.ts B2 fix). Prefill their name + email so the common case is
+  // one tap; a signed-out visitor gets a "Sign in first" nudge that
+  // round-trips back to this event page through OTP.
+  //
+  // Auth read: getUser() is expected to return null for anonymous visitors,
+  // which is not an error. Swallow-with-null is intentional — the visitor
+  // simply sees the signed-out CTA.
+  // eslint-disable-next-line no-restricted-syntax -- signed-out is not an error here
+  const { data: authRes } = await supabase.auth.getUser();
+  const signedInUser = authRes?.user ?? null;
+  const signedInEmail = signedInUser?.email ?? null;
+  // full_name lives on public.users (mirrored from auth via trigger). Read it
+  // only when the caller is signed in; a failure here silently drops the
+  // prefill (register form still works, just uninitialised). Same call also
+  // surfaces the count of unlinked guest registrations under this email —
+  // gives the round-tripped visitor the discovery moment ("we found N")
+  // right where they land, closing the user-lens gap where /account/*'s
+  // banner never fires because the round-trip target is the event page.
+  let signedInName: string | null = null;
+  let unlinkedCount = 0;
+  if (signedInUser) {
+    // eslint-disable-next-line no-restricted-syntax -- prefill is decorative
+    const { data: profile } = await supabase
+      .from('users')
+      .select('full_name, preferred_name')
+      .eq('id', signedInUser.id)
+      .maybeSingle();
+    signedInName = profile?.preferred_name || profile?.full_name || null;
+    // Count is decorative — a network/DB blip here must not 500 the whole
+    // event page. Silently drop to 0 (banner hides) on any throw. The
+    // action's own error branches already collapse to `{ ok: false }`, but a
+    // fetch-level throw would otherwise propagate up through the RSC render.
+    try {
+      const countResult = await getUnlinkedRegistrationCount();
+      if (countResult.ok) unlinkedCount = countResult.data.count;
+    } catch {
+      unlinkedCount = 0;
+    }
+  }
+  const signInHref = signedInUser
+    ? null
+    : `/account/sign-in?next=/events/${event.id}`;
 
   // Origin via NEXT_PUBLIC_SITE_URL (with header fallback in dev) — prevents
   // host-header spoofing from poisoning the QR URL. See lib/origin.ts.
@@ -248,6 +294,11 @@ export default async function PublicEventPage({
           // decide whether to render the "development stub" strip. Boolean-only
           // so the key value itself never reaches the client (rule 10).
           deliveryLive={Boolean(process.env.RESEND_API_KEY)}
+          defaultName={signedInName ?? undefined}
+          defaultEmail={signedInEmail ?? undefined}
+          signInHref={signInHref ?? undefined}
+          unlinkedRegistrationsCount={unlinkedCount}
+          signedIn={signedInUser !== null}
         />
 
         {/* Share QR — compact, sits inside the rhythm; no separate card chrome. */}

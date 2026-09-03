@@ -11,12 +11,13 @@
 // Style oracle: /login/page.tsx + /settings SettingsSection (Ivan, Stage C
 // decision Q4 — match verbatim, no reinvention).
 
-import { Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { sendAttendeeMagicLink } from './actions';
 import { SiteShell } from '@/components/shell/SiteShell';
 import { MagicLinkSignInForm } from '@/components/auth/MagicLinkSignInForm';
 import { resolveAuthError } from '@/components/auth/auth-error-messages';
+import { supabaseBrowser } from '@/lib/supabase/browser';
 
 export default function AttendeeSignInPage() {
   return (
@@ -39,8 +40,62 @@ function AttendeeSignInShell({ children }: { children?: React.ReactNode } = {}) 
 }
 
 function AttendeeSignInForm() {
-  const urlErrorCode = useSearchParams().get('error');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const urlErrorCode = searchParams.get('error');
   const urlErr = resolveAuthError(urlErrorCode);
+  // Round-trip destination for the walk-in flow: event page → sign-in → OTP
+  // → same event page. The action re-validates; only pass through when it
+  // starts with a single '/' (server does the same check as a defence in
+  // depth against tampered links).
+  const rawNext = searchParams.get('next');
+  const next =
+    rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
+      ? rawNext
+      : undefined;
+
+  // Short-circuit for a visitor who is ALREADY signed in and reached this
+  // page anyway (most likely via the pending-credit banner on
+  // /checkin/confirm, which unconditionally links here). Redirect to `next`
+  // (or /account) instead of asking them to redeem another OTP against the
+  // same email they're already signed in as. This is a client-side check
+  // rather than a server-side one because the page is 'use client' for the
+  // Suspense + useSearchParams shape; a proper server-side auth check would
+  // need to split the file — flagged as a future cleanup, not blocking.
+  //
+  // The form is HELD OUT of the render tree until the session check
+  // resolves. Rendering the form eagerly and racing the useEffect lets a
+  // reflex-fast signed-in visitor submit the form (sending themselves a
+  // magic link they don't need + landing them on a "check your inbox"
+  // false-positive) before the redirect fires. Second-pass review IMPORTANT
+  // 3. The signed-out latency cost is one getSession() call (cookie read,
+  // no network) — invisible in practice.
+  const [sessionKnown, setSessionKnown] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      // eslint-disable-next-line no-restricted-syntax -- no-session collapses to "show the form"
+      const { data } = await supabaseBrowser().auth.getSession();
+      if (cancelled) return;
+      if (data.session) {
+        router.replace(next ?? '/account');
+        // Do NOT set sessionKnown — leave the form unmounted while the
+        // navigation completes so the visitor cannot submit into the void.
+      } else {
+        setSessionKnown(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [router, next]);
+
+  if (!sessionKnown) {
+    // Skeleton: same shell the Suspense boundary uses, so signed-out
+    // visitors see one continuous frame from server-render through the
+    // session-check to the form appearing.
+    return <AttendeeSignInShell />;
+  }
 
   return (
     <AttendeeSignInShell>
@@ -65,6 +120,7 @@ function AttendeeSignInForm() {
         initialError={urlErr}
         placeholder="you@example.com"
         submitLabel="Send sign-in link"
+        next={next}
       />
     </AttendeeSignInShell>
   );

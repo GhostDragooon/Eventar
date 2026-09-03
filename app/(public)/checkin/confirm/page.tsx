@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { formatInTz } from '@/lib/tz';
 import { isValidRegistrationCode } from '@/lib/registrationCode';
@@ -418,9 +419,16 @@ function CheckedInView({
         >
           <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>info</span>
           <span className="flex-1">
-            CPD credit is pending. Sign in or sign up with the email you
-            registered with to link this attendance to your account and
-            release credit — reception can&apos;t do this for you.
+            CPD credit is pending.{' '}
+            <Link
+              href="/account/sign-in?next=/account/claim"
+              className="text-primary-ink hover:underline font-semibold"
+            >
+              Sign in or sign up
+            </Link>{' '}
+            with the email you registered with to link this attendance to
+            your account and release credit — reception can&apos;t do this
+            for you.
           </span>
         </p>
       )}

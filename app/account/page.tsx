@@ -9,7 +9,7 @@
 
 import { redirect } from 'next/navigation';
 import { supabaseServer } from '@/lib/supabase/server';
-import { getMyAccountAndProfile } from './actions';
+import { getMyAccountAndProfile, getUnlinkedRegistrationCount } from './actions';
 import { AccountClient } from './AccountClient';
 import { SiteShell } from '@/components/shell/SiteShell';
 
@@ -25,7 +25,10 @@ export default async function AccountPage() {
     redirect('/account/sign-in');
   }
 
-  const result = await getMyAccountAndProfile();
+  const [result, unlinkedResult] = await Promise.all([
+    getMyAccountAndProfile(),
+    getUnlinkedRegistrationCount(),
+  ]);
   if (!result.ok) {
     // not_authorized / not_found / db_error — bounce back to sign-in with a
     // hint. `db_error` is a genuinely-transient path; the user can retry.
@@ -33,6 +36,10 @@ export default async function AccountPage() {
       result.error === 'not_authorized' ? 'not_authorized' : 'unavailable';
     redirect(`/account/sign-in?error=${errorParam}`);
   }
+  // The banner is decorative — a failed count silently hides it rather than
+  // blocking the account page. The count read is service-role-scoped, so the
+  // failure modes here are transient (network / DB), not auth.
+  const initialUnlinkedCount = unlinkedResult.ok ? unlinkedResult.data.count : 0;
 
   return (
     <SiteShell active="account">
@@ -40,6 +47,7 @@ export default async function AccountPage() {
         <AccountClient
           initialAccount={result.data.account}
           initialProfile={result.data.profile}
+          initialUnlinkedCount={initialUnlinkedCount}
         />
       </div>
     </SiteShell>

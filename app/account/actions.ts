@@ -20,6 +20,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { rateLimitBySession } from '@/lib/rateLimit';
 import {
   accountUpdateSchema,
@@ -189,9 +190,62 @@ export async function updateMyProfessionalProfile(
 }
 
 // ---------------------------------------------------------------------------
-// claimMyRegistrations — Server Action wrapper around the SECURITY DEFINER
-// claim_registrations_for_user() function.
+// getUnlinkedRegistrationCount — count of guest registrations that match the
+// caller's verified email and are still unlinked. Feeds the AccountClient
+// banner ("we found N registrations for your email — link them?"). Same
+// predicate `claim_registrations_for_user` uses internally (case-insensitive
+// email match, `user_id IS NULL`), so the count and the claim stay in
+// lockstep without duplicating SQL.
+//
+// Reads through supabaseAdmin() because `registrations` has no anon SELECT
+// policy (PII) — same pattern events/[id]/page.tsx uses for its capacity
+// count. Only a bare integer leaves the boundary; no row content escapes.
 // ---------------------------------------------------------------------------
+
+export async function getUnlinkedRegistrationCount(): Promise<AccountActionResult<{ count: number }>> {
+  const auth = await requireAuthenticatedSelf();
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  // A caller with no email on their session has nothing to match against; the
+  // banner should stay hidden.
+  if (!auth.email) return { ok: true, data: { count: 0 } };
+
+  // Match `claim_registrations_for_user`'s own gate (migration
+  // 20260829110000, lines 102-108): the definer raises 'email_unverified'
+  // when email_confirmed_at is null. If the count function counted anyway,
+  // the AccountClient banner would promise a claim ("we found N") that the
+  // very next click fails with "Confirm your email first" — the exact
+  // "control one layer above where the write happens" pattern the repo has
+  // already caught six times. Producer and consumer stay in lockstep.
+  if (!auth.emailConfirmed) return { ok: true, data: { count: 0 } };
+
+  // Per-user rate limit — cheap symmetry with the neighbouring SAs
+  // (updateMyAccount / claimMyRegistrations / updateMyProfessionalProfile).
+  // Auth-gated + own-inbox-only + integer-only over the boundary makes the
+  // abuse surface nil, but convention wins over novelty (Rule 11).
+  const rl = await rateLimitBySession('account.unlinked_count', auth.userId, {
+    windowMs: 60_000,
+    max: 30,
+  });
+  if (!rl.allowed) return { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+
+  // Normalize the auth-side email the same way `registrations_lowercase_email`
+  // (migration 20260520010000) normalizes on write, and the way the RPC's
+  // predicate (`lower(trim(email)) = lower(trim(auth.email))`) reads. ILIKE
+  // treats `%` and `_` as wildcards — escape so an address like
+  // `first_last@x.com` matches literally and not as a pattern.
+  const normalized = auth.email.trim().toLowerCase();
+  const escaped = normalized.replace(/[\\%_]/g, (m) => `\\${m}`);
+
+  const { count, error } = await supabaseAdmin()
+    .from('registrations')
+    .select('id', { count: 'exact', head: true })
+    .ilike('email', escaped)
+    .is('user_id', null);
+  if (error) return { ok: false, error: 'db_error' };
+
+  return { ok: true, data: { count: count ?? 0 } };
+}
 
 export async function claimMyRegistrations(): Promise<AccountActionResult<{ claimed: number }>> {
   const auth = await requireAuthenticatedSelf();

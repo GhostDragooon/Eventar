@@ -21,20 +21,30 @@ export async function sendAttendeeMagicLink(
     return { error: 'Please enter a valid email address.' };
   }
 
+  // Optional post-sign-in destination the caller passed as a hidden form
+  // field. Same open-redirect guard as /auth/callback:23-28 — a relative
+  // path that starts with a single '/' only; anything else drops to the
+  // default. Walk-in flow round-trips /events/[id] this way.
+  const rawNext = String(formData.get('next') ?? '');
+  const nextPath =
+    rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
+      ? rawNext
+      : '/account';
+
   const origin = await getRequestOrigin();
   const supabase = await supabaseAnonServer();
 
   // shouldCreateUser: true — attendees who have never signed in yet must
   // be able to create their account from this door. Staff /login sets it
   // to whatever the shared helper defaults to (also true) — same posture.
-  // emailRedirectTo carries ?next=/account so /auth/callback lands the
-  // attendee at their account instead of /dashboard (which proxy.ts would
-  // sign them out of).
+  // emailRedirectTo carries ?next=<path> so /auth/callback lands the
+  // attendee where the caller intended (default /account); the callback
+  // re-validates the param.
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
       shouldCreateUser: true,
-      emailRedirectTo: `${origin}/auth/callback?next=/account`,
+      emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
     },
   });
 
