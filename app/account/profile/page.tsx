@@ -53,7 +53,7 @@ export default async function ProfilePage() {
   const bodies: AccreditingBodyView[] = (bodiesResult.data ?? []) as AccreditingBodyView[];
 
   return (
-    <SiteShell active="account">
+    <SiteShell active="account" signedIn>
       <div className="mx-auto w-full max-w-2xl px-grid-margin py-xl">
         <ProfileClient
           initialProfile={result.data.profile}

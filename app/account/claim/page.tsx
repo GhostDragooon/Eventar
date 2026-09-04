@@ -22,7 +22,7 @@ export default async function ClaimPage() {
   const emailVerified = authRes.user.email_confirmed_at != null;
 
   return (
-    <SiteShell active="account">
+    <SiteShell active="account" signedIn>
       <div className="mx-auto w-full max-w-2xl px-grid-margin py-xl">
         <ClaimClient
           email={authRes.user.email ?? ''}

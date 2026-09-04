@@ -42,7 +42,7 @@ export default async function AccountPage() {
   const initialUnlinkedCount = unlinkedResult.ok ? unlinkedResult.data.count : 0;
 
   return (
-    <SiteShell active="account">
+    <SiteShell active="account" signedIn>
       <div className="mx-auto w-full max-w-2xl px-grid-margin py-xl">
         <AccountClient
           initialAccount={result.data.account}

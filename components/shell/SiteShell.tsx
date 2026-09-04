@@ -17,6 +17,13 @@ import { SiteFooter } from './SiteFooter';
 // appear from nowhere. The pill is therefore three-column now (mark, sections,
 // action), matching `LandingNav`, where it was two-column precisely because
 // there was no mark to anchor the left.
+//
+// 2026-09-04 (Ivan Q on nav-shape): right-side CTA is state-aware — signed-out
+// gets "Sign in" pointing at /account/sign-in (attendee door), signed-in gets
+// "Account" pointing at /account. Staff /login stays reachable via direct URL
+// (organisers know the address; unrouted door for the outbound audience).
+// Q32's audience-boundary rule holds: the pill picks the right door rather
+// than surfacing two.
 
 const NAV_ITEM =
   'nav-item rounded-full px-[11px] py-[7px] text-[calc(13px*var(--text-scale))] font-medium';
@@ -27,13 +34,26 @@ export function SiteShell({
   children,
   active,
   footer = 'brand',
+  signedIn = false,
 }: {
   children: React.ReactNode;
-  // 'account' is reachable via direct URL (post sign-in redirect); the
-  // public nav doesn't render an Account item yet — deliberate, plan §7
-  // (minimal UI). The value here just means "none of the visible tabs".
+  // 'account' now renders as an active-tinted "Account" pill; 'signin'
+  // active-tints the signed-out "Sign in" pill. Neither means "none of
+  // the visible tabs" any more — that meaning is dead, but the union kept
+  // for callers that still pass a value.
   active: 'home' | 'events' | 'signin' | 'account';
   footer?: 'brand' | 'none';
+  /**
+   * Whether the visitor is signed in. Drives the right-side CTA — signed-in
+   * shows "Account" → /account, signed-out shows "Sign in" → /account/sign-in.
+   * Kept as a plain prop rather than an in-component `auth.getUser()` read
+   * because SiteShell is used from client components (`/login`,
+   * `/account/sign-in`) that can't import async server code; server-side
+   * callers compute it and pass it. Defaults to false — the honest default
+   * when a caller can't know (a client component with no client-side auth
+   * read of its own).
+   */
+  signedIn?: boolean;
 }) {
   return (
     <div className="app-atmo flex min-h-screen flex-col text-on-surface">
@@ -60,14 +80,23 @@ export function SiteShell({
           </Link>
         </div>
 
-        {/* "Log in", matching the landing. One label for one destination. */}
-        <Link
-          href="/login"
-          aria-current={active === 'signin' ? 'page' : undefined}
-          className="rounded-full bg-primary px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary transition-transform duration-150 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-        >
-          Log in
-        </Link>
+        {signedIn ? (
+          <Link
+            href="/account"
+            aria-current={active === 'account' ? 'page' : undefined}
+            className="rounded-full bg-primary px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary transition-transform duration-150 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+          >
+            Account
+          </Link>
+        ) : (
+          <Link
+            href="/account/sign-in"
+            aria-current={active === 'signin' ? 'page' : undefined}
+            className="rounded-full bg-primary px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary transition-transform duration-150 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+          >
+            Sign in
+          </Link>
+        )}
       </nav>
 
       <main className="w-full flex-1">{children}</main>

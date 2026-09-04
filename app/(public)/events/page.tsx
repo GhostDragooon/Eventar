@@ -14,6 +14,12 @@ export const dynamic = 'force-dynamic';
 // accent underline, single column of rich cards sorted soonest-first.
 export default async function PublicEventsPage() {
   const supabase = await supabaseServer();
+  // Session probe for the shell's state-aware CTA — signed-in visitors get
+  // "Account" pointing at /account; anon gets "Sign in". Swallow-with-null
+  // is intentional; the shell falls back to the signed-out CTA.
+  // eslint-disable-next-line no-restricted-syntax -- no-session is a valid public state
+  const { data: authRes } = await supabase.auth.getUser();
+  const signedIn = Boolean(authRes?.user);
   // Anon RLS exposes published events only; deleted_at filter is defense in
   // depth for the review-mode service-role client.
   // Thrown, not swallowed (rule 12): a discarded error rendered the "no
@@ -62,7 +68,7 @@ export default async function PublicEventsPage() {
     });
 
   return (
-    <SiteShell active="events">
+    <SiteShell active="events" signedIn={signedIn}>
       <div className="max-w-[860px] mx-auto px-grid-margin py-xl">
         <header className="text-center mb-lg">
           <p className="text-label-md font-semibold uppercase tracking-[0.18em] text-[color:var(--on-primary-container)] mb-xs">Events</p>
