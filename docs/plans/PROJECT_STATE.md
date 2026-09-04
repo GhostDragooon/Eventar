@@ -1,6 +1,14 @@
 # Project State — Eventar
 
-> ## ⬆️ CURRENT — STAGE 10 (2026 dual-track). Licence declare/list UI landed 2026-09-04 as the third slice in Ivan's 2 → 4 → 1 → 3 ordering — see the dated entry immediately below. Walk-in slice from 2026-09-03 shipped as `6e91959` and pushed. Seoul push (item 4) still blocked from this session — the 7 queued migrations from `handoff_03092026.md` need to run from Ivan's interactive terminal via `supabase db push --linked`.
+> ## ⬆️ CURRENT — STAGE 10 (2026 dual-track). Full 2→4→1→3 queue from `handoff_03092026.md` CLOSED on 2026-09-04. All four items shipped this session: walk-in orchestration (`6e91959`), Seoul push of the 7 account-slice migrations (Ivan ran from his own terminal after this session hit stale-password), licence declare/list UI (`058ff8c`), SiteShell state-aware Account/Sign-in CTA (`9b0412f`). Local ↔ Seoul confirmed in sync at 125/125 migrations two-sided (verified via `supabase migration list --linked` this session). Session close: this file + a handoff doc.
+>
+> ### 2026-09-04 (later) — Seoul push completed by Ivan, item 4 closed
+> The 7 migrations queued in `handoff_03092026.md` (20260829090000 through 20260829150000) are LIVE on Seoul. Migration list confirms local == remote at 125 rows two-sided (walked the whole list, no drift). Ripple effects the handoff called out are now live:
+> - **Plan F4 broadening** — `compute_accreditation_credit` on Seoul now accepts `status IN ('declared', 'verified')`. Current Seoul pilot data was already free of exposed declared-but-not-verified licences per the handoff, so no unexpected credit releases; the new licence declare UI (`058ff8c`) is what will actually exercise this branch.
+> - **`registration_credit_status` returns 'pending'** — new return value for existing callers. Both live Next.js pages that consume this RPC (`/checkin/confirm/page.tsx` — via the walk-in slice — and the reconcile script) handle it; no external callers exist.
+> - The `professional_profiles` DELETE revoke seeded in `20260829130000` needs a positive-test verification on Seoul before the next session (the seed.sql pattern that re-granted DML across all tables after every `db reset` is what motivated the migration in the first place — see `handoff_03092026.md` §Stage D). Not a blocker; a natural first check for the next session's user-lens walkthrough of the Stage C UI.
+>
+> ### 2026-09-04 — licence declare/list UI on `/account/profile` (F4 unblocker)
 >
 > ### 2026-09-04 — licence declare/list UI on `/account/profile` (F4 unblocker)
 > Item 1 of the handoff's 2→4→1→3 ordering: minimal declare + list surface on `/account/profile`. Without this, no real signup could clear F4 of the F1–F5 credit gate; with it, a first-time HKCP user can declare their licence, pass F4, and (once F1–F3 are met) get credit released automatically at check-in. Ten files touched, one new test file, no migrations, no schema, no new definer, no new RLS surface — all the plumbing was already in place from Sprints 2/3, only the form-and-list surface was missing (`handoff_03092026.md` "Deferred UI" section).
