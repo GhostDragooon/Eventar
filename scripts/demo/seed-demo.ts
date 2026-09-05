@@ -352,7 +352,12 @@ async function findOrCreateEvent(
     country: 'Hong Kong',
     latitude: VENUE_LAT,
     longitude: VENUE_LNG,
-    category: 'life_sciences',
+    // WP5 E1 taxonomy — was 'life_sciences' (retired 2026-09-05 by 1017c78,
+    // when the finder tabs, Zod enum, NewEventForm picker, and DashboardWorkstation
+    // labels all moved to medicine_dentistry / allied_health / other). The seed
+    // was the one site the sweep missed, so every seed-created demo event was
+    // invisible on non-All finder tabs and wrote an invalid taxonomy row.
+    category: 'medicine_dentistry',
     // Only honoured by the RPC for the service-role executor — see
     // 20260702112004_rpcs_service_role_context.sql.
     created_by: operatorStaffId,
