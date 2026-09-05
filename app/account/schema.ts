@@ -187,7 +187,12 @@ export type AccountActionError =
   // rather than a generic error.
   | 'body_not_found'
   | 'body_inactive'
-  | 'already_declared';
+  | 'already_declared'
+  // Email hygiene errors (change-email + resend-verification).
+  | 'invalid_email'
+  | 'email_exists'
+  | 'same_email'
+  | 'already_confirmed';
 
 export type AccountActionResult<T> =
   | { ok: true; data: T }

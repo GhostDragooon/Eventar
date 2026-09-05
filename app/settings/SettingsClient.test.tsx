@@ -1,7 +1,21 @@
 /** @vitest-environment jsdom */
+import { vi } from 'vitest';
+
+// SettingsClient now imports the shared change-email SA from
+// @/app/account/actions. The action file is 'use server' + hits the admin
+// client, which jsdom cannot load — mock the whole module so the test suite
+// stays hermetic.
+vi.mock('@/app/account/actions', () => ({
+  changeEmail: vi.fn(async () => ({
+    ok: true as const,
+    data: { sent: true as const, new_email: 'new@example.com' },
+  })),
+}));
+
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import SettingsClient, { SettingsSignOut } from './SettingsClient';
+import { changeEmail } from '@/app/account/actions';
 import { THEME_STORAGE_KEY } from '@/lib/theme';
 import { TEXT_SIZE_STORAGE_KEY } from '@/lib/textSize';
 
@@ -86,7 +100,10 @@ describe('SettingsClient — Text size', () => {
 describe('SettingsClient — Account', () => {
   it('shows the staff email and the human-readable role', () => {
     render(<SettingsClient staff={STAFF} />);
-    expect(screen.getByText('ahf.ivan@gmail.com')).toBeTruthy();
+    // The email now appears in TWO places — the Account section's read-only
+    // Email field, and the Change email section's "Your current email is X"
+    // preamble. Either match confirms the Account section rendered.
+    expect(screen.getAllByText('ahf.ivan@gmail.com').length).toBeGreaterThan(0);
     expect(screen.getByText('Eventar Staff')).toBeTruthy();
   });
 
@@ -115,5 +132,32 @@ describe('SettingsSignOut', () => {
   it('renders the sign-out control', () => {
     render(<SettingsSignOut />);
     expect(screen.getByRole('button', { name: /sign out/i })).toBeInTheDocument();
+  });
+});
+
+describe('SettingsClient — Change email section (organizer)', () => {
+  it('renders the current email in the intro copy', () => {
+    render(<SettingsClient staff={STAFF} />);
+    expect(screen.getByRole('heading', { name: /change email/i })).toBeInTheDocument();
+    // The current-email display appears both inside the Account section (as
+    // the read-only Email field) and inside the change-email intro copy; the
+    // test just needs one match to confirm the current address is present.
+    expect(screen.getAllByText(STAFF.email).length).toBeGreaterThan(0);
+  });
+
+  it('submits with next=/settings and clears the input on success', async () => {
+    vi.mocked(changeEmail).mockResolvedValueOnce({
+      ok: true as const,
+      data: { sent: true as const, new_email: 'new@example.com' },
+    });
+    render(<SettingsClient staff={STAFF} />);
+    const input = screen.getByLabelText(/new email/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'new@example.com' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /send confirmation/i }));
+    });
+    expect(changeEmail).toHaveBeenCalledWith('new@example.com', '/settings');
+    expect(input.value).toBe('');
+    expect(screen.getByText(/confirmation sent to new@example\.com/i)).toBeInTheDocument();
   });
 });

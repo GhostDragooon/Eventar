@@ -48,6 +48,8 @@ export default async function AccountPage() {
           initialAccount={result.data.account}
           initialProfile={result.data.profile}
           initialUnlinkedCount={initialUnlinkedCount}
+          email={authRes.user.email ?? ''}
+          emailConfirmed={authRes.user.email_confirmed_at != null}
         />
       </div>
     </SiteShell>

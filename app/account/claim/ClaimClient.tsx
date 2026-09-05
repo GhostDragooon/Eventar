@@ -32,7 +32,7 @@ export function ClaimClient({
       if (!result.ok) {
         const message =
           result.error === 'email_unverified'
-            ? 'Please verify your email first — check your inbox for the sign-in link.'
+            ? 'Please verify your email first — head to your account to resend the confirmation link.'
             : result.error === 'rate_limited'
             ? 'Too many attempts in a short window. Please wait a moment.'
             : result.error === 'not_authorized'
@@ -96,8 +96,11 @@ export function ClaimClient({
               info
             </span>
             <span className="flex-1">
-              Your email isn&apos;t verified yet. Check your inbox for the
-              sign-in link and click it — then come back here.
+              Your email isn&apos;t verified yet.{' '}
+              <Link href="/account" className="font-medium text-primary-ink underline">
+                Head to your account
+              </Link>{' '}
+              to resend the confirmation link.
             </span>
           </div>
         )}

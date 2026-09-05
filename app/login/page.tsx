@@ -84,8 +84,9 @@ function LoginForm() {
         <ul className="mt-sm font-body-md text-[calc(13px*var(--text-scale))] text-on-surface-variant leading-relaxed list-disc pl-lg flex flex-col gap-xs">
           <li>Links expire after 15 minutes and work once — request a fresh one above.</li>
           <li>Check spam, and make sure you opened the newest email.</li>
-          <li>Only staff emails can sign in. If yours isn&apos;t on the list, ask an admin to add you.</li>
-          <li>Lost access to your email? An admin can update your staff record to a new address.</li>
+          <li>Only organizer emails can sign in. If yours isn&apos;t on the list, ask an admin to add you.</li>
+          <li>Changing address? Sign in with your current one, then update it from Settings.</li>
+          <li>Lost access to your inbox entirely? Ask an admin to update your organizer record — magic-link-only sign-in means we can&apos;t self-serve you back in from this screen.</li>
         </ul>
       </details>
     </LoginLayout>

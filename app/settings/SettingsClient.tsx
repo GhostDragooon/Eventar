@@ -1,10 +1,13 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore, useTransition } from 'react';
 import { readTheme, writeTheme, type Theme } from '@/lib/theme';
 import { readTextSize, writeTextSize, type TextSize } from '@/lib/textSize';
 import { SignOutAction } from '@/components/auth/SignOutAction';
 import { supabaseBrowser } from '@/lib/supabase/browser';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { changeEmail } from '@/app/account/actions';
 
 // SSR snapshot: localStorage doesn't exist on the server, so the initial
 // render uses the defaults. The FOUC script in app/layout.tsx has already
@@ -101,6 +104,97 @@ export default function SettingsClient({
           <Field label="Role" value={ROLE_LABELS[staff.role]} />
         </dl>
       </SettingsSection>
+
+      <SettingsSection icon="alternate_email" title="Change email">
+        <ChangeEmailForm currentEmail={staff.email} />
+      </SettingsSection>
+    </div>
+  );
+}
+
+// Change-email flow (organizer surface). Same Server Action as the attendee
+// side (`app/account/actions.ts::changeEmail`); this one passes
+// `next=/settings` so the confirmation click on the new address lands the
+// user back on this page rather than /account. The change is not live until
+// they click that link — Supabase does the double opt-in server-side.
+function ChangeEmailForm({ currentEmail }: { currentEmail: string }) {
+  const [newEmail, setNewEmail] = useState('');
+  const [status, setStatus] = useState<
+    | null
+    | { kind: 'success'; message: string }
+    | { kind: 'error'; message: string }
+  >(null);
+  const [pending, startTransition] = useTransition();
+
+  function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setStatus(null);
+    startTransition(async () => {
+      const result = await changeEmail(newEmail, '/settings');
+      if (result.ok) {
+        setNewEmail('');
+        setStatus({
+          kind: 'success',
+          message: `Confirmation sent to ${result.data.new_email}. Click the link there to complete the change — your email won't update until you do.`,
+        });
+      } else {
+        setStatus({
+          kind: 'error',
+          message:
+            result.error === 'invalid_email'
+              ? 'That doesn’t look like a valid email address.'
+              : result.error === 'same_email'
+                ? 'That’s already your email.'
+                : result.error === 'email_exists'
+                  ? 'Another account already uses that email.'
+                  : result.error === 'rate_limited'
+                    ? 'Too many attempts in a short window. Please wait a moment.'
+                    : 'Could not send the confirmation right now. Please try again.',
+        });
+      }
+    });
+  }
+
+  return (
+    <div>
+      <p className="font-body-md text-body-md text-on-surface-variant m-0 mb-md">
+        Your current email is <span className="font-medium text-on-surface">{currentEmail}</span>.
+        Changing it sends a confirmation link to the new address — the change
+        only applies once you click that link.
+      </p>
+      <form onSubmit={onSubmit} className="flex flex-col gap-md">
+        <label className="block space-y-xs">
+          <span className="block font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-xs">New email</span>
+          <Input
+            value={newEmail}
+            onChange={(e) => setNewEmail(e.target.value)}
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            placeholder="you@example.com"
+            required
+            disabled={pending}
+          />
+        </label>
+        <div className="flex justify-end">
+          <Button type="submit" disabled={pending || !newEmail.trim()}>
+            {pending ? 'Sending…' : 'Send confirmation'}
+          </Button>
+        </div>
+      </form>
+      {status && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`mt-md ${
+            status.kind === 'success'
+              ? 'font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm'
+              : 'font-body-md text-body-md text-on-error-container bg-error-container border border-error-container rounded-lg px-md py-sm'
+          }`}
+        >
+          {status.message}
+        </div>
+      )}
     </div>
   );
 }

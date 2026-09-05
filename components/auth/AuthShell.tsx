@@ -19,7 +19,7 @@ export function AuthShell({ title, description, children, aside }: {
           {children}
         </section>
         <aside className="hidden bg-primary-container p-xl text-on-primary-container lg:col-span-2 lg:flex lg:flex-col lg:justify-end">
-          {aside ?? <p className="font-body-lg text-body-lg">Controlled access for authorised Eventar staff.</p>}
+          {aside ?? <p className="font-body-lg text-body-lg">Controlled access for authorised Eventar organizers.</p>}
         </aside>
       </div>
     </main>

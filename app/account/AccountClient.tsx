@@ -17,7 +17,9 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { claimMyRegistrations, updateMyAccount } from './actions';
+import { SignOutAction } from '@/components/auth/SignOutAction';
+import { supabaseBrowser } from '@/lib/supabase/browser';
+import { changeEmail, claimMyRegistrations, resendVerificationEmail, updateMyAccount } from './actions';
 import type { AccountView, ProfessionalProfileView } from './schema';
 
 type Status =
@@ -36,6 +38,8 @@ export function AccountClient({
   initialAccount,
   initialProfile,
   initialUnlinkedCount = 0,
+  email = '',
+  emailConfirmed = false,
 }: {
   initialAccount: AccountView;
   initialProfile: ProfessionalProfileView | null;
@@ -47,6 +51,23 @@ export function AccountClient({
    * tests do not need to thread it.
    */
   initialUnlinkedCount?: number;
+  /**
+   * The caller's currently-signed-in email (from auth.getUser()). Displayed
+   * in the Session card; also the address the "Resend verification" button
+   * would target if unconfirmed. Defaults to '' so older callers/tests do
+   * not need to thread it — the sign-out button still works with an empty
+   * label.
+   */
+  email?: string;
+  /**
+   * Whether the caller's email has been confirmed (F1). When false, the
+   * "Verify your email" section appears with a resend button. Defaults to
+   * FALSE — the honest direction for a Rule-12 warning: a caller that
+   * forgets to thread this shows an extra prompt (worst case: nag someone
+   * already verified), rather than silently hiding the safety signal.
+   * Flipped per dev-lens MINOR 3.
+   */
+  emailConfirmed?: boolean;
 }) {
   const [account, setAccount] = useState<AccountView>(initialAccount);
   const [status, setStatus] = useState<Status>(null);
@@ -54,6 +75,72 @@ export function AccountClient({
   const [unlinkedCount, setUnlinkedCount] = useState<number>(initialUnlinkedCount);
   const [claimStatus, setClaimStatus] = useState<Status>(null);
   const [claimPending, startClaimTransition] = useTransition();
+  // Local status for the resend-verification button — kept separate from the
+  // save-form status so a resend attempt doesn't clobber a save toast, and
+  // vice-versa. Same pattern as claimStatus/status.
+  const [resendStatus, setResendStatus] = useState<Status>(null);
+  const [resendPending, startResendTransition] = useTransition();
+
+  // Change-email state — moved here from ProfileClient (user-lens BLOCKER
+  // 1: attendees look for account controls on /account, not on the
+  // professional profile page). Same shared Server Action either way; the
+  // page passes `next=/account` so the confirmation click on the new
+  // address inbox lands back here.
+  const [emailNew, setEmailNew] = useState<string>('');
+  const [emailChangeStatus, setEmailChangeStatus] = useState<Status>(null);
+  const [emailChangePending, startEmailChangeTransition] = useTransition();
+
+  function onChangeEmail(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setEmailChangeStatus(null);
+    startEmailChangeTransition(async () => {
+      const result = await changeEmail(emailNew, '/account');
+      if (result.ok) {
+        setEmailNew('');
+        setEmailChangeStatus({
+          kind: 'success',
+          message: `Confirmation sent to ${result.data.new_email}. Click the link there to complete the change — your email won't update until you do.`,
+        });
+      } else {
+        setEmailChangeStatus({
+          kind: 'error',
+          message:
+            result.error === 'invalid_email'
+              ? 'That doesn’t look like a valid email address.'
+              : result.error === 'same_email'
+                ? 'That’s already your email.'
+                : result.error === 'email_exists'
+                  ? 'Another account already uses that email.'
+                  : result.error === 'rate_limited'
+                    ? 'Too many attempts in a short window. Please wait a moment.'
+                    : 'Could not send the confirmation right now. Please try again.',
+        });
+      }
+    });
+  }
+
+  function onResendVerification() {
+    setResendStatus(null);
+    startResendTransition(async () => {
+      const result = await resendVerificationEmail();
+      if (result.ok) {
+        setResendStatus({
+          kind: 'success',
+          message: `Verification email sent to ${email}. Click the link there to confirm your address.`,
+        });
+      } else {
+        setResendStatus({
+          kind: 'error',
+          message:
+            result.error === 'already_confirmed'
+              ? 'Your email is already verified — no need to resend.'
+              : result.error === 'rate_limited'
+                ? 'Too many attempts in a short window. Please wait a moment.'
+                : 'Could not send right now. Please try again.',
+        });
+      }
+    });
+  }
 
   function onClaim() {
     setClaimStatus(null);
@@ -327,6 +414,122 @@ export function AccountClient({
           </Button>
         </div>
       </form>
+
+      {/* Verify-email prompt: only when the caller is signed in but has not
+          confirmed. Blocks F1 (and therefore CPD credit release + claim); a
+          resend button here means they never have to wonder how to get a
+          fresh link. Hidden once confirmed — the server truth (email_confirmed_at)
+          gates the render, not client state. */}
+      {!emailConfirmed && (
+        <SectionCard icon="mark_email_unread" title="Verify your email">
+          <p className="font-body-md text-body-md text-on-surface-variant m-0">
+            Your email <span className="font-medium text-on-surface">{email}</span> hasn&apos;t
+            been verified yet. Verification is required before we can link
+            past registrations or release CPD credit.
+          </p>
+          <div className="mt-md flex items-center justify-between flex-wrap gap-md">
+            <p className="font-body-md text-body-md text-on-surface-variant m-0">
+              {/* Swap the invitation line once a resend has just succeeded so
+                  the CTA-adjacent copy doesn't invite a duplicate click while
+                  the success toast says the opposite (user-lens IMPORTANT 3). */}
+              {resendStatus?.kind === 'success'
+                ? 'A fresh link was just sent — check your inbox.'
+                : 'Didn’t receive the link, or it expired? Send a fresh one.'}
+            </p>
+            <Button
+              type="button"
+              onClick={onResendVerification}
+              disabled={resendPending || resendStatus?.kind === 'success'}
+              aria-label="Resend verification email"
+            >
+              {resendPending ? 'Sending…' : resendStatus?.kind === 'success' ? 'Link sent' : 'Resend verification email'}
+            </Button>
+          </div>
+          {resendStatus && (
+            <div
+              role="status"
+              aria-live="polite"
+              className={`mt-md ${
+                resendStatus.kind === 'success'
+                  ? 'font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm'
+                  : 'font-body-md text-body-md text-on-error-container bg-error-container border border-error-container rounded-lg px-md py-sm'
+              }`}
+            >
+              {resendStatus.message}
+            </div>
+          )}
+        </SectionCard>
+      )}
+
+      {/* Change email — sits on /account (not /account/profile) because
+          attendees look for account controls here, not on the professional
+          profile page (user-lens BLOCKER 1). Same shared Server Action as
+          organizer /settings, differing only in the next= param routing the
+          post-confirmation click back here. The change isn't live until the
+          caller clicks the link in the new-address inbox. */}
+      <SectionCard icon="alternate_email" title="Change email">
+        <p className="font-body-md text-body-md text-on-surface-variant m-0">
+          Your current email is{' '}
+          <span className="font-medium text-on-surface">{email || '—'}</span>. Changing
+          it sends a confirmation link to the new address — the change only
+          applies once you click that link.
+        </p>
+        <form onSubmit={onChangeEmail} className="mt-md flex flex-col gap-md">
+          <label className="block">
+            <span className="block font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-xs">New email</span>
+            <Input
+              value={emailNew}
+              onChange={(e) => setEmailNew(e.target.value)}
+              type="email"
+              autoComplete="email"
+              inputMode="email"
+              placeholder="you@example.com"
+              required
+              disabled={emailChangePending}
+            />
+          </label>
+          <div className="flex justify-end">
+            <Button type="submit" disabled={emailChangePending || !emailNew.trim()}>
+              {emailChangePending ? 'Sending…' : 'Send confirmation'}
+            </Button>
+          </div>
+        </form>
+        {emailChangeStatus && (
+          <div
+            role="status"
+            aria-live="polite"
+            className={`mt-md ${
+              emailChangeStatus.kind === 'success'
+                ? 'font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm'
+                : 'font-body-md text-body-md text-on-error-container bg-error-container border border-error-container rounded-lg px-md py-sm'
+            }`}
+          >
+            {emailChangeStatus.message}
+          </div>
+        )}
+      </SectionCard>
+
+      {/* Session card — matches organizer /settings' Session block. The
+          sign-out uses the same client-side supabase.auth.signOut() pattern as
+          SettingsSignOut, differing only in the post-signout destination
+          (attendee → '/', organizer → '/login'). The audience-boundary rule
+          says an attendee door should never dump into an organizer door. */}
+      <SectionCard icon="logout" title="Session">
+        {email && (
+          <p className="font-body-md text-body-md text-on-surface-variant m-0 mb-md">
+            Signed in as <span className="font-medium text-on-surface">{email}</span>.
+          </p>
+        )}
+        <SignOutAction
+          signOut={async () => {
+            await supabaseBrowser().auth.signOut();
+            window.location.href = '/';
+          }}
+        />
+        <p className="mt-md font-body-md text-body-md text-on-surface-variant m-0">
+          Appearance and text size follow your device settings.
+        </p>
+      </SectionCard>
     </div>
   );
 }

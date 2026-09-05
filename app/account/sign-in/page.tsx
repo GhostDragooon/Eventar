@@ -43,7 +43,7 @@ function AttendeeSignInForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const urlErrorCode = searchParams.get('error');
-  const urlErr = resolveAuthError(urlErrorCode);
+  const urlErr = resolveAuthError(urlErrorCode, 'attendee');
   // Round-trip destination for the walk-in flow: event page → sign-in → OTP
   // → same event page. The action re-validates; only pass through when it
   // starts with a single '/' (server does the same check as a defence in
@@ -121,7 +121,33 @@ function AttendeeSignInForm() {
         placeholder="you@example.com"
         submitLabel="Send sign-in link"
         next={next}
+        audience="attendee"
       />
+
+      <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant text-center m-0">
+        The link expires after 15 minutes and works once.
+      </p>
+
+      {/* Recovery block — parity with /login's "Trouble signing in?" details.
+          Bullets 1 and 2 (link expiry, spam) apply to any magic-link flow.
+          Bullet 3 nudges toward the actual common failure — a typo or a
+          different address used at registration (user-lens CONFUSING 4;
+          soft-security reassurance was worse than useless). Bullet 4
+          acknowledges the honest dead end when the inbox is truly lost —
+          magic-link-only means we can't self-serve you back in from here
+          (user-lens BLOCKER 2). */}
+      <details className="group">
+        <summary className="cursor-pointer font-body-md text-body-md text-[color:var(--on-primary-container)] hover:underline list-none">
+          Trouble signing in?
+        </summary>
+        <ul className="mt-sm font-body-md text-[calc(13px*var(--text-scale))] text-on-surface-variant leading-relaxed list-disc pl-lg flex flex-col gap-xs">
+          <li>Links expire after 15 minutes and work once — request a fresh one above.</li>
+          <li>Check spam, and make sure you opened the newest email.</li>
+          <li>Make sure you typed the same address you used when registering — we look up the account by that address.</li>
+          <li>Still have access to your inbox but the link never arrives? Try a different browser, or ask the event organizer to check your registration.</li>
+          <li>Lost access to your inbox entirely? We can&apos;t recover a magic-link account from this screen. Please contact the event organizer for help.</li>
+        </ul>
+      </details>
     </AttendeeSignInShell>
   );
 }

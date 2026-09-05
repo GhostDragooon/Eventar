@@ -20,6 +20,13 @@ type Props = {
    * its own default destination.
    */
   next?: string;
+  /**
+   * Which surface is rendering this form. Only difference today is the
+   * help-text sentence under the input — organizer references an allowlist,
+   * attendee cannot (self-serve sign-up). Default preserves organizer copy
+   * so existing callers stay identical.
+   */
+  audience?: 'organizer' | 'attendee';
 };
 
 export function MagicLinkSignInForm({
@@ -28,6 +35,7 @@ export function MagicLinkSignInForm({
   placeholder = 'you@company.com',
   submitLabel = 'Send magic link',
   next,
+  audience = 'organizer',
 }: Props) {
   const [pending, startTransition] = useTransition();
   const [status, setStatus] = useState<AuthStatus | null>(
@@ -71,7 +79,10 @@ export function MagicLinkSignInForm({
         />
       </label>
       <p id="magic-link-help" className="font-body-md text-body-md text-on-surface-variant">
-        Eventar will send a one-time sign-in link. The response does not reveal whether an address is on the staff list.
+        Eventar will send a one-time sign-in link.{' '}
+        {audience === 'attendee'
+          ? 'The response does not reveal whether an account already exists.'
+          : 'The response does not reveal whether an address is on the organizer list.'}
       </p>
       <Button type="submit" disabled={pending} className="min-h-11 w-full font-label-md text-label-md">
         <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>mail</span>

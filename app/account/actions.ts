@@ -22,6 +22,7 @@ import { revalidatePath } from 'next/cache';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { rateLimitBySession } from '@/lib/rateLimit';
+import { getRequestOrigin } from '@/lib/origin';
 import {
   accountUpdateSchema,
   licenceDeclareSchema,
@@ -340,6 +341,138 @@ export async function listMyLicences(): Promise<AccountActionResult<{ licences: 
   }));
 
   return { ok: true, data: { licences } };
+}
+
+// ---------------------------------------------------------------------------
+// resendVerificationEmail — asks Supabase to re-send the "confirm your email"
+// signup link to the caller's own address. Only makes sense when the caller
+// is signed in but has not yet confirmed (F1 gate); once confirmed, the
+// UI hides the section and this action bails out with `already_confirmed`
+// to keep the client and server in lockstep (same "control one layer above
+// where the write happens" doctrine the repo has caught seven times).
+//
+// Rate limit matches sibling actions (30/60s). Under the hood this calls the
+// admin client's `auth.resend({type:'signup', email})` — the caller's OWN
+// email is filled in from the session, never trusted from client input.
+// ---------------------------------------------------------------------------
+
+export async function resendVerificationEmail(): Promise<AccountActionResult<{ sent: true }>> {
+  const auth = await requireAuthenticatedSelf();
+  if (!auth.ok) return { ok: false, error: auth.error };
+  if (!auth.email) return { ok: false, error: 'not_found' };
+  if (auth.emailConfirmed) return { ok: false, error: 'already_confirmed' };
+
+  const rl = await rateLimitBySession('account.email.resend_verification', auth.userId, {
+    windowMs: 60_000,
+    max: 3,
+  });
+  if (!rl.allowed) return { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+
+  // Same emailRedirectTo posture as the walk-in flow: land the confirming
+  // click on /account so the user sees "your email is now verified" instead
+  // of the default /dashboard (organizer) or a bare landing.
+  const origin = await getRequestOrigin();
+  const { error } = await supabaseAdmin().auth.resend({
+    type: 'signup',
+    email: auth.email,
+    options: {
+      emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent('/account')}`,
+    },
+  });
+  if (error) {
+    // Never leak whether Supabase found or didn't find the user. Same posture
+    // as the sign-in action. Log server-side for operator diagnosis; return a
+    // generic error to the UI.
+    console.error('[resendVerificationEmail] supabase error', {
+      name: error.name,
+      status: error.status,
+      code: (error as { code?: string }).code,
+    });
+    return { ok: false, error: 'db_error' };
+  }
+  return { ok: true, data: { sent: true } };
+}
+
+// ---------------------------------------------------------------------------
+// changeEmail — self-serve email change for the caller (both attendee and
+// organizer). Wraps `supabase.auth.updateUser({email})`, which starts a
+// double-opt-in flow: Supabase sends a confirmation link to the NEW address;
+// clicking it lands on /auth/callback which exchanges the code and updates
+// `auth.users.email` in one step. If the project has "Secure email change"
+// enabled (dashboard setting; separate from this code path), Supabase ALSO
+// notifies the old address — the recommended posture but not enforceable
+// from here.
+//
+// nextPath: where the confirmation click lands after `/auth/callback`.
+// Passed by the caller so the same Server Action can serve both surfaces:
+// attendee → /account, organizer → /settings.
+// ---------------------------------------------------------------------------
+
+export async function changeEmail(
+  rawNewEmail: unknown,
+  nextPath: '/account' | '/settings',
+): Promise<AccountActionResult<{ sent: true; new_email: string }>> {
+  const auth = await requireAuthenticatedSelf();
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  // Runtime guard for nextPath — the TS union is compile-time only, any
+  // authenticated caller can pass any string as a Server Action arg (dev-lens
+  // MODERATE 1). /auth/callback re-validates the `next` param downstream, but
+  // reject the bad value here so the confirmation link never gets minted
+  // with attacker-controlled content in the first place.
+  if (nextPath !== '/account' && nextPath !== '/settings') {
+    return { ok: false, error: 'invalid_input' };
+  }
+
+  const rl = await rateLimitBySession('account.email.change', auth.userId, {
+    windowMs: 60_000,
+    max: 3,
+  });
+  if (!rl.allowed) return { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+
+  // Local Zod-lite: the change-email flow only takes one field and we do not
+  // want to import the whole `email` shape from a shared schema for one call.
+  // Same regex the attendee sign-in action uses (loose intentionally — the
+  // real check is Supabase's server-side, which understands more than any
+  // regex could).
+  if (typeof rawNewEmail !== 'string') return { ok: false, error: 'invalid_email' };
+  const newEmail = rawNewEmail.trim().toLowerCase();
+  if (!newEmail || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(newEmail)) {
+    return { ok: false, error: 'invalid_email' };
+  }
+  // No-op guard: asking to change email to the current email would fail
+  // Supabase-side anyway (or silently succeed depending on version) — bail
+  // out with a specific code so the UI can say "that's already your email".
+  if (auth.email && auth.email.toLowerCase() === newEmail) {
+    return { ok: false, error: 'same_email' };
+  }
+
+  const origin = await getRequestOrigin();
+  // updateUser MUST run on the caller's OWN session, not the admin client —
+  // the admin client would update the wrong (or no) row. supabaseServer()
+  // is the cookie-bound session client.
+  const supabase = await supabaseServer();
+  const { error } = await supabase.auth.updateUser(
+    { email: newEmail },
+    {
+      emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+    },
+  );
+  if (error) {
+    // Supabase surfaces "email already in use" as a distinct error code
+    // (`email_exists`) which we want to render as a user-fixable message
+    // rather than a generic failure. Everything else collapses to db_error;
+    // the operator gets the full context in logs.
+    const code = (error as { code?: string }).code;
+    if (code === 'email_exists') return { ok: false, error: 'email_exists' };
+    console.error('[changeEmail] supabase error', {
+      name: error.name,
+      status: error.status,
+      code,
+    });
+    return { ok: false, error: 'db_error' };
+  }
+  return { ok: true, data: { sent: true, new_email: newEmail } };
 }
 
 // ---------------------------------------------------------------------------

@@ -59,7 +59,20 @@ describe('MagicLinkSignInForm', () => {
   });
 
   it('shows an initial error passed from the host (e.g. a redirect from /auth/callback)', () => {
-    render(<MagicLinkSignInForm submitMagicLink={async () => ({ ok: true })} initialError="Your email is not on the staff list." />);
-    expect(screen.getByRole('alert')).toHaveTextContent(/not on the staff list/i);
+    render(<MagicLinkSignInForm submitMagicLink={async () => ({ ok: true })} initialError="Your email is not on the organizer list." />);
+    expect(screen.getByRole('alert')).toHaveTextContent(/not on the organizer list/i);
+  });
+
+  it('help copy references the organizer list by default (audience unset)', () => {
+    render(<MagicLinkSignInForm submitMagicLink={async () => ({ ok: true })} />);
+    expect(screen.getByText(/organizer list/i)).toBeInTheDocument();
+    expect(screen.queryByText(/account already exists/i)).not.toBeInTheDocument();
+  });
+
+  it('help copy drops the organizer framing when audience="attendee"', () => {
+    render(<MagicLinkSignInForm submitMagicLink={async () => ({ ok: true })} audience="attendee" />);
+    expect(screen.getByText(/account already exists/i)).toBeInTheDocument();
+    expect(screen.queryByText(/organizer list/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/staff list/i)).not.toBeInTheDocument();
   });
 });

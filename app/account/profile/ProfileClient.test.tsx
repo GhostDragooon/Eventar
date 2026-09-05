@@ -286,3 +286,8 @@ describe('ProfileClient — Licences SectionCard', () => {
     expect(screen.getByText(/no bodies available/i)).toBeInTheDocument();
   });
 });
+
+// Change email section moved to /account (AccountClient) after the user-lens
+// BLOCKER 1 finding — attendees look for account controls on /account, not on
+// /account/profile (professional profile). Tests for it live in
+// AccountClient.test.tsx now.
