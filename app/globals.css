@@ -2,6 +2,13 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Markdown/docs are documentation, not source of truth for class names.
+ * A historical retro can quote a retired arbitrary-value CSS class as prose,
+ * and Tailwind must not try to compile that quote back out into real CSS —
+ * Turbopack's parser then dies on an invalid var(). Exclude .md from the
+ * auto-detected source set (Tailwind v4 default scans include markdown). */
+@source not "**/*.md";
+
 /* Theme: defaults to LIGHT (M2 unfreeze, 2026-08-01 — the locked design rule
    is that Eventar loads white for everyone and dark is only ever an explicit
    user choice, never an OS inheritance). app/layout.tsx's pre-paint script
