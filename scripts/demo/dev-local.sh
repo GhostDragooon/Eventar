@@ -39,6 +39,39 @@ if [ -z "${API_URL:-}" ]; then
   exit 1
 fi
 
+# Ensure a mail catcher is on the supabase network. Supabase CLI 2.109 marked
+# the [inbucket] config section deprecated (in favour of a [local_smtp] block
+# that isn't shipped yet), so `supabase start` no longer spawns
+# `supabase_inbucket_Eventar` — the hostname GoTrue still tries to dial at
+# port 1025 for every magic link, verify, and change-email confirmation. When
+# that dial fails, Supabase surfaces `unexpected_failure` and our SAs return
+# `db_error`; the local dev experience is completely broken for anything
+# email-shaped. This spins a bare inbucket up on the same docker network
+# under the exact hostname GoTrue expects. Web UI at http://localhost:54324.
+# Idempotent — a healthy container is reused; a stopped one is restarted.
+if command -v docker >/dev/null 2>&1; then
+  MAIL_STATE="$(docker ps -a --filter 'name=^supabase_inbucket_Eventar$' --format '{{.State}}' | head -1)"
+  case "$MAIL_STATE" in
+    running) : ;;  # healthy, nothing to do
+    exited|created|paused)
+      docker start supabase_inbucket_Eventar >/dev/null
+      echo "Restarted supabase_inbucket_Eventar (mail catcher, web UI :54324)." >&2 ;;
+    "")
+      # Only spawn if the supabase network exists — otherwise the stack isn't
+      # really up and we should not paper over that.
+      if docker network inspect supabase_network_Eventar >/dev/null 2>&1; then
+        docker run -d --name supabase_inbucket_Eventar \
+          --network supabase_network_Eventar \
+          -p 54324:9000 \
+          -e INBUCKET_SMTP_ADDR=0.0.0.0:1025 \
+          -e INBUCKET_POP3_ADDR=0.0.0.0:1100 \
+          -e INBUCKET_WEB_ADDR=0.0.0.0:9000 \
+          inbucket/inbucket:sha-2d409bb >/dev/null
+        echo "Spawned supabase_inbucket_Eventar (mail catcher, web UI :54324)." >&2
+      fi ;;
+  esac
+fi
+
 export NEXT_PUBLIC_SUPABASE_URL="$API_URL"
 export NEXT_PUBLIC_SUPABASE_ANON_KEY="$ANON_KEY"
 export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
