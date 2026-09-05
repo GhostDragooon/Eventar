@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { BrandMark } from '@/components/shell/BrandMark';
+import { LandingAuthPill } from './LandingAuthPill';
 
 const NAV_ITEM =
   'nav-item rounded-full px-[11px] py-[7px] text-[calc(13px*var(--text-scale))] font-medium text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface';
@@ -36,7 +37,14 @@ const NAV_ITEM =
  * Every sibling box below (Hero, WhyEventar, ...) sits inside `<main>`, a
  * plain block context with no flex parent, so it never hit this.
  */
-export function LandingNav() {
+/**
+ * The state-aware auth CTA is a small client island (`LandingAuthPill`) so
+ * this nav (and by extension the whole landing page) can stay a static
+ * prerender — Dev-lens MODERATE 1, 2026-09-06. If a caller needs to force
+ * the pill's initial state (SSR test rig, non-browser context), pass
+ * `signedIn` and the pill renders that state instead of the client island.
+ */
+export function LandingNav({ signedIn }: { signedIn?: boolean } = {}) {
   return (
     <div className="sticky top-[10px] z-[5] mx-auto w-full max-w-[1200px] px-[15px]">
       <nav
@@ -87,14 +95,32 @@ export function LandingNav() {
           Start an Event
         </Link>
 
-        {/* "Log in", not "Staff sign in" — Ivan 2026-08-08. One label for one
-            destination; /login is the only sign-in surface there is. */}
-        <Link
-          href="/login"
-          className="rounded-full bg-primary px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary transition-transform duration-150 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-        >
-          Log in
-        </Link>
+        {/* State-aware attendee-first door — Ivan 2026-09-06, superseding the
+            2026-08-08 "one label for one destination" call. Signed-in → Account,
+            signed-out → Sign in on the attendee door. Organizer's /login is
+            still reachable via the "Start an Event" pill left of this
+            (requireStaff() there catches an anon caller).
+
+            Uses the client island by default so `app/page.tsx` stays a static
+            prerender. If a caller pins `signedIn`, render that server-side
+            instead (SSR test rig or a non-browser context). */}
+        {signedIn === undefined ? (
+          <LandingAuthPill />
+        ) : signedIn ? (
+          <Link
+            href="/account"
+            className="rounded-full bg-primary px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary transition-transform duration-150 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+          >
+            Account
+          </Link>
+        ) : (
+          <Link
+            href="/account/sign-in"
+            className="rounded-full bg-primary px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary transition-transform duration-150 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+          >
+            Sign in
+          </Link>
+        )}
       </div>
       </nav>
     </div>

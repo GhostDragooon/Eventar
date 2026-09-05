@@ -113,7 +113,7 @@ function AttendeeSignInForm() {
       <p className="font-body-md text-body-md text-on-surface-variant m-0">
         You can still register for events as a guest without an account —
         this door is for linking past registrations, editing your profile,
-        and releasing held CPD credit.
+        and releasing held CME/CPD points.
       </p>
       <MagicLinkSignInForm
         submitMagicLink={sendAttendeeMagicLink}

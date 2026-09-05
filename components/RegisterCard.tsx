@@ -192,7 +192,7 @@ export default function RegisterCard({
     <Section>
       <h2 className="font-title-lg text-title-lg text-on-surface m-0">Register</h2>
       {/* Walk-in flow nudge (signed-out only). Copy is honest for both CPD
-          and non-CPD events — "release CPD credit for accredited events"
+          and non-CPD events — "release CME/CPD points for accredited events"
           scopes the promise to the case where it matters, so a general
           audience is not misled. Same banner shape as the pending-credit
           banner on /checkin/confirm for tone continuity. */}
@@ -205,7 +205,7 @@ export default function RegisterCard({
             <Link href={signInHref} className="text-primary-ink hover:underline font-semibold">
               Sign in or sign up first
             </Link>{' '}
-            to link this registration to your account — required to release CPD credit for accredited events.
+            to link this registration to your account — required to release CME/CPD points for accredited events.
           </span>
         </p>
       )}

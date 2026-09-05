@@ -76,8 +76,8 @@ export function ClaimClient({
             </p>
             <ul className="font-body-md text-body-md text-on-surface-variant mt-md list-disc pl-lg space-y-xs">
               <li>Only matches your own verified email — nobody else&apos;s.</li>
-              <li>Idempotent: running it again after linking N events returns 0.</li>
-              <li>Never overwrites a snapshot that&apos;s already stored.</li>
+              <li>Safe to run again — nothing happens if there&apos;s nothing new to link.</li>
+              <li>Won&apos;t change any name or details you already saved on a past registration.</li>
             </ul>
           </div>
         </div>

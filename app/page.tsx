@@ -71,6 +71,8 @@ export default function LandingPage() {
           white band it was moved to fix: `.hero-ground` paints the glow from
           y=0 on this container, so the nav floats on the gradient rather than
           on `bg-background`. */}
+      {/* Auth-varying pill sits inside LandingNav as a client island, so this
+          page stays a static prerender (Dev-lens MODERATE 1, 2026-09-06). */}
       <LandingNav />
 
       <main className="flex-1">

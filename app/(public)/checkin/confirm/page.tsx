@@ -340,18 +340,15 @@ function PassView({
         </div>
       </div>
 
-      {!selfServe ? (
-        <p className="font-body-md text-body-md text-on-surface-variant text-center m-0">
-          Self check-in isn&apos;t enabled for this event — please see reception.
-        </p>
-      ) : checkinState === 'open' ? (
-        <>
-          <ConfirmButton code={code} />
-          <p className="font-body-md text-body-md text-on-surface-variant text-center m-0">
-            Tap when you arrive · staff will see you in the roster instantly.
-          </p>
-        </>
-      ) : checkinState === 'early' ? (
+      {/* Branch on checkinState FIRST — the timing is knowable and matters
+          to an attendee opening this pass any time before the event. Before
+          the smoothness pass on 2026-09-06, `!selfServe` short-circuited
+          above everything, so a staff-only event's pass never surfaced the
+          check-in-opens line even in the `early` state — an attendee reading
+          the pass the day before saw "please see reception" with no cue of
+          when to show up. Self-serve vs staff routing is a detail of the
+          `open` state, not a page-level replacement. */}
+      {checkinState === 'early' ? (
         // The button used to render regardless of the clock, so tapping it was
         // the only way to discover check-in hadn't opened. The window is known
         // here — say so instead of letting the server refuse.
@@ -359,6 +356,19 @@ function PassView({
           Check-in opens at {formatClock(opensAtIso, event.timezone)} on{' '}
           {formatDate(event.start_time, event.timezone)} — an hour before the event starts. Keep this pass handy.
         </p>
+      ) : checkinState === 'open' ? (
+        selfServe ? (
+          <>
+            <ConfirmButton code={code} />
+            <p className="font-body-md text-body-md text-on-surface-variant text-center m-0">
+              Tap when you arrive · staff will see you in the roster instantly.
+            </p>
+          </>
+        ) : (
+          <p className="font-body-md text-body-md text-on-surface-variant text-center m-0">
+            Check-in is open — please see reception with this pass.
+          </p>
+        )
       ) : (
         <p className="font-body-md text-body-md text-on-surface-variant text-center m-0">
           Check-in for this event has closed. Please see a member of staff.

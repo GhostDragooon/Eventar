@@ -1,6 +1,28 @@
 # Project State — Eventar
 
-> ## ⬆️ CURRENT — STAGE 10 (2026 dual-track). Product alignment pass (WP1/WP2/WP3-R1/WP4-A/WP5-E1) shipped 2026-09-05. Full 2→4→1→3 queue from `handoff_03092026.md` CLOSED on 2026-09-04.
+> ## ⬆️ CURRENT — STAGE 10 (2026 dual-track). Smoothness pass on attendee flow shipped 2026-09-06 (uncommitted, awaiting Ivan's go-ahead). Product alignment pass (WP1/WP2/WP3-R1/WP4-A/WP5-E1) landed 2026-09-05 (committed at `1017c78`). Full 2→4→1→3 queue from `handoff_03092026.md` CLOSED on 2026-09-04.
+>
+> ### 2026-09-06 — smoothness pass on the attendee flow
+> Ivan handed a "does it FEEL finished?" lens brief; walked the flow with the smoothness lens the prior "does it work?" lens had missed. Six code edits + one client-island component + one new migration, all uncommitted pending Ivan's go-ahead. Full detail: [handoff_06092026.md](handoff_06092026.md).
+>
+> **What landed:**
+> - **D1** — Landing top-right pill flipped to state-aware attendee-first (asked Ivan live for the 3-option decision; he picked state-aware). Extracted the auth-varying pill to `LandingAuthPill.tsx` (client island) so `/` stays `○ Static` — dev-lens caught the naïve async-page approach promoted it to `ƒ Dynamic`.
+> - **M1/M2** — Vocab leaks "CPD credit" → "CME/CPD points" on `components/RegisterCard.tsx:208` + `app/account/sign-in/page.tsx:116` (yesterday's `1017c78` sweep missed these two attendee-facing sites).
+> - **M3** — Seed script `category: 'life_sciences'` → `'medicine_dentistry'` + **new migration `20260906000000_events_category_new_taxonomy.sql`** that swaps the `events_category_check` CHECK constraint from the retired cross-industry taxonomy to the HK-medical one. Rule-14 investigation surfaced that yesterday's sweep updated Zod + UI pickers + finder tabs + dashboard labels but MISSED the CHECK — any organizer save with a new-taxonomy key hit SQLSTATE 23514. Lingering old-key rows nulled first; metadata-only self-check green; applied to local (**NOT yet pushed to Seoul**).
+> - **M4** — `/checkin/confirm` `PassView` state-ordering bug: `!selfServe` short-circuit fired BEFORE `checkinState`, hiding the "Check-in opens at HH:MM" copy from staff-only pass holders. Reordered to branch on `checkinState` first; verified live across all three states.
+> - **M5** — Claim page reassurance bullets rewritten out of engineer-speak ("Idempotent"/"snapshot") into user-language.
+>
+> **Reviews (phase-completion protocol, two SEPARATE agents in parallel):**
+> - **Dev-lens** — MODERATE 1 (landing became dynamic) fixed via client-island refactor. MODERATE 2 (comment scope) moot post-refactor. MINOR 3 (PassView test coverage) skipped per plan discipline. Migration DDL + grants + Rules 3/7/11/12/14 all verified clean.
+> - **User-lens** — CLEAN on all five checks (landing, sign-in, claim, checkin/confirm pass across three states, RegisterCard). No BLOCKER/IMPORTANT/CONFUSING. Verdict: **ship**.
+>
+> **Gates:** tsc clean · eslint 0 errors / 9 pre-existing warnings · vitest **842 passed | 272 skipped** (+5 from 837 baseline: LandingNav.test.tsx) · `next build` clean, `/` back to `○ Static` post-refactor, route list unchanged · `pnpm test:rls` **230/230 across 30 files** (schema-touching migration required this re-run).
+>
+> **Operator flags carried forward** (nothing new this session):
+> - Supabase dashboard **"Secure email change"** on Seoul (and Singapore when provisioned) must be ON before any change-email flow reaches a public route.
+> - **New migration `20260906000000_events_category_new_taxonomy.sql` needs push to Seoul** — Ivan runs `supabase db push --linked` from an interactive terminal. Migration count local goes 125 → 126.
+>
+> **Deliberately deferred** (this session): every WP-S5 park-list item — points/RAG/rule packs, `/account/my-record`, multi-body points display, My-events ledger, College export, MFA/forgot-password/DSR, whole-repo `staff → organizer` identifier rename, Stage 8 deploy, Singapore provisioning, versioned `body_rules` evaluator, iCMECPD integration.
 >
 > ### 2026-09-05 — attendee product alignment pass, static only (Ivan's walkthrough is next)
 > Ivan handed a detailed alignment instruction; this session executed WP1 (hygiene, H1–H8), WP2 (credential-field alignment, C1–C6 sans C5), WP3 R1 (compact readiness strip on `/account`), WP4 Path A (soften landing overclaims — chose A over B; Path B would need a new `/account/my-record` surface), and WP5 E1 (finder categories). Nine source edits + one new dictionary helper (`app/account/claimErrorCopy.ts`); no migrations, no RPCs, no schema, no grants. Full detail: `docs/plans/handoff_05092026.md`.
