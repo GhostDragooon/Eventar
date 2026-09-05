@@ -33,11 +33,16 @@ const ICONS: Record<StepArtKind, string> = {
   verify: 'upload_file',
 };
 
+// WP4 Path A — trimmed of "before you register" (points are known when the
+// organizer configures accreditation, which happens BEFORE listing — so
+// technically ok, but Ivan flagged it as an overclaim in practice), "CPD
+// ledger" branding, and the "audit-ready / tamper-evident" export promise
+// that today's UI does not surface (evidence-pack export is S5+, deferred).
 const STEPS_BY_AUDIENCE: Record<Audience, readonly { t: string; d: string; art: StepArtKind }[]> = {
   practitioner: [
     {
-      t: 'Find an accredited activity',
-      d: 'Every listing shows the exact points it carries and which body accredited it, before you register.',
+      t: 'Find an accredited event',
+      d: 'Each listing names the accrediting body and the points it awards.',
       art: 'find',
     },
     {
@@ -47,24 +52,24 @@ const STEPS_BY_AUDIENCE: Record<Audience, readonly { t: string; d: string; art: 
     },
     {
       t: 'Check in at the door',
-      d: 'Staff scan your pass on arrival. That scan is the moment attendance becomes a fact.',
+      d: 'Reception scans your pass on arrival. That scan is the moment attendance becomes a fact.',
       art: 'checkin',
     },
     {
-      t: 'Credit writes itself',
-      d: 'The check-in posts straight to your CPD ledger as an append-only entry.',
+      t: 'Points land on your Eventar record',
+      d: 'Once your profile and membership number are complete, points release straight to your Eventar record — no forms to submit later.',
       art: 'ledger',
     },
     {
-      t: 'Prove it when asked',
-      d: 'Each entry is hash-chained to the one before it. Share an audit-ready log in seconds.',
+      t: 'See what you did through Eventar',
+      d: 'Your Eventar record is a running log alongside iCMECPD and your college — not a replacement, and not a college-verified export.',
       art: 'verify',
     },
   ],
   organiser: [
     {
-      t: 'Create the accredited activity',
-      d: 'Set the schedule, capacity and accrediting body once. Every listing shows what it carries.',
+      t: 'Create the accredited event',
+      d: 'Set the schedule, capacity, and accrediting body once. The listing shows the points.',
       art: 'find',
     },
     {
@@ -74,17 +79,17 @@ const STEPS_BY_AUDIENCE: Record<Audience, readonly { t: string; d: string; art: 
     },
     {
       t: 'Verify attendance at the door',
-      d: 'Staff scan each pass on arrival. That scan is the moment attendance becomes a fact.',
+      d: 'Reception scans each pass on arrival. That scan is the moment attendance becomes a fact.',
       art: 'checkin',
     },
     {
-      t: 'Credit posts to the ledger',
-      d: 'Each check-in writes an append-only entry to the practitioner’s CPD ledger.',
+      t: 'Points release automatically',
+      d: 'Each check-in releases the configured points to eligible attendees’ Eventar records — nothing to key in.',
       art: 'ledger',
     },
     {
-      t: 'Hand over an audit-ready record',
-      d: 'Every entry is hash-chained, so the accrediting body gets a tamper-evident log on request.',
+      t: 'Have the roster in one place',
+      d: 'The event roster records who attended and the points released. External submissions to your accrediting body stay in your existing workflow.',
       art: 'verify',
     },
   ],

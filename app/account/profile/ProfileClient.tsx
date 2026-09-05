@@ -124,7 +124,8 @@ export function ProfileClient({
         setLNumber('');
         setLicenceStatus({
           kind: 'success',
-          message: 'Licence declared. Credit release also needs a confirmed email, accepted consents, and a complete profile — see the checklist at the top of this page.',
+          message:
+            'Licence declared. Credit release also needs a confirmed email, accepted consents, and a complete profile — see the checklist at the top of this page. If you’ve already checked in to an event today, reopen your pass to see the updated credit status (or wait for reception to refresh it).',
         });
       } else {
         setLicenceStatus({
@@ -202,6 +203,18 @@ export function ProfileClient({
   const f4Ready = licences.some((l) => l.status === 'declared' || l.status === 'verified');
   const gatesReady = f3Ready && f4Ready;
 
+  // C1/C2 — credential label. Default is the generic HK-neutral phrasing
+  // Ivan locked in the terminology table. When a body is picked, prefer a
+  // body-shape label if the short_name tells us we're talking to a
+  // Fellowship-issuing college (HKAM's 15 Colleges — every one is HKC*,
+  // e.g. HKCP, HKCPath, HKCPsych) or a statutory register (MCHK / AHP*).
+  // Anything else falls back to the generic. Small map, not a taxonomy —
+  // upgrade path: move to a column on accrediting_bodies when a body needs
+  // wording we can't infer from its short_name.
+  //   ponytail: string-prefix map, replace with a column when a body forces it.
+  const selectedBody = activeBodies.find((b) => b.id === lBodyId);
+  const credentialLabel = credentialLabelForBody(selectedBody?.short_name);
+
   return (
     <div className="space-y-md">
       <header className="space-y-xs">
@@ -240,14 +253,14 @@ export function ProfileClient({
         <span className="flex-1">
           {gatesReady ? (
             <>
-              Profile and licences are in place. CPD credit at events for
+              Profile and licences are in place. CME/CPD points at events for
               your declared bodies will release automatically after
               check-in, provided your email is confirmed and consents are
               accepted.
             </>
           ) : (
             <>
-              To release CPD credit you need all of the following:
+              To release CME/CPD points you need all of the following:
               <ul className="list-disc pl-lg mt-xs mb-0">
                 <li>
                   Workplace + position + profession filled below —{' '}
@@ -336,103 +349,6 @@ export function ProfileClient({
           </div>
         </SectionCard>
 
-        <SectionCard icon="verified" title="Licences">
-          {licences.length === 0 ? (
-            <p className="font-body-md text-body-md text-on-surface-variant m-0">
-              No licences declared yet. Declare one below to release CPD
-              credit at that accrediting body once your profile is complete.
-            </p>
-          ) : (
-            <ul className="flex flex-col gap-sm m-0 p-0 list-none">
-              {licences.map((l) => (
-                <li
-                  key={l.id}
-                  className="flex flex-wrap items-baseline gap-sm border-b border-outline-variant pb-sm last:border-b-0 last:pb-0"
-                >
-                  <span className="font-title-md text-title-md text-on-surface">
-                    {l.body_short_name ?? 'Body'}
-                  </span>
-                  <span className="font-mono font-body-md text-body-md text-on-surface-variant">
-                    {l.licence_number}
-                  </span>
-                  <LicenceStatusPill status={l.status} />
-                  {/* Primary badge suppressed when the caller has a single
-                      licence: a lone licence is trivially primary at its
-                      body, and the badge just reads as unexplained jargon.
-                      Shows once a second licence lands, where it starts to
-                      mean something. User-lens CONFUSING. */}
-                  {l.is_primary && licences.length > 1 && (
-                    <span
-                      className="font-label-md text-label-md px-sm py-0 rounded-full uppercase inline-flex items-center gap-sm bg-primary-fixed text-primary-ink border border-transparent"
-                      title="Primary licence at this body — used when multiple licences at the same body are declared."
-                    >
-                      Primary
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-          {/* Declare form — the same three primitives (FieldGroup / Input /
-              Button) the surrounding cards use. Track / cycle_started_on
-              are deliberately omitted from the minimum surface (RPC accepts
-              null for both); add if a real user's regulator requires them. */}
-          <form onSubmit={onDeclareLicence} className="mt-md flex flex-col gap-md">
-            <div className="grid gap-md md:grid-cols-2">
-              <FieldGroup label="Accrediting body">
-                <select
-                  value={lBodyId}
-                  onChange={(e) => setLBodyId(e.target.value)}
-                  required
-                  disabled={licencePending || activeBodies.length === 0}
-                  aria-label="Accrediting body"
-                  className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
-                >
-                  <option value="">
-                    {activeBodies.length === 0 ? 'No bodies available' : 'Select a body…'}
-                  </option>
-                  {activeBodies.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.short_name} — {b.full_name}
-                    </option>
-                  ))}
-                </select>
-              </FieldGroup>
-              <FieldGroup label="Licence number">
-                <Input
-                  value={lNumber}
-                  onChange={(e) => setLNumber(e.target.value)}
-                  required
-                  placeholder="e.g. M12345"
-                  maxLength={120}
-                  disabled={licencePending}
-                />
-              </FieldGroup>
-            </div>
-            {licenceStatus && (
-              <div
-                role="status"
-                aria-live="polite"
-                className={
-                  licenceStatus.kind === 'success'
-                    ? 'font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm'
-                    : 'font-body-md text-body-md text-on-error-container bg-error-container border border-error-container rounded-lg px-md py-sm'
-                }
-              >
-                {licenceStatus.message}
-              </div>
-            )}
-            <div className="flex justify-end">
-              <Button
-                type="submit"
-                disabled={licencePending || !lBodyId || !lNumber.trim()}
-              >
-                {licencePending ? 'Declaring…' : 'Declare licence'}
-              </Button>
-            </div>
-          </form>
-        </SectionCard>
-
         <SectionCard icon="mic" title="Speaker preferences">
           <FieldGroup label="Biography (optional)">
             <textarea
@@ -489,8 +405,177 @@ export function ProfileClient({
           </Button>
         </div>
       </form>
+
+      {/* Licences — a SIBLING of the profile form, never a child. The declare
+          box below is its own <form>, which is invalid HTML nested inside
+          another <form> (H2). Splitting them also matches how a user thinks:
+          "profile fields I edit" vs "credentials I declare against a body." */}
+      <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm">
+        <div className="flex items-center gap-md mb-md">
+          <div
+            aria-hidden
+            className="w-10 h-10 rounded-full bg-primary-fixed text-primary-ink flex items-center justify-center"
+          >
+            <span className="material-symbols-outlined text-[calc(20px*var(--text-scale))]">verified</span>
+          </div>
+          <h2 className="font-headline-sm text-[calc(20px*var(--text-scale))] text-on-surface">Licences</h2>
+        </div>
+        {licences.length === 0 ? (
+          <p className="font-body-md text-body-md text-on-surface-variant m-0">
+            No licences declared yet. Declare one below to release CME/CPD points
+            at that accrediting body once your profile is complete.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-sm m-0 p-0 list-none">
+            {licences.map((l) => {
+              // C6 — Primary badge shows only when this body carries more
+              // than one licence, not when the caller has more than one
+              // licence overall. A single licence at HKCP is still trivially
+              // primary at HKCP even if a second licence at MCHK exists.
+              const bodyCount = licences.filter((x) => x.body_id === l.body_id).length;
+              return (
+                <li
+                  key={l.id}
+                  className="flex flex-wrap items-baseline gap-sm border-b border-outline-variant pb-sm last:border-b-0 last:pb-0"
+                >
+                  <span className="font-title-md text-title-md text-on-surface">
+                    {l.body_short_name ?? 'Body'}
+                  </span>
+                  <span className="font-mono font-body-md text-body-md text-on-surface-variant">
+                    {l.licence_number}
+                  </span>
+                  <LicenceStatusPill status={l.status} />
+                  {l.is_primary && bodyCount > 1 && (
+                    <span
+                      className="font-label-md text-label-md px-sm py-0 rounded-full uppercase inline-flex items-center gap-sm bg-primary-fixed text-primary-ink border border-transparent"
+                      title="Primary licence at this body — used when multiple licences at the same body are declared."
+                    >
+                      Primary
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        {/* C4 — self-declared honesty. Says out loud what the status pill
+            hints at: Eventar can release credit on a declared licence, but
+            declared ≠ verified-by-college. Only render when the caller has
+            at least one licence to describe. */}
+        {licences.some((l) => l.status === 'declared') && (
+          <p className="mt-md font-body-md text-body-md text-on-surface-variant m-0">
+            Self-declared. Eventar can release points for this body; this is
+            not the same as verification by the college or council.
+          </p>
+        )}
+        {/* H5 — genuine empty state. Without this, the declare box just
+            renders a disabled picker and an inscrutable "No bodies
+            available" — an attendee has no way to know the fix is not on
+            this page. */}
+        {activeBodies.length === 0 ? (
+          <div
+            role="status"
+            className="mt-md font-body-md text-body-md text-on-surface-variant bg-surface-container border border-outline-variant rounded-lg px-md py-sm flex items-start gap-sm"
+          >
+            <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>info</span>
+            <span className="flex-1">
+              No accrediting bodies are open for self-declare right now. Please
+              contact the event organizer.
+            </span>
+          </div>
+        ) : (
+          <form onSubmit={onDeclareLicence} className="mt-md flex flex-col gap-md">
+            <div className="grid gap-md md:grid-cols-2">
+              <FieldGroup label="Accrediting body">
+                <select
+                  value={lBodyId}
+                  onChange={(e) => setLBodyId(e.target.value)}
+                  required
+                  disabled={licencePending}
+                  aria-label="Accrediting body"
+                  className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+                >
+                  <option value="">Select a body…</option>
+                  {activeBodies.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.short_name} — {b.full_name}
+                    </option>
+                  ))}
+                </select>
+              </FieldGroup>
+              {/* C1/C2 — label follows the selected body; falls back to the
+                  generic Membership / registration number when nothing is
+                  picked or the short_name isn't in the map. */}
+              <FieldGroup label={credentialLabel}>
+                <Input
+                  value={lNumber}
+                  onChange={(e) => setLNumber(e.target.value)}
+                  required
+                  placeholder="e.g. M12345"
+                  maxLength={120}
+                  disabled={licencePending}
+                />
+                {/* C3 — helper text so an attendee filling this out for the
+                    first time knows which number the form is asking for. */}
+                <span className="block mt-xs font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant">
+                  The number your college or council uses for you — the same
+                  one you&apos;d use on a CME/CPD claim form.
+                </span>
+              </FieldGroup>
+            </div>
+            {licenceStatus && (
+              <div
+                role="status"
+                aria-live="polite"
+                className={
+                  licenceStatus.kind === 'success'
+                    ? 'font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm'
+                    : 'font-body-md text-body-md text-on-error-container bg-error-container border border-error-container rounded-lg px-md py-sm'
+                }
+              >
+                {licenceStatus.message}
+              </div>
+            )}
+            <div className="flex justify-end">
+              <Button
+                type="submit"
+                disabled={licencePending || !lBodyId || !lNumber.trim()}
+              >
+                {licencePending ? 'Declaring…' : 'Declare licence'}
+              </Button>
+            </div>
+          </form>
+        )}
+      </section>
+
+      {/* H2 aftershock (2026-09-05 user-lens): splitting Licences out of the
+          profile form moved the only "Back to account" link WAY up the page.
+          After declaring a licence at the bottom, a user has nowhere to
+          navigate without scrolling back. One more anchor here, quiet. */}
+      <div className="flex items-center justify-end">
+        <Link
+          href="/account"
+          className="text-sm font-medium text-primary-ink hover:underline"
+        >
+          Back to account
+        </Link>
+      </div>
     </div>
   );
+}
+
+// C1/C2 — small heuristic on short_name. HKAM's 15 Colleges all issue
+// Fellowships and their short_names all start "HKC" (HKCP, HKCPath,
+// HKCPsych, HKCFP, HKCEM, HKCA, HKCOG, HKCORL, HKCOphth, HKCOS, HKCPaed,
+// HKCPS, HKCR, HKCS, HKCCM). MCHK/AHP* are statutory registers — the
+// credential is a registration number. Anything else falls back to the
+// generic HK-neutral phrasing. Ivan's terminology-table lock.
+function credentialLabelForBody(shortName: string | null | undefined): string {
+  if (!shortName) return 'Membership / registration number';
+  const s = shortName.toUpperCase();
+  if (s === 'HKAM' || s.startsWith('HKC')) return 'Fellowship number';
+  if (s === 'MCHK' || s.startsWith('AHP')) return 'Registration number';
+  return 'Membership / registration number';
 }
 
 function SectionCard({

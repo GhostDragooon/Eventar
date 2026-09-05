@@ -19,12 +19,19 @@ export type PublicEventCard = {
 
 // Category selector (locked): horizontal tabs, SENTENCE CASE, no boxes, a
 // short accent underline under the active tab only, full-width hairline.
+//
+// WP5 E1 — swapped from cross-industry (life_sciences / engineering /
+// finance / technology) to profession-aligned for the HK CPD pilot. Empty
+// Finance and Technology tabs on a page selling medical CPD read as
+// "abandoned product". Keep `all` as the honest default.
+//   ponytail: string map, replace with a controlled taxonomy when a real
+//   profession list is loaded from the DB (deferred; §4 explicitly lists
+//   "Controlled taxonomies for position/profession").
 const CATEGORIES: { key: string; label: string }[] = [
   { key: 'all', label: 'All' },
-  { key: 'life_sciences', label: 'Life sciences' },
-  { key: 'engineering', label: 'Engineering' },
-  { key: 'finance', label: 'Finance' },
-  { key: 'technology', label: 'Technology' },
+  { key: 'medicine_dentistry', label: 'Medicine & dentistry' },
+  { key: 'allied_health', label: 'Allied health' },
+  { key: 'other', label: 'Other' },
 ];
 
 // Green is reserved for live/verified (vault Frontend Design Standard §2);

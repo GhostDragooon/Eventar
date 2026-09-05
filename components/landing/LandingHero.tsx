@@ -35,11 +35,15 @@ import { LedgerWindow } from './LedgerWindow';
  * centered — a 2-column split has no room to breathe under ~1024px.
  */
 
+// WP4 Path A — hero copy trimmed of "verified records issue themselves" and
+// "your record updates itself" claims that overstate what Eventar owns.
+// The record Eventar issues is an Eventar record — a running log of what
+// happened through the platform, not a substitute for iCMECPD or the college.
 const COPY = {
   practitioner: {
-    chip: 'For practitioners · CPD that keeps itself',
-    head: ['Your CPD log should not', 'be your job.'],
-    sub: 'Find accredited courses, attend, and your record updates itself. The certificate hunting and the renewal spreadsheet are gone.',
+    chip: 'For practitioners · CME/CPD attendance without the paperwork',
+    head: ['Your CME/CPD log', 'should keep itself.'],
+    sub: 'Find accredited events, register, check in on the day. Your Eventar record captures what you attended and the points released — alongside iCMECPD and your college, not instead of them.',
     primary: 'Get started',
     secondary: 'See how it works',
     secondaryHref: '#how-it-works',
@@ -47,7 +51,7 @@ const COPY = {
   organiser: {
     chip: 'For organisers & training providers',
     head: ['Run the event,', 'not the admin behind it.'],
-    sub: 'Publish to practitioners looking for accredited hours, keep accreditation in one place, and let verified records issue themselves. The chasing and reconciling are gone.',
+    sub: 'Publish to practitioners looking for accredited hours, keep accreditation configuration in one place, and let attendance and points fall out of the check-in itself.',
     primary: 'Get started',
     secondary: 'Book a demo',
     secondaryHref: '#get-started',

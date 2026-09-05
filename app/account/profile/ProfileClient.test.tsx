@@ -75,7 +75,10 @@ describe('ProfileClient — Licences SectionCard', () => {
     expect(screen.queryByText(/^primary$/i)).not.toBeInTheDocument();
   });
 
-  it('shows the Primary badge only once a second licence lands (>1 total)', () => {
+  it('suppresses the Primary badge when two licences sit at DIFFERENT bodies (C6)', () => {
+    // C6 — Primary is per-body, not per-caller. A single HKCP licence is
+    // trivially primary at HKCP; a single MCHK licence alongside doesn't
+    // make either badge-worthy.
     render(
       <ProfileClient
         initialProfile={null}
@@ -87,6 +90,25 @@ describe('ProfileClient — Licences SectionCard', () => {
             body_id: 'body-2',
             body_short_name: 'MCHK',
             licence_number: 'D67890',
+            is_primary: false,
+          },
+        ]}
+        activeBodies={activeBodies}
+      />,
+    );
+    expect(screen.queryByText(/^primary$/i)).not.toBeInTheDocument();
+  });
+
+  it('shows the Primary badge only once a second licence lands AT THE SAME BODY (C6)', () => {
+    render(
+      <ProfileClient
+        initialProfile={null}
+        initialLicences={[
+          existingLicences[0],
+          {
+            ...existingLicences[0],
+            id: 'lic-2',
+            licence_number: 'M99999',
             is_primary: false,
           },
         ]}
@@ -120,7 +142,7 @@ describe('ProfileClient — Licences SectionCard', () => {
     );
     // Fill both fields and submit.
     const select = screen.getByLabelText(/accrediting body/i) as HTMLSelectElement;
-    const number = screen.getByLabelText(/licence number/i) as HTMLInputElement;
+    const number = screen.getByLabelText(/membership \/ registration number|fellowship number|registration number/i) as HTMLInputElement;
     fireEvent.change(select, { target: { value: 'body-1' } });
     fireEvent.change(number, { target: { value: 'M99999' } });
     await act(async () => {
@@ -138,7 +160,7 @@ describe('ProfileClient — Licences SectionCard', () => {
     // combined-readiness banner at the top of the page.
     expect(screen.getByText(/credit release also needs a confirmed email/i)).toBeInTheDocument();
     // Form cleared.
-    expect((screen.getByLabelText(/licence number/i) as HTMLInputElement).value).toBe('');
+    expect((screen.getByLabelText(/membership \/ registration number|fellowship number|registration number/i) as HTMLInputElement).value).toBe('');
   });
 
   it('already_declared error renders the specific "you\'ve already declared" copy and keeps the list unchanged', async () => {
@@ -154,7 +176,7 @@ describe('ProfileClient — Licences SectionCard', () => {
       />,
     );
     const select = screen.getByLabelText(/accrediting body/i) as HTMLSelectElement;
-    const number = screen.getByLabelText(/licence number/i) as HTMLInputElement;
+    const number = screen.getByLabelText(/membership \/ registration number|fellowship number|registration number/i) as HTMLInputElement;
     fireEvent.change(select, { target: { value: 'body-1' } });
     fireEvent.change(number, { target: { value: 'M12345' } });
     await act(async () => {
@@ -178,7 +200,7 @@ describe('ProfileClient — Licences SectionCard', () => {
       />,
     );
     const select = screen.getByLabelText(/accrediting body/i) as HTMLSelectElement;
-    const number = screen.getByLabelText(/licence number/i) as HTMLInputElement;
+    const number = screen.getByLabelText(/membership \/ registration number|fellowship number|registration number/i) as HTMLInputElement;
     fireEvent.change(select, { target: { value: 'body-1' } });
     fireEvent.change(number, { target: { value: 'M12345' } });
     await act(async () => {
@@ -273,7 +295,7 @@ describe('ProfileClient — Licences SectionCard', () => {
     expect(screen.getByText(/at least one active licence declared/i)).toBeInTheDocument();
   });
 
-  it('disables the body picker + surfaces the "no bodies available" placeholder when the active list is empty', () => {
+  it('replaces the declare form with a genuine empty-state message when no bodies are open for self-declare (H5)', () => {
     render(
       <ProfileClient
         initialProfile={null}
@@ -281,9 +303,13 @@ describe('ProfileClient — Licences SectionCard', () => {
         activeBodies={[]}
       />,
     );
-    const select = screen.getByLabelText(/accrediting body/i) as HTMLSelectElement;
-    expect(select.disabled).toBe(true);
-    expect(screen.getByText(/no bodies available/i)).toBeInTheDocument();
+    // The picker + declare form should not render — a disabled picker was
+    // the pre-H5 state, and it left the attendee with no explanation.
+    expect(screen.queryByLabelText(/accrediting body/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /declare licence/i })).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/no accrediting bodies are open for self-declare/i),
+    ).toBeInTheDocument();
   });
 });
 

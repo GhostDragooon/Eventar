@@ -427,7 +427,7 @@ function CheckedInView({
           className="font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm flex items-start gap-sm m-0"
         >
           <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden data-fill="1">check_circle</span>
-          <span className="flex-1">CPD credit recorded.</span>
+          <span className="flex-1">CME/CPD points recorded.</span>
         </p>
       )}
       {creditStatus === 'pending' && (
@@ -478,9 +478,9 @@ function CheckedInView({
                   href="/account/profile"
                   className="text-primary-ink hover:underline font-semibold"
                 >
-                  check your account
+                  check your profile
                 </Link>
-                , or see reception if everything looks correct.
+                , or ask the event organiser if everything looks correct.
               </>
             ) : (
               <>

@@ -20,25 +20,31 @@ import { SiteFooter } from '@/components/shell/SiteFooter';
  * landing is a marketing surface and brings its own glass pill nav + footer.
  */
 
+// WP4 Path A — softened wording. Old title/description implied a verified
+// end-to-end record that Eventar alone doesn't own (iCMECPD does).
 export const metadata = {
-  title: 'Eventar — CPD that keeps itself',
+  title: 'Eventar — CME/CPD attendance without the paperwork',
   description:
-    'Accredited CPD for Hong Kong professionals. Attend, and your verified record updates itself — no certificate hunting, no renewal spreadsheet.',
+    'Accredited CME/CPD events for Hong Kong professionals. Check in on the day, and your attendance and points are captured on your Eventar record — alongside iCMECPD and your college, not instead of them.',
 };
 
 const FEATURES = {
+  // WP4 Path A — softened for honesty against what actually ships: register
+  // → check in → Eventar record. No claims of pre-verified point totals,
+  // no "CPD Ledger" branding, no "audit-ready" export. Kept the "stop
+  // <problem>" shape and the three-item cadence.
   practitioner: [
     {
-      t: 'Stop guessing if your credits count',
-      d: 'Every activity shows its exact, verified points before you register. Your running total is always accurate — your compliance status at a glance.',
+      t: 'Skip the certificate hunt',
+      d: 'Register on Eventar and every attendance is captured against your account — no PDFs to hoard, no emails to flag, nothing to key in after the fact.',
     },
     {
-      t: 'Stop losing proof of attendance',
-      d: 'Check in on-site and credits write directly to your CPD Ledger. No PDFs to hoard, no emails to flag, nothing to submit later.',
+      t: 'Check in once, on the day',
+      d: 'Scan your personal QR at the door. If your profile and membership number are set up, CME/CPD points are released straight to your Eventar record.',
     },
     {
-      t: 'Stop dreading the audit',
-      d: 'Your log is complete and formatted the moment your governing body asks. Share a tamper-evident, audit-ready record in seconds.',
+      t: 'See what you did through Eventar',
+      d: 'Your Eventar record shows the events you attended, when, and the points released — a running log alongside iCMECPD and your college, not a replacement for them.',
     },
   ],
   organiser: [
@@ -48,11 +54,11 @@ const FEATURES = {
     },
     {
       t: 'Stop risking your accreditation',
-      d: 'Requirements, approvals and point assignments live in one auditable workflow. Nothing is lost in an email thread; nothing publishes without verified credits attached.',
+      d: 'Requirements, approvals and point assignments live in one auditable workflow. Nothing is lost in an email thread; nothing publishes without approved points attached.',
     },
     {
       t: 'Stop arguing over attendance',
-      d: 'On-site check-in writes straight to the participant’s verified record. No manual certificates, no data entry, no post-event disputes.',
+      d: 'On-site check-in writes straight to the participant’s Eventar record. No manual certificates, no data entry, no post-event disputes.',
     },
   ],
 } as const;

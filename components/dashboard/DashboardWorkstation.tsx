@@ -52,10 +52,9 @@ const PILL: Record<Lifecycle, { label: string; cls: string; dot: string }> = {
 };
 
 const CATEGORY_LABEL: Record<string, string> = {
-  life_sciences: 'Life sciences',
-  engineering: 'Engineering',
-  finance: 'Finance',
-  technology: 'Technology',
+  medicine_dentistry: 'Medicine & dentistry',
+  allied_health: 'Allied health',
+  other: 'Other',
 };
 
 type FilterKey = Lifecycle | 'all' | 'deleted';

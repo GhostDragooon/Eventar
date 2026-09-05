@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { SignOutAction } from '@/components/auth/SignOutAction';
 import { supabaseBrowser } from '@/lib/supabase/browser';
 import { changeEmail, claimMyRegistrations, resendVerificationEmail, updateMyAccount } from './actions';
+import { claimErrorCopy } from './claimErrorCopy';
 import type { AccountView, ProfessionalProfileView } from './schema';
 
 type Status =
@@ -40,6 +41,7 @@ export function AccountClient({
   initialUnlinkedCount = 0,
   email = '',
   emailConfirmed = false,
+  profileAndMembershipReady = false,
 }: {
   initialAccount: AccountView;
   initialProfile: ProfessionalProfileView | null;
@@ -68,6 +70,14 @@ export function AccountClient({
    * Flipped per dev-lens MINOR 3.
    */
   emailConfirmed?: boolean;
+  /**
+   * Server-computed: F3 profile fields + a non-terminal licence, bundled as
+   * one readiness step for the WP3 R1 strip. Defaults to false — the honest
+   * direction (same rationale as emailConfirmed). `null` = "we couldn't check
+   * right now" (transient licence-fetch failure); the row shows a
+   * refresh-yourself state instead of a false "not yet" (dev-lens 2026-09-05).
+   */
+  profileAndMembershipReady?: boolean | null;
 }) {
   const [account, setAccount] = useState<AccountView>(initialAccount);
   const [status, setStatus] = useState<Status>(null);
@@ -159,15 +169,7 @@ export function AccountClient({
                 : `Linked ${n} registrations to your account.`,
         });
       } else {
-        setClaimStatus({
-          kind: 'error',
-          message:
-            result.error === 'email_unverified'
-              ? 'Confirm your email first (check your inbox for a link from Eventar).'
-              : result.error === 'rate_limited'
-                ? 'Too many attempts in a short window. Please wait a moment.'
-                : 'Could not link right now. Please try again.',
-        });
+        setClaimStatus({ kind: 'error', message: claimErrorCopy(result.error) });
       }
     });
   }
@@ -223,6 +225,57 @@ export function AccountClient({
         </p>
       </header>
 
+      {/* WP3 R1 — compact CME/CPD readiness strip. Neutral surface, not a
+          green "everything is done" banner. Three inline done/not-yet lines
+          with jump links; a line goes to text-on-primary-container +
+          check_circle when done, and a muted "not yet" + info icon
+          otherwise. Renders always (the honest thing) — even when every
+          line is done, so an attendee can confirm at a glance. */}
+      <section
+        aria-labelledby="cme-readiness-heading"
+        className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm"
+      >
+        <h2
+          id="cme-readiness-heading"
+          className="font-label-md text-label-md font-semibold uppercase tracking-wider text-on-surface-variant m-0 mb-sm"
+        >
+          CME/CPD readiness
+        </h2>
+        <ul className="flex flex-col gap-xs m-0 p-0 list-none">
+          <ReadinessRow
+            done={emailConfirmed}
+            label={emailConfirmed ? 'Email verified' : 'Verify your email'}
+            href="#verify-email"
+          />
+          <ReadinessRow
+            done={profileAndMembershipReady}
+            label={
+              profileAndMembershipReady === true
+                ? 'Profile & membership number complete'
+                : 'Finish your profile & membership number'
+            }
+            unknownLabel="Couldn't check profile & membership right now — refresh"
+            href="/account/profile"
+          />
+          <ReadinessRow
+            done={unlinkedCount === 0}
+            label={
+              unlinkedCount === 0
+                ? 'Past registrations up to date'
+                : `${unlinkedCount} past ${
+                    unlinkedCount === 1 ? 'registration' : 'registrations'
+                  } to link`
+            }
+            href={unlinkedCount === 0 ? undefined : '/account/claim'}
+          />
+        </ul>
+        <p className="mt-md font-body-md text-body-md text-on-surface-variant m-0">
+          Points release automatically at check-in once all three are in
+          place. Your Eventar record isn&apos;t a substitute for iCMECPD or
+          your college — it&apos;s a running log of what you did through Eventar.
+        </p>
+      </section>
+
       {/* Walk-in flow banner: surfaces the "system checks email → match" step
           without silent auto-linking (Stage C decision Q3 kept — the claim is
           still explicit). Renders only when the server-computed count is > 0;
@@ -248,7 +301,7 @@ export function AccountClient({
                   : `We found ${unlinkedCount} unlinked registrations for your email.`}
               </p>
               <p className="font-body-md text-body-md text-on-surface-variant m-0 mt-xs">
-                Link them to your account so CPD credit can be released once your profile is complete.
+                Link them to your account so CME/CPD points can be released once your profile is complete.
               </p>
             </div>
           </div>
@@ -376,6 +429,12 @@ export function AccountClient({
               </select>
             </FieldGroup>
           </div>
+          {/* H8 — set the honest expectation. This preference threads
+              through to future emails and event materials; the site UI
+              itself is English-only for now. */}
+          <p className="mt-md font-body-md text-body-md text-on-surface-variant m-0">
+            Applies to your emails and event materials — the site UI stays English for now.
+          </p>
         </SectionCard>
 
         {status && (
@@ -402,12 +461,17 @@ export function AccountClient({
                 ? 'Edit professional profile & licences'
                 : 'Add professional profile & licences'}
             </Link>
-            <Link
-              href="/account/claim"
-              className="text-sm font-medium text-primary-ink hover:underline"
-            >
-              Link past registrations
-            </Link>
+            {/* H3 — hide the "Link past registrations" link when the caller
+                has zero unlinked registrations. The claim page itself renders
+                a soft empty state, but a dead link is worse than no link. */}
+            {unlinkedCount > 0 && (
+              <Link
+                href="/account/claim"
+                className="text-sm font-medium text-primary-ink hover:underline"
+              >
+                Link past registrations
+              </Link>
+            )}
           </div>
           <Button type="submit" disabled={pending}>
             {pending ? 'Saving…' : 'Save changes'}
@@ -421,11 +485,11 @@ export function AccountClient({
           fresh link. Hidden once confirmed — the server truth (email_confirmed_at)
           gates the render, not client state. */}
       {!emailConfirmed && (
-        <SectionCard icon="mark_email_unread" title="Verify your email">
+        <SectionCard icon="mark_email_unread" title="Verify your email" id="verify-email">
           <p className="font-body-md text-body-md text-on-surface-variant m-0">
             Your email <span className="font-medium text-on-surface">{email}</span> hasn&apos;t
             been verified yet. Verification is required before we can link
-            past registrations or release CPD credit.
+            past registrations or release CME/CPD points.
           </p>
           <div className="mt-md flex items-center justify-between flex-wrap gap-md">
             <p className="font-body-md text-body-md text-on-surface-variant m-0">
@@ -542,13 +606,16 @@ function SectionCard({
   icon,
   title,
   children,
+  id,
 }: {
   icon: string;
   title: string;
   children: React.ReactNode;
+  /** Optional anchor id so ReadinessRow hrefs can jump-scroll to it (#verify-email). */
+  id?: string;
 }) {
   return (
-    <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm">
+    <section id={id} className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm scroll-mt-lg">
       <div className="flex items-center gap-md mb-md">
         <div
           aria-hidden
@@ -569,5 +636,46 @@ function FieldGroup({ label, children }: { label: string; children: React.ReactN
       <span className="block font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-xs">{label}</span>
       {children}
     </label>
+  );
+}
+
+// WP3 R1 row: inline check_circle / info icon + label, optional jump link.
+// Deliberately not a big card — this whole strip earns three lines total.
+// `done === null` = "we couldn't check right now" (dev-lens 2026-09-05); renders
+// a distinct help_outline icon + neutral copy rather than the "not yet" state,
+// so a transient fetch failure doesn't tell a compliant user their profile
+// isn't done (Rule 12).
+function ReadinessRow({
+  done,
+  label,
+  unknownLabel,
+  href,
+}: {
+  done: boolean | null;
+  label: string;
+  unknownLabel?: string;
+  href?: string;
+}) {
+  const isDone = done === true;
+  const isUnknown = done === null;
+  return (
+    <li className="flex items-center gap-sm m-0">
+      <span
+        className="material-symbols-outlined text-[calc(18px*var(--text-scale))] shrink-0"
+        aria-hidden
+        data-fill={isDone ? '1' : undefined}
+        style={isDone ? { color: 'var(--on-primary-container)' } : undefined}
+      >
+        {isDone ? 'check_circle' : isUnknown ? 'help_outline' : 'radio_button_unchecked'}
+      </span>
+      <span className={`font-body-md text-body-md flex-1 ${isDone ? 'text-on-surface' : 'text-on-surface-variant'}`}>
+        {isUnknown && unknownLabel ? unknownLabel : label}
+      </span>
+      {href && !isDone && !isUnknown && (
+        <Link href={href} className="text-sm font-medium text-primary-ink hover:underline shrink-0">
+          Fix
+        </Link>
+      )}
+    </li>
   );
 }

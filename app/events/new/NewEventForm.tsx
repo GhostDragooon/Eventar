@@ -474,10 +474,9 @@ export default function NewEventForm(props: Props) {
               className="w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary transition-colors"
             >
               <option value="">No category</option>
-              <option value="life_sciences">Life sciences</option>
-              <option value="engineering">Engineering</option>
-              <option value="finance">Finance</option>
-              <option value="technology">Technology</option>
+              <option value="medicine_dentistry">Medicine &amp; dentistry</option>
+              <option value="allied_health">Allied health</option>
+              <option value="other">Other</option>
             </select>
           </label>
           <PartnersSection

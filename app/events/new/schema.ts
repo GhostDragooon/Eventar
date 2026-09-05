@@ -73,7 +73,15 @@ export const eventInputSchema = z.object({
   // category behind the dashboard tag / public-list tabs. All optional.
   registration_open_at:  z.string().datetime().optional(),
   registration_close_at: z.string().datetime().optional(),
-  category: z.enum(['life_sciences', 'engineering', 'finance', 'technology']).optional(),
+  // WP5 E1 (2026-09-05) — profession categories aligned to Eventar's HK medical
+  // CPD audience: medicine_dentistry / allied_health / other. Old cross-industry
+  // keys (life_sciences / engineering / finance / technology) are removed. No
+  // events use them (WP5 E1 rename shipped alongside; the public /events tabs
+  // and this picker were mismatched between shipping and now, guaranteeing every
+  // non-All tab was empty). If any legacy row exists with an old key, it fails
+  // this validate — that's the intended fail-visibly (Rule 12) posture: an
+  // organiser sees the mismatch and picks a valid category on next save.
+  category: z.enum(['medicine_dentistry', 'allied_health', 'other']).optional(),
   // How attendance is captured at the door. `self_serve` is the only half the
   // form offers: nothing reads `staff` (mark_attended has no flag check), so a
   // staff toggle would be a control that does nothing — the form sends

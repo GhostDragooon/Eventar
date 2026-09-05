@@ -25,13 +25,24 @@ export function LedgerWindow() {
         <i className="block h-[9px] w-[9px] rounded-full bg-outline" aria-hidden />
         <i className="block h-[9px] w-[9px] rounded-full bg-outline" aria-hidden />
         <i className="block h-[9px] w-[9px] rounded-full bg-outline" aria-hidden />
+        {/* User-lens 2026-09-05: this window is a marketing sample. Without a
+            label a visitor arriving from the hero could mistake it for their
+            own live record — LedgerWindow reads as an app screenshot. Chip goes
+            in the chrome bar so it survives even a first-glance skim. */}
+        <span className="ml-auto rounded-full bg-surface-container-high px-[7px] py-[1px] text-[calc(10px*var(--text-scale))] font-semibold uppercase tracking-wider text-on-surface-variant">
+          Sample
+        </span>
       </div>
 
       <div className="p-lg">
+        {/* WP4 Path A — reframed from a "CPD compliance" cycle dashboard
+            (which Eventar doesn't own — iCMECPD and the colleges do) to an
+            Eventar-record panel showing what was released THROUGH Eventar.
+            The row list is unchanged; only the header + counter change. */}
         <div className="flex items-baseline justify-between gap-sm">
-          <h2 className="text-[calc(15px*var(--text-scale))] font-semibold text-on-surface">Your CPD compliance</h2>
-          <span className="rounded-full bg-success-container px-sm py-[2px] text-[calc(11px*var(--text-scale))] font-semibold text-[color:var(--success)]">
-            On track
+          <h2 className="text-[calc(15px*var(--text-scale))] font-semibold text-on-surface">Your Eventar record</h2>
+          <span className="rounded-full bg-primary-fixed px-sm py-[2px] text-[calc(11px*var(--text-scale))] font-semibold text-primary-ink">
+            3 events
           </span>
         </div>
         <p className="mt-[3px] text-[calc(12px*var(--text-scale))] text-on-surface-variant">
@@ -40,12 +51,9 @@ export function LedgerWindow() {
 
         <div className="mt-md flex items-baseline gap-sm">
           <span className="text-[calc(34px*var(--text-scale))] font-semibold leading-none text-on-surface tabular-nums">
-            71
+            9.0
           </span>
-          <span className="text-[calc(13px*var(--text-scale))] text-on-surface-variant">of 90 pts</span>
-        </div>
-        <div className="mt-sm h-[9px] overflow-hidden rounded-full bg-surface-container-high">
-          <div className="h-full rounded-full bg-primary" style={{ width: '79%' }} />
+          <span className="text-[calc(13px*var(--text-scale))] text-on-surface-variant">pts released through Eventar</span>
         </div>
 
         <ul className="mt-md divide-y divide-outline-variant">

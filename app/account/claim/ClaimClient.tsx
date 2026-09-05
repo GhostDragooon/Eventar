@@ -8,6 +8,7 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { claimMyRegistrations } from '../actions';
+import { claimErrorCopy } from '../claimErrorCopy';
 
 type Status =
   | null
@@ -30,15 +31,10 @@ export function ClaimClient({
     startTransition(async () => {
       const result = await claimMyRegistrations();
       if (!result.ok) {
-        const message =
-          result.error === 'email_unverified'
-            ? 'Please verify your email first — head to your account to resend the confirmation link.'
-            : result.error === 'rate_limited'
-            ? 'Too many attempts in a short window. Please wait a moment.'
-            : result.error === 'not_authorized'
-            ? 'You need to sign in first.'
-            : 'Could not link your registrations right now. Please try again.';
-        setStatus({ kind: 'error', message });
+        // H4 — one dictionary; do NOT branch per-caller. Copy for
+        // email_unverified now says the actual next step (check inbox) —
+        // matches what AccountClient shows for the same error.
+        setStatus({ kind: 'error', message: claimErrorCopy(result.error) });
         return;
       }
       setStatus(
@@ -75,7 +71,7 @@ export function ClaimClient({
             </h2>
             <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
               This connects registrations you made as a guest — before you
-              had an account — to this profile, so held CPD credit can be
+              had an account — to this profile, so held CME/CPD points can be
               released once your profile and licence are complete.
             </p>
             <ul className="font-body-md text-body-md text-on-surface-variant mt-md list-disc pl-lg space-y-xs">
@@ -131,7 +127,11 @@ export function ClaimClient({
             </span>
             <span className="flex-1">
               Nothing to link — no past guest registrations were found under
-              your email.
+              your email. You&apos;re all set.{' '}
+              <Link href="/account" className="font-medium text-primary-ink underline">
+                Back to your account
+              </Link>
+              .
             </span>
           </div>
         )}
