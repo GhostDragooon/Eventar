@@ -15,10 +15,27 @@ export async function supabaseServer() {
   // supabaseServer(). Auth flows now call `supabaseAnonServer()` explicitly
   // (see the note below), so token-minting never reaches this branch.
   //
+  // ⚠️ Review mode must NOT clobber a real attendee session. Attendee pages
+  // (/account, /account/profile, /checkin/confirm) call supabaseServer() to
+  // read `auth.getUser()`, then redirect to /account/sign-in when it's null.
+  // The service-role client returns null there — so under EVENTAR_REVIEW_MODE
+  // an attendee with real cookies was being bounced off their own account. The
+  // gate below peeks at the request cookies: if a Supabase auth cookie is
+  // present, we have a real caller — return the cookie-bound client so their
+  // session is honoured. Only a request with NO auth cookie (the actual review
+  // scenario — reviewer walking pages without ever signing in) still gets the
+  // admin client. Discovered 2026-09-05 during the account-hygiene walkthrough.
+  //
   // lib/reviewMode.ts checks NODE_ENV first and unconditionally.
   if (isReviewMode()) {
-    const { supabaseAdmin } = await import('@/lib/supabase/admin');
-    return supabaseAdmin();
+    const cookieStore = await cookies();
+    const hasAuthCookie = cookieStore
+      .getAll()
+      .some((c) => c.name.startsWith('sb-') && c.name.includes('auth-token'));
+    if (!hasAuthCookie) {
+      const { supabaseAdmin } = await import('@/lib/supabase/admin');
+      return supabaseAdmin();
+    }
   }
   return supabaseAnonServer();
 }

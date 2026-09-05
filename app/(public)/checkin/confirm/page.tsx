@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { supabaseServer } from '@/lib/supabase/server';
 import { formatInTz } from '@/lib/tz';
 import { isValidRegistrationCode } from '@/lib/registrationCode';
 import { rateLimitByIp } from '@/lib/rateLimit';
@@ -60,22 +61,32 @@ export default async function SelfCheckinPage({
 }) {
   const { code } = await searchParams;
 
+  // Signed-in state for the shell CTA. A signed-in attendee reading their
+  // pass should see "Account" in the top-right pill, not "Sign in" pointing
+  // at a login for a different session. Cookie-only auth read; no session =
+  // signed-out = "Sign in" CTA (the honest default for QR arrivers).
+  const authClient = await supabaseServer();
+  // eslint-disable-next-line no-restricted-syntax -- no-session and call-failed both collapse to "signed out"
+  const { data: authRes } = await authClient.auth.getUser();
+  const signedIn = authRes?.user != null;
+
   if (!code) {
     return (
       <Empty
         title="No check-in code"
         body="Open this page from your registration link or by scanning your personal QR code. If you don't have one, ask the event organiser for help."
+        signedIn={signedIn}
       />
     );
   }
   if (!isValidRegistrationCode(code)) {
-    return <Empty title="Code not recognised" body="Please show this code (or your QR) to the event organiser. They can check you in manually." />;
+    return <Empty title="Code not recognised" body="Please show this code (or your QR) to the event organiser. They can check you in manually." signedIn={signedIn} />;
   }
 
   // Enumeration defense: cap per-IP page loads before the admin lookup runs.
   const limit = await rateLimitByIp('confirmGet', { windowMs: 60_000, max: 60 });
   if (!limit.allowed) {
-    return <Empty title="Too many requests" body="Please slow down and try again in a moment." />;
+    return <Empty title="Too many requests" body="Please slow down and try again in a moment." signedIn={signedIn} />;
   }
 
   const admin = supabaseAdmin();
@@ -112,12 +123,13 @@ export default async function SelfCheckinPage({
       <Empty
         title="Something went wrong"
         body="We couldn't look up your pass just now. Your registration is unaffected — please try again in a moment, or show this page to a member of staff."
+        signedIn={signedIn}
       />
     );
   }
 
   if (!reg || !reg.events) {
-    return <Empty title="Code not recognised" body="Please show this code (or your QR) to the event organiser. They can check you in manually." />;
+    return <Empty title="Code not recognised" body="Please show this code (or your QR) to the event organiser. They can check you in manually." signedIn={signedIn} />;
   }
 
   const event = Array.isArray(reg.events) ? reg.events[0] : reg.events;
@@ -125,7 +137,7 @@ export default async function SelfCheckinPage({
   // run sheet pre-opens this page before the publish beat and it read as a
   // broken seed.
   if (!event) {
-    return <Empty title="Code not recognised" body="Please show this code (or your QR) to the event organiser. They can check you in manually." />;
+    return <Empty title="Code not recognised" body="Please show this code (or your QR) to the event organiser. They can check you in manually." signedIn={signedIn} />;
   }
   if (event.status !== 'published') {
     return (
@@ -177,13 +189,14 @@ export default async function SelfCheckinPage({
       creditStatus = creditData;
     }
     return (
-      <PublicShell pill={{ label: 'Checked in', tone: 'success' }}>
+      <PublicShell pill={{ label: 'Checked in', tone: 'success' }} signedIn={signedIn}>
         <PageWrap>
           <CheckedInView
             event={event}
             checkInAt={reg.check_in_at}
             method={reg.check_in_method}
             creditStatus={creditStatus}
+            signedIn={signedIn}
           />
         </PageWrap>
       </PublicShell>
@@ -205,7 +218,7 @@ export default async function SelfCheckinPage({
     nowMs < opensAtMs ? 'early' : nowMs > new Date(event.end_time).getTime() ? 'closed' : 'open';
 
   return (
-    <PublicShell pill={{ label: 'Pass ready', tone: 'success' }}>
+    <PublicShell pill={{ label: 'Pass ready', tone: 'success' }} signedIn={signedIn}>
       <PageWrap>
         <PassView event={event} code={code} qrDataUri={`data:image/png;base64,${qr.pngBase64}`} selfServe={selfServe} checkinState={checkinState} opensAtIso={new Date(opensAtMs).toISOString()} />
       </PageWrap>
@@ -225,9 +238,9 @@ function PageWrap({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Empty({ title, body }: { title: string; body: string }) {
+function Empty({ title, body, signedIn = false }: { title: string; body: string; signedIn?: boolean }) {
   return (
-    <PublicShell>
+    <PublicShell signedIn={signedIn}>
       <PageWrap>
         <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">{title}</h1>
         <p className="font-body-md text-body-md text-on-surface-variant m-0">{body}</p>
@@ -364,6 +377,7 @@ function CheckedInView({
   checkInAt,
   method,
   creditStatus,
+  signedIn,
 }: {
   event: EventRow;
   checkInAt: string | null;
@@ -371,6 +385,11 @@ function CheckedInView({
   /** 'posted' → green success banner, 'missing' → see-reception nudge,
    *  'silence' → no banner (event is non-CPD, or upstream refused). */
   creditStatus: 'posted' | 'pending' | 'missing' | 'silence';
+  /** Whether the caller is signed in. Steers the pending banner (H1) and
+   *  the missing banner (H7): a signed-in attendee whose profile/licence
+   *  is incomplete deserves a "check your account" nudge, not just "see
+   *  reception" — reception can't fix profile/licence gaps for them. */
+  signedIn: boolean;
 }) {
   const via = method === 'qr' ? 'via self-scan' : method === 'manual' ? 'via reception' : null;
   return (
@@ -419,16 +438,21 @@ function CheckedInView({
         >
           <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>info</span>
           <span className="flex-1">
-            CPD credit is pending.{' '}
+            CME/CPD points are pending.{' '}
+            {/* H1 — signed-in visitors go straight to the claim page; only
+                signed-out visitors need the OTP round-trip via /account/sign-in.
+                The RPC only fires 'pending' when user_id IS NULL, but a
+                signed-in caller carrying a stale-session cookie hits the same
+                banner, and forcing them through sign-in is a dead loop. */}
             <Link
-              href="/account/sign-in?next=/account/claim"
+              href={signedIn ? '/account/claim' : '/account/sign-in?next=/account/claim'}
               className="text-primary-ink hover:underline font-semibold"
             >
-              Sign in or sign up
+              {signedIn ? 'Link this attendance to your account' : 'Sign in or sign up'}
             </Link>{' '}
-            with the email you registered with to link this attendance to
-            your account and release credit — reception can&apos;t do this
-            for you.
+            {signedIn
+              ? 'to release points — reception can’t do this for you.'
+              : 'with the email you registered with to link this attendance and release points — reception can’t do this for you.'}
           </span>
         </p>
       )}
@@ -440,8 +464,30 @@ function CheckedInView({
         >
           <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>info</span>
           <span className="flex-1">
-            We couldn&apos;t record your CPD credit for this event. Please see
-            reception before you leave.
+            {/* H7 — 'missing' isn't one thing. For a signed-in attendee it
+                most often means an F1–F5 gate failed (profile, licence,
+                consents), which reception can't fix. Point them at their
+                account first; falling back to reception is still on the
+                table. Signed-out is different: their registration exists,
+                reception is the right escalation. */}
+            {signedIn ? (
+              <>
+                We couldn&apos;t record your CME/CPD points for this event.
+                Your profile or licence may be incomplete —{' '}
+                <Link
+                  href="/account/profile"
+                  className="text-primary-ink hover:underline font-semibold"
+                >
+                  check your account
+                </Link>
+                , or see reception if everything looks correct.
+              </>
+            ) : (
+              <>
+                We couldn&apos;t record your CME/CPD points for this event.
+                Please see reception before you leave.
+              </>
+            )}
           </span>
         </p>
       )}

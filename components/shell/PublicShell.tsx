@@ -35,9 +35,20 @@ export type PublicShellPill = {
 export function PublicShell({
   children,
   pill,
+  signedIn = false,
 }: {
   children: React.ReactNode;
   pill?: PublicShellPill;
+  /**
+   * Whether the visitor is signed in. Drives the right-side auth CTA — mirror
+   * of SiteShell's state-aware pill (commit 9b0412f). Attendee door for
+   * signed-out, /account for signed-in; staff /login stays unlinked from
+   * public chrome per Q32's audience-boundary rule. Discovered 2026-09-05
+   * that this shell had no auth CTA at all — a signed-out visitor on an
+   * event page had no shell-level path to sign in, only the in-form nudge.
+   * Same shape and default as SiteShell (false when a caller can't know).
+   */
+  signedIn?: boolean;
 }) {
   return (
     <div className="app-atmo flex min-h-screen flex-col text-on-surface">
@@ -54,23 +65,41 @@ export function PublicShell({
           Upcoming events
         </Link>
 
-        {pill && (
-          <span
-            className={`inline-flex items-center gap-xs rounded-full px-sm py-[3px] text-[calc(11px*var(--text-scale))] font-semibold ${
-              pill.tone === 'success'
-                ? 'bg-success-container text-on-success-container'
-                : 'bg-surface-container-high text-on-surface-variant'
-            }`}
-          >
+        <div className="flex items-center gap-sm">
+          {pill && (
             <span
-              className={`h-[6px] w-[6px] rounded-full ${
-                pill.tone === 'success' ? 'bg-[color:var(--success)]' : 'bg-outline'
+              className={`inline-flex items-center gap-xs rounded-full px-sm py-[3px] text-[calc(11px*var(--text-scale))] font-semibold ${
+                pill.tone === 'success'
+                  ? 'bg-success-container text-on-success-container'
+                  : 'bg-surface-container-high text-on-surface-variant'
               }`}
-              aria-hidden
-            />
-            {pill.label}
-          </span>
-        )}
+            >
+              <span
+                className={`h-[6px] w-[6px] rounded-full ${
+                  pill.tone === 'success' ? 'bg-[color:var(--success)]' : 'bg-outline'
+                }`}
+                aria-hidden
+              />
+              {pill.label}
+            </span>
+          )}
+
+          {signedIn ? (
+            <Link
+              href="/account"
+              className="rounded-full bg-primary px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary transition-transform duration-150 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+            >
+              Account
+            </Link>
+          ) : (
+            <Link
+              href="/account/sign-in"
+              className="rounded-full bg-primary px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary transition-transform duration-150 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+            >
+              Sign in
+            </Link>
+          )}
+        </div>
       </nav>
 
       <main className="w-full flex-1">{children}</main>

@@ -17,6 +17,14 @@ vi.mock('@/lib/origin', () => ({ getRequestOrigin: vi.fn(async () => 'http://loc
 vi.mock('@/lib/checkinQr', () => ({
   buildCheckinQrPng: vi.fn(async () => ({ pngBase64: 'UE5H', filename: 'qr.png' })),
 }));
+// 2026-09-05 — check-in confirm now reads auth to pass signedIn to PublicShell.
+// supabaseServer() reaches for cookies() which throws outside a request scope
+// in unit tests; stub it out.
+vi.mock('@/lib/supabase/server', () => ({
+  supabaseServer: vi.fn(async () => ({
+    auth: { getUser: async () => ({ data: { user: null } }) },
+  })),
+}));
 
 // Route to an early branch (event not published) so the render path is trivial
 // and no QR/format work runs — the SELECT still fires and is what we assert on.

@@ -173,7 +173,7 @@ export default async function PublicEventPage({
     (event as unknown as { hero_image_url?: string | null }).hero_image_url ?? null;
 
   return (
-    <PublicShell>
+    <PublicShell signedIn={signedInUser !== null}>
       {/* Wave 3 — hero backdrop. Full-width band, image when uploaded,
           accent-tinted palette fallback otherwise. No overlay text — the
           existing event-meta block below is the source of truth for title
