@@ -33,6 +33,7 @@ export const REVIEW_STAFF = {
   email: 'review@localhost.invalid',
   role: 'eventar_staff' as const,
   full_name: 'Review Mode',
+  organisation_id: null as string | null,
 };
 
 /**
@@ -52,7 +53,7 @@ export async function resolveReviewStaff(
 ): Promise<typeof REVIEW_STAFF> {
   const { data, error } = await admin
     .from('staff')
-    .select('id, email, role, full_name')
+    .select('id, email, role, full_name, organisation_id')
     .eq('status', 'active');
 
   if (error) {

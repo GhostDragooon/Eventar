@@ -81,6 +81,9 @@ export type InitialEvent = {
   registration_open_at?: string | null;
   registration_close_at?: string | null;
   category?: string | null;
+  // Whole-event format — programme home chip filter. Distinct from the
+  // agenda block's "Event type" (BlockKind).
+  format?: string | null;
   // jsonb {staff, self_serve}. Kept loose at the boundary (the column has no
   // TS type of its own) but always present on a real row — the DB default is
   // NOT NULL {"staff": true, "self_serve": false}.
@@ -236,6 +239,7 @@ export default function NewEventForm(props: Props) {
     initialEvent?.hero_image_url ?? '',
   );
   const [category, setCategory] = useState<string>(initialEvent?.category ?? '');
+  const [format, setFormat] = useState<string>(initialEvent?.format ?? '');
   // Self-serve check-in. `=== true` deliberately, matching the read side in
   // app/(public)/checkin/confirm/page.tsx — anything else is OFF, so a
   // malformed row can never render as enabled on one side and disabled on the
@@ -350,6 +354,7 @@ export default function NewEventForm(props: Props) {
       registration_open_at:  openIso,
       registration_close_at: closeIso,
       category: category || undefined,
+      format: format || undefined,
       // `staff` is constant-true, not a control: nothing in the product reads
       // it (mark_attended has no flag check), so a toggle for it would be
       // fabricated chrome. True is the accurate description of reality.
@@ -476,6 +481,25 @@ export default function NewEventForm(props: Props) {
               <option value="">No category</option>
               <option value="medicine_dentistry">Medicine &amp; dentistry</option>
               <option value="allied_health">Allied health</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+          <label className="block max-w-xs">
+            <span className="block font-label-md text-label-md uppercase tracking-wider text-on-surface mb-xs">
+              Format <span className="text-on-surface-variant normal-case">(optional)</span>
+            </span>
+            <select
+              value={format}
+              onChange={(e) => setFormat(e.target.value)}
+              className="w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary transition-colors"
+            >
+              <option value="">No format</option>
+              <option value="conference">Conference</option>
+              <option value="symposium">Symposium</option>
+              <option value="seminar">Seminar</option>
+              <option value="lecture">Lecture</option>
+              <option value="workshop">Workshop</option>
+              <option value="webinar">Webinar</option>
               <option value="other">Other</option>
             </select>
           </label>

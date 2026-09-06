@@ -454,6 +454,22 @@ describe('NewEventForm — D.3b linear layout', () => {
     // per patterns doc §7 — DB column stays `kind`).
     expect(screen.getByText(/^Event type$/)).toBeInTheDocument();
   });
+
+  it('renders the whole-event "Format" field with all seven options, distinct from "Event type"', () => {
+    render(
+      <NewEventForm
+        mode="create"
+        submit={vi.fn(async () => ({ ok: true as const }))}
+        cpdBodies={[]}
+        cpdBodiesUnavailable={false}
+      />,
+    );
+    const select = screen.getByLabelText(/^Format/) as HTMLSelectElement;
+    const options = within(select).getAllByRole('option').map((o) => o.textContent);
+    expect(options).toEqual([
+      'No format', 'Conference', 'Symposium', 'Seminar', 'Lecture', 'Workshop', 'Webinar', 'Other',
+    ]);
+  });
 });
 
 describe('NewEventForm — D.3b action row (Cancel · Save & Preview · Save)', () => {

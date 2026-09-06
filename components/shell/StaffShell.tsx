@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { BrandMark } from './BrandMark';
 import { SiteFooter } from './SiteFooter';
+import { firstName } from '@/lib/name';
 
 // Organiser shell — rebuilt 2026-08-09 to `docs/plans/2026-07-12-organiser-ia-spec.md`.
 //
@@ -32,7 +33,11 @@ import { SiteFooter } from './SiteFooter';
 // explicitly after being shown the conflict.
 
 type StaffShellBaseProps = {
-  staff: { email: string; role: 'organiser_admin' | 'organiser_member' | 'body_admin' | 'auditor' | 'eventar_staff' };
+  staff: {
+    email: string;
+    role: 'organiser_admin' | 'organiser_member' | 'body_admin' | 'auditor' | 'eventar_staff';
+    full_name?: string | null;
+  };
   children: React.ReactNode;
 };
 
@@ -61,7 +66,8 @@ export type StaffShellProps = StaffShellBaseProps & StaffShellBackProps;
  * own row then - not a placeholder now.
  */
 const NAV: { label: string; href: string | null; icon: string; count?: number }[] = [
-  { label: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
+  { label: 'Programme', href: '/dashboard', icon: 'calendar_today' },
+  { label: 'Manage', href: '/dashboard/manage', icon: 'event_note' },
   { label: 'Participants', href: null, icon: 'group' },
   { label: 'Accreditation', href: null, icon: 'verified_user' },
   { label: 'Check-in', href: '/checkin', icon: 'how_to_reg' },
@@ -159,15 +165,24 @@ export function StaffShell(props: StaffShellProps) {
             position; a horizontal strip below md, which is what the pre-2026-08-08
             shell did too (the spec's real mobile answer is a bottom nav with
             Scan as the centre action — that is its own piece of work). */}
-        <aside className="shrink-0 border-b border-outline-variant md:sticky md:top-0 md:h-screen md:w-[248px] md:self-start md:border-b-0 md:border-r">
+        <aside className="shrink-0 bg-sidebar md:sticky md:top-0 md:h-screen md:w-[248px] md:self-start">
           <div className="flex h-full flex-col gap-md p-md">
-            {/* Brand mark. Reinstated 2026-08-09 per the mockup. */}
-            {/* href="/" is the shipped behaviour, kept deliberately: changing it
-                was not part of the wordmark decision. Worth a look though — from
-                a staff surface the mark lands on the marketing landing, which
-                ejects the organiser out of the app. Same class as the old Events
-                link that loaded the public listing. Flagged, not changed. */}
-            <BrandMark compact />
+            {/* Brand mark. Reinstated 2026-08-09 per the mockup. Staff shell
+                points at /dashboard (BrandMark's own docblock already specified
+                this — the earlier default of "/" ejected the organiser to the
+                marketing landing). Fixed 2026-09-07 as part of the programme
+                calendar pass. */}
+            <BrandMark compact href="/dashboard" />
+
+            {backHref && backLabel && (
+              <Link
+                href={backHref}
+                className="nav-item block max-w-full truncate px-md text-[calc(13px*var(--text-scale))] text-on-surface-variant hover:text-on-surface"
+              >
+                <span aria-hidden>← </span>
+                Back to {backLabel}
+              </Link>
+            )}
 
             <nav
               aria-label="Primary"
@@ -187,66 +202,34 @@ export function StaffShell(props: StaffShellProps) {
               </p>
               <NavRow label="Settings" href="/settings" icon="settings" active={pathname === '/settings'} />
             </nav>
-          </div>
-        </aside>
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          {/* SLIM TOP CONTEXT BAR — org name, global search, user menu. */}
-          <header className="glass-nav sticky top-0 z-[5] flex items-center gap-md border-b border-outline-variant px-grid-margin py-sm">
-            <div className="min-w-0 shrink-0">
-              {backHref && backLabel ? (
-                <Link
-                  href={backHref}
-                  className="nav-item block max-w-[220px] truncate text-[calc(13px*var(--text-scale))] text-on-surface-variant hover:text-on-surface"
-                >
-                  <span aria-hidden>← </span>
-                  Back to {backLabel}
-                </Link>
-              ) : (
-                // The mockup shows the organisation name here. StaffShell is
-                // only handed `staff`, so printing the mockup's "Demo CPD
-                // Alliance" would hardcode a fixture name into every real
-                // tenant's chrome — the same fabrication this shell's own
-                // comments reject elsewhere. The label is honest until the org
-                // is actually threaded through.
-                <p className="truncate text-[calc(12px*var(--text-scale))] font-semibold uppercase tracking-[.08em] text-on-surface-variant">
-                  Organiser workspace
-                </p>
-              )}
-            </div>
-
-            {/* Search is in the spec's context bar, but there is no search
-                backend (the spec tags global search post-M4 and the previous
-                shell removed it for exactly that reason). Rendering a live-
-                looking input that returns nothing is the "chrome that lies"
-                failure. Shown disabled, labelled, so the slot is visibly
-                reserved without pretending to work. */}
-            <div className="hidden flex-1 justify-center lg:flex">
-              <div
-                aria-hidden
-                className="flex w-full max-w-[420px] items-center gap-sm rounded-full border border-outline-variant bg-surface-container-lowest/70 px-md py-[6px] text-[calc(12.5px*var(--text-scale))] text-on-surface-variant/60"
-              >
-                <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]">search</span>
-                Search — coming with the search backend
-              </div>
-            </div>
-
-            <div className="ml-auto flex shrink-0 items-center gap-sm">
+            {/* Account chip pinned bottom-left (Ivan's call 2026-09-07). The
+                top bar this used to live in is gone — org identity now shows
+                on the programme page's own H1 (see app/dashboard/page.tsx),
+                and this chip carries the signed-in person instead. */}
+            <div className="mt-auto flex items-center gap-sm rounded-[12px] px-md py-sm hover:bg-surface-container-high cursor-pointer">
               <span
-                className="grid h-[26px] w-[26px] place-items-center rounded-full bg-primary-container text-[calc(11px*var(--text-scale))] font-semibold text-on-primary-container"
+                className="grid h-[30px] w-[30px] flex-shrink-0 place-items-center rounded-full bg-primary-container text-[calc(12px*var(--text-scale))] font-semibold text-on-primary-container"
                 aria-hidden
               >
                 {staff.email.slice(0, 2).toUpperCase()}
               </span>
-              <span
-                className="hidden max-w-[220px] truncate text-[calc(12.5px*var(--text-scale))] text-on-surface-variant sm:inline"
-                title={staff.email}
-              >
-                {staff.email}
-              </span>
+              <div className="min-w-0">
+                <div className="truncate text-[calc(13px*var(--text-scale))] font-semibold leading-tight text-on-surface">
+                  {firstName(staff.full_name) || staff.email.split('@')[0]}
+                </div>
+                <div
+                  className="max-w-[160px] truncate text-[calc(11.5px*var(--text-scale))] text-on-surface-variant"
+                  title={staff.email}
+                >
+                  {staff.email}
+                </div>
+              </div>
             </div>
-          </header>
+          </div>
+        </aside>
 
+        <div className="flex min-w-0 flex-1 flex-col bg-sidebar">
           <main
             id="main-content"
             tabIndex={-1}

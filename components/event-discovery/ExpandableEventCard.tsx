@@ -10,6 +10,9 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   saved?: boolean;
   onSaveChange?: (eventId: string, saved: boolean) => void;
+  /** Skip the built-in EventCard trigger for a caller that renders its own
+   *  (e.g. an agenda row) and drives `open` from its own click handler. */
+  hideTrigger?: boolean;
 };
 
 const FOCUSABLE = [
@@ -27,6 +30,7 @@ export function ExpandableEventCard({
   onOpenChange,
   saved = false,
   onSaveChange,
+  hideTrigger = false,
 }: Props) {
   const dialogRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -97,14 +101,16 @@ export function ExpandableEventCard({
           screen reader's browse cursor can still reach these controls even
           though the modal overlay blocks pointer clicks and the focus trap
           blocks Tab. */}
-      <div inert={open}>
-        <EventCard
-          event={event}
-          saved={saved}
-          onSaveChange={onSaveChange}
-          onOpen={() => onOpenChange(true)}
-        />
-      </div>
+      {!hideTrigger && (
+        <div inert={open}>
+          <EventCard
+            event={event}
+            saved={saved}
+            onSaveChange={onSaveChange}
+            onOpen={() => onOpenChange(true)}
+          />
+        </div>
+      )}
 
       {open && (
         <div className="fixed inset-0 z-50 grid place-items-center p-md" role="presentation">

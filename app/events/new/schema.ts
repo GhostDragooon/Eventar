@@ -1,5 +1,12 @@
 import { z } from 'zod';
 
+// Whole-event format — drives the programme home's filter chip row. Distinct
+// from KINDS below, which is the per-agenda-block "Event type".
+export const EVENT_FORMATS = [
+  'conference', 'symposium', 'seminar', 'lecture', 'workshop', 'webinar', 'other',
+] as const;
+export type EventFormat = typeof EVENT_FORMATS[number];
+
 export const KINDS = [
   'workshop','seminar','webinar','scientific_program',
   'panel','roundtable','keynote','other',
@@ -82,6 +89,9 @@ export const eventInputSchema = z.object({
   // this validate — that's the intended fail-visibly (Rule 12) posture: an
   // organiser sees the mismatch and picks a valid category on next save.
   category: z.enum(['medicine_dentistry', 'allied_health', 'other']).optional(),
+  // Whole-event format (programme home chip filter). Nullable is legitimate —
+  // existing events have none, and older organisers may skip it.
+  format: z.enum(EVENT_FORMATS).nullable().optional(),
   // How attendance is captured at the door. `self_serve` is the only half the
   // form offers: nothing reads `staff` (mark_attended has no flag check), so a
   // staff toggle would be a control that does nothing — the form sends

@@ -1,13 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState, useTransition } from 'react';
+import { Fragment, useMemo, useState, useSyncExternalStore } from 'react';
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
-import { softDeleteEvents, restoreEvents, cancelEvents } from '@/app/dashboard/actions';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { useToast } from '@/components/ui/toast';
-import { Button, buttonVariants } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { NeedsAttention, type AttentionItem } from './NeedsAttention';
+import { ExpandableEventCard } from '@/components/event-discovery/ExpandableEventCard';
+import type { EventCardRecord } from '@/components/event-discovery/EventCard';
+import { EVENT_FORMATS, type EventFormat } from '@/app/events/new/schema';
 
 export type WorkstationEvent = {
   id: string;
@@ -27,21 +26,33 @@ export type WorkstationEvent = {
   deleted: boolean;
 };
 
+/** Programme home's richer event shape — a superset of WorkstationEvent, so
+ *  the same rows also drive the Manage page without a second fetch. */
+export type ProgrammeEvent = WorkstationEvent & {
+  format: EventFormat | null;
+  hero_image_url: string | null;
+  city: string | null;
+  hosts: Array<{ name: string; avatar_url: string | null }>;
+};
+
 export type DashboardMetrics = {
   openRegistered: number;
   registered7d: number;
   eventsThisWeek: number;
   closingSoon: number;
   checkedInToday: number;
-  /** Percent, or null when nobody has registered for a run-able event yet. */
   captureRate: number | null;
   creditsIssued: number;
   creditsBlocked: number;
   liveNow: number;
 };
 
-// Instructional color (locked): green=live/go, blue=action, amber=draft/hold,
-// red=stopped, neutral=context. One pill treatment per lifecycle.
+export type ViewMode = 'card' | 'compact';
+export type Segment = 'upcoming' | 'past';
+
+const VIEW_STORAGE_KEY = 'eventar.programme.view';
+const TZ = 'Asia/Hong_Kong';
+
 const PILL: Record<Lifecycle, { label: string; cls: string; dot: string }> = {
   live:        { label: 'Live',        cls: 'bg-success-container text-on-success-container', dot: 'bg-[color:var(--success)]' },
   registering: { label: 'Registering', cls: 'bg-success-container text-on-success-container', dot: 'bg-[color:var(--success)]' },
@@ -51,420 +62,584 @@ const PILL: Record<Lifecycle, { label: string; cls: string; dot: string }> = {
   cancelled:   { label: 'Cancelled',   cls: 'bg-error-container text-[color:var(--error)]', dot: 'bg-[color:var(--error)]' },
 };
 
-const CATEGORY_LABEL: Record<string, string> = {
-  medicine_dentistry: 'Medicine & dentistry',
-  allied_health: 'Allied health',
+const FORMAT_LABEL: Record<EventFormat, string> = {
+  conference: 'Conference',
+  symposium: 'Symposium',
+  seminar: 'Seminar',
+  lecture: 'Lecture',
+  workshop: 'Workshop',
+  webinar: 'Webinar',
   other: 'Other',
 };
 
-type FilterKey = Lifecycle | 'all' | 'deleted';
-const FILTERS: { key: FilterKey; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'drafted', label: 'Draft' },
-  { key: 'registering', label: 'Registering' },
-  { key: 'upcoming', label: 'Upcoming' },
-  { key: 'live', label: 'Live' },
-  { key: 'completed', label: 'Completed' },
-  { key: 'cancelled', label: 'Cancelled' },
-  { key: 'deleted', label: 'Deleted' },
-];
-
-type SortKey = 'soonest' | 'recent' | 'most';
-const SORTS: { key: SortKey; label: string }[] = [
-  { key: 'soonest', label: 'Soonest' },
-  { key: 'recent', label: 'Most recent' },
-  { key: 'most', label: 'Most registered' },
-];
-
-function csvEscape(v: string): string {
-  return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+function readViewMode(): ViewMode {
+  if (typeof window === 'undefined') return 'card';
+  try {
+    const v = window.localStorage.getItem(VIEW_STORAGE_KEY);
+    return v === 'card' || v === 'compact' ? v : 'card';
+  } catch {
+    return 'card';
+  }
+}
+function subscribeStorage(onChange: () => void): () => void {
+  window.addEventListener('storage', onChange);
+  return () => window.removeEventListener('storage', onChange);
+}
+function notifyStorage() {
+  window.dispatchEvent(new StorageEvent('storage'));
 }
 
-export function DashboardWorkstation({
-  events,
-  greetingName,
-  greeting,
-  metrics,
-}: {
-  events: WorkstationEvent[];
-  greetingName: string;
-  greeting: string;
+function hkDateKey(ms: number): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
+}
+function hkDateHeader(ms: number): { day: string; dow: string } {
+  return {
+    day: new Intl.DateTimeFormat('en-GB', { timeZone: TZ, day: 'numeric', month: 'short' }).format(new Date(ms)),
+    dow: new Intl.DateTimeFormat('en-GB', { timeZone: TZ, weekday: 'long' }).format(new Date(ms)),
+  };
+}
+function hkClock(ms: number): string {
+  return new Intl.DateTimeFormat('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(ms));
+}
+function hkYearMonth(ms: number): { year: number; month: number } {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit' }).formatToParts(new Date(ms));
+  return {
+    year: Number(parts.find((p) => p.type === 'year')!.value),
+    month: Number(parts.find((p) => p.type === 'month')!.value) - 1,
+  };
+}
+function orgInitials(name: string | null): string {
+  if (!name) return 'EV';
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
+export type DashboardWorkstationProps = {
+  events: ProgrammeEvent[];
+  attention: AttentionItem[];
   metrics: DashboardMetrics;
-}) {
-  const [query, setQuery] = useState('');
-  const [sort, setSort] = useState<SortKey>('soonest');
-  const [filter, setFilter] = useState<FilterKey>('all');
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [pending, startTransition] = useTransition();
-  const { toast } = useToast();
-  // Designed confirmation (no window.confirm): what's about to run + on whom.
-  const [confirm, setConfirm] = useState<null | {
-    kind: 'archive' | 'cancel';
-    ids: string[];
-    title: string;
-    body: string;
-    confirmLabel: string;
-    tone: 'primary' | 'danger';
-  }>(null);
+  orgName: string | null;
+  nowMs: number;
+};
 
-  const counts = useMemo(() => {
-    const c: Record<string, number> = { all: 0, deleted: 0 };
-    for (const f of FILTERS) if (f.key !== 'all' && f.key !== 'deleted') c[f.key] = 0;
-    for (const e of events) {
-      if (e.deleted) { c.deleted += 1; continue; }
-      c.all += 1;
-      c[e.lifecycle] = (c[e.lifecycle] ?? 0) + 1;
+export function DashboardWorkstation({ events, attention, metrics, orgName, nowMs }: DashboardWorkstationProps) {
+  const viewMode = useSyncExternalStore<ViewMode>(subscribeStorage, readViewMode, () => 'card');
+  const [agendaSearchOpen, setAgendaSearchOpen] = useState(false);
+  const [agendaQuery, setAgendaQuery] = useState('');
+  const [activeFormat, setActiveFormat] = useState<EventFormat | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [segment, setSegment] = useState<Segment>('upcoming');
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [calMonth, setCalMonth] = useState(() => hkYearMonth(nowMs));
+
+  function changeView(v: ViewMode) {
+    try {
+      localStorage.setItem(VIEW_STORAGE_KEY, v);
+    } catch {
+      // Best-effort persistence only.
     }
-    return c;
-  }, [events]);
+    notifyStorage();
+  }
 
-  const inBin = filter === 'deleted';
+  const todayKey = hkDateKey(nowMs);
 
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    let list = events.filter((e) =>
-      filter === 'all' ? !e.deleted
-      : filter === 'deleted' ? e.deleted
-      : !e.deleted && e.lifecycle === filter,
-    );
-    if (q) list = list.filter((e) => e.title.toLowerCase().includes(q) || (e.venueName ?? '').toLowerCase().includes(q));
-    const sorted = [...list];
-    if (sort === 'soonest') sorted.sort((a, b) => a.startMs - b.startMs);
-    else if (sort === 'recent') sorted.sort((a, b) => b.startMs - a.startMs);
-    else sorted.sort((a, b) => b.registered - a.registered);
-    // Live events always surface first (operator priority), stable within.
-    if (filter === 'all') {
-      const live = sorted.filter((e) => e.lifecycle === 'live');
-      const rest = sorted.filter((e) => e.lifecycle !== 'live');
-      return [...live, ...rest];
+  const agendaEligible = useMemo(
+    () => events.filter((e) => !e.deleted && e.lifecycle !== 'drafted'),
+    [events],
+  );
+
+  const formatCounts = useMemo(() => {
+    const counts = new Map<EventFormat, number>();
+    for (const e of agendaEligible) {
+      if (!e.format) continue;
+      counts.set(e.format, (counts.get(e.format) ?? 0) + 1);
     }
-    return sorted;
-  }, [events, query, filter, sort]);
+    return counts;
+  }, [agendaEligible]);
 
-  const live = counts.live ?? 0;
-  const registeringN = counts.registering ?? 0;
-  const draftN = counts.drafted ?? 0;
-  const summary = [
-    live ? `${live} live today` : null,
-    registeringN ? `${registeringN} registering` : null,
-    draftN ? `${draftN} draft${draftN > 1 ? 's' : ''}` : null,
-  ].filter(Boolean).join(' · ') || 'No open events';
+  const presentFormats = EVENT_FORMATS.filter((f) => (formatCounts.get(f) ?? 0) > 0);
+  const visibleChips = presentFormats.slice(0, 6);
+  const overflowFormats = presentFormats.slice(6);
 
-  function toggle(id: string) {
-    setSelected((s) => {
-      const n = new Set(s);
-      if (n.has(id)) n.delete(id); else n.add(id);
-      return n;
-    });
-  }
-
-  function execute(kind: 'archive' | 'cancel' | 'restore', ids: string[]) {
-    startTransition(async () => {
-      const res =
-        kind === 'archive' ? await softDeleteEvents(ids)
-        : kind === 'cancel' ? await cancelEvents(ids)
-        : await restoreEvents(ids);
-      setConfirm(null);
-      if ('error' in res) {
-        toast('error', res.error);
-        return;
-      }
-      setSelected((s) => {
-        const n = new Set(s);
-        ids.forEach((id) => n.delete(id));
-        return n;
-      });
-      const n = res.count;
-      toast(
-        'success',
-        kind === 'archive'
-          ? `${n} event${n === 1 ? '' : 's'} moved to Deleted — restore any time.`
-          : kind === 'cancel'
-            ? `${n} event${n === 1 ? '' : 's'} cancelled.`
-            : `${n} event${n === 1 ? '' : 's'} restored.`,
-      );
-    });
-  }
-
-  function runBulk(kind: 'archive' | 'cancel' | 'restore') {
-    const ids = [...selected];
-    if (ids.length === 0) return;
-    if (kind === 'restore') {
-      execute('restore', ids);
-      return;
+  const agendaFiltered = useMemo(() => {
+    let list = agendaEligible;
+    if (activeFormat) list = list.filter((e) => e.format === activeFormat);
+    if (agendaQuery.trim()) {
+      const q = agendaQuery.trim().toLowerCase();
+      list = list.filter((e) => e.title.toLowerCase().includes(q) || (e.venueName ?? '').toLowerCase().includes(q));
     }
-    const n = ids.length;
-    setConfirm(
-      kind === 'archive'
-        ? {
-            kind, ids, tone: 'danger', confirmLabel: `Delete ${n} event${n === 1 ? '' : 's'}`,
-            title: `Delete ${n} event${n === 1 ? '' : 's'}?`,
-            body: 'They move to the Deleted bucket and can be restored at any time.',
-          }
-        : {
-            kind, ids, tone: 'danger', confirmLabel: `Cancel ${n} event${n === 1 ? '' : 's'}`,
-            title: `Cancel ${n} event${n === 1 ? '' : 's'}?`,
-            body: 'Registrants keep their records, but the events are marked cancelled on every surface.',
-          },
+    if (selectedDay) {
+      list = list.filter((e) => hkDateKey(e.startMs) === selectedDay);
+      return [...list].sort((a, b) => a.startMs - b.startMs);
+    }
+    list = list.filter((e) =>
+      segment === 'upcoming' ? e.lifecycle === 'live' || e.startMs >= nowMs : e.lifecycle !== 'live' && e.startMs < nowMs,
     );
+    return [...list].sort((a, b) => (segment === 'upcoming' ? a.startMs - b.startMs : b.startMs - a.startMs));
+  }, [agendaEligible, activeFormat, agendaQuery, selectedDay, segment, nowMs]);
+
+  const dateGroups = useMemo(() => {
+    const groups = new Map<string, ProgrammeEvent[]>();
+    for (const e of agendaFiltered) {
+      const key = hkDateKey(e.startMs);
+      const arr = groups.get(key) ?? [];
+      arr.push(e);
+      groups.set(key, arr);
+    }
+    return [...groups.entries()];
+  }, [agendaFiltered]);
+
+  const eventDays = useMemo(() => new Set(agendaEligible.map((e) => hkDateKey(e.startMs))), [agendaEligible]);
+
+  function toRecord(e: ProgrammeEvent): EventCardRecord {
+    return {
+      id: e.id,
+      title: e.title,
+      summary: e.description ?? undefined,
+      format: e.format ? FORMAT_LABEL[e.format] : undefined,
+      dateLabel: `${e.dateLabel} · ${e.timeLabel}`,
+      venueLabel: e.venueName ? (e.city ? `${e.venueName}, ${e.city}` : e.venueName) : '',
+      imageUrl: e.hero_image_url ?? undefined,
+      organizers: e.hosts.map((h) => h.name),
+    };
   }
 
-  function deleteOne(e: WorkstationEvent) {
-    setConfirm({
-      kind: 'archive', ids: [e.id], tone: 'danger', confirmLabel: 'Delete event',
-      title: `Delete “${e.title}”?`,
-      body: 'It moves to the Deleted bucket and can be restored at any time.',
-    });
-  }
-
-  function exportCsv() {
-    const rows = events.filter((e) => selected.has(e.id));
-    const header = ['Title', 'Status', 'Category', 'Date', 'Venue', 'Registered', 'Capacity', 'Attended'];
-    const body = rows.map((e) =>
-      [e.title, PILL[e.lifecycle].label, e.category ? CATEGORY_LABEL[e.category] ?? '' : '', e.dateLabel, e.venueName ?? '', String(e.registered), e.maxAttendees == null ? '' : String(e.maxAttendees), String(e.attended)]
-        .map(csvEscape).join(','),
-    );
-    const blob = new Blob([[header.join(','), ...body].join('\n')], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `eventar-events-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
+  const zeroEventsOverall = events.length === 0;
 
   return (
     <>
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-md mb-lg">
-        <div>
-          <p className="text-label-md font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-xs">Dashboard</p>
-          <h1 className="text-[calc(34px*var(--text-scale))] leading-[1.1] font-extrabold tracking-[-0.03em] text-on-surface">
-            Good {greeting}, {greetingName || 'there'}
-          </h1>
-          <p className="font-body-md text-body-md text-on-surface-variant mt-xs">{summary}</p>
-        </div>
-        <Link
-          href="/events/new"
-          className="inline-flex items-center gap-sm bg-primary text-on-primary font-label-md text-label-md rounded-full py-sm px-lg hover:opacity-90 transition-opacity shrink-0"
+      {/* 1 · Programme header */}
+      <div className="relative mb-lg h-[180px] overflow-hidden rounded-2xl" aria-hidden>
+        <div
+          className="absolute inset-0"
+          style={{ backgroundImage: 'radial-gradient(120% 140% at 85% -10%, rgba(255,255,255,0.25), transparent 60%), linear-gradient(120deg, var(--primary) 0%, var(--tertiary) 100%)' }}
+        />
+      </div>
+      <div className="-mt-[40px] ml-[20px] mb-md flex h-[80px] w-[80px] items-center justify-center rounded-[18px] bg-surface p-[4px] shadow-md">
+        <div
+          className="flex h-full w-full items-center justify-center rounded-[14px] text-[26px] font-semibold text-white"
+          style={{ backgroundImage: 'linear-gradient(135deg, var(--primary), var(--tertiary))' }}
         >
-          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>add</span>
-          New event
-        </Link>
+          {orgInitials(orgName)}
+        </div>
+      </div>
+      <header className="mb-lg">
+        <h1 className="text-[calc(34px*var(--text-scale))] font-bold leading-[1.1] tracking-[-0.02em] text-on-surface">
+          {orgName ?? 'Your programme'}
+        </h1>
+        <p className="mt-xs flex items-center gap-xs text-[calc(13px*var(--text-scale))] text-on-surface-variant">
+          <span className="material-symbols-outlined text-[calc(15px*var(--text-scale))]" aria-hidden>schedule</span>
+          Times in HKT — {hkClock(nowMs)}
+        </p>
+        <p className="mt-xs text-[calc(14px*var(--text-scale))] text-on-surface-variant">
+          Accredited CME / CPD events on Eventar · organiser workspace
+        </p>
+        <hr className="mt-lg border-t border-outline-variant" />
       </header>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-sm mb-lg">
-        {/* The IA spec's four: Registered + delta7d · Checked-in today +
-            capture % · Credits issued/pending/blocked (THE CPD PULSE) · Events
-            this week. The credits cell is the one that makes this a CPD
-            dashboard rather than an events dashboard, and it was missing. */}
-        <Metric label="Registered (open events)" value={metrics.openRegistered} tone="accent" foot={metrics.registered7d > 0 ? `+${metrics.registered7d} in 7 days` : 'no change in 7 days'} />
-        <Metric label="Checked in today" value={metrics.checkedInToday} tone="success" foot={metrics.captureRate != null ? `${metrics.captureRate}% capture rate` : 'no attendance yet'} />
-        <Metric label="Credits issued" value={metrics.creditsIssued} tone="plain" foot={metrics.creditsBlocked > 0 ? `${metrics.creditsBlocked} blocked by lapsed licence` : 'none blocked'} footTone={metrics.creditsBlocked > 0 ? 'warn' : 'muted'} />
-        <Metric label="Events this week" value={metrics.eventsThisWeek} tone="plain" foot={metrics.liveNow > 0 ? `${metrics.liveNow} live now` : `${metrics.closingSoon} closing in 7 days`} footTone={metrics.liveNow > 0 ? 'live' : 'muted'} />
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-sm mb-md">
-        <div className="relative flex-1">
-          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none" aria-hidden>search</span>
-          <input
-            type="text" value={query} onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search events" aria-label="Search events"
-            className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg py-sm pl-[42px] pr-md font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-[color:var(--on-primary-container)] transition-colors"
-          />
+      {/* 2 · Needs attention */}
+      {attention.length > 0 && (
+        <div className="mb-lg">
+          <NeedsAttention items={attention} />
         </div>
-        <label className="inline-flex items-center gap-sm bg-surface-container-lowest border border-outline-variant rounded-lg px-md py-sm shrink-0">
-          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] text-on-surface-variant" aria-hidden>swap_vert</span>
-          <span className="font-label-md text-label-md text-on-surface-variant uppercase">Sort</span>
-          <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} aria-label="Sort events" className="bg-transparent font-label-md text-label-md text-on-surface focus:outline-none cursor-pointer">
-            {SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
-          </select>
-        </label>
-      </div>
+      )}
 
-      <div className="flex items-center gap-lg overflow-x-auto border-b border-outline-variant mb-lg -mx-grid-margin px-grid-margin">
-        {FILTERS.map((f) => {
-          const active = filter === f.key;
-          const n = counts[f.key] ?? 0;
-          if (f.key === 'deleted' && n === 0) return null;
-          return (
-            <button key={f.key} type="button" onClick={() => { setFilter(f.key); setSelected(new Set()); }}
-              className={`relative shrink-0 pb-md pt-xs font-label-md text-label-md transition-colors ${active ? 'text-on-surface' : 'text-on-surface-variant hover:text-on-surface'}`}>
-              {f.label}
-              <span className={`ml-xs inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[calc(11px*var(--text-scale))] font-semibold ${active ? 'bg-[color:var(--on-primary-container)] text-white' : 'bg-surface-container-high text-on-surface-variant'}`}>{n}</span>
-              {active && <span className="absolute left-0 right-0 -bottom-px h-[2px] bg-[color:var(--on-primary-container)] rounded-full" aria-hidden />}
+      {/* 3 · Events — agenda + calendar */}
+      <section className="mb-xxl">
+        <div className="mb-lg flex items-center justify-between gap-md">
+          <h2 className="text-[calc(26px*var(--text-scale))] font-bold tracking-[-0.02em] text-on-surface">Events</h2>
+          <div className="flex items-center gap-xs">
+            <button
+              type="button"
+              aria-pressed={viewMode === 'card'}
+              aria-label="Card view"
+              onClick={() => changeView('card')}
+              className={`grid h-[32px] w-[32px] place-items-center rounded-lg border ${viewMode === 'card' ? 'border-outline-variant bg-surface' : 'border-transparent text-on-surface-variant hover:bg-surface-container-high'}`}
+            >
+              <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>grid_view</span>
             </button>
-          );
-        })}
-      </div>
-
-      {selected.size > 0 && (
-        <div className="flex items-center justify-between gap-md bg-primary-container/60 border border-[color:var(--primary-fixed-dim)] rounded-lg px-md py-sm mb-md flex-wrap">
-          <span className="font-label-md text-label-md text-on-surface font-semibold">{selected.size} selected</span>
-          <div className="flex items-center gap-xs flex-wrap">
-            <Button type="button" variant="outline" onClick={exportCsv} disabled={pending} className="gap-xs px-md py-sm font-label-md text-label-md">
-              <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>download</span>Export CSV
-            </Button>
-            {inBin ? (
-              <Button type="button" variant="outline" onClick={() => runBulk('restore')} disabled={pending} className="gap-xs px-md py-sm font-label-md text-label-md">
-                <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>restore_from_trash</span>Restore
-              </Button>
-            ) : (
-              <>
-                <Button type="button" variant="outline" onClick={() => runBulk('archive')} disabled={pending} className="gap-xs px-md py-sm font-label-md text-label-md">
-                  <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>archive</span>Archive
-                </Button>
-                <Button type="button" variant="destructive" onClick={() => runBulk('cancel')} disabled={pending} className="gap-xs px-md py-sm font-label-md text-label-md">
-                  <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>block</span>Cancel
-                </Button>
-              </>
-            )}
-            <Button type="button" variant="ghost" onClick={() => setSelected(new Set())} disabled={pending} className="px-md py-sm font-label-md text-label-md text-on-surface-variant hover:text-on-surface">Clear</Button>
+            <button
+              type="button"
+              aria-pressed={viewMode === 'compact'}
+              aria-label="Compact view"
+              onClick={() => changeView('compact')}
+              className={`grid h-[32px] w-[32px] place-items-center rounded-lg border ${viewMode === 'compact' ? 'border-outline-variant bg-surface' : 'border-transparent text-on-surface-variant hover:bg-surface-container-high'}`}
+            >
+              <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>view_list</span>
+            </button>
+            <button
+              type="button"
+              aria-pressed={agendaSearchOpen}
+              aria-label="Search events"
+              onClick={() => {
+                setAgendaSearchOpen((v) => {
+                  if (v) setAgendaQuery('');
+                  return !v;
+                });
+              }}
+              className={`grid h-[32px] w-[32px] place-items-center rounded-lg border ${agendaSearchOpen ? 'border-outline-variant bg-surface' : 'border-transparent text-on-surface-variant hover:bg-surface-container-high'}`}
+            >
+              <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>search</span>
+            </button>
           </div>
         </div>
-      )}
 
-      {visible.length === 0 ? (
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-xl text-center">
-          <p className="font-body-md text-body-md text-on-surface-variant">
-            {events.length === 0 ? 'No events yet.' : inBin ? 'The Deleted bucket is empty.' : 'No events match this filter.'}
-          </p>
-          {events.length === 0 && (
-            <Link href="/events/new" className="inline-flex items-center gap-sm mt-md bg-primary text-on-primary font-label-md text-label-md rounded-full py-sm px-lg hover:opacity-90 transition-opacity">
-              <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>add</span>Create your first event
-            </Link>
-          )}
+        {agendaSearchOpen && (
+          <input
+            type="text"
+            value={agendaQuery}
+            onChange={(e) => setAgendaQuery(e.target.value)}
+            placeholder="Search your programme"
+            aria-label="Search your programme"
+            autoFocus
+            className="mb-md w-full rounded-lg border border-outline-variant bg-surface px-md py-sm text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary"
+          />
+        )}
+
+        {presentFormats.length > 0 && (
+          <div className="mb-lg flex flex-wrap gap-[6px]">
+            {visibleChips.map((f) => {
+              const active = activeFormat === f;
+              return (
+                <button
+                  key={f}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setActiveFormat(active ? null : f)}
+                  className={`inline-flex items-center gap-[5px] rounded-full border px-[12px] py-[5px] text-[12.5px] font-medium ${
+                    active
+                      ? 'border-transparent bg-primary-container font-semibold text-on-primary-container'
+                      : 'border-outline-variant bg-transparent text-on-surface-variant hover:bg-surface-container-high'
+                  }`}
+                >
+                  {FORMAT_LABEL[f]} · {formatCounts.get(f)}
+                </button>
+              );
+            })}
+            {overflowFormats.length > 0 && (
+              <span
+                title={overflowFormats.map((f) => FORMAT_LABEL[f]).join(', ')}
+                className="inline-flex items-center rounded-full border border-outline-variant px-[12px] py-[5px] text-[12.5px] font-medium text-on-surface-variant"
+              >
+                +{overflowFormats.length}
+              </span>
+            )}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-[28px] min-[900px]:grid-cols-[1fr_280px]">
+          {/* Left — agenda */}
+          <div className="min-w-0" data-testid="agenda">
+            {selectedDay && (
+              <button
+                type="button"
+                onClick={() => setSelectedDay(null)}
+                className="mb-md inline-flex items-center gap-xs rounded-full bg-primary-container px-md py-xs text-[12.5px] font-semibold text-on-primary-container"
+              >
+                <span className="material-symbols-outlined text-[14px]" aria-hidden>close</span>
+                {hkDateHeader(new Date(`${selectedDay}T00:00:00`).getTime()).day} — clear filter
+              </button>
+            )}
+
+            {zeroEventsOverall ? (
+              <EmptyAgenda
+                text="No events yet. Create your first event to build your programme."
+                cta
+              />
+            ) : dateGroups.length === 0 ? (
+              <EmptyAgenda
+                text={segment === 'upcoming' ? 'No upcoming events. Create one to start your programme.' : 'No past events yet.'}
+                cta={segment === 'upcoming'}
+              />
+            ) : (
+              dateGroups.map(([key, dayEvents]) => {
+                const { day, dow } = hkDateHeader(dayEvents[0].startMs);
+                return (
+                  <div key={key} className="mb-md">
+                    <div className="sticky top-0 z-[1] flex items-baseline gap-[10px] border-b border-outline-variant bg-sidebar py-[10px]">
+                      <span className="text-[15px] font-bold text-on-surface">{day}</span>
+                      <span className="text-[15px] text-on-surface-variant">{dow}</span>
+                    </div>
+                    {dayEvents.map((e) => (
+                      <Fragment key={e.id}>
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setExpandedId(e.id)}
+                          onKeyDown={(ev) => {
+                            if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); setExpandedId(e.id); }
+                          }}
+                          className={`ev-row mx-[-12px] grid cursor-pointer gap-[16px] rounded-[12px] p-[14px_12px] transition-colors duration-[180ms] hover:bg-[rgba(20,23,43,0.035)] focus-visible:outline-2 focus-visible:outline-primary ${
+                            viewMode === 'card' ? 'grid-cols-[88px_1fr_110px]' : 'grid-cols-[88px_1fr]'
+                          }`}
+                        >
+                          <div className="pt-[2px] text-[13px] tabular-nums text-on-surface-variant">{e.timeLabel}</div>
+                          <div className="min-w-0">
+                            <div className="mb-[6px] flex items-start justify-between gap-md">
+                              <h3 className="m-0 text-[16px] font-semibold leading-[1.35] tracking-[-0.01em] text-on-surface">{e.title}</h3>
+                              <AgendaStatusPill event={e} />
+                            </div>
+                            {e.hosts.length > 0 && (
+                              <div className="mt-xs flex items-center gap-[6px] text-[12.5px] text-on-surface-variant">
+                                <AvatarStack hosts={e.hosts} />
+                                <span className="truncate">By {e.hosts.map((h) => h.name).join(', ')}</span>
+                              </div>
+                            )}
+                            {e.venueName && (
+                              <div className="mt-xs flex items-center gap-[6px] text-[12.5px] text-on-surface-variant">
+                                <span className="material-symbols-outlined text-[14px]" aria-hidden>location_on</span>
+                                {e.venueName}{e.city ? `, ${e.city}` : ''}
+                              </div>
+                            )}
+                          </div>
+                          {viewMode === 'card' && (
+                            <div className="h-[110px] w-[110px] overflow-hidden rounded-[12px] bg-surface-container" aria-hidden>
+                              {e.hero_image_url ? (
+                                <img src={e.hero_image_url} alt="" className="h-full w-full object-cover" />
+                              ) : (
+                                <FormatPlaceholder format={e.format} />
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <ExpandableEventCard
+                          hideTrigger
+                          event={toRecord(e)}
+                          open={expandedId === e.id}
+                          onOpenChange={(open) => setExpandedId(open ? e.id : null)}
+                        />
+                      </Fragment>
+                    ))}
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Right — actions + calendar */}
+          <aside className="flex flex-col gap-md">
+            <div className="flex gap-sm">
+              <Link
+                href="/events/new"
+                className="flex flex-1 items-center justify-center gap-[6px] rounded-[10px] border border-outline-variant bg-surface px-md py-sm text-[13px] font-semibold text-on-surface hover:bg-surface-container-high"
+              >
+                <span className="material-symbols-outlined text-[16px]" aria-hidden>add</span>
+                New event
+              </Link>
+              <span
+                aria-disabled="true"
+                title="Calendar subscription — coming soon"
+                className="grid h-[36px] w-[36px] shrink-0 cursor-default place-items-center rounded-[10px] border border-outline-variant bg-surface text-on-surface-variant/60"
+              >
+                <span className="material-symbols-outlined text-[16px]" aria-hidden>calendar_month</span>
+              </span>
+            </div>
+
+            <MiniCalendar
+              year={calMonth.year}
+              month={calMonth.month}
+              onPrev={() => setCalMonth(({ year, month }) => (month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 }))}
+              onNext={() => setCalMonth(({ year, month }) => (month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 }))}
+              todayKey={todayKey}
+              selectedDay={selectedDay}
+              eventDays={eventDays}
+              onSelectDay={(key) => setSelectedDay((cur) => (cur === key ? null : key))}
+              segment={segment}
+              onSegmentChange={setSegment}
+            />
+          </aside>
         </div>
-      ) : (
-        <ul className="flex flex-col gap-sm">
-          {visible.map((e) => <EventCard key={e.id} e={e} selected={selected.has(e.id)} onToggle={() => toggle(e.id)} onDelete={() => deleteOne(e)} inBin={inBin} onRestore={() => execute('restore', [e.id])} pending={pending} />)}
-        </ul>
-      )}
+      </section>
 
-      <ConfirmDialog
-        open={confirm != null}
-        title={confirm?.title ?? ''}
-        body={confirm?.body ?? ''}
-        confirmLabel={confirm?.confirmLabel ?? ''}
-        tone={confirm?.tone ?? 'primary'}
-        pending={pending}
-        onConfirm={() => confirm && execute(confirm.kind, confirm.ids)}
-        onCancel={() => setConfirm(null)}
-      />
+      {/* 4 · Pulse metrics */}
+      <div className="mb-xxl flex flex-wrap gap-sm">
+        <PulseChip label="Registered (open)" value={metrics.openRegistered} foot={metrics.registered7d > 0 ? `+${metrics.registered7d} in 7 days` : 'no change in 7 days'} />
+        <PulseChip label="Checked in today" value={metrics.checkedInToday} foot={metrics.captureRate != null ? `${metrics.captureRate}% capture rate` : 'no attendance yet'} />
+        <PulseChip label="Credits issued" value={metrics.creditsIssued} foot={metrics.creditsBlocked > 0 ? `${metrics.creditsBlocked} blocked` : 'none blocked'} warn={metrics.creditsBlocked > 0} />
+        <PulseChip label="Events this week" value={metrics.eventsThisWeek} foot={metrics.liveNow > 0 ? `${metrics.liveNow} live now` : `${metrics.closingSoon} closing in 7 days`} live={metrics.liveNow > 0} />
+      </div>
+
+      {/* 5 · Manage all events CTA */}
+      <Link
+        href="/dashboard/manage"
+        className="inline-flex items-center gap-sm text-[calc(14px*var(--text-scale))] font-semibold text-[color:var(--on-primary-container)] hover:underline"
+      >
+        Manage all events
+        <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>arrow_forward</span>
+      </Link>
     </>
   );
 }
 
-// `foot` carries the spec's "deltas always carry comparison context" rule:
-// a bare number tells the operator nothing about direction or health.
-function Metric({
-  label, value, prefix, tone, foot, footTone = 'muted',
-}: {
-  label: string; value: number; prefix?: string;
-  tone: 'accent' | 'success' | 'plain';
-  foot?: string; footTone?: 'muted' | 'warn' | 'live';
-}) {
-  const color = tone === 'accent' ? 'text-[color:var(--on-primary-container)]' : tone === 'success' ? 'text-[color:var(--success)]' : 'text-on-surface';
-  const footCls =
-    footTone === 'warn' ? 'bg-warning-container text-on-surface'
-    : footTone === 'live' ? 'bg-success-container text-on-success-container'
-    : 'text-on-surface-variant';
+function EmptyAgenda({ text, cta }: { text: string; cta: boolean }) {
   return (
-    <div className="bg-[color:var(--surface-container-high)] rounded-[14px] p-md">
-      <p className="font-label-md text-label-md text-on-surface-variant leading-snug mb-sm normal-case tracking-normal">{label}</p>
-      <p className={`text-[calc(30px*var(--text-scale))] leading-none font-extrabold tracking-[-0.02em] tabular-nums ${color}`}>{prefix}{value}</p>
-      {foot && (
-        <p className={`mt-sm inline-block rounded-full px-sm py-[2px] text-[calc(11.5px*var(--text-scale))] font-medium ${footCls}`}>
-          {foot}
-        </p>
+    <div className="rounded-[16px] border border-outline-variant bg-surface p-xl text-center">
+      <p className="text-body-md text-on-surface-variant">{text}</p>
+      {cta && (
+        <Link href="/events/new" className="inline-flex items-center gap-sm mt-md bg-primary text-on-primary font-label-md text-label-md rounded-full py-sm px-lg hover:opacity-90 transition-opacity">
+          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>add</span>Create event
+        </Link>
       )}
     </div>
   );
 }
 
-function EventCard({ e, selected, onToggle, onDelete, onRestore, inBin, pending }: {
-  e: WorkstationEvent; selected: boolean; onToggle: () => void; onDelete: () => void; onRestore: () => void; inBin: boolean; pending: boolean;
+function AvatarStack({ hosts }: { hosts: Array<{ name: string; avatar_url: string | null }> }) {
+  const shown = hosts.slice(0, 3);
+  return (
+    <span className="inline-flex items-center -space-x-1" aria-hidden>
+      {shown.map((h, i) => (
+        <span
+          key={i}
+          className="grid h-[16px] w-[16px] place-items-center rounded-full bg-primary-container text-[8px] font-semibold text-on-primary-container ring-1 ring-[color:var(--sidebar)]"
+        >
+          {h.name.slice(0, 1).toUpperCase()}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+const FORMAT_GRADIENTS = [
+  'linear-gradient(135deg, var(--primary), var(--tertiary))',
+  'linear-gradient(135deg, var(--tertiary), var(--primary))',
+  'linear-gradient(135deg, var(--secondary), var(--tertiary))',
+];
+
+function FormatPlaceholder({ format }: { format: EventFormat | null }) {
+  const label = format ? FORMAT_LABEL[format].slice(0, 4).toUpperCase() : 'EVT';
+  const idx = format ? format.charCodeAt(0) % FORMAT_GRADIENTS.length : 0;
+  return (
+    <div
+      className="grid h-full w-full place-items-center text-[11px] font-bold uppercase tracking-wide text-white"
+      style={{ backgroundImage: FORMAT_GRADIENTS[idx] }}
+    >
+      {label}
+    </div>
+  );
+}
+
+function AgendaStatusPill({ event }: { event: ProgrammeEvent }) {
+  const cap = event.maxAttendees;
+  const openForCapacity = event.lifecycle === 'registering' || event.lifecycle === 'upcoming';
+  if (openForCapacity && cap != null && cap > 0) {
+    if (event.registered >= cap) {
+      return <Pill label="Sold out" cls="bg-error-container text-[color:var(--error)]" />;
+    }
+    if (event.registered >= cap * 0.9) {
+      return <Pill label="Near capacity" cls="bg-warning-container text-on-surface" />;
+    }
+  }
+  const pill = PILL[event.lifecycle];
+  return <Pill label={pill.label} cls={pill.cls} />;
+}
+
+function Pill({ label, cls }: { label: string; cls: string }) {
+  return (
+    <span className={`shrink-0 whitespace-nowrap rounded-full px-sm py-[2px] text-[11px] font-semibold uppercase tracking-wide ${cls}`}>
+      {label}
+    </span>
+  );
+}
+
+function MiniCalendar({
+  year, month, onPrev, onNext, todayKey, selectedDay, eventDays, onSelectDay, segment, onSegmentChange,
+}: {
+  year: number;
+  month: number;
+  onPrev: () => void;
+  onNext: () => void;
+  todayKey: string;
+  selectedDay: string | null;
+  eventDays: Set<string>;
+  onSelectDay: (key: string) => void;
+  segment: Segment;
+  onSegmentChange: (s: Segment) => void;
 }) {
-  const pill = PILL[e.lifecycle];
-  const cap = e.maxAttendees;
-  const pct = cap && cap > 0 ? Math.min(100, Math.round((e.registered / cap) * 100)) : null;
-  const showAttended = e.lifecycle === 'live' || e.lifecycle === 'completed';
-  const isCompleted = e.lifecycle === 'completed';
-  const stripe =
-    e.lifecycle === 'live' || e.lifecycle === 'registering' ? 'bg-[color:var(--success)]'
-    : e.lifecycle === 'drafted' ? 'bg-[color:var(--warning)]'
-    : e.lifecycle === 'cancelled' ? 'bg-[color:var(--error)]'
-    : e.lifecycle === 'upcoming' ? 'bg-[color:var(--on-primary-container)]'
-    : 'bg-outline-variant';
+  const monthName = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(new Date(year, month));
+  const first = new Date(year, month, 1);
+  const startDay = (first.getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells: (number | null)[] = Array.from({ length: startDay }, () => null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
   return (
-    <li className={`relative flex flex-col sm:flex-row sm:items-stretch gap-0 sm:gap-md bg-surface-container-lowest border border-outline-variant rounded-[16px] overflow-hidden ${e.deleted ? 'opacity-70' : ''}`}>
-      <span className={`hidden sm:block w-[4px] shrink-0 ${e.deleted ? 'bg-outline-variant' : stripe}`} aria-hidden />
-      <span className={`sm:hidden h-[4px] w-full shrink-0 ${e.deleted ? 'bg-outline-variant' : stripe}`} aria-hidden />
-      <div className="flex items-start gap-md flex-1 min-w-0 p-md sm:py-md sm:pr-md sm:pl-0">
-        <input type="checkbox" checked={selected} onChange={onToggle} aria-label={`Select ${e.title}`} className="mt-1 w-[18px] h-[18px] shrink-0 accent-[color:var(--on-primary-container)] cursor-pointer" />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-sm flex-wrap mb-xs">
-            <Link href={`/events/${e.id}/details`} className="font-title-lg text-title-lg font-semibold text-on-surface hover:text-[color:var(--on-primary-container)] transition-colors truncate">{e.title}</Link>
-            <span className={`inline-flex items-center gap-xs px-sm py-[3px] rounded-full text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-wide ${pill.cls}`}>
-              <span className={`w-[6px] h-[6px] rounded-full ${pill.dot}`} aria-hidden />{pill.label}
-            </span>
-            {e.category && CATEGORY_LABEL[e.category] && (
-              <span className="inline-flex items-center px-sm py-[3px] rounded-full text-[calc(11px*var(--text-scale))] font-medium bg-surface-container-high text-on-surface-variant">{CATEGORY_LABEL[e.category]}</span>
-            )}
-          </div>
-          {e.description && <p className="font-body-md text-body-md text-on-surface-variant line-clamp-1 mb-sm">{e.description}</p>}
-          <div className="flex items-center gap-md flex-wrap font-label-md text-label-md text-on-surface-variant normal-case tracking-normal">
-            <span className="inline-flex items-center gap-xs"><span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>calendar_today</span>{e.dateLabel}</span>
-            <span className="inline-flex items-center gap-xs"><span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>schedule</span>{e.timeLabel}</span>
-            {e.venueName && <span className="inline-flex items-center gap-xs min-w-0"><span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>location_on</span><span className="truncate">{e.venueName}</span></span>}
-          </div>
+    <div className="rounded-[14px] border border-outline-variant bg-surface p-md">
+      <div className="mb-sm flex items-center justify-between">
+        <span className="text-[13px] font-semibold text-on-surface">{monthName}</span>
+        <div className="flex gap-xs">
+          <button type="button" onClick={onPrev} aria-label="Previous month" className="grid h-[28px] w-[28px] place-items-center rounded-full text-on-surface-variant hover:bg-surface-container-high">
+            <span className="material-symbols-outlined text-[16px]" aria-hidden>chevron_left</span>
+          </button>
+          <button type="button" onClick={onNext} aria-label="Next month" className="grid h-[28px] w-[28px] place-items-center rounded-full text-on-surface-variant hover:bg-surface-container-high">
+            <span className="material-symbols-outlined text-[16px]" aria-hidden>chevron_right</span>
+          </button>
         </div>
       </div>
 
-      <div className="flex items-center justify-between sm:justify-end gap-md px-md pb-md sm:py-md sm:pr-md sm:pl-0 shrink-0">
-        <div className="text-right min-w-[140px]">
-          <p className="leading-none">
-            <span className="text-[calc(26px*var(--text-scale))] font-extrabold tracking-[-0.02em] tabular-nums text-[color:var(--on-primary-container)]">{e.registered}</span>
-            {cap != null && <span className="text-body-md text-on-surface-variant"> / {cap}</span>}
-          </p>
-          {pct != null && (
-            <span className="block mt-xs h-[4px] w-full rounded-full bg-surface-container-high overflow-hidden" aria-hidden>
-              <span className="block h-full rounded-full bg-[color:var(--success)]" style={{ width: `${pct}%` }} />
-            </span>
-          )}
-          <p className="font-label-md text-label-md text-on-surface-variant mt-xs normal-case tracking-normal">registered</p>
-          {showAttended ? (
-            <p className="font-label-md text-label-md text-[color:var(--success)] mt-[2px] font-semibold normal-case tracking-normal">{e.attended} checked in</p>
-          ) : e.delta7 > 0 ? (
-            <p className="font-label-md text-label-md text-[color:var(--success)] mt-[2px] font-semibold normal-case tracking-normal">+{e.delta7} / wk</p>
-          ) : e.closesInDays != null ? (
-            <p className="font-label-md text-label-md text-on-surface-variant mt-[2px] normal-case tracking-normal">closes in {e.closesInDays}d</p>
-          ) : null}
-        </div>
-        {/* Fixed-width action column — every button the same size. */}
-        <div className="flex flex-col gap-xs w-[116px] shrink-0">
-          {inBin ? (
-            <Button type="button" variant="outline" onClick={onRestore} disabled={pending} className="w-full gap-xs px-sm py-sm font-label-md text-label-md">
-              <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>restore_from_trash</span>Restore
-            </Button>
-          ) : (
-            <>
-              {/* buttonVariants, not <Button render={<Link/>}> — base-ui stamps
-                  role="button" on a Link rendered through Button's render prop,
-                  which announces a navigation as a button to assistive tech. */}
-              <Link
-                href={isCompleted ? `/events/${e.id}/analytics` : `/events/${e.id}/edit`}
-                className={cn(buttonVariants({ variant: 'outline' }), 'w-full gap-xs px-sm py-sm font-label-md text-label-md')}
-              >
-                <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>{isCompleted ? 'insights' : 'edit'}</span>{isCompleted ? 'Analytics' : 'Edit'}
-              </Link>
-              <Button type="button" variant="destructive" onClick={onDelete} disabled={pending} className="w-full gap-xs px-sm py-sm font-label-md text-label-md">
-                <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>delete</span>Delete
-              </Button>
-            </>
-          )}
-        </div>
+      <div className="mb-xs grid grid-cols-7 text-center text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant">
+        {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => <span key={i}>{d}</span>)}
       </div>
-    </li>
+      <div className="grid grid-cols-7 gap-y-[2px]">
+        {cells.map((d, i) => {
+          if (d == null) return <span key={i} />;
+          const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          const isToday = key === todayKey;
+          const isSelected = key === selectedDay;
+          const hasEvent = eventDays.has(key);
+          return (
+            <button
+              key={i}
+              type="button"
+              aria-label={key}
+              onClick={() => onSelectDay(key)}
+              className={`relative mx-auto grid h-[28px] w-[28px] place-items-center rounded-full text-[12px] font-medium ${
+                isSelected
+                  ? 'bg-[color:var(--on-primary-container)] font-bold text-white'
+                  : isToday
+                    ? 'font-bold text-[color:var(--on-primary-container)]'
+                    : 'text-on-surface hover:bg-surface-container-high'
+              }`}
+            >
+              {d}
+              {hasEvent && !isSelected && (
+                <span className="absolute bottom-[2px] left-1/2 h-[4px] w-[4px] -translate-x-1/2 rounded-full bg-[color:var(--on-primary-container)]" aria-hidden />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-md flex items-center gap-xs rounded-full bg-surface-container-high p-[3px]">
+        {(['upcoming', 'past'] as const).map((s) => (
+          <button
+            key={s}
+            type="button"
+            aria-pressed={segment === s}
+            onClick={() => onSegmentChange(s)}
+            className={`flex-1 rounded-full py-[5px] text-center text-[12px] font-semibold capitalize ${
+              segment === s
+                ? 'bg-surface text-on-surface shadow-sm'
+                : 'text-on-surface-variant hover:text-on-surface'
+            }`}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PulseChip({ label, value, foot, warn, live }: { label: string; value: number; foot: string; warn?: boolean; live?: boolean }) {
+  return (
+    <div className="flex-1 min-w-[160px] rounded-[12px] border border-outline-variant bg-surface p-md">
+      <div className="flex items-center justify-between mb-xs">
+        <p className="text-[11px] uppercase tracking-wide text-on-surface-variant">{label}</p>
+        <p className="text-[18px] font-bold tabular-nums text-on-surface">{value}</p>
+      </div>
+      <p className={`text-[11px] ${warn ? 'text-[color:var(--warning)]' : live ? 'text-[color:var(--success)]' : 'text-on-surface-variant'}`}>{foot}</p>
+    </div>
   );
 }

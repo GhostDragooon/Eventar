@@ -71,20 +71,23 @@ grant  update (email, full_name, organisation_id, status) on public.staff to aut
 --     self-accredit, walking straight around the DEFERRED-56 gate. Nothing in
 --     app/, lib/ or scripts/ ever writes it; the set_event_organisation
 --     BEFORE INSERT trigger is its only writer.
+-- `format` (migration 20260906010000) — whole-event format, same footing as
+-- `category`: an ordinary organiser-writable column, added here too per this
+-- block's own "keep the list in sync" rule.
 revoke insert, update on public.events from anon, authenticated;
 grant  insert (
   id, title, topic, start_time, end_time, timezone, description, poster_path,
   max_attendees, created_by, created_at, updated_at, venue_name,
   venue_address, city, region, country, latitude, longitude,
   registration_close_at, hosted_by, organized_by, hero_image_url, category,
-  deleted_at, checkin_modes, registration_open_at
+  format, deleted_at, checkin_modes, registration_open_at
 ) on public.events to authenticated;
 grant  update (
   id, title, topic, start_time, end_time, timezone, description, poster_path,
   max_attendees, created_by, created_at, updated_at, venue_name,
   venue_address, city, region, country, latitude, longitude,
   registration_close_at, hosted_by, organized_by, hero_image_url, category,
-  deleted_at, checkin_modes, registration_open_at
+  format, deleted_at, checkin_modes, registration_open_at
 ) on public.events to authenticated;
 -- organisation_body_authorisations (migration 20260804000000) — the registry
 -- allow-list deciding which organisation may claim which accrediting body.

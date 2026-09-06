@@ -8,6 +8,7 @@ export type Staff = {
   email: string;
   role: 'organiser_admin' | 'organiser_member' | 'body_admin' | 'auditor' | 'eventar_staff';
   full_name: string | null;
+  organisation_id: string | null;
 };
 
 export class NotAuthorizedError extends Error {
@@ -47,7 +48,7 @@ export async function requireStaff(client?: SupabaseClient): Promise<Staff> {
 
   const { data: staff, error: staffErr } = await supabase
     .from('staff')
-    .select('id, email, role, full_name')
+    .select('id, email, role, full_name, organisation_id')
     .eq('email', email)
     .eq('status', 'active')          // reconciled: suspended/removed lose access immediately
     .maybeSingle();

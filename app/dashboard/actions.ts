@@ -35,6 +35,7 @@ async function bulkUpdate(eventIds: string[], action: BulkAction): Promise<BulkR
   if (error) return { error: 'Could not update the selected events.' };
 
   revalidatePath('/dashboard');
+  revalidatePath('/dashboard/manage');
   return { ok: true, count: data?.length ?? 0 };
 }
 

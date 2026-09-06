@@ -46,7 +46,7 @@ export default async function StaffEventEditPage({
   const supabase = await supabaseServer();
   const { data: event, error: eventErr } = await supabase
     .from('events')
-    .select('id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, latitude, longitude, description, status, max_attendees, created_by, hosted_by, organized_by, hero_image_url, registration_open_at, registration_close_at, category, checkin_modes, accrediting_body_id, cpd_hours, organisation_id')
+    .select('id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, latitude, longitude, description, status, max_attendees, created_by, hosted_by, organized_by, hero_image_url, registration_open_at, registration_close_at, category, format, checkin_modes, accrediting_body_id, cpd_hours, organisation_id')
     .eq('id', id)
     .maybeSingle();
   // Thrown, not swallowed: a discarded error fell through to notFound(), which
@@ -533,6 +533,10 @@ function DraftEditFormPanel({
     })(),
     category: (() => {
       const v = (event as unknown as { category?: unknown }).category;
+      return typeof v === 'string' ? v : null;
+    })(),
+    format: (() => {
+      const v = (event as unknown as { format?: unknown }).format;
       return typeof v === 'string' ? v : null;
     })(),
     // Check-in mode. Load-bearing prefill, not decoration: the form re-emits

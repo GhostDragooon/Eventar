@@ -8,7 +8,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { StaffShell } from './StaffShell';
 
 // vitest config has globals:false — RTL renders accumulate without explicit cleanup.
@@ -30,7 +30,8 @@ describe('StaffShell — primary navigation', () => {
         <div>page content</div>
       </StaffShell>,
     );
-    expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('href', '/dashboard');
+    expect(screen.getByRole('link', { name: 'Programme' })).toHaveAttribute('href', '/dashboard');
+    expect(screen.getByRole('link', { name: 'Manage' })).toHaveAttribute('href', '/dashboard/manage');
     expect(screen.getByRole('link', { name: 'Check-in' })).toHaveAttribute('href', '/checkin');
     // Labelled "Reports" per the IA spec's area 7 ("Reports / Analytics") and
     // the mockup sidebar; the ROUTE it must reach is still /analytics.
@@ -58,19 +59,21 @@ describe('StaffShell — primary navigation', () => {
       </StaffShell>,
     );
     expect(screen.getByRole('link', { name: 'Check-in' })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('link', { name: 'Dashboard' })).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('link', { name: 'Programme' })).not.toHaveAttribute('aria-current');
   });
 
-  it('renders the Eventar brand mark at the top of the sidebar', () => {
+  it('renders the Eventar brand mark at the top of the sidebar, pointing at /dashboard', () => {
     // REVERSES the old "no wordmark in shell chrome" rule. Ivan's call
     // 2026-08-09, taken explicitly after being shown that the organiser IA
     // mockups put the mark in the sidebar and the older rule forbade it.
+    // href is /dashboard, not "/" — BrandMark's own docblock specifies this
+    // for the staff shell; "/" ejected the organiser to the marketing site.
     render(
       <StaffShell staff={staff}>
         <div>page content</div>
       </StaffShell>,
     );
-    expect(screen.getByRole('link', { name: /eventar home/i })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: /eventar home/i })).toHaveAttribute('href', '/dashboard');
   });
 
   it('shows every IA area, with unbuilt ones inert rather than linking to 404s', () => {
@@ -135,11 +138,12 @@ describe('StaffShell — primary navigation', () => {
     expect(screen.queryByRole('link', { name: /back to/i })).toBeNull();
   });
 
-  it('shows the staff email in the top bar and Settings in the sidebar', () => {
-    // M2 Stage 2: the sidebar owns navigation, so Settings lives there and the
-    // top bar carries identity only. getByRole (not queryAll) also pins that
-    // there is exactly ONE link to /settings — a second one up top made the
-    // accessible name ambiguous and is the reason the gear icon was removed.
+  it('shows the staff email in the sidebar account chip and Settings in the nav', () => {
+    // M2 Stage 2 put Settings in the sidebar; the 2026-09-07 pass removed the
+    // top bar entirely and moved identity into the sidebar's account chip.
+    // getByRole (not queryAll) also pins that there is exactly ONE link to
+    // /settings — a second one up top made the accessible name ambiguous and
+    // is the reason the gear icon was removed.
     render(
       <StaffShell staff={staff}>
         <div>page content</div>
@@ -160,6 +164,21 @@ describe('StaffShell — primary navigation', () => {
       </StaffShell>,
     );
     expect(screen.getByRole('link', { name: /settings/i })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('pins the account chip to the bottom of the sidebar (2026-09-07 top-bar removal)', () => {
+    render(
+      <StaffShell staff={{ ...staff, full_name: 'Jane Doe' }}>
+        <div>page content</div>
+      </StaffShell>,
+    );
+    const aside = screen.getByRole('link', { name: 'Programme' }).closest('aside')!;
+    // The chip is the last child of the sidebar's flex column, so it always
+    // sits at the foot regardless of how many nav rows render above it.
+    const flexColumn = aside.firstElementChild!;
+    expect(flexColumn.lastElementChild).toHaveTextContent('jane@company.com');
+    expect(flexColumn.lastElementChild).toHaveTextContent('Jane'); // first-name display
+    expect(within(flexColumn.lastElementChild as HTMLElement).getByText('JA')).toBeInTheDocument();
   });
 
   it('renders page children', () => {
