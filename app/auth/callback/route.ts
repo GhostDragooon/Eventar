@@ -11,8 +11,19 @@ import { createServerClient } from '@supabase/ssr';
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
+  const rawNext = url.searchParams.get('next');
+  // Attendee-supplied `next` isn't always /account-prefixed — the public
+  // event page's sign-in link round-trips back to /events/[id] (see
+  // app/(public)/events/[id]/page.tsx). Both prefixes are attendee-only:
+  // no staff flow ever sets `next` to either (staff /login never sets
+  // `next`; changeEmail's organizer branch is the literal '/settings').
+  const errorBase =
+    rawNext?.startsWith('/account') || rawNext?.startsWith('/events/')
+      ? '/account/sign-in'
+      : '/login';
+
   if (!code) {
-    return NextResponse.redirect(new URL('/login?error=missing_code', url));
+    return NextResponse.redirect(new URL(`${errorBase}?error=missing_code`, url));
   }
 
   // Same-origin redirect target the sign-in surface passed in
@@ -20,7 +31,6 @@ export async function GET(request: NextRequest) {
   // which continues to land on /dashboard). Guard against open-redirect —
   // only accept a relative path that starts with a single '/'. Anything
   // else silently falls back to the staff default.
-  const rawNext = url.searchParams.get('next');
   const nextPath =
     rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
       ? rawNext
@@ -43,7 +53,7 @@ export async function GET(request: NextRequest) {
 
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
-    return NextResponse.redirect(new URL('/login?error=exchange_failed', url));
+    return NextResponse.redirect(new URL(`${errorBase}?error=exchange_failed`, url));
   }
 
   return response;

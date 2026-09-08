@@ -1,6 +1,33 @@
 # Project State — Eventar
 
-> ## ⬆️ CURRENT — STAGE 10 (2026 dual-track). Organiser `/dashboard` rebuilt into a Luma-style programme home, shipped 2026-09-06 (uncommitted, awaiting Ivan's go-ahead) — full detail below and in `handoff_06092026_v3.md`. Smoothness pass on attendee flow also shipped 2026-09-06 (uncommitted). Product alignment pass (WP1/WP2/WP3-R1/WP4-A/WP5-E1) landed 2026-09-05 (committed at `1017c78`). Full 2→4→1→3 queue from `handoff_03092026.md` CLOSED on 2026-09-04.
+## Audience & routes (Q32 boundary — read before touching any nav/redirect/CTA)
+
+Two audiences, two doors, never crossed:
+
+| Audience | Door (sign-in) | Homes | Never links to |
+|---|---|---|---|
+| **Attendee** | `/account/sign-in` | `/events` (public), `/account` | `/login`, `/dashboard*` |
+| **Organizer** | `/login` | `/dashboard` (Programme), `/dashboard/manage` (Manage) | public `/events` listing |
+
+Boundary rules:
+- StaffShell never links to public `/events` — the sidebar's events surface IS `/dashboard`.
+- Attendee-facing shells (SiteShell, PublicShell, LandingNav) never point their auth CTA at `/login`.
+- The organizer post-login landing is `/dashboard` (Programme); `/auth/callback` derives which door an error bounces back to from `?next=` (attendee flows always set `?next=/account...` or `?next=/events/...`, organizer flows never set it).
+- Both flows share `/auth/callback` — see `app/auth/callback/route.ts`.
+
+> ## ⬆️ CURRENT — STAGE 10 (2026 dual-track). Dashboard route split (`/dashboard` Programme + `/dashboard/manage` Manage) shipped 2026-09-07 at `16dadaa`. Prior: organiser `/dashboard` rebuilt into a Luma-style programme home, shipped 2026-09-06. Smoothness pass on attendee flow also shipped 2026-09-06. Product alignment pass (WP1/WP2/WP3-R1/WP4-A/WP5-E1) landed 2026-09-05 (committed at `1017c78`). Full 2→4→1→3 queue from `handoff_03092026.md` CLOSED on 2026-09-04.
+>
+> ### 2026-09-09 — attendee/organizer split audit: auth-callback error routing, Programme terminology
+> System-wide audit against the work instruction's canonical route map. Found the codebase mostly already correct (prior sessions did the heavy lifting); fixed the two remaining cross-wirings: (1) `/auth/callback`'s error redirects (missing code, failed exchange) previously always bounced to `/login` regardless of audience — now derived from `?next=`, so an attendee OTP failure lands on `/account/sign-in` instead of the organizer door; (2) `/account/sign-in` no longer auto-redirects when `?error=` is present, closing a soft-loop for a staff session with no `users` row. Plus five `"Dashboard"` → `"Programme"` terminology fixes (page title + 4 `backLabel`s) that were missed when the sidebar label changed on 2026-09-07.
+> **Two-agent phase-completion review (dev-lens + user-lens, separate agents, same day) independently converged on the same real gap**: the `?next=`-based `errorBase` check only matched `/account`-prefixed paths, missing the public event page's own sign-in round-trip (`/account/sign-in?next=/events/[id]`, from `app/(public)/events/[id]/page.tsx`) — an attendee whose OTP link failed from that entry point still landed on `/login`. Both agents traced the full closed set of `/auth/callback?next=` callers (`/account`, `/account/claim`, `/events/[id]` for attendees; `/settings` or unset for staff) to confirm the fix — extending the allowlist to also match `/events/`-prefixed values — is now exhaustive. Live-verified against the local stack post-fix.
+> - **Dev-lens** also added test coverage the original diff lacked (no test exercised the `?error=`-present branch of `app/account/sign-in/page.tsx`'s soft-loop fix) and a regression test for the `/events/[id]` gap.
+> - **User-lens** swept for the same class of drift beyond this pass's stated scope and found 4 more leftover `"Dashboard"` labels — not in `backLabel`s (already fixed) but in each page's separate `Breadcrumbs` first-crumb: `app/events/new/page.tsx`, `app/events/[id]/details/page.tsx`, `app/events/[id]/edit/page.tsx`, `app/events/[id]/checkin/page.tsx`. Fixed all four. Grepped the full repo for remaining `"Dashboard"` strings — none left in live product code (the only hits are in `app/dev-preview-uiport/*`, the separate on-hold UI-port sandbox, correctly out of scope). One MINOR non-blocking note logged, not fixed: `auth-error-messages.ts`'s attendee `unavailable` copy reads as transient but the path that produces it is close to structurally unreachable given the `auth.users` → `public.users` mirror trigger — Ivan's call whether the copy is worth tightening.
+> **Backtest:** live end-to-end against the local Supabase stack (not Seoul) — a real magic-link round trip via Mailpit confirmed the soft-loop fix (a genuinely signed-in session hitting `/account/sign-in?error=...` stays put and shows the error instead of auto-redirecting); anonymous requests confirmed all three `?next=` shapes (`/account`, `/events/[id]`, unset) route to the correct door.
+> **Gates:** tsc clean · eslint 0 errors (10 pre-existing warnings, unchanged baseline) · vitest **860 passed | 272 skipped** (+6 from 854 baseline) · `next build` clean, 32 routes (unchanged).
+>
+> ### 2026-09-07 — Dashboard route split: Programme + Manage
+> Split the single `/dashboard` (which combined a programme calendar AND an admin console) into two routes: `/dashboard` (Programme — schedule, agenda, metrics, attention feed) and `/dashboard/manage` (Manage — lifecycle tabs, search/sort, bulk ops, per-row deep links to Details/Edit/Check-in/Analytics/Delete). StaffShell sidebar: "Dashboard" → "Programme" + "Manage". Shared `app/dashboard/data.ts` for `fetchDecoratedEvents()`. Two-agent review caught a duplicate registrations query (eliminated), a "Door"→"Check-in" label fix, and an "Archive"→"Delete" wording alignment. No migrations, no schema changes — pure frontend route split. Full detail: [handoff_07092026.md](handoff_07092026.md).
+> **Gates:** tsc clean · eslint 0 errors · vitest **854 passed | 272 skipped** · `next build` clean, **32 routes** (+2) · both routes verified live. Committed and pushed at `16dadaa`.
 >
 > ### 2026-09-06 (later) — Organiser programme home (`/dashboard` rebuild) + `events.format`
 > Executed the locked plan from `~/.claude/plans/work-instruction-organizer-swirling-peacock.md` (design/mockup work from the earlier same-day session — see `handoff_06092026_v2.md`). Full detail: [handoff_06092026_v3.md](handoff_06092026_v3.md).

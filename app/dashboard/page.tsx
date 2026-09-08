@@ -13,7 +13,7 @@ import { fetchDecoratedEvents } from '@/app/dashboard/data';
 import { DevEmailStubBanner } from '@/components/dev/DevEmailStubBanner';
 
 export const metadata = {
-  title: 'Dashboard',
+  title: 'Programme',
   robots: { index: false, follow: false },
 };
 

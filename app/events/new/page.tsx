@@ -41,10 +41,10 @@ export default async function NewEventPage() {
     : { bodies: [], unavailable: true };
 
   return (
-    <StaffShell staff={{ email: staff.email, role: staff.role }} backHref="/dashboard" backLabel="Dashboard">
+    <StaffShell staff={{ email: staff.email, role: staff.role }} backHref="/dashboard" backLabel="Programme">
       <Breadcrumbs
         items={[
-          { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboardIcon },
+          { label: 'Programme', href: '/dashboard', icon: LayoutDashboardIcon },
           { label: 'Create event', icon: CalendarPlusIcon },
         ]}
         className="mb-sm"

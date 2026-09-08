@@ -70,8 +70,14 @@ function AttendeeSignInForm() {
   // false-positive) before the redirect fires. Second-pass review IMPORTANT
   // 3. The signed-out latency cost is one getSession() call (cookie read,
   // no network) — invisible in practice.
-  const [sessionKnown, setSessionKnown] = useState(false);
+  // An error on the URL (e.g. a staff account with no `users` row bouncing
+  // off /account) means the session check already failed once upstream —
+  // redirecting again here would loop. Lazy-init sessionKnown true so the
+  // form renders immediately with the error, skipping the session check
+  // below entirely (never a setState-in-effect, since this runs at mount).
+  const [sessionKnown, setSessionKnown] = useState(() => Boolean(urlErrorCode));
   useEffect(() => {
+    if (urlErrorCode) return;
     let cancelled = false;
     (async () => {
       // eslint-disable-next-line no-restricted-syntax -- no-session collapses to "show the form"
@@ -88,7 +94,7 @@ function AttendeeSignInForm() {
     return () => {
       cancelled = true;
     };
-  }, [router, next]);
+  }, [router, next, urlErrorCode]);
 
   if (!sessionKnown) {
     // Skeleton: same shell the Suspense boundary uses, so signed-out

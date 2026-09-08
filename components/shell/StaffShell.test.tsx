@@ -51,6 +51,19 @@ describe('StaffShell — primary navigation', () => {
     expect(hrefs).not.toContain('/events');
   });
 
+  it('does NOT link to /login — the staff shell is already inside the organizer door', () => {
+    // Q32 audience boundary, StaffShell side: parity with SiteShell/PublicShell/
+    // LandingNav's no-/login guards. A signed-in organizer inside the shell has
+    // no reason to ever see the organizer sign-in door as a nav destination.
+    render(
+      <StaffShell staff={staff}>
+        <div>page content</div>
+      </StaffShell>,
+    );
+    const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'));
+    expect(hrefs).not.toContain('/login');
+  });
+
   it('marks the current section with aria-current', () => {
     mockPathname = '/checkin';
     render(
@@ -122,11 +135,11 @@ describe('StaffShell — primary navigation', () => {
 
   it('renders the back link when backHref + backLabel are provided', () => {
     render(
-      <StaffShell staff={staff} backHref="/dashboard" backLabel="Dashboard">
+      <StaffShell staff={staff} backHref="/dashboard" backLabel="Programme">
         <div>page content</div>
       </StaffShell>,
     );
-    expect(screen.getByRole('link', { name: /back to dashboard/i })).toHaveAttribute('href', '/dashboard');
+    expect(screen.getByRole('link', { name: /back to programme/i })).toHaveAttribute('href', '/dashboard');
   });
 
   it('does NOT render a back link when backHref + backLabel are absent', () => {

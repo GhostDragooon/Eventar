@@ -319,10 +319,10 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
   const structuralLocked = lifecycle !== 'drafted' && lifecycle !== 'cancelled';
 
   return (
-    <StaffShell staff={{ email: staff.email, role: staff.role }} backHref="/dashboard" backLabel="Dashboard">
+    <StaffShell staff={{ email: staff.email, role: staff.role }} backHref="/dashboard" backLabel="Programme">
       <Breadcrumbs
         items={[
-          { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboardIcon },
+          { label: 'Programme', href: '/dashboard', icon: LayoutDashboardIcon },
           { label: event.title, icon: CalendarDaysIcon },
         ]}
         className="mb-sm"

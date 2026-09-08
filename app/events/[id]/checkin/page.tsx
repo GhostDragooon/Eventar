@@ -126,7 +126,7 @@ export default async function StaffCheckinPage({
     <StaffShell staff={{ email: staff.email, role: staff.role }} backHref={`/events/${id}/details`} backLabel="Event">
       <Breadcrumbs
         items={[
-          { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboardIcon },
+          { label: 'Programme', href: '/dashboard', icon: LayoutDashboardIcon },
           { label: event.title, href: `/events/${id}/details`, icon: CalendarDaysIcon },
           { label: 'Check-in', icon: UserCheckIcon },
         ]}

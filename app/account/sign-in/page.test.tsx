@@ -11,8 +11,9 @@ vi.mock('@/lib/supabase/browser', () => ({
     auth: { getSession: vi.fn(async () => ({ data: { session: null }, error: null })) },
   }),
 }));
+let mockSearchParams = new URLSearchParams('');
 vi.mock('next/navigation', () => ({
-  useSearchParams: () => new URLSearchParams(''),
+  useSearchParams: () => mockSearchParams,
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
 }));
 // Server Action stubbed — nothing in these tests exercises a submit.
@@ -24,7 +25,10 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import AttendeeSignInPage from './page';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  mockSearchParams = new URLSearchParams('');
+});
 
 describe('AttendeeSignInPage — trouble-signing-in help', () => {
   it('renders the "Trouble signing in?" details block once the form is shown', async () => {
@@ -57,5 +61,17 @@ describe('AttendeeSignInPage — trouble-signing-in help', () => {
       expect(screen.getByText(/account already exists/i)).toBeInTheDocument(),
     );
     expect(screen.queryByText(/organizer list/i)).not.toBeInTheDocument();
+  });
+
+  it('renders the error immediately when ?error= is on the URL, without waiting on the session check (soft-loop fix)', () => {
+    // Regression: sessionKnown lazy-initializes to true whenever an error
+    // code is present, so the form (and its error banner) must already be
+    // in the DOM on the very first render — never gated behind the
+    // getSession() round-trip that previously caused a staff-account
+    // redirect loop (session exists, no `users` row, back to
+    // /account/sign-in?error=..., which re-triggered the same redirect).
+    mockSearchParams = new URLSearchParams('error=missing_code');
+    render(<AttendeeSignInPage />);
+    expect(screen.getByText(/verification code/i)).toBeInTheDocument();
   });
 });
