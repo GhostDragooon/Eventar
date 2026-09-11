@@ -99,7 +99,7 @@ describe('StaffShell — primary navigation', () => {
         <div>page content</div>
       </StaffShell>,
     );
-    for (const label of ['Participants', 'Accreditation', 'Communications']) {
+    for (const label of ['Accreditation', 'Communications']) {
       expect(screen.getByText(label)).toBeInTheDocument();
       expect(screen.queryByRole('link', { name: new RegExp(label, 'i') })).toBeNull();
     }

@@ -104,5 +104,6 @@ export const config = {
     '/analytics',
     '/settings',
     '/settings/team',
+    '/participants',
   ],
 };

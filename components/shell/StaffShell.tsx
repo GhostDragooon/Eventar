@@ -68,7 +68,7 @@ export type StaffShellProps = StaffShellBaseProps & StaffShellBackProps;
 const NAV: { label: string; href: string | null; icon: string; count?: number }[] = [
   { label: 'Programme', href: '/dashboard', icon: 'calendar_today' },
   { label: 'Manage', href: '/dashboard/manage', icon: 'event_note' },
-  { label: 'Participants', href: null, icon: 'group' },
+  { label: 'Participants', href: '/participants', icon: 'group' },
   { label: 'Accreditation', href: null, icon: 'verified_user' },
   { label: 'Check-in', href: '/checkin', icon: 'how_to_reg' },
   { label: 'Communications', href: null, icon: 'mail' },
