@@ -362,6 +362,13 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
       {/* "One glance = is this event ready to run" (IA spec). */}
       <ReadinessStrip cells={readiness} />
 
+      {regs.length >= 50 && (
+        <div role="alert" className="mt-md flex items-center gap-sm rounded-xl border border-outline-variant bg-tertiary-container/40 px-lg py-md text-body-md text-on-tertiary-container">
+          <span className="material-symbols-outlined text-[calc(20px*var(--text-scale))]" aria-hidden>warning</span>
+          <span><strong>{regs.length}</strong> registrations — you may want to review capacity before accepting more.</span>
+        </div>
+      )}
+
       {/* Dark status scoreboard — the live operator's at-a-glance readout. */}
       <LiveScoreboard
         lifecycle={lifecycle}
