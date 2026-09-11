@@ -137,6 +137,10 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
   }, 60_000);
 
   afterEach(async () => {
+    // participation_evidence FK → registrations/events: delete evidence first
+    if (eventIds.length > 0) {
+      await admin.from('participation_evidence').delete().in('event_id', eventIds);
+    }
     if (registrationIds.length > 0) {
       await mustDelete(admin.from('registrations').delete().in('id', registrationIds), 'registrations fixture');
       registrationIds.length = 0;
@@ -153,6 +157,9 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
 
   afterAll(async () => {
     // Belt-and-braces in case any single test's afterEach didn't run.
+    if (eventIds.length > 0) {
+      await admin.from('participation_evidence').delete().in('event_id', eventIds);
+    }
     if (registrationIds.length > 0) {
       await mustDelete(admin.from('registrations').delete().in('id', registrationIds), 'registrations fixture');
     }

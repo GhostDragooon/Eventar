@@ -22,6 +22,7 @@ import { PassDeliveryPanel } from '@/components/details/PassDeliveryPanel';
 import { EmailDeliveryStrip, type EmailDeliveryRow } from '@/components/details/EmailDeliveryStrip';
 import { EmailSendControls } from './EmailSendControls';
 import { EvidenceExportButton } from './EvidenceExportButton';
+import { AttendanceExportButton } from './AttendanceExportButton';
 import { LiveScoreboard } from '@/components/details/LiveScoreboard';
 import { StickyLiveBar } from '@/components/details/StickyLiveBar';
 
@@ -48,7 +49,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
   // The accrediting-body list is NOT in this batch: which bodies are offerable
   // depends on the event's organisation (DEFERRED 56), so it cannot be fetched
   // until the event row has resolved.
-  const [eventRes, regsRes, surveysRes, blocksRes, confirmationsRes, creditsRes, deliveryRes, deliveryAggRes, accGroupsRes, occurrencesRes] = await Promise.all([
+  const [eventRes, regsRes, surveysRes, blocksRes, confirmationsRes, creditsRes, deliveryRes, deliveryAggRes, accGroupsRes, occurrencesRes, evidenceRes] = await Promise.all([
     supabase
       .from('events')
       .select('id, title, start_time, end_time, timezone, venue_name, max_attendees, status, registration_close_at, registration_open_at, created_by, accrediting_body_id, cpd_hours, organisation_id')
@@ -125,6 +126,10 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
       .select('id, ordinal, name, starts_at')
       .eq('event_id', id)
       .order('ordinal'),
+    admin
+      .from('participation_evidence')
+      .select('id, evidence_type', { count: 'exact' })
+      .eq('event_id', id),
   ]);
 
   if (eventRes.error) throw eventRes.error;
@@ -204,6 +209,14 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
   }
   const deliveryAggRows: EmailDeliveryRow[] = (deliveryAggRes.data ?? []) as EmailDeliveryRow[];
 
+  if (evidenceRes.error) {
+    console.error('[details] participation_evidence count failed', { code: evidenceRes.error.code });
+  }
+  const evidenceCount = evidenceRes.count ?? 0;
+  const checkinEvidenceCount = (evidenceRes.data ?? []).filter(
+    (e) => (e as { evidence_type: string }).evidence_type === 'check_in',
+  ).length;
+
   const event = eventRes.data;
   // Deferred until now: offerable bodies depend on the event's organisation.
   const authorised = await listAuthorisedBodies(event.organisation_id as string);
@@ -234,6 +247,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
   const blocks = blocksRes.data ?? [];
   const responseCount = surveys.length;
   const attended = regs.filter((r) => r.status === 'attended').length;
+  const missingEvidence = Math.max(0, attended - checkinEvidenceCount);
   // Gate the admin email_log count on owner-or-manager. supabaseAdmin bypasses
   // RLS, so without this gate a peer organizer could read the confirmations-sent
   // count for any event by typing the URL. Non-authorized readers see 0, which
@@ -499,6 +513,33 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
           ) : undefined
         }
       />
+
+      {canSeeConfirmationsSent && (
+        <section
+          aria-labelledby="attendance-evidence-heading"
+          className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg mt-lg"
+        >
+          <h2 id="attendance-evidence-heading" className="text-title-md font-semibold text-on-surface mb-xs">
+            Attendance evidence
+          </h2>
+          <div className="flex flex-wrap gap-lg text-body-md text-on-surface-variant mb-md">
+            <span><strong className="text-on-surface">{evidenceCount}</strong> evidence {evidenceCount === 1 ? 'record' : 'records'}</span>
+            {missingEvidence > 0 && (
+              <span className="flex items-center gap-xs text-warning">
+                <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>warning</span>
+                {missingEvidence} check-in{missingEvidence === 1 ? '' : 's'} without evidence
+              </span>
+            )}
+            {missingEvidence === 0 && attended > 0 && evidenceCount > 0 && (
+              <span className="flex items-center gap-xs text-success">
+                <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>check_circle</span>
+                Evidence in sync with check-ins
+              </span>
+            )}
+          </div>
+          <AttendanceExportButton eventId={event.id} disabled={evidenceCount === 0} />
+        </section>
+      )}
 
       <FeedbackSection
         lifecycle={lifecycle}

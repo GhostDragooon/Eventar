@@ -117,6 +117,12 @@ revoke all on table public.rate_limits from anon, authenticated;
 revoke insert, update, delete on public.event_occurrences      from anon, authenticated, service_role;
 revoke insert, update, delete on public.registration_checkins  from anon, authenticated, service_role;
 --
+-- participation_evidence (migration 20260912000000, ADR-0003 Weekend MVP
+-- Step 1) — lifecycle, definer-only INSERT/UPDATE, service_role DELETE
+-- retained for cleanup/erasure (same posture as practitioner_licences).
+revoke insert, update, delete on public.participation_evidence from anon, authenticated, service_role;
+grant  delete on public.participation_evidence to service_role;
+--
 -- event_accreditation_groups / event_accreditations /
 -- event_accreditation_occurrences / registration_roles (migration
 -- 20260815020000, Task 10.8/10.9 sub-task C3) — same posture as the

@@ -4,6 +4,10 @@
 //
 //   credit_ledger, audit_events   — PERMANENT append-only: no role may
 //                                    INSERT/UPDATE/DELETE, including service_role.
+//   participation_evidence         — LIFECYCLE: definer-only INSERT/UPDATE (denied
+//                                    to all roles incl service_role), but
+//                                    service_role DELETE is deliberately RETAINED
+//                                    for cleanup/erasure (same as practitioner_licences).
 //   practitioner_licences         — LIFECYCLE: definer-only INSERT/UPDATE (denied
 //                                    to all roles incl service_role), but
 //                                    service_role DELETE is deliberately RETAINED
@@ -177,6 +181,43 @@ describe.skipIf(!process.env.RLS_TESTS)('audited-table write guard (service_role
       }
     }, 60_000);
   });
+  // ---- LIFECYCLE: participation_evidence ----
+  describe('participation_evidence — lifecycle (definer-only INSERT/UPDATE, service_role DELETE retained)', () => {
+    it('service_role is denied direct INSERT and UPDATE with 42501', async () => {
+      const ins = await admin.from('participation_evidence').insert({ id: BOGUS });
+      expect(ins.error?.code, 'service_role INSERT must be 42501').toBe(PERMISSION_DENIED);
+
+      const upd = await admin
+        .from('participation_evidence')
+        .update({ evidence_type: 'correction' })
+        .eq('id', BOGUS);
+      expect(upd.error?.code, 'service_role UPDATE must be 42501').toBe(PERMISSION_DENIED);
+    }, 30_000);
+
+    it('anon and authenticated are denied direct INSERT with 42501', async () => {
+      const anon = createAnonClient();
+      expect(
+        (await anon.from('participation_evidence').insert({ id: BOGUS })).error?.code,
+        'anon INSERT must be 42501',
+      ).toBe(PERMISSION_DENIED);
+
+      const user = await createTestUser('guard-pe-write');
+      try {
+        expect(
+          (await user.client.from('participation_evidence').insert({ id: BOGUS })).error?.code,
+          'authenticated direct INSERT must be 42501',
+        ).toBe(PERMISSION_DENIED);
+      } finally {
+        await deleteTestUser(user);
+      }
+    }, 30_000);
+
+    it('service_role DELETE is retained', async () => {
+      const del = await admin.from('participation_evidence').delete().eq('id', BOGUS);
+      expect(del.error, 'service_role DELETE must succeed (retained grant)').toBeNull();
+    }, 30_000);
+  });
+
   // ---- REGISTRY: organisation_body_authorisations ----
   describe('organisation_body_authorisations — registry (no app-role writes, service_role retained)', () => {
     it('anon and authenticated are denied INSERT/UPDATE/DELETE with 42501', async () => {

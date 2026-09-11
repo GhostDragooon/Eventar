@@ -117,6 +117,9 @@ describe.skipIf(!process.env.RLS_TESTS)('check-in burst throughput (P2 exit gate
   }, 60_000);
 
   afterAll(async () => {
+    if (eventId) {
+      await admin.from('participation_evidence').delete().eq('event_id', eventId);
+    }
     if (registrationIds.length) {
       await mustDelete(admin.from('registrations').delete().in('id', registrationIds), 'registrations fixture');
     }
