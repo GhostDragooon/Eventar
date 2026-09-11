@@ -8,7 +8,7 @@ import RegisterCard from '@/components/RegisterCard';
 import { PublicShell } from '@/components/shell/PublicShell';
 import { StatusPill } from '@/components/lifecycle/StatusPill';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
-import { requireStaff, NotAuthorizedError } from '@/lib/auth';
+import { requireStaff, NotAuthorizedError, canManageEvent } from '@/lib/auth';
 import { getUnlinkedRegistrationCount } from '@/app/account/actions';
 
 export const dynamic = 'force-dynamic';
@@ -56,7 +56,7 @@ export default async function PublicEventPage({
   const { data: event, error: eventErr } = await supabase
     .from('events')
     .select(
-      'id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status, max_attendees, registration_close_at, registration_open_at, hosted_by, organized_by, hero_image_url, created_by',
+      'id, title, topic, start_time, end_time, timezone, venue_name, venue_address, city, region, country, description, status, max_attendees, registration_close_at, registration_open_at, hosted_by, organized_by, hero_image_url, organisation_id',
     )
     .eq('id', id)
     .maybeSingle();
@@ -72,8 +72,7 @@ export default async function PublicEventPage({
     let isOwnerOrManager = false;
     try {
       const staff = await requireStaff(supabase);
-      isOwnerOrManager =
-        event.created_by === staff.id || staff.role === 'eventar_staff';
+      isOwnerOrManager = canManageEvent(event, staff);
     } catch (e) {
       if (!(e instanceof NotAuthorizedError)) throw e;
     }

@@ -35,15 +35,20 @@ vi.mock('@/lib/tz', () => ({
 }));
 
 // --- Auth ---
-type Staff = { id: string; role: 'organiser_member' | 'eventar_staff'; email: string; full_name: string | null };
+type Staff = { id: string; role: 'organiser_member' | 'eventar_staff'; email: string; full_name: string | null; organisation_id: string | null };
 let mockStaff: Staff;
 vi.mock('@/lib/auth', () => ({
   requireStaff: vi.fn(async () => mockStaff),
   NotAuthorizedError: class NotAuthorizedError extends Error {},
+  canManageEvent: (event: { organisation_id: string | null }, staff: { role: string; organisation_id: string | null }) => {
+    if (staff.role === 'eventar_staff') return true;
+    return event.organisation_id != null && event.organisation_id === staff.organisation_id;
+  },
 }));
 
 // --- Supabase mocks ---
 const eventId = '11111111-2222-4333-8444-555555555555';
+const orgId = 'org-0000-0000';
 const ownerId = 'staff-owner-0000';
 
 type EventRow = {
@@ -55,7 +60,7 @@ type EventRow = {
   timezone: string;
   venue_name: string;
   venue_address: string | null;
-  created_by: string;
+  organisation_id: string | null;
 };
 type Reg = { id: string; email: string; full_name: string; registration_code: string; status: string };
 
@@ -161,13 +166,13 @@ function eventRow(overrides: Partial<EventRow> = {}): EventRow {
     timezone: 'Asia/Hong_Kong',
     venue_name: 'HQ',
     venue_address: '12/F Central',
-    created_by: ownerId,
+    organisation_id: orgId,
     ...overrides,
   };
 }
 
 beforeEach(() => {
-  mockStaff = { id: ownerId, role: 'organiser_member', email: 'owner@x.com', full_name: 'Owner' };
+  mockStaff = { id: ownerId, role: 'organiser_member', email: 'owner@x.com', full_name: 'Owner', organisation_id: orgId };
   mockEventRow = eventRow();
   mockRegistrations = [
     { id: 'reg-1', email: 'a@x.com', full_name: 'Alice A', registration_code: 'WK-AAA111', status: 'registered' },
@@ -192,7 +197,7 @@ beforeEach(() => {
 
 describe('sendReminderForEvent — authorization', () => {
   it('refuses when the caller is neither owner nor manager', async () => {
-    mockStaff = { id: 'someone-else', role: 'organiser_member', email: 'x@x.com', full_name: null };
+    mockStaff = { id: 'someone-else', role: 'organiser_member', email: 'x@x.com', full_name: null, organisation_id: 'other-org' };
     const result = await sendReminderForEvent(eventId);
     expect(result.error).toMatch(/not authorized/i);
     expect(result.sent + result.queued + result.skipped + result.failed).toBe(0);
@@ -201,7 +206,7 @@ describe('sendReminderForEvent — authorization', () => {
   });
 
   it('allows an eventar_staff who does not own the event', async () => {
-    mockStaff = { id: 'mgr', role: 'eventar_staff', email: 'm@x.com', full_name: 'Mgr' };
+    mockStaff = { id: 'mgr', role: 'eventar_staff', email: 'm@x.com', full_name: 'Mgr', organisation_id: 'other-org' };
     const result = await sendReminderForEvent(eventId);
     expect(result.error).toBeUndefined();
     expect(result.queued).toBe(2);
@@ -461,7 +466,7 @@ describe('sendSurveyInviteForEvent', () => {
   });
 
   it('refuses a non-owner non-manager', async () => {
-    mockStaff = { id: 'nope', role: 'organiser_member', email: 'n@x.com', full_name: null };
+    mockStaff = { id: 'nope', role: 'organiser_member', email: 'n@x.com', full_name: null, organisation_id: 'other-org' };
     const result = await sendSurveyInviteForEvent(eventId);
     expect(result.error).toMatch(/not authorized/i);
   });

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { notFound, redirect } from 'next/navigation';
-import { requireStaff, NotAuthorizedError } from '@/lib/auth';
+import { requireStaff, NotAuthorizedError, canManageEvent } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { formatInTz } from '@/lib/tz';
 import type { AgendaTopic } from '@/lib/agenda';
@@ -61,7 +61,7 @@ export default async function StaffEventEditPage({
   // managers viewing on the dashboard) get bounced to /details which is
   // the read-only ops view. RLS would deny their UPDATEs anyway — this
   // just stops them from seeing a page their writes would silently fail.
-  if (event.created_by !== staff.id) {
+  if (!canManageEvent(event, staff)) {
     redirect(`/events/${id}/details`);
   }
 

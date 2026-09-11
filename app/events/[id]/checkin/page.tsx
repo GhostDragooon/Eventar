@@ -1,5 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
-import { requireStaff, NotAuthorizedError } from '@/lib/auth';
+import { requireStaff, NotAuthorizedError, canManageEvent } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { formatInTz } from '@/lib/tz';
 import { StaffShell } from '@/components/shell/StaffShell';
@@ -32,7 +32,7 @@ export default async function StaffCheckinPage({
   const { data: event, error: eventErr } = await supabase
     .from('events')
     .select(
-      'id, title, start_time, end_time, timezone, venue_name, status, max_attendees, registration_close_at, registration_open_at, created_by',
+      'id, title, start_time, end_time, timezone, venue_name, status, max_attendees, registration_close_at, registration_open_at, organisation_id',
     )
     .eq('id', id)
     .maybeSingle();
@@ -47,7 +47,7 @@ export default async function StaffCheckinPage({
   // Per the 2026-06-02 access policy refinement, check-in is owner-exclusive
   // (reverses Q4's prior "manager running multi-event check-in" use case).
   // Non-owners bounce to /details for the read-only ops lens.
-  if (event.created_by !== staff.id) {
+  if (!canManageEvent(event, staff)) {
     redirect(`/events/${id}/details`);
   }
 

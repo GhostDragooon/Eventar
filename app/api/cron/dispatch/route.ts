@@ -155,7 +155,7 @@ async function dispatch(req: NextRequest) {
   const { data, error } = await admin
     .from('events')
     .select(
-      'id, title, status, start_time, end_time, timezone, venue_name, venue_address, created_by, registration_close_at, registration_open_at',
+      'id, title, status, start_time, end_time, timezone, venue_name, venue_address, organisation_id, registration_close_at, registration_open_at',
     )
     .in('status', ['published', 'completed'])
     .is('deleted_at', null) // soft-deleted events must never be mailed

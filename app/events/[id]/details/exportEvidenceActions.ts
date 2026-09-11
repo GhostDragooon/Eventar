@@ -16,10 +16,10 @@
  *
  * `credit_ledger` and `verify_ledger_chain()` are service_role-only, so the
  * whole read path uses the admin client. requireStaff() gates the caller;
- * inside, the event's created_by or eventar_staff role is a second gate.
+ * inside, org membership via canManageEvent() is a second gate.
  */
 
-import { requireStaff } from '@/lib/auth';
+import { requireStaff, canManageEvent } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { SupabaseParticipationSource } from '@/evidence/src/ledger/participationSource';
@@ -145,9 +145,7 @@ export async function exportEventEvidence(eventId: string): Promise<ExportEviden
   if (eventRes.error) return { ok: false, error: eventRes.error.message };
   if (!eventRes.data) return { ok: false, error: 'Event not found.' };
   const event = eventRes.data;
-  const isOwner = event.created_by === staff.id;
-  const isEventarStaff = staff.role === 'eventar_staff';
-  if (!isOwner && !isEventarStaff) {
+  if (!canManageEvent(event, staff)) {
     return { ok: false, error: 'Not authorised to export evidence for this event.' };
   }
 

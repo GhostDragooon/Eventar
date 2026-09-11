@@ -1,6 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { requireStaff } from '@/lib/auth';
+import { requireStaff, canManageEvent } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { buildEventQrPng } from '@/lib/qr';
@@ -20,7 +20,7 @@ export async function publishEvent(id: string) {
   const { error } = await supabase.rpc('publish_event', { p_event_id: id, p_actor_override: staff.id });
   if (error) {
     if (error.code === '42501') {
-      throw new Error('Cannot publish: event not found or not owned by you.');
+      throw new Error('Cannot publish: event not found or not in your organisation.');
     }
     throw error;
   }
@@ -37,7 +37,7 @@ export async function getEventQrPng(
 
   const { data: event, error: readErr } = await supabase
     .from('events')
-    .select('id, title, status, created_by')
+    .select('id, title, status, organisation_id')
     .eq('id', eventId)
     .maybeSingle();
   if (readErr) throw readErr;
@@ -55,7 +55,7 @@ export async function getEventQrPng(
   // alone would let a non-owner staffer mint this event's QR. Owner-or-manager,
   // same shape as emailActions.ts::authorizeEvent. 'Event not found' hides
   // existence from a non-owner (matches the not-found copy above).
-  const canManage = event.created_by === staff.id || staff.role === 'eventar_staff';
+  const canManage = canManageEvent(event, staff);
   if (!canManage) return { error: 'Event not found.' };
 
   // Defense in depth — the UI also gates on event.status === 'published',
@@ -82,7 +82,7 @@ export async function exportRegistrantsCsv(
   // letting a silently-empty result trickle through (CLAUDE.md rule 12).
   const { data: event, error: readErr } = await supabase
     .from('events')
-    .select('id, title, start_time, end_time, timezone, venue_name, max_attendees, created_by')
+    .select('id, title, start_time, end_time, timezone, venue_name, max_attendees, organisation_id')
     .eq('id', eventId)
     .maybeSingle();
   if (readErr) throw readErr;
@@ -95,7 +95,7 @@ export async function exportRegistrantsCsv(
   // (RLS bypassed). Without this check any active staff row could export another
   // organiser's full registrant name+email list. Owner-or-manager, matching
   // emailActions.ts::authorizeEvent; 'Event not found' hides existence.
-  const canManage = event.created_by === staff.id || staff.role === 'eventar_staff';
+  const canManage = canManageEvent(event, staff);
   if (!canManage) return { error: 'Event not found.' };
 
   // Single rows query is the source of truth for both the gate and the

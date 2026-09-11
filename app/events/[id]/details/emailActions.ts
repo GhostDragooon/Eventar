@@ -5,7 +5,7 @@
 // and so the session-less cron dispatcher can reuse the send core without
 // going through requireStaff(), which throws when there is no session.
 import { revalidatePath } from 'next/cache';
-import { requireStaff } from '@/lib/auth';
+import { requireStaff, canManageEvent } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import {
   sendReminderToRegistrants,
@@ -30,7 +30,7 @@ async function authorizeEvent(eventId: string): Promise<{ event: EventRow } | { 
   const admin = supabaseAdmin();
   const { data: event, error: eventErr } = await admin
     .from('events')
-    .select('id, title, status, start_time, end_time, timezone, venue_name, venue_address, created_by')
+    .select('id, title, status, start_time, end_time, timezone, venue_name, venue_address, organisation_id')
     .eq('id', eventId)
     .maybeSingle();
   // A failed read is not a missing event. Telling an organiser their event
@@ -42,8 +42,7 @@ async function authorizeEvent(eventId: string): Promise<{ event: EventRow } | { 
     return { error: 'Could not load the event — nothing was sent. Try again.' };
   }
   if (!event) return { error: 'Event not found.' };
-  const canManage = event.created_by === staff.id || staff.role === 'eventar_staff';
-  if (!canManage) return { error: 'You are not authorized for this event.' };
+  if (!canManageEvent(event, staff)) return { error: 'You are not authorized for this event.' };
   return { event: event as EventRow };
 }
 

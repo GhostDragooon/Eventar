@@ -49,7 +49,7 @@ export type EventRow = {
   timezone: string;
   venue_name: string;
   venue_address: string | null;
-  created_by: string;
+  organisation_id: string | null;
 };
 
 type Recipient = { id: string; email: string; full_name: string; registration_code: string };

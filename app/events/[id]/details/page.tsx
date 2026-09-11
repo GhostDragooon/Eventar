@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { requireStaff, NotAuthorizedError } from '@/lib/auth';
+import { requireStaff, NotAuthorizedError, canManageEvent } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { StaffShell } from '@/components/shell/StaffShell';
@@ -238,8 +238,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
   // RLS, so without this gate a peer organizer could read the confirmations-sent
   // count for any event by typing the URL. Non-authorized readers see 0, which
   // is consistent with the all-zero RLS-gated registration counts they'll see.
-  const canSeeConfirmationsSent =
-    event.created_by === staff.id || staff.role === 'eventar_staff';
+  const canSeeConfirmationsSent = canManageEvent(event, staff);
   const confirmationsSent = canSeeConfirmationsSent
     ? (confirmationsRes.count ?? 0)
     : 0;

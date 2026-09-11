@@ -11,15 +11,19 @@ import { vi } from 'vitest';
 vi.mock('server-only', () => ({}));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 
-type Staff = { id: string; role: 'organiser_member' | 'eventar_staff'; email: string; full_name: string | null };
+type Staff = { id: string; role: 'organiser_member' | 'eventar_staff'; email: string; full_name: string | null; organisation_id: string | null };
 let mockStaff: Staff;
 vi.mock('@/lib/auth', () => ({
   requireStaff: vi.fn(async () => mockStaff),
   NotAuthorizedError: class NotAuthorizedError extends Error {},
+  canManageEvent: (event: { organisation_id: string | null }, staff: { role: string; organisation_id: string | null }) => {
+    if (staff.role === 'eventar_staff') return true;
+    return event.organisation_id != null && event.organisation_id === staff.organisation_id;
+  },
 }));
 
 type EventRow = {
-  id: string; title: string; status: string; created_by: string;
+  id: string; title: string; status: string; organisation_id: string | null;
   start_time: string; end_time: string; timezone: string;
   venue_name: string; max_attendees: number | null;
 };
@@ -51,12 +55,13 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { exportRegistrantsCsv, getEventQrPng } from './actions';
 
 const eventId = '11111111-2222-4333-8444-555555555555';
+const orgId = 'org-0000-0000';
 const ownerId = 'staff-owner-0000';
 
 beforeEach(() => {
-  mockStaff = { id: ownerId, role: 'organiser_member', email: 'owner@x.com', full_name: 'Owner' };
+  mockStaff = { id: ownerId, role: 'organiser_member', email: 'owner@x.com', full_name: 'Owner', organisation_id: orgId };
   mockEventRow = {
-    id: eventId, title: 'Clinical Skills Day', status: 'published', created_by: ownerId,
+    id: eventId, title: 'Clinical Skills Day', status: 'published', organisation_id: orgId,
     start_time: new Date(Date.now() - 7_200_000).toISOString(),
     end_time: new Date(Date.now() - 3_600_000).toISOString(), // ended → export gate open
     timezone: 'Asia/Hong_Kong', venue_name: 'HQ', max_attendees: null,
@@ -67,16 +72,16 @@ beforeEach(() => {
 
 describe('exportRegistrantsCsv — ownership', () => {
   it('refuses a non-owner, non-manager staff member (no registrant PII returned)', async () => {
-    mockStaff = { id: 'other-org-member', role: 'organiser_member', email: 'x@y.com', full_name: null };
+    mockStaff = { id: 'other-org-member', role: 'organiser_member', email: 'x@y.com', full_name: null, organisation_id: 'other-org' };
     const result = await exportRegistrantsCsv(eventId);
     expect('error' in result).toBe(true);
     if ('error' in result) expect(result.error).toMatch(/not found/i);
     expect('csvBase64' in result).toBe(false);
   });
 
-  it('reads created_by so the gate can evaluate ownership', async () => {
+  it('reads organisation_id so the gate can evaluate org membership', async () => {
     await exportRegistrantsCsv(eventId);
-    expect(selectedColumns).toContain('created_by');
+    expect(selectedColumns).toContain('organisation_id');
   });
 
   it('allows the owner', async () => {
@@ -85,7 +90,7 @@ describe('exportRegistrantsCsv — ownership', () => {
   });
 
   it('allows an eventar_staff who does not own the event', async () => {
-    mockStaff = { id: 'platform-admin', role: 'eventar_staff', email: 'a@x.com', full_name: 'Admin' };
+    mockStaff = { id: 'platform-admin', role: 'eventar_staff', email: 'a@x.com', full_name: 'Admin', organisation_id: 'other-org' };
     const result = await exportRegistrantsCsv(eventId);
     expect('csvBase64' in result).toBe(true);
   });
@@ -93,7 +98,7 @@ describe('exportRegistrantsCsv — ownership', () => {
 
 describe('getEventQrPng — ownership', () => {
   it('refuses a non-owner, non-manager staff member', async () => {
-    mockStaff = { id: 'other-org-member', role: 'organiser_member', email: 'x@y.com', full_name: null };
+    mockStaff = { id: 'other-org-member', role: 'organiser_member', email: 'x@y.com', full_name: null, organisation_id: 'other-org' };
     const result = await getEventQrPng(eventId);
     expect('error' in result).toBe(true);
     if ('error' in result) expect(result.error).toMatch(/not found/i);

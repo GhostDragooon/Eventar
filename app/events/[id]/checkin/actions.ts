@@ -100,8 +100,8 @@ function summariseCredit(outcomes: AwardOutcome[]): CreditSummary {
  * Three-layer auth preserved as defense-in-depth: middleware (proxy.ts) →
  * requireStaff() here → app_private.require_active_staff() inside the DB
  * function. The definer bypasses RLS entirely, so the in-function
- * owner check (event.created_by = actor.id) is now the SOLE enforcement
- * of owner-exclusive check-in (Q19 / 2026-06-02, reverses Q4). Non-owners
+ * org check (event.organisation_id = actor.organisation_id) is now the
+ * SOLE enforcement of org-scoped check-in. Non-members
  * get the same 'not_recognised' a nonexistent code would return —
  * info-hiding by design, preserved exactly from the pre-conversion RLS
  * behavior.

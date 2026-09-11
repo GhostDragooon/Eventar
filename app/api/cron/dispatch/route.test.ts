@@ -107,7 +107,7 @@ function reminderDueRow(overrides: Row = {}): Row {
     timezone: 'Asia/Hong_Kong',
     venue_name: 'HQ',
     venue_address: '12/F Central',
-    created_by: 'staff-1',
+    organisation_id: 'org-1',
     ...overrides,
   };
 }

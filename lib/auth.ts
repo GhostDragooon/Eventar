@@ -18,6 +18,14 @@ export class NotAuthorizedError extends Error {
   }
 }
 
+export function canManageEvent(
+  event: { organisation_id: string | null },
+  staff: Staff,
+): boolean {
+  if (staff.role === 'eventar_staff') return true;
+  return event.organisation_id != null && event.organisation_id === staff.organisation_id;
+}
+
 export async function requireStaff(client?: SupabaseClient): Promise<Staff> {
   // LOCAL REVIEW BYPASS — see lib/reviewMode.ts, which checks NODE_ENV first
   // and unconditionally, so a production build cannot reach this branch.

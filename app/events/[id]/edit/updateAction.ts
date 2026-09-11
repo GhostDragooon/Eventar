@@ -78,15 +78,14 @@ export async function updateEvent(
   {
     const { data: row, error: rowErr } = await supabaseAdmin()
       .from('events')
-      .select('created_by')
+      .select('organisation_id')
       .eq('id', idParse.data)
       .maybeSingle();
-    // This read IS the authorization for the service-role path, so a discarded
-    // error meant the owner gate could not be evaluated yet still produced a
-    // definitive answer ("Event not found") — fail visibly instead (rule 12).
     if (rowErr) return { error: 'Could not verify ownership of this event. Please try again.' };
     if (!row) return { error: 'Event not found.' };
-    if (row.created_by !== staff.id) return { error: 'You are not the owner of this event.' };
+    if (staff.role !== 'eventar_staff' && row.organisation_id !== staff.organisation_id) {
+      return { error: 'You do not have access to this event.' };
+    }
   }
 
   const eventParse = eventInputSchema.safeParse(input.event);
