@@ -103,5 +103,6 @@ export const config = {
     '/checkin',
     '/analytics',
     '/settings',
+    '/settings/team',
   ],
 };

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireStaff, NotAuthorizedError } from '@/lib/auth';
 import { StaffShell } from '@/components/shell/StaffShell';
@@ -27,8 +28,20 @@ export default async function SettingsPage() {
       </header>
       <SettingsClient staff={{ email: staff.email, role: staff.role }} />
 
-      {/* Sign-out moved here from the nav (Design Session Log: right cluster
-          is email + settings only). */}
+      <section className="mt-xl border-t border-outline-variant pt-lg">
+        <h2 className="font-title-lg text-title-lg text-on-surface mb-sm">Team</h2>
+        <p className="font-body-md text-body-md text-on-surface-variant mb-md">
+          Manage your organisation's members and invite new teammates.
+        </p>
+        <Link
+          href="/settings/team"
+          className="inline-flex items-center gap-sm rounded-lg border border-outline-variant px-md py-sm font-label-lg text-label-lg text-primary hover:bg-surface-container-high transition-colors"
+        >
+          <span className="material-symbols-outlined text-[20px]" aria-hidden>group</span>
+          Manage team
+        </Link>
+      </section>
+
       <section className="mt-xl border-t border-outline-variant pt-lg">
         <h2 className="font-title-lg text-title-lg text-on-surface mb-sm">Session</h2>
         <SettingsSignOut />
