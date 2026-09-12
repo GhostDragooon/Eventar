@@ -1,8 +1,13 @@
 // CPD Sprint 2 / Task 11 — mark_attended RLS + audit probes against the
 // live dev project. Converts the staff-facing markAttended Server Action
-// into an atomic, audited SECURITY DEFINER DB function. Owner-exclusive
-// check-in (Q19 / 2026-06-02) is preserved — enforced in-function since the
-// definer bypasses RLS entirely.
+// into an atomic, audited SECURITY DEFINER DB function.
+//
+// Access is ORG-scoped, not owner-exclusive (20260910 authority sweep
+// superseded Q19's owner-exclusive rule — see the org-scope guard test
+// below): any active staff member of the event's organisation can check
+// attendees in, enforced in-function since the definer bypasses RLS
+// entirely. Do not "fix" this back to an owner check — that was tried by
+// accident once already (20260912020000_evidence_org_scope_fix).
 //
 // Unlike self_check_in (anonymous, called via the admin/service-role
 // client), mark_attended requires a real staff JWT: app_private.
@@ -34,8 +39,10 @@ type ChainRow = {
 describe.skipIf(!process.env.RLS_TESTS)('mark_attended RLS + audit', () => {
   let owner: TestUser;
   let nonOwner: TestUser;
+  let crossOrgStaff: TestUser; // real staff, but in a DIFFERENT organisation
   let plainUser: TestUser; // authenticated but NOT staff — for the gate-denial case
   let ownerStaffId: string;
+  let otherOrgId: string;
   const eventIds: string[] = [];
   const registrationIds: string[] = [];
   const rateLimitKeys: string[] = [];
@@ -99,8 +106,20 @@ describe.skipIf(!process.env.RLS_TESTS)('mark_attended RLS + audit', () => {
   }
 
   beforeAll(async () => {
+    // Fixture org #2 so the cross-org denial case has a genuinely different
+    // organisation_id to be scoped out of (service_role bypasses RLS here;
+    // mark_attended's own in-function guard is what's under test).
+    const { data: org, error: orgError } = await admin
+      .from('organisations')
+      .insert({ name: 'RLS Test Org 2 (mark_attended)', slug: `rls-test-org-2-mark-attended-${Date.now()}` })
+      .select('id')
+      .single();
+    if (orgError || !org) throw new Error(`org fixture: ${orgError?.message}`);
+    otherOrgId = org.id as string;
+
     owner = await createTestUser('markattended-owner');
     nonOwner = await createTestUser('markattended-nonowner');
+    crossOrgStaff = await createTestUser('markattended-crossorg');
     plainUser = await createTestUser('markattended-plain');
 
     const { error } = await admin.from('staff').insert([
@@ -118,9 +137,16 @@ describe.skipIf(!process.env.RLS_TESTS)('mark_attended RLS + audit', () => {
         organisation_id: DEFAULT_ORG,
         status: 'active',
       },
+      {
+        email: crossOrgStaff.email,
+        role: 'organiser_member',
+        full_name: 'RLS Test Cross-Org Staff',
+        organisation_id: otherOrgId,
+        status: 'active',
+      },
     ]);
     if (error) throw new Error(`staff fixture: ${error.message}`);
-    staffEmails.push(owner.email, nonOwner.email);
+    staffEmails.push(owner.email, nonOwner.email, crossOrgStaff.email);
 
     const { data: ownerStaff, error: ownerLookupErr } = await admin
       .from('staff')
@@ -162,7 +188,8 @@ describe.skipIf(!process.env.RLS_TESTS)('mark_attended RLS + audit', () => {
       await mustDelete(admin.from('rate_limits').delete().in('key', rateLimitKeys), 'rate_limits fixture');
     }
     if (staffEmails.length > 0) await mustDelete(admin.from('staff').delete().in('email', staffEmails), 'staff fixture');
-    for (const u of [owner, nonOwner, plainUser]) if (u) await deleteTestUser(u);
+    for (const u of [owner, nonOwner, crossOrgStaff, plainUser]) if (u) await deleteTestUser(u);
+    if (otherOrgId) await mustDelete(admin.from('organisations').delete().eq('id', otherOrgId), 'organisations fixture');
   }, 60_000);
 
   // ---- 1. owner marks a valid code attended ----
@@ -216,13 +243,43 @@ describe.skipIf(!process.env.RLS_TESTS)('mark_attended RLS + audit', () => {
     expect((auditRow?.payload as { event_id?: string })?.event_id).toBe(eventId);
   });
 
-  // ---- 2. a different staff member (not the owner) gets info-hiding ----
-  it('a different staff member attempting the owner\'s code sees not_recognised (info-hiding)', async () => {
+  // ---- 2. a same-org teammate (not the creator) can still check in ----
+  //
+  // Access is org-scoped, not creator-scoped (20260910 authority sweep):
+  // any active staff member of the event's organisation can check attendees
+  // in, not only whoever happened to create the event row. created_by stays
+  // as metadata only. A 20260912 migration briefly clobbered this guard back
+  // to a created_by check when it added evidence-recording — this case is
+  // the regression cover for that bug (see 20260912020000_evidence_org_scope_fix).
+  it('a same-org teammate (not the creator) can mark a valid code attended', async () => {
     const eventId = await makeEventFixture();
     const regCode = code('MA002');
-    await makeRegistrationFixture(eventId, regCode);
+    const regId = await makeRegistrationFixture(eventId, regCode);
 
     const { data, error } = await nonOwner.client.rpc('mark_attended', {
+      p_code: regCode,
+      p_method: 'manual',
+    });
+    expect(error).toBeNull();
+    const row = Array.isArray(data) ? data[0] : data;
+    expect(row.result).toBe('ok');
+    expect(row.registration_id).toBe(regId);
+
+    const { data: reg } = await admin
+      .from('registrations')
+      .select('status')
+      .eq('registration_code', regCode)
+      .single();
+    expect(reg?.status).toBe('attended');
+  });
+
+  // ---- 2b. a staff member from a DIFFERENT organisation is denied ----
+  it('a staff member from a different organisation attempting the code sees not_recognised (info-hiding)', async () => {
+    const eventId = await makeEventFixture();
+    const regCode = code('MA002B');
+    await makeRegistrationFixture(eventId, regCode);
+
+    const { data, error } = await crossOrgStaff.client.rpc('mark_attended', {
       p_code: regCode,
       p_method: 'manual',
     });
