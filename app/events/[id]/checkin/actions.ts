@@ -1,10 +1,12 @@
 'use server';
 
+import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { requireStaff } from '@/lib/auth';
+import { requireStaff, canManageEvent } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { isValidRegistrationCode } from '@/lib/registrationCode';
+import { isValidRegistrationCode, generateRegistrationCode } from '@/lib/registrationCode';
+import { rateLimitBySession } from '@/lib/rateLimit';
 import {
   awardAttendanceCredit,
   type AwardOutcome,
@@ -206,4 +208,120 @@ export async function markAttended(
     default:
       return { error: 'Code not recognised.' };
   }
+}
+
+const walkInSchema = z.object({
+  eventId: z.string().uuid(),
+  fullName: z.string().trim().min(1, 'Name required').max(100),
+  email: z.string().trim().toLowerCase().regex(/^[^@\s]+@[^@\s]+\.[^@\s]+$/, 'Invalid email'),
+});
+
+/**
+ * Staff-side walk-in: register a person at the door and check them in
+ * immediately. Skips the registration window check (the person is physically
+ * present) and skips the confirmation email (they're at the desk).
+ */
+export async function walkInRegisterAndCheckIn(input: {
+  eventId: string;
+  fullName: string;
+  email: string;
+}): Promise<
+  | { ok: true; registration: { full_name: string; code: string }; credit?: CreditSummary }
+  | { error: string }
+> {
+  const supabase = await supabaseServer();
+  const staff = await requireStaff(supabase);
+
+  const parsed = walkInSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues.map((i) => i.message).join('; ') };
+  }
+  const { eventId, fullName, email } = parsed.data;
+
+  const limit = await rateLimitBySession('staff.walkin', staff.id, { windowMs: 60_000, max: 60 });
+  if (!limit.allowed) return { error: 'Too many walk-in attempts. Please wait a moment.' };
+
+  const admin = supabaseAdmin();
+
+  const { data: event, error: eventErr } = await admin
+    .from('events')
+    .select('id, title, status, max_attendees, organisation_id, deleted_at')
+    .eq('id', eventId)
+    .maybeSingle();
+
+  if (eventErr) return { error: 'Could not load event.' };
+  if (!event || event.status !== 'published' || event.deleted_at != null) {
+    return { error: 'This event is not available for walk-in registration.' };
+  }
+
+  if (!canManageEvent(event, staff)) {
+    return { error: 'You do not have access to this event.' };
+  }
+
+  if (event.max_attendees != null) {
+    const { count } = await admin
+      .from('registrations')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_id', eventId);
+    if ((count ?? 0) >= event.max_attendees) {
+      return { error: 'This event is at capacity.' };
+    }
+  }
+
+  // Register with code-collision retry (same pattern as registerForEvent)
+  let reg: { id: string; registration_code: string } | null = null;
+  let regErr: { code?: string; message: string } | null = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const candidate = generateRegistrationCode();
+    const result = await admin
+      .from('registrations')
+      .insert({
+        event_id: eventId,
+        email,
+        full_name: fullName,
+        registration_code: candidate,
+      })
+      .select('id, registration_code')
+      .single();
+    if (result.error) {
+      if (result.error.code === '23505' && result.error.message.includes('registrations_code_unique')) {
+        continue;
+      }
+      regErr = result.error;
+      break;
+    }
+    reg = result.data;
+    break;
+  }
+
+  if (!reg) {
+    if (regErr?.code === '23505' && regErr.message.includes('registrations_event_id_email_key')) {
+      return { error: 'This email is already registered. Use code entry to check them in.' };
+    }
+    return { error: 'Walk-in registration failed. Please try again.' };
+  }
+
+  // Record the deliberate email skip (Hard Rule 12: fail visibly, not silently)
+  const { error: emailLogErr } = await admin.from('email_log').insert({
+    purpose: 'confirmation',
+    event_id: eventId,
+    recipient_email: email,
+    registration_id: reg.id,
+    status: 'skipped',
+  });
+  if (emailLogErr) console.error('[walk-in] email_log insert failed', { regId: reg.id });
+
+  // Check them in via the existing path
+  const attended = await markAttended(reg.registration_code, 'manual');
+
+  revalidatePath(`/events/${eventId}/checkin`);
+
+  if ('ok' in attended) {
+    return {
+      ok: true,
+      registration: { full_name: fullName, code: reg.registration_code },
+      credit: attended.credit,
+    };
+  }
+  return attended;
 }

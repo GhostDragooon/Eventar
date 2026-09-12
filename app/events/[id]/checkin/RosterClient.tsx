@@ -6,7 +6,7 @@ import { formatInTz } from '@/lib/tz';
 import { isValidRegistrationCode } from '@/lib/registrationCode';
 import { humanizeCameraError } from '@/lib/cameraError';
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
-import { markAttended } from './actions';
+import { markAttended, walkInRegisterAndCheckIn } from './actions';
 import { setRegistrationRole, removeRegistrationRole } from '../details/multiBodyActions';
 import { Scoreboard } from './Scoreboard';
 import { ScanAndManual } from './ScanAndManual';
@@ -82,6 +82,7 @@ export default function RosterClient({
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'attended' | 'registered'>('all');
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [walkInOpen, setWalkInOpen] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
   const [nowMs, setNowMs] = useState<number>(() => Date.now());
   // One shared useTransition would grey out all 400 chips on a 400-person
@@ -205,6 +206,27 @@ export default function RosterClient({
         onScanClick={() => setScannerOpen(true)}
         onManualSubmit={(code) => handleMark(code, 'manual')}
       />
+
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => setWalkInOpen(true)}
+        className="self-start font-label-md text-label-md px-md py-sm"
+      >
+        + Walk-in
+      </Button>
+
+      {walkInOpen && (
+        <WalkInDialog
+          eventId={eventId}
+          onClose={() => setWalkInOpen(false)}
+          onSuccess={(name, creditLines) => {
+            setWalkInOpen(false);
+            const suffix = creditLines?.length ? ` · ${creditLines.join(' · ')}` : '';
+            setToast({ kind: 'ok', message: `Registered & checked in ${name}${suffix}.` });
+          }}
+        />
+      )}
 
       <SpeakersCard
         eventId={eventId}
@@ -425,6 +447,67 @@ function RosterRowItem({
         {isAttended ? (r.check_in_method === 'qr' ? 'QR' : r.check_in_method === 'manual' ? 'Manual' : '\u2014') : '\u2014'}
       </span>
     </li>
+  );
+}
+
+function WalkInDialog({
+  eventId,
+  onClose,
+  onSuccess,
+}: {
+  eventId: string;
+  onClose: () => void;
+  onSuccess: (name: string, creditLines?: string[]) => void;
+}) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    const res = await walkInRegisterAndCheckIn({ eventId, fullName: name, email });
+    setSubmitting(false);
+    if ('error' in res) {
+      setError(res.error);
+      return;
+    }
+    onSuccess(res.registration.full_name, res.credit?.lines);
+  }
+
+  return (
+    <div className="border border-outline-variant rounded-[20px] p-md bg-surface-container-low">
+      <div className="flex items-center justify-between mb-sm">
+        <h2 className="font-title-lg text-title-lg text-on-surface">Walk-in registration</h2>
+        <button type="button" onClick={onClose} className="font-label-md text-label-md text-primary-ink hover:underline">
+          Close
+        </button>
+      </div>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-sm">
+        <input
+          type="text"
+          required
+          placeholder="Full name"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          className="px-md py-sm bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+        />
+        <input
+          type="email"
+          required
+          placeholder="Email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          className="px-md py-sm bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+        />
+        {error && <p className="font-body-md text-body-md text-error">{error}</p>}
+        <Button type="submit" disabled={submitting} className="self-start min-h-11 px-md py-sm font-label-md text-label-md">
+          {submitting ? 'Registering…' : 'Register & check in'}
+        </Button>
+      </form>
+    </div>
   );
 }
 
