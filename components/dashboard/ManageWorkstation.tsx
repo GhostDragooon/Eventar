@@ -7,6 +7,8 @@ import { softDeleteEvents, restoreEvents, cancelEvents } from '@/app/dashboard/a
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/toast';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import type { WorkstationEvent, ProgrammeEvent } from './DashboardWorkstation';
 
@@ -43,6 +45,10 @@ const SORTS: { key: SortKey; label: string }[] = [
   { key: 'recent', label: 'Most recent' },
   { key: 'most', label: 'Most registered' },
 ];
+// Select.Value resolves its displayed label from this `items` map, NOT from
+// the SelectItem children rendered in the popup — without it, the trigger
+// shows the raw value ("most") instead of the label ("Most registered").
+const SORT_ITEMS: Record<SortKey, string> = Object.fromEntries(SORTS.map((s) => [s.key, s.label])) as Record<SortKey, string>;
 
 function csvEscape(v: string): string {
   return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
@@ -202,19 +208,28 @@ export function ManageWorkstation({ events }: ManageWorkstationProps) {
       <div className="flex flex-col sm:flex-row gap-sm mb-md">
         <div className="relative flex-1">
           <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none" aria-hidden>search</span>
-          <input
+          <Input
             type="text" value={query} onChange={(e) => setQuery(e.target.value)}
             placeholder="Search events" aria-label="Search events"
-            className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg py-sm pl-[42px] pr-md font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-[color:var(--on-primary-container)] transition-colors"
+            className="h-auto w-full py-sm pl-[42px] pr-md text-body-md"
           />
         </div>
-        <label className="inline-flex items-center gap-sm bg-surface-container-lowest border border-outline-variant rounded-lg px-md py-sm shrink-0">
+        <div className="inline-flex items-center gap-sm bg-surface-container-lowest border border-outline-variant rounded-lg px-md py-sm shrink-0">
           <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] text-on-surface-variant" aria-hidden>swap_vert</span>
           <span className="font-label-md text-label-md text-on-surface-variant uppercase">Sort</span>
-          <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} aria-label="Sort events" className="bg-transparent font-label-md text-label-md text-on-surface focus:outline-none cursor-pointer">
-            {SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
-          </select>
-        </label>
+          <Select
+            items={SORT_ITEMS}
+            value={sort}
+            onValueChange={(value) => value && setSort(value as SortKey)}
+          >
+            <SelectTrigger aria-label="Sort events" className="border-none bg-transparent p-0 font-label-md text-label-md text-on-surface">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SORTS.map((s) => <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="flex items-center gap-lg overflow-x-auto border-b border-outline-variant mb-lg -mx-grid-margin px-grid-margin">

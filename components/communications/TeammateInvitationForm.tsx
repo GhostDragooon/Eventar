@@ -21,6 +21,7 @@ export function TeammateInvitationForm({
   const [status, setStatus] = useState<{ kind: 'success' | 'error'; message: string } | null>(null);
   const emailId = useId();
   const messageId = useId();
+  const roleItems = Object.fromEntries(roles.map((r) => [r.value, r.label]));
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -43,7 +44,7 @@ export function TeammateInvitationForm({
       </div>
       <div className="space-y-xs">
         <span className="text-on-surface">Role</span>
-        <Select value={draft.role} onValueChange={(value) => setDraft({ ...draft, role: String(value) })}>
+        <Select items={roleItems} value={draft.role} onValueChange={(value) => setDraft({ ...draft, role: String(value) })}>
           <SelectTrigger className="min-h-11 w-full border-outline-variant bg-surface-container-lowest">
             <SelectValue placeholder="Select a role" />
           </SelectTrigger>

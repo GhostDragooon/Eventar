@@ -42,7 +42,7 @@ const STEPS_BY_AUDIENCE: Record<Audience, readonly { t: string; d: string; art: 
   practitioner: [
     {
       t: 'Find an accredited event',
-      d: 'Each listing names the accrediting body and the points it awards.',
+      d: 'Each listing names the accrediting body and the accredited points.',
       art: 'find',
     },
     {

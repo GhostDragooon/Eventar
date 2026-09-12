@@ -218,7 +218,7 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
       </div>
       <div className="-mt-[40px] ml-[20px] mb-md flex h-[80px] w-[80px] items-center justify-center rounded-[18px] bg-surface p-[4px] shadow-md">
         <div
-          className="flex h-full w-full items-center justify-center rounded-[14px] text-[26px] font-semibold text-white"
+          className="flex h-full w-full items-center justify-center rounded-[14px] text-[calc(26px*var(--text-scale))] font-semibold text-white"
           style={{ backgroundImage: 'linear-gradient(135deg, var(--primary), var(--tertiary))' }}
         >
           {orgInitials(orgName)}
@@ -307,7 +307,7 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
                   type="button"
                   aria-pressed={active}
                   onClick={() => setActiveFormat(active ? null : f)}
-                  className={`inline-flex items-center gap-[5px] rounded-full border px-[12px] py-[5px] text-[12.5px] font-medium ${
+                  className={`inline-flex items-center gap-[5px] rounded-full border px-[12px] py-[5px] text-[calc(12.5px*var(--text-scale))] font-medium ${
                     active
                       ? 'border-transparent bg-primary-container font-semibold text-on-primary-container'
                       : 'border-outline-variant bg-transparent text-on-surface-variant hover:bg-surface-container-high'
@@ -320,7 +320,7 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
             {overflowFormats.length > 0 && (
               <span
                 title={overflowFormats.map((f) => FORMAT_LABEL[f]).join(', ')}
-                className="inline-flex items-center rounded-full border border-outline-variant px-[12px] py-[5px] text-[12.5px] font-medium text-on-surface-variant"
+                className="inline-flex items-center rounded-full border border-outline-variant px-[12px] py-[5px] text-[calc(12.5px*var(--text-scale))] font-medium text-on-surface-variant"
               >
                 +{overflowFormats.length}
               </span>
@@ -335,9 +335,9 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
               <button
                 type="button"
                 onClick={() => setSelectedDay(null)}
-                className="mb-md inline-flex items-center gap-xs rounded-full bg-primary-container px-md py-xs text-[12.5px] font-semibold text-on-primary-container"
+                className="mb-md inline-flex items-center gap-xs rounded-full bg-primary-container px-md py-xs text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary-container"
               >
-                <span className="material-symbols-outlined text-[14px]" aria-hidden>close</span>
+                <span className="material-symbols-outlined text-[calc(14px*var(--text-scale))]" aria-hidden>close</span>
                 {hkDateHeader(new Date(`${selectedDay}T00:00:00`).getTime()).day} — clear filter
               </button>
             )}
@@ -358,8 +358,8 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
                 return (
                   <div key={key} className="mb-md">
                     <div className="sticky top-0 z-[1] flex items-baseline gap-[10px] border-b border-outline-variant bg-sidebar py-[10px]">
-                      <span className="text-[15px] font-bold text-on-surface">{day}</span>
-                      <span className="text-[15px] text-on-surface-variant">{dow}</span>
+                      <span className="text-[calc(15px*var(--text-scale))] font-bold text-on-surface">{day}</span>
+                      <span className="text-[calc(15px*var(--text-scale))] text-on-surface-variant">{dow}</span>
                     </div>
                     {dayEvents.map((e) => (
                       <Fragment key={e.id}>
@@ -374,21 +374,21 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
                             viewMode === 'card' ? 'grid-cols-[88px_1fr_110px]' : 'grid-cols-[88px_1fr]'
                           }`}
                         >
-                          <div className="pt-[2px] text-[13px] tabular-nums text-on-surface-variant">{e.timeLabel}</div>
+                          <div className="pt-[2px] text-[calc(13px*var(--text-scale))] tabular-nums text-on-surface-variant">{e.timeLabel}</div>
                           <div className="min-w-0">
                             <div className="mb-[6px] flex items-start justify-between gap-md">
-                              <h3 className="m-0 text-[16px] font-semibold leading-[1.35] tracking-[-0.01em] text-on-surface">{e.title}</h3>
+                              <h3 className="m-0 text-[calc(16px*var(--text-scale))] font-semibold leading-[1.35] tracking-[-0.01em] text-on-surface">{e.title}</h3>
                               <AgendaStatusPill event={e} />
                             </div>
                             {e.hosts.length > 0 && (
-                              <div className="mt-xs flex items-center gap-[6px] text-[12.5px] text-on-surface-variant">
+                              <div className="mt-xs flex items-center gap-[6px] text-[calc(12.5px*var(--text-scale))] text-on-surface-variant">
                                 <AvatarStack hosts={e.hosts} />
                                 <span className="truncate">By {e.hosts.map((h) => h.name).join(', ')}</span>
                               </div>
                             )}
                             {e.venueName && (
-                              <div className="mt-xs flex items-center gap-[6px] text-[12.5px] text-on-surface-variant">
-                                <span className="material-symbols-outlined text-[14px]" aria-hidden>location_on</span>
+                              <div className="mt-xs flex items-center gap-[6px] text-[calc(12.5px*var(--text-scale))] text-on-surface-variant">
+                                <span className="material-symbols-outlined text-[calc(14px*var(--text-scale))]" aria-hidden>location_on</span>
                                 {e.venueName}{e.city ? `, ${e.city}` : ''}
                               </div>
                             )}
@@ -422,9 +422,9 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
             <div className="flex gap-sm">
               <Link
                 href="/events/new"
-                className="flex flex-1 items-center justify-center gap-[6px] rounded-[10px] border border-outline-variant bg-surface px-md py-sm text-[13px] font-semibold text-on-surface hover:bg-surface-container-high"
+                className="flex flex-1 items-center justify-center gap-[6px] rounded-[10px] border border-outline-variant bg-surface px-md py-sm text-[calc(13px*var(--text-scale))] font-semibold text-on-surface hover:bg-surface-container-high"
               >
-                <span className="material-symbols-outlined text-[16px]" aria-hidden>add</span>
+                <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>add</span>
                 New event
               </Link>
               <span
@@ -432,7 +432,7 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
                 title="Calendar subscription — coming soon"
                 className="grid h-[36px] w-[36px] shrink-0 cursor-default place-items-center rounded-[10px] border border-outline-variant bg-surface text-on-surface-variant/60"
               >
-                <span className="material-symbols-outlined text-[16px]" aria-hidden>calendar_month</span>
+                <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>calendar_month</span>
               </span>
             </div>
 
@@ -492,7 +492,7 @@ function AvatarStack({ hosts }: { hosts: Array<{ name: string; avatar_url: strin
       {shown.map((h, i) => (
         <span
           key={i}
-          className="grid h-[16px] w-[16px] place-items-center rounded-full bg-primary-container text-[8px] font-semibold text-on-primary-container ring-1 ring-[color:var(--sidebar)]"
+          className="grid h-[16px] w-[16px] place-items-center rounded-full bg-primary-container text-[calc(8px*var(--text-scale))] font-semibold text-on-primary-container ring-1 ring-[color:var(--sidebar)]"
         >
           {h.name.slice(0, 1).toUpperCase()}
         </span>
@@ -512,7 +512,7 @@ function FormatPlaceholder({ format }: { format: EventFormat | null }) {
   const idx = format ? format.charCodeAt(0) % FORMAT_GRADIENTS.length : 0;
   return (
     <div
-      className="grid h-full w-full place-items-center text-[11px] font-bold uppercase tracking-wide text-white"
+      className="grid h-full w-full place-items-center text-[calc(11px*var(--text-scale))] font-bold uppercase tracking-wide text-white"
       style={{ backgroundImage: FORMAT_GRADIENTS[idx] }}
     >
       {label}
@@ -537,7 +537,7 @@ function AgendaStatusPill({ event }: { event: ProgrammeEvent }) {
 
 function Pill({ label, cls }: { label: string; cls: string }) {
   return (
-    <span className={`shrink-0 whitespace-nowrap rounded-full px-sm py-[2px] text-[11px] font-semibold uppercase tracking-wide ${cls}`}>
+    <span className={`shrink-0 whitespace-nowrap rounded-full px-sm py-[2px] text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-wide ${cls}`}>
       {label}
     </span>
   );
@@ -567,18 +567,18 @@ function MiniCalendar({
   return (
     <div className="rounded-[14px] border border-outline-variant bg-surface p-md">
       <div className="mb-sm flex items-center justify-between">
-        <span className="text-[13px] font-semibold text-on-surface">{monthName}</span>
+        <span className="text-[calc(13px*var(--text-scale))] font-semibold text-on-surface">{monthName}</span>
         <div className="flex gap-xs">
           <button type="button" onClick={onPrev} aria-label="Previous month" className="grid h-[28px] w-[28px] place-items-center rounded-full text-on-surface-variant hover:bg-surface-container-high">
-            <span className="material-symbols-outlined text-[16px]" aria-hidden>chevron_left</span>
+            <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>chevron_left</span>
           </button>
           <button type="button" onClick={onNext} aria-label="Next month" className="grid h-[28px] w-[28px] place-items-center rounded-full text-on-surface-variant hover:bg-surface-container-high">
-            <span className="material-symbols-outlined text-[16px]" aria-hidden>chevron_right</span>
+            <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>chevron_right</span>
           </button>
         </div>
       </div>
 
-      <div className="mb-xs grid grid-cols-7 text-center text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant">
+      <div className="mb-xs grid grid-cols-7 text-center text-[calc(10px*var(--text-scale))] font-semibold uppercase tracking-wider text-on-surface-variant">
         {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => <span key={i}>{d}</span>)}
       </div>
       <div className="grid grid-cols-7 gap-y-[2px]">
@@ -594,7 +594,7 @@ function MiniCalendar({
               type="button"
               aria-label={key}
               onClick={() => onSelectDay(key)}
-              className={`relative mx-auto grid h-[28px] w-[28px] place-items-center rounded-full text-[12px] font-medium ${
+              className={`relative mx-auto grid h-[28px] w-[28px] place-items-center rounded-full text-[calc(12px*var(--text-scale))] font-medium ${
                 isSelected
                   ? 'bg-[color:var(--on-primary-container)] font-bold text-white'
                   : isToday
@@ -618,7 +618,7 @@ function MiniCalendar({
             type="button"
             aria-pressed={segment === s}
             onClick={() => onSegmentChange(s)}
-            className={`flex-1 rounded-full py-[5px] text-center text-[12px] font-semibold capitalize ${
+            className={`flex-1 rounded-full py-[5px] text-center text-[calc(12px*var(--text-scale))] font-semibold capitalize ${
               segment === s
                 ? 'bg-surface text-on-surface shadow-sm'
                 : 'text-on-surface-variant hover:text-on-surface'
@@ -636,10 +636,10 @@ function PulseChip({ label, value, foot, warn, live }: { label: string; value: n
   return (
     <div className="flex-1 min-w-[160px] rounded-[12px] border border-outline-variant bg-surface p-md">
       <div className="flex items-center justify-between mb-xs">
-        <p className="text-[11px] uppercase tracking-wide text-on-surface-variant">{label}</p>
-        <p className="text-[18px] font-bold tabular-nums text-on-surface">{value}</p>
+        <p className="text-[calc(11px*var(--text-scale))] uppercase tracking-wide text-on-surface-variant">{label}</p>
+        <p className="text-[calc(18px*var(--text-scale))] font-bold tabular-nums text-on-surface">{value}</p>
       </div>
-      <p className={`text-[11px] ${warn ? 'text-[color:var(--warning)]' : live ? 'text-[color:var(--success)]' : 'text-on-surface-variant'}`}>{foot}</p>
+      <p className={`text-[calc(11px*var(--text-scale))] ${warn ? 'text-[color:var(--warning)]' : live ? 'text-[color:var(--success)]' : 'text-on-surface-variant'}`}>{foot}</p>
     </div>
   );
 }

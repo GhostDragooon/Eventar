@@ -11,6 +11,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { declareMyLicence, updateMyProfessionalProfile } from '../actions';
 import type {
@@ -351,13 +352,13 @@ export function ProfileClient({
 
         <SectionCard icon="mic" title="Speaker preferences">
           <FieldGroup label="Biography (optional)">
-            <textarea
+            <Textarea
               value={form.biography}
               onChange={(e) => set('biography', e.target.value)}
               placeholder="A short bio for events where you are a speaker."
               maxLength={4000}
               rows={5}
-              className="w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+              className="field-sizing-fixed"
             />
           </FieldGroup>
           <label className="mt-md flex items-start gap-sm cursor-pointer">

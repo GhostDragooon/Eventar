@@ -19,13 +19,15 @@ export function GroupedSelect({
   onChange: (value: string) => void;
   required?: boolean;
 }) {
+  const items = Object.fromEntries(groups.flatMap((g) => g.options).map((o) => [o.value, o.label]));
+
   return (
     <label className="block space-y-xs">
       <span className="font-label-md text-label-md text-on-surface">
         {label}
         {required && <span className="text-error"> *</span>}
       </span>
-      <Select value={value} onValueChange={(value) => value && onChange(String(value))}>
+      <Select items={items} value={value} onValueChange={(value) => value && onChange(String(value))}>
         <SelectTrigger className="min-h-11 w-full border-outline-variant bg-surface-container-lowest">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>

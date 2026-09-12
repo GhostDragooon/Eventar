@@ -126,7 +126,7 @@ function InviteLinkGenerator() {
       <div className="flex items-end gap-md">
         <div className="space-y-xs">
           <span className="text-label-md text-on-surface">Role</span>
-          <Select value={role} onValueChange={(v) => { if (v) setRole(v); }}>
+          <Select items={ROLE_LABELS} value={role} onValueChange={(v) => { if (v) setRole(v); }}>
             <SelectTrigger className="min-h-11 w-48 border-outline-variant bg-surface-container-lowest">
               <SelectValue />
             </SelectTrigger>

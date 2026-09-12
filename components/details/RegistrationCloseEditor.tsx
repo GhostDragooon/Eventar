@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { updateRegistrationClose } from '@/app/events/[id]/details/actions';
 
 type Props = {
@@ -47,12 +48,12 @@ export function RegistrationCloseEditor({ eventId, current }: Props) {
         <span className="normal-case tracking-normal text-on-surface-variant/70">(optional)</span>
       </label>
       <div className="flex items-center gap-sm flex-wrap">
-        <input
+        <Input
           id={`reg-close-${eventId}`}
           type="datetime-local"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="bg-surface-container-low border border-outline-variant rounded-lg px-sm py-xs font-body-md text-body-md text-on-surface focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+          className="w-auto"
         />
         <Button
           type="button"
