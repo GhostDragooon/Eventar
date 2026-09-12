@@ -277,6 +277,15 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
   // needed the way the legacy scalar columns require one.
   const multiBodyAccredited = multiBodyConfigured;
   const accredited = singleBodyAccredited || multiBodyAccredited;
+  // A body can stop being authorised for this org AFTER an event already
+  // issued credits under it (org's authorisation lapsed; the event's own
+  // accreditation is separately locked and immutable once credits post —
+  // see CpdAccreditationSection's `frozen`). Without this branch the strip
+  // read "Unverified / body not authorised" next to that section's green
+  // "Accredited — N credits issued, locked" — a flat contradiction on the
+  // same page. Ivan's call (2026-09-12): reframe this cell's own copy to
+  // tell the whole story instead of leaving the two to disagree.
+  const lapsedButLocked = hasConfig && !accredited && creditsIssued > 0;
 
   const readiness: ReadinessCell[] = [
     {
@@ -299,12 +308,14 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
       value: multiBodyAccredited
         ? `${wizardGroups.length} ${wizardGroups.length === 1 ? 'body' : 'bodies'}`
         : singleBodyAccredited ? `${configuredBody.short_name} ${event.cpd_hours}`
+        : lapsedButLocked ? 'Locked'
         : hasConfig ? 'Unverified'
         : 'Not set',
-      state: accredited ? 'ok' : hasConfig ? 'blocked' : 'warn',
+      state: accredited ? 'ok' : lapsedButLocked ? 'warn' : hasConfig ? 'blocked' : 'warn',
       note: multiBodyAccredited
         ? 'via multi-body accreditation'
         : singleBodyAccredited ? 'hours confirmed'
+        : lapsedButLocked ? `authorisation lapsed · ${creditsIssued} credit${creditsIssued === 1 ? '' : 's'} already issued`
         : hasConfig ? 'body not authorised for this org'
         : 'no body or hours',
     },

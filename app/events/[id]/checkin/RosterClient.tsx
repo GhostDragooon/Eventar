@@ -340,6 +340,7 @@ function RosterRowItem({
   onToggleRole: (role: 'chair' | 'presenter', has: boolean) => void;
 }) {
   const isAttended = r.status === 'attended';
+  const isCancelled = r.status === 'cancelled';
   const checkInMs = r.check_in_at ? new Date(r.check_in_at).getTime() : null;
   const isRecent = isAttended && checkInMs !== null && nowMs - checkInMs <= RECENT_WINDOW_MS;
 
@@ -413,6 +414,8 @@ function RosterRowItem({
           type="button"
           variant="outline"
           onClick={onMark}
+          disabled={isCancelled}
+          title={isCancelled ? ELIGIBILITY_NOTE.cancelled : undefined}
           className="justify-self-start min-h-11 px-md py-sm font-label-md text-label-md text-primary-ink"
         >
           Check in →
