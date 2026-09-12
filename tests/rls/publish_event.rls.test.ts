@@ -29,7 +29,9 @@ describe.skipIf(!process.env.RLS_TESTS)('publish_event RLS + audit', () => {
   let owner: TestUser;
   let nonOwner: TestUser;
   let plainUser: TestUser; // authenticated but NOT staff — for the gate-denial case
+  let crossOrgStaff: TestUser; // active staff, but in a DIFFERENT organisation
   let ownerStaffId: string;
+  let otherOrgId: string;
   const eventIds: string[] = [];
   const staffEmails: string[] = [];
 
@@ -58,9 +60,20 @@ describe.skipIf(!process.env.RLS_TESTS)('publish_event RLS + audit', () => {
   }
 
   beforeAll(async () => {
+    // Fixture org #2 so the cross-org denial test has a genuinely different
+    // organisation_id to be scoped out of (service_role bypasses RLS here).
+    const { data: org, error: orgError } = await admin
+      .from('organisations')
+      .insert({ name: 'RLS Test Org 2 (publish_event)', slug: `rls-test-org-2-publish-event-${Date.now()}` })
+      .select('id')
+      .single();
+    if (orgError || !org) throw new Error(`org fixture: ${orgError?.message}`);
+    otherOrgId = org.id as string;
+
     owner = await createTestUser('publishevent-owner');
     nonOwner = await createTestUser('publishevent-nonowner');
     plainUser = await createTestUser('publishevent-plain');
+    crossOrgStaff = await createTestUser('publishevent-crossorg');
 
     const { error } = await admin.from('staff').insert([
       {
@@ -77,9 +90,16 @@ describe.skipIf(!process.env.RLS_TESTS)('publish_event RLS + audit', () => {
         organisation_id: DEFAULT_ORG,
         status: 'active',
       },
+      {
+        email: crossOrgStaff.email,
+        role: 'organiser_member',
+        full_name: 'RLS Test Cross-Org Staff',
+        organisation_id: otherOrgId,
+        status: 'active',
+      },
     ]);
     if (error) throw new Error(`staff fixture: ${error.message}`);
-    staffEmails.push(owner.email, nonOwner.email);
+    staffEmails.push(owner.email, nonOwner.email, crossOrgStaff.email);
 
     const { data: ownerStaff, error: ownerLookupErr } = await admin
       .from('staff')
@@ -108,7 +128,8 @@ describe.skipIf(!process.env.RLS_TESTS)('publish_event RLS + audit', () => {
       await mustDelete(admin.from('events').delete().in('id', eventIds), 'events fixture');
     }
     if (staffEmails.length > 0) await mustDelete(admin.from('staff').delete().in('email', staffEmails), 'staff fixture');
-    for (const u of [owner, nonOwner, plainUser]) if (u) await deleteTestUser(u);
+    for (const u of [owner, nonOwner, plainUser, crossOrgStaff]) if (u) await deleteTestUser(u);
+    if (otherOrgId) await mustDelete(admin.from('organisations').delete().eq('id', otherOrgId), 'organisations fixture');
   }, 60_000);
 
   // ---- 1. owner publishes their own draft event ----
@@ -141,11 +162,30 @@ describe.skipIf(!process.env.RLS_TESTS)('publish_event RLS + audit', () => {
     );
   });
 
-  // ---- 2. a different staff member (not the owner) is rejected ----
-  it('a different staff member attempting the owner\'s event errors with 42501', async () => {
+  // ---- 2. a same-org teammate (not the creator) can publish ----
+  // 20260910000000 moved the access gate from created_by = actor.id to
+  // organisation_id = actor.organisation_id — any active staff member of the
+  // event's org can now publish it, not only whoever created the row.
+  it('a same-org teammate (not the creator) can publish a valid event', async () => {
     const eventId = await makeEventFixture('draft');
 
     const { error } = await nonOwner.client.rpc('publish_event', { p_event_id: eventId });
+    expect(error).toBeNull();
+
+    const { data: event } = await admin
+      .from('events')
+      .select('status, published_at')
+      .eq('id', eventId)
+      .single();
+    expect(event?.status).toBe('published');
+    expect(event?.published_at).not.toBeNull();
+  });
+
+  // ---- 2b. a staff member from a DIFFERENT organisation is rejected ----
+  it('a staff member from a different organisation errors with 42501', async () => {
+    const eventId = await makeEventFixture('draft');
+
+    const { error } = await crossOrgStaff.client.rpc('publish_event', { p_event_id: eventId });
     expect(error).not.toBeNull();
     expect(error?.code).toBe('42501');
 
