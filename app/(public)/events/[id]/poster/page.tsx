@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { formatInTz } from '@/lib/tz';
 import { buildEventQrPng } from '@/lib/qr';
 import { getRequestOrigin } from '@/lib/origin';
-import { deriveSpeakerNames, type AgendaTopic } from '@/lib/agenda';
+import { deriveSpeakerNames, labelForBlockKind, type AgendaTopic } from '@/lib/agenda';
 import RegisterCard from '@/components/RegisterCard';
 import PrintPosterButton from '@/components/PrintPosterButton';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
@@ -275,7 +275,7 @@ export default async function EventPosterPage({
                     <li key={b.id} className="py-md first:pt-0 last:pb-0">
                       <div className="flex flex-wrap items-center justify-between gap-sm">
                         <span className="font-label-md text-label-md uppercase tracking-wider text-[var(--po-muted)]">
-                          {b.kind}
+                          {labelForBlockKind(b.kind)}
                         </span>
                         <span className="font-body-md text-body-md text-[var(--po-muted)]">
                           {formatInTz(b.start_time, event.timezone)} → {formatInTz(b.end_time, event.timezone)}

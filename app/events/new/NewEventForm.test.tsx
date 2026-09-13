@@ -455,7 +455,7 @@ describe('NewEventForm — D.3b linear layout', () => {
     expect(screen.getByText(/^Event type$/)).toBeInTheDocument();
   });
 
-  it('renders the whole-event "Format" field with all seven options, distinct from "Event type"', () => {
+  it('does not render a "Format" field in the Basics section (removed from the UI)', () => {
     render(
       <NewEventForm
         mode="create"
@@ -464,11 +464,115 @@ describe('NewEventForm — D.3b linear layout', () => {
         cpdBodiesUnavailable={false}
       />,
     );
-    const select = screen.getByLabelText(/^Format/) as HTMLSelectElement;
-    const options = within(select).getAllByRole('option').map((o) => o.textContent);
-    expect(options).toEqual([
-      'No format', 'Conference', 'Symposium', 'Seminar', 'Lecture', 'Workshop', 'Webinar', 'Other',
-    ]);
+    expect(screen.queryByLabelText(/^Format/)).toBeNull();
+    expect(screen.queryByText(/No format/)).toBeNull();
+  });
+
+  it('round-trips an existing event\'s format through a no-edit Save even with no Format control in the UI', async () => {
+    // Format's <select> was removed from Section 2, but the schema still
+    // accepts the field and existing events may already have one set. A
+    // no-edit Save must not silently drop it (rule 12 — silent data loss).
+    type SubmitPayload = Parameters<NonNullable<React.ComponentProps<typeof NewEventForm>['submit']>>[0];
+    const submit = vi.fn<(p: SubmitPayload) => Promise<{ ok: true }>>(async () => ({ ok: true }));
+    render(
+      <NewEventForm
+        mode="edit"
+        eventId="11111111-2222-4333-8444-555555555555"
+        initialEvent={{ ...initialEvent, format: 'symposium' }}
+        initialBlocks={initialBlocks}
+        submit={submit}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+
+    await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
+    const payload = submit.mock.calls[0]![0];
+    expect(payload.event).toMatchObject({ format: 'symposium' });
+  });
+});
+
+describe('NewEventForm — agenda block type taxonomy (2026-09-13 instruction)', () => {
+  it('renders the new primary chips, keeps Workshop/Break, drops Webinar/Transition entirely', () => {
+    render(
+      <NewEventForm
+        mode="edit"
+        eventId="11111111-2222-4333-8444-555555555555"
+        initialEvent={initialEvent}
+        initialBlocks={initialBlocks}
+        submit={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+    expect(screen.getByRole('button', { name: '+ Case Presentation' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '+ Workshop' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '+ Break' })).toBeInTheDocument();
+    // Removed primary types are gone entirely — not relocated to "+ More".
+    expect(screen.queryByRole('button', { name: '+ Webinar' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '+ Transition' })).toBeNull();
+  });
+
+  it('keeps secondary types behind "+ More" until opened, then adds a block of the picked kind', () => {
+    render(
+      <NewEventForm
+        mode="create"
+        submit={vi.fn(async () => ({ ok: true as const }))}
+        cpdBodies={[]}
+        cpdBodiesUnavailable={false}
+      />,
+    );
+    expect(screen.queryByText('Awards')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '+ More' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Awards' }));
+    // Menu closes on pick, so the only "Awards" left is the new block's kind badge.
+    expect(screen.getByText('Awards')).toBeInTheDocument();
+  });
+
+  it('a legacy "transition" block still routes to the filler editor, not the rich editor', () => {
+    const legacyBlocks: InitialBlock[] = [{
+      id: 'b-legacy',
+      start_time: buildIso(EVENT_DATE, '10:00'),
+      end_time:   buildIso(EVENT_DATE, '10:15'),
+      kind: 'transition',
+      title: 'Walk to room B',
+      host: null,
+      topics: [],
+      notes: null,
+    }];
+    render(
+      <NewEventForm
+        mode="edit"
+        eventId="11111111-2222-4333-8444-555555555555"
+        initialEvent={initialEvent}
+        initialBlocks={legacyBlocks}
+        submit={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+    // FillerEditor's "What" field, not BlockEditor's "Title" + "Topics".
+    expect(screen.getByText(/^What/)).toBeInTheDocument();
+    expect(screen.queryByText('Topics')).toBeNull();
+  });
+
+  it('the sponsored toggle reveals a sponsor name field, and both survive submit', async () => {
+    type SubmitPayload = Parameters<NonNullable<React.ComponentProps<typeof NewEventForm>['submit']>>[0];
+    const submit = vi.fn<(p: SubmitPayload) => Promise<{ ok: true }>>(async () => ({ ok: true }));
+    render(
+      <NewEventForm
+        mode="edit"
+        eventId="11111111-2222-4333-8444-555555555555"
+        initialEvent={initialEvent}
+        initialBlocks={initialBlocks}
+        submit={submit}
+      />,
+    );
+    expect(screen.queryByLabelText(/Sponsor name/)).toBeNull();
+    fireEvent.click(screen.getByRole('checkbox', { name: /Sponsored/ }));
+    fireEvent.change(screen.getByLabelText(/Sponsor name/), { target: { value: 'Acme Pharma' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+
+    await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
+    const payload = submit.mock.calls[0]![0];
+    expect(payload.blocks[0]).toMatchObject({ sponsored: true, sponsor_name: 'Acme Pharma' });
   });
 });
 

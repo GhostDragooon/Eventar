@@ -9,13 +9,13 @@ import {
 } from './TimePicker15';
 
 /**
- * Phase-4.6-followup: switched the picker from a 1h chip strip to two
- * popover-style pickers per the mockup (calendar grid + 15-min slot list).
+ * Date is a permanently visible inline calendar (left column); Start/End
+ * are 15-min slot pickers (right column, side by side).
  *
- * State shape changed from { startHour, endHour } in 0..23 hours to
- * { startMinutes, endMinutes } in 0..1439 minutes (always a multiple of
- * 15 by construction — the picker only emits those). NewEventForm reads
- * the same fields with formatMinutes24h to build the ISO timestamps.
+ * State shape: { startMinutes, endMinutes } in 0..1439 minutes (always a
+ * multiple of 15 by construction — the picker only emits those).
+ * NewEventForm reads the same fields with formatMinutes24h to build the
+ * ISO timestamps.
  *
  * The duration bar relocated here from AgendaSection per user feedback —
  * event-level Date & Time is where total event duration belongs; agenda
@@ -41,67 +41,77 @@ export default function DateTimeSection({ value, onChange }: Props) {
   const barPct = dur !== null ? Math.min(100, (dur / (12 * 60)) * 100) : 0;
 
   return (
-    <div className="space-y-md">
-      {/* Date on its own row so its inline calendar pushes the time row down
-          cleanly (no grid-cell misalignment). Start/End share a 2-col row. */}
-      <div className="max-w-[360px]">
-        <Labelled label="Date" required>
-          <DatePicker
-            value={value.date}
-            onChange={(iso) => onChange({ date: iso })}
-            ariaLabel="Event date (required)"
-          />
-        </Labelled>
-      </div>
-      <div className="grid grid-cols-2 gap-md">
-        <Labelled label="Start" required>
-          <TimePicker15
-            value={value.startMinutes}
-            onChange={(m) => onChange({ startMinutes: m })}
-            ariaLabel="Event start time (required)"
-          />
-        </Labelled>
-        <Labelled label="End" required>
-          <TimePicker15
-            value={value.endMinutes}
-            onChange={(m) => onChange({ endMinutes: m })}
-            invalid={
-              value.startMinutes !== null &&
-              value.endMinutes !== null &&
-              value.endMinutes <= value.startMinutes
-            }
-            disabled={value.startMinutes === null}
-            ariaLabel="Event end time (required) — pick a start time first if disabled"
-          />
-        </Labelled>
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-lg items-start">
+      {/* Left: permanently visible inline calendar (no popover/dropdown).
+          Not a <label> here — a <label> only usefully associates with one
+          labelable control, but the inline calendar renders 44 of them
+          (42 day cells + 2 month-nav buttons). This heading is purely
+          visual; the accessible name comes from the calendar's own
+          role="group" aria-label (set to the ariaLabel prop below). */}
+      <div>
+        <span className="block font-label-md text-label-md uppercase tracking-wider text-on-surface mb-xs">
+          Date<span className="text-error ml-xs" aria-label="required">*</span>
+        </span>
+        <DatePicker
+          value={value.date}
+          onChange={(iso) => onChange({ date: iso })}
+          ariaLabel="Event date (required)"
+          inline
+        />
       </div>
 
-      {/* Duration bar + label (moved here from AgendaSection per user feedback). */}
-      {dur !== null && (
-        <div className="flex items-center gap-sm">
-          <div className="flex-1 h-1.5 bg-surface-container-highest rounded-full overflow-hidden" aria-hidden>
-            <div
-              className="h-full bg-primary rounded-full transition-all duration-300"
-              style={{ width: `${barPct}%` }}
+      {/* Right: Start/End side by side, duration bar, then the timezone note. */}
+      <div className="space-y-md">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
+          <Labelled label="Start" required>
+            <TimePicker15
+              value={value.startMinutes}
+              onChange={(m) => onChange({ startMinutes: m })}
+              ariaLabel="Event start time (required)"
             />
-          </div>
-          <span className="font-label-md text-label-md text-on-surface-variant whitespace-nowrap">
-            {formatDurationMinutes(dur)}
-          </span>
+          </Labelled>
+          <Labelled label="End" required>
+            <TimePicker15
+              value={value.endMinutes}
+              onChange={(m) => onChange({ endMinutes: m })}
+              invalid={
+                value.startMinutes !== null &&
+                value.endMinutes !== null &&
+                value.endMinutes <= value.startMinutes
+              }
+              disabled={value.startMinutes === null}
+              ariaLabel="Event end time (required) — pick a start time first if disabled"
+            />
+          </Labelled>
         </div>
-      )}
 
-      {value.startMinutes !== null && value.endMinutes !== null && value.endMinutes <= value.startMinutes && (
-        <p className="font-body-md text-body-md text-error flex items-center gap-xs">
-          <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>warning</span>
-          End must be after Start.
+        {/* Duration bar + label (moved here from AgendaSection per user feedback). */}
+        {dur !== null && (
+          <div className="flex items-center gap-sm">
+            <div className="flex-1 h-1.5 bg-surface-container-highest rounded-full overflow-hidden" aria-hidden>
+              <div
+                className="h-full bg-primary rounded-full transition-all duration-300"
+                style={{ width: `${barPct}%` }}
+              />
+            </div>
+            <span className="font-label-md text-label-md text-on-surface-variant whitespace-nowrap">
+              {formatDurationMinutes(dur)}
+            </span>
+          </div>
+        )}
+
+        {value.startMinutes !== null && value.endMinutes !== null && value.endMinutes <= value.startMinutes && (
+          <p className="font-body-md text-body-md text-error flex items-center gap-xs">
+            <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>warning</span>
+            End must be after Start.
+          </p>
+        )}
+
+        <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant">
+          Times are in your local timezone. The event page will display them in
+          the venue&apos;s local time.
         </p>
-      )}
-
-      <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant">
-        Times are in your local timezone. The event page will display them in
-        the venue&apos;s local time.
-      </p>
+      </div>
     </div>
   );
 }

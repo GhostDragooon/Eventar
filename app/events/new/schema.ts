@@ -7,10 +7,22 @@ export const EVENT_FORMATS = [
 ] as const;
 export type EventFormat = typeof EVENT_FORMATS[number];
 
+// Agenda block types — 2026-09-13 taxonomy locked by Ivan ("VENTAR — AGENDA
+// BLOCK TYPES INSTRUCTION"). Primary + secondary are the UI-facing types;
+// the last four are legacy-only (dropped from the UI, kept so existing rows
+// stay valid — webinar is a delivery mode not a block type, scientific_program
+// is too vague, transition is superseded by Break, seminar was folded into
+// the new primary/secondary list without a direct replacement).
 export const KINDS = [
-  'workshop','seminar','webinar','scientific_program',
-  'panel','roundtable','keynote','other',
-  'break','transition',
+  // primary (always-visible chips)
+  'keynote','lecture','symposium','panel','workshop',
+  'case_presentation','oral_abstract','debate','break','other',
+  // secondary (behind "More")
+  'roundtable','masterclass','case_discussion','case_competition',
+  'poster_session','moderated_poster','meet_the_expert','fireside_chat',
+  'opening_ceremony','closing_ceremony','awards',
+  // legacy — not offered in the UI
+  'seminar','webinar','scientific_program','transition',
 ] as const;
 
 // Wave 2 — partner reference for hosted_by / organized_by. URL is optional
@@ -46,6 +58,10 @@ export const blockInputSchema = z.object({
   topics: z.array(topicSchema).default([]),
   notes: z.string().max(2000).optional().default(''),
   display_order: z.number().int().nonnegative().default(0),
+  // Sponsored / industry-supported toggle — not a separate kind (instruction
+  // §5). sponsor_name is only meaningful when sponsored is true.
+  sponsored: z.boolean().default(false),
+  sponsor_name: z.string().trim().max(200).optional().default(''),
 })
 .refine(d => new Date(d.end_time) > new Date(d.start_time), {
   message: 'Block end must be after start', path: ['end_time'],

@@ -129,4 +129,40 @@ describe('blockInputSchema', () => {
   it('rejects invalid kind', () => {
     expect(blockInputSchema.safeParse({ ...validBlock, kind: 'banana' as any }).success).toBe(false);
   });
+
+  // 2026-09-13 taxonomy — new primary/secondary kinds, legacy kinds kept for
+  // backward compat, sponsored/sponsor_name.
+  it('accepts a new primary kind (case_presentation)', () => {
+    const ok = { ...validBlock, kind: 'case_presentation' as const };
+    expect(blockInputSchema.safeParse(ok).success).toBe(true);
+  });
+  it('accepts a new secondary kind (awards)', () => {
+    const ok = { ...validBlock, kind: 'awards' as const };
+    expect(blockInputSchema.safeParse(ok).success).toBe(true);
+  });
+  it('still accepts legacy kinds dropped from the UI (webinar, scientific_program, seminar)', () => {
+    for (const kind of ['webinar', 'scientific_program', 'seminar'] as const) {
+      expect(blockInputSchema.safeParse({ ...validBlock, kind }).success).toBe(true);
+    }
+  });
+  it('defaults sponsored to false and sponsor_name to empty when omitted', () => {
+    const r = blockInputSchema.safeParse(validBlock);
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.sponsored).toBe(false);
+      expect(r.data.sponsor_name).toBe('');
+    }
+  });
+  it('round-trips sponsored + sponsor_name', () => {
+    const r = blockInputSchema.safeParse({
+      ...validBlock,
+      sponsored: true,
+      sponsor_name: 'Acme Pharmaceuticals',
+    });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.sponsored).toBe(true);
+      expect(r.data.sponsor_name).toBe('Acme Pharmaceuticals');
+    }
+  });
 });

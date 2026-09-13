@@ -21,6 +21,7 @@ export function DatePicker({
   invalid = false,
   disabled = false,
   ariaLabel,
+  inline = false,
 }: {
   value: string;
   onChange: (iso: string) => void;
@@ -28,6 +29,7 @@ export function DatePicker({
   invalid?: boolean;
   disabled?: boolean;
   ariaLabel?: string;
+  inline?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [viewMonth, setViewMonth] = useState<Date>(() => {
@@ -40,9 +42,9 @@ export function DatePicker({
   });
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // Outside-click + Escape.
+  // Outside-click + Escape — not needed in inline mode.
   useEffect(() => {
-    if (!open) return;
+    if (inline || !open) return;
     function onDocClick(e: MouseEvent) {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     }
@@ -55,7 +57,7 @@ export function DatePicker({
       document.removeEventListener('mousedown', onDocClick);
       document.removeEventListener('keydown', onKey);
     };
-  }, [open]);
+  }, [open, inline]);
 
   const today = stripTime(new Date());
   const selected = value ? parseIso(value) : null;
@@ -83,41 +85,49 @@ export function DatePicker({
   }
   function pick(date: Date) {
     onChange(toIso(date));
-    setOpen(false);
+    if (!inline) setOpen(false);
   }
+
+  const showCalendar = inline || open;
 
   return (
     <div ref={rootRef} className="relative">
-      <button
-        type="button"
-        disabled={disabled}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        aria-label={ariaLabel}
-        data-invalid={invalid || undefined}
-        onClick={() => !disabled && (open ? setOpen(false) : openPicker())}
-        className={
-          'w-full flex items-center justify-between rounded-lg border px-md py-sm transition-colors text-left ' +
-          'focus:outline-none focus:ring-1 ' +
-          (invalid
-            ? 'border-error bg-error-container focus:border-error focus:ring-error/40'
-            : 'border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-primary') +
-          (disabled ? ' opacity-50 cursor-not-allowed' : ' cursor-pointer')
-        }
-      >
-        <span className={selected === null ? 'font-body-md text-body-md text-outline' : 'font-body-md text-body-md text-on-surface'}>
-          {selected === null ? placeholder : formatDateLong(selected)}
-        </span>
-        <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] text-on-surface-variant" aria-hidden>
-          calendar_month
-        </span>
-      </button>
+      {!inline && (
+        <button
+          type="button"
+          disabled={disabled}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          aria-label={ariaLabel}
+          data-invalid={invalid || undefined}
+          onClick={() => !disabled && (open ? setOpen(false) : openPicker())}
+          className={
+            'w-full flex items-center justify-between rounded-lg border px-md py-sm transition-colors text-left ' +
+            'focus:outline-none focus:ring-1 ' +
+            (invalid
+              ? 'border-error bg-error-container focus:border-error focus:ring-error/40'
+              : 'border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-primary') +
+            (disabled ? ' opacity-50 cursor-not-allowed' : ' cursor-pointer')
+          }
+        >
+          <span className={selected === null ? 'font-body-md text-body-md text-outline' : 'font-body-md text-body-md text-on-surface'}>
+            {selected === null ? placeholder : formatDateLong(selected)}
+          </span>
+          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] text-on-surface-variant" aria-hidden>
+            calendar_month
+          </span>
+        </button>
+      )}
 
-      {open && (
+      {showCalendar && (
         <div
-          role="dialog"
-          aria-label="Choose date"
-          className="mt-xs w-full max-w-[360px] bg-surface-container-lowest border border-outline-variant rounded-2xl p-md"
+          role={inline ? 'group' : 'dialog'}
+          aria-label={inline ? (ariaLabel ?? 'Choose date') : 'Choose date'}
+          className={
+            inline
+              ? 'w-full max-w-[360px] bg-surface-container-lowest border border-outline-variant rounded-2xl p-md'
+              : 'mt-xs w-full max-w-[360px] bg-surface-container-lowest border border-outline-variant rounded-2xl p-md'
+          }
         >
           <div className="flex items-center justify-between mb-md">
             <span className="font-headline-sm text-[calc(18px*var(--text-scale))] text-on-surface">{monthLabel}</span>
@@ -177,6 +187,14 @@ export function DatePicker({
             })}
           </div>
         </div>
+      )}
+
+      {/* Inline mode has no dialog-close to carry the announcement, so the
+          selection needs its own live region. */}
+      {inline && (
+        <span role="status" aria-live="polite" className="sr-only">
+          {selected ? `Selected date: ${formatDateLong(selected)}` : ''}
+        </span>
       )}
     </div>
   );

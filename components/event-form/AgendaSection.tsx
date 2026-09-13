@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { findParallelBlockIds } from '@/lib/agenda';
+import { findParallelBlockIds, labelForBlockKind } from '@/lib/agenda';
 import { TimePicker15 } from './TimePicker15';
 
 export type TopicDraft = {
@@ -13,9 +13,15 @@ export type TopicDraft = {
 };
 
 export type BlockKind =
-  | 'workshop' | 'seminar' | 'webinar' | 'scientific_program'
-  | 'panel' | 'roundtable' | 'keynote' | 'other'
-  | 'break' | 'transition';
+  // primary (always-visible chips)
+  | 'keynote' | 'lecture' | 'symposium' | 'panel' | 'workshop'
+  | 'case_presentation' | 'oral_abstract' | 'debate' | 'break' | 'other'
+  // secondary (behind "More")
+  | 'roundtable' | 'masterclass' | 'case_discussion' | 'case_competition'
+  | 'poster_session' | 'moderated_poster' | 'meet_the_expert' | 'fireside_chat'
+  | 'opening_ceremony' | 'closing_ceremony' | 'awards'
+  // legacy — not offered in the UI, kept so existing rows still render
+  | 'seminar' | 'webinar' | 'scientific_program' | 'transition';
 
 export type BlockDraft = {
   localId: string;
@@ -26,10 +32,27 @@ export type BlockDraft = {
   host: string;
   topics: TopicDraft[];
   notes: string;
+  sponsored: boolean;
+  sponsorName: string;
 };
 
-const RICH_KINDS = ['workshop','seminar','webinar','scientific_program','panel','roundtable','keynote','other'] as const;
-const FILLER_KINDS: readonly BlockKind[] = ['break','transition'];
+// Primary chips are always visible; secondary sit behind "More". Break is a
+// filler kind (own section below), not rendered in either chip row.
+const PRIMARY_KINDS = [
+  'keynote','lecture','symposium','panel','workshop',
+  'case_presentation','oral_abstract','debate','other',
+] as const;
+const SECONDARY_KINDS = [
+  'roundtable','masterclass','case_discussion','case_competition',
+  'poster_session','moderated_poster','meet_the_expert','fireside_chat',
+  'opening_ceremony','closing_ceremony','awards',
+] as const;
+// transition has no "+ Transition" button any more (superseded by Break —
+// instruction §6), but stays in FILLER_KINDS so a legacy transition block
+// loaded from the DB still renders via FillerEditor instead of jumping to
+// the rich BlockEditor (title validation, topics section) it was never
+// built for.
+const FILLER_KINDS: readonly BlockKind[] = ['break', 'transition'];
 
 // Base input styling; appended with error variant when touched && invalid.
 const inputBase = "w-full border rounded-lg px-md py-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 transition-colors";
@@ -44,20 +67,17 @@ function emptyBlock(kind: BlockKind): BlockDraft {
   return {
     localId: crypto.randomUUID(),
     start: '', end: '', kind, title: '', host: '',
-    topics: kind === 'break' || kind === 'transition' ? [] : [emptyTopic()],
+    topics: FILLER_KINDS.includes(kind) ? [] : [emptyTopic()],
     notes: '',
+    sponsored: false,
+    sponsorName: '',
   };
 }
 
-function labelForKind(k: BlockKind): string {
-  const map: Record<BlockKind, string> = {
-    workshop: 'Workshop', seminar: 'Seminar', webinar: 'Webinar',
-    scientific_program: 'Scientific Program', panel: 'Panel',
-    roundtable: 'Roundtable', keynote: 'Keynote', other: 'Other',
-    break: 'Break', transition: 'Transition',
-  };
-  return map[k];
-}
+// Label lookup lives in lib/agenda.ts (labelForBlockKind) so the poster and
+// any other attendee-facing render share it with these chips — see rule 12,
+// a raw DB value like `case_presentation` must never reach an attendee.
+const labelForKind = (k: BlockKind): string => labelForBlockKind(k);
 
 /* ─── Time helpers (HH:MM ⇄ minutes) ─────────────────────────────────── */
 
@@ -180,15 +200,16 @@ export default function AgendaSection({
     <div className="space-y-lg">
       {/* Components — header reads "Event type" per the locked terminology
           (patterns doc §7). The DB column stays `kind`; only the user-facing
-          label changes. The +Workshop/+Seminar/... buttons each create a
-          block of that event type. */}
+          label changes. Primary chips are always visible; secondary types
+          (roundtable, masterclass, poster session, etc.) sit behind "More"
+          per the 2026-09-13 taxonomy instruction. */}
       <section className="space-y-md">
         <header className="flex items-center justify-between gap-sm flex-wrap">
           <h3 className="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">
             Event type
           </h3>
-          <div className="flex gap-xs flex-wrap">
-            {RICH_KINDS.map((k) => (
+          <div className="flex gap-xs flex-wrap items-center">
+            {PRIMARY_KINDS.map((k) => (
               <Button
                 key={k}
                 type="button"
@@ -199,6 +220,7 @@ export default function AgendaSection({
                 + {labelForKind(k)}
               </Button>
             ))}
+            <MoreKindsMenu onPick={add} />
           </div>
         </header>
         {components.length === 0 && (
@@ -218,15 +240,17 @@ export default function AgendaSection({
         ))}
       </section>
 
-      {/* Fillers */}
+      {/* Fillers — Transition retired (instruction §6: time gaps are handled
+          by start/end times or Break); no "+ Transition" button any more,
+          but FILLER_KINDS still renders a legacy transition block if one is
+          loaded from an existing event. */}
       <section className="space-y-md">
         <header className="flex items-center justify-between">
           <h3 className="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">
-            Breaks &amp; transitions
+            Breaks
           </h3>
           <div className="flex gap-sm">
             <Button type="button" variant="outline" size="sm" onClick={() => add('break')}>+ Break</Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => add('transition')}>+ Transition</Button>
           </div>
         </header>
         {fillers.length === 0 && (
@@ -273,6 +297,67 @@ export function agendaValid(
 }
 
 /* ===== Block editors ===== */
+
+/**
+ * "+ More" overflow for the secondary block types. Same open/close pattern
+ * as DatePicker/TimePicker15 (local state + outside-click/Escape) rather
+ * than pulling in the base-ui Select — this is a click-to-add action menu,
+ * not a persisted-value picker.
+ */
+function MoreKindsMenu({ onPick }: { onPick: (kind: BlockKind) => void }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e: MouseEvent) {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen(o => !o)}
+      >
+        + More
+      </Button>
+      {open && (
+        <div
+          role="menu"
+          aria-label="More event types"
+          className="absolute right-0 z-10 mt-xs w-56 max-h-72 overflow-y-auto bg-surface-container-lowest border border-outline-variant rounded-lg p-xs shadow-lg"
+        >
+          {SECONDARY_KINDS.map((k) => (
+            <button
+              key={k}
+              type="button"
+              role="menuitem"
+              onClick={() => { onPick(k); setOpen(false); }}
+              className="w-full text-left px-sm py-xs rounded font-body-md text-body-md text-on-surface hover:bg-surface-container-high transition-colors"
+            >
+              {labelForKind(k)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function Labelled({
   label,
@@ -470,6 +555,34 @@ function BlockEditor({ block, parallel, touched, errors, onTouch, onChange, onRe
         />
       </Labelled>
 
+      {/* Sponsored / industry-supported — not a separate block type
+          (instruction §5): Lunch/Breakfast/Satellite Symposium and Sponsored
+          Lecture are ordinary educational blocks with this toggle set. */}
+      <div className="space-y-sm">
+        <label className="flex items-center gap-sm cursor-pointer">
+          <input
+            type="checkbox"
+            checked={block.sponsored}
+            onChange={e => onChange({ sponsored: e.target.checked, sponsorName: e.target.checked ? block.sponsorName : '' })}
+            className="w-[18px] h-[18px] shrink-0 accent-[color:var(--on-primary-container)] cursor-pointer"
+          />
+          <span className="font-body-md text-body-md text-on-surface">
+            Sponsored / industry-supported
+          </span>
+        </label>
+        {block.sponsored && (
+          <Labelled label="Sponsor name">
+            <input
+              className={`${inputBase} ${inputOk}`}
+              value={block.sponsorName}
+              onChange={e => onChange({ sponsorName: e.target.value })}
+              onBlur={onTouch}
+              placeholder="e.g. Acme Pharmaceuticals"
+            />
+          </Labelled>
+        )}
+      </div>
+
       <div>
         <div className="flex items-center justify-between mb-sm">
           <span className="font-label-md text-label-md uppercase tracking-wider text-on-surface">
@@ -576,7 +689,7 @@ function FillerEditor({ block, touched, errors, onTouch, onChange, onRemove }: {
       <Labelled label="What" required>
         <input
           className={`${inputBase} ${touched && errors.title ? inputErr : inputOk}`}
-          placeholder={block.kind === 'break' ? 'Lunch / coffee' : 'Walk to room B'}
+          placeholder="Lunch / coffee"
           value={block.title}
           onChange={e => onChange({ title: e.target.value })}
           onBlur={onTouch}

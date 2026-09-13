@@ -24,6 +24,31 @@ export function isSessionBlockKind(kind: string): boolean {
   return kind !== 'break' && kind !== 'transition';
 }
 
+// Human labels for agenda_blocks.kind (2026-09-13 taxonomy — see
+// app/events/new/schema.ts KINDS for the authoritative list). Shared by the
+// editor chips (AgendaSection) and any attendee-facing render (poster, event
+// page) so a raw DB value like `case_presentation` is never shown verbatim.
+const BLOCK_KIND_LABELS: Record<string, string> = {
+  keynote: 'Keynote', lecture: 'Lecture', symposium: 'Symposium',
+  panel: 'Panel', workshop: 'Workshop',
+  case_presentation: 'Case Presentation', oral_abstract: 'Oral Abstract',
+  debate: 'Debate', break: 'Break', other: 'Other',
+  roundtable: 'Roundtable', masterclass: 'Masterclass',
+  case_discussion: 'Case Discussion', case_competition: 'Case Competition',
+  poster_session: 'Poster Session', moderated_poster: 'Moderated Poster',
+  meet_the_expert: 'Meet the Expert', fireside_chat: 'Fireside Chat',
+  opening_ceremony: 'Opening Ceremony', closing_ceremony: 'Closing Ceremony',
+  awards: 'Awards',
+  // legacy — dropped from the UI, existing rows still render a real label
+  seminar: 'Seminar', webinar: 'Webinar',
+  scientific_program: 'Scientific Program', transition: 'Transition',
+};
+
+/** Falls back to the raw value for any kind not in the map (defensive only — the DB CHECK constraint already limits what can be stored). */
+export function labelForBlockKind(kind: string): string {
+  return BLOCK_KIND_LABELS[kind] ?? kind;
+}
+
 // Minimal block shape needed to derive the speaker list. `kind` is accepted
 // (so callers can pass full block rows) but deliberately ignored — see
 // deriveSpeakerNames.

@@ -106,6 +106,8 @@ export type InitialBlock = {
   host: string | null;
   topics: Array<Partial<TopicDraft>>;
   notes: string | null;
+  sponsored?: boolean | null;
+  sponsor_name?: string | null;
 };
 
 type Props =
@@ -212,6 +214,8 @@ function initialBlocksFrom(rows: InitialBlock[]): BlockDraft[] {
       speaker_affiliation: t.speaker_affiliation ?? '',
     })),
     notes: b.notes ?? '',
+    sponsored: b.sponsored === true,
+    sponsorName: b.sponsor_name ?? '',
   }));
 }
 
@@ -239,7 +243,10 @@ export default function NewEventForm(props: Props) {
     initialEvent?.hero_image_url ?? '',
   );
   const [category, setCategory] = useState<string>(initialEvent?.category ?? '');
-  const [format, setFormat] = useState<string>(initialEvent?.format ?? '');
+  // Format UI removed from Section 2; the value is still read from
+  // initialEvent (edit mode) and resubmitted unchanged so existing events
+  // don't lose their format on save.
+  const [format] = useState<string>(initialEvent?.format ?? '');
   // Self-serve check-in. `=== true` deliberately, matching the read side in
   // app/(public)/checkin/confirm/page.tsx — anything else is OFF, so a
   // malformed row can never render as enabled on one side and disabled on the
@@ -369,6 +376,8 @@ export default function NewEventForm(props: Props) {
       topics: b.topics,
       notes: b.notes,
       display_order: i,
+      sponsored: b.sponsored,
+      sponsor_name: b.sponsorName || undefined,
     }));
 
     // Edit mode never sends `status` — the update RPC keeps the current
@@ -484,25 +493,6 @@ export default function NewEventForm(props: Props) {
               <option value="other">Other</option>
             </select>
           </label>
-          <label className="block max-w-xs">
-            <span className="block font-label-md text-label-md uppercase tracking-wider text-on-surface mb-xs">
-              Format <span className="text-on-surface-variant normal-case">(optional)</span>
-            </span>
-            <select
-              value={format}
-              onChange={(e) => setFormat(e.target.value)}
-              className="w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary transition-colors"
-            >
-              <option value="">No format</option>
-              <option value="conference">Conference</option>
-              <option value="symposium">Symposium</option>
-              <option value="seminar">Seminar</option>
-              <option value="lecture">Lecture</option>
-              <option value="workshop">Workshop</option>
-              <option value="webinar">Webinar</option>
-              <option value="other">Other</option>
-            </select>
-          </label>
           <PartnersSection
             label="Hosted by"
             emptyHint="Add the institutions that host this event (optional)."
@@ -518,16 +508,21 @@ export default function NewEventForm(props: Props) {
         </div>
       </FormSection>
 
-      {/* 3 · Date & venue — DateTimeSection + VenueSection under one heading
-          per the EE mockup. Date/time stays in its existing 2-col internal
-          grid; venue picker sits below. Timezone hint only renders once a
-          venue is picked (so the copy is grounded in a real zone string). */}
-      {/* 3 · Date & venue — v4 order: venue first (timezone follows it),
-          then the calendar + time row, capacity in the right column
-          (optional — blank = unlimited). */}
+      {/* 3 · Date & venue — row 1: venue + capacity side by side; row 2:
+          inline calendar + start/end times (DateTimeSection's own internal
+          grid). Timezone hint sits between the rows, once a venue is picked
+          (so the copy is grounded in a real zone string). */}
       <FormSection ref={dateVenueRef} number="3" title="Date & venue">
         <div className="space-y-lg">
-          <VenueSection value={venue} onChange={setVenue} />
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-lg items-start" ref={capacityRef as unknown as React.Ref<HTMLDivElement>}>
+            <VenueSection value={venue} onChange={setVenue} />
+            <div>
+              <CapacityField value={basics} onChange={(p) => setBasics({ ...basics, ...p })} />
+              <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant mt-xs">
+                Leave blank for unlimited — registration then closes only on the close date.
+              </p>
+            </div>
+          </div>
           {venueTz && (
             <p
               className="font-body-md text-body-md text-on-surface-variant"
@@ -536,15 +531,7 @@ export default function NewEventForm(props: Props) {
               Timezone follows the venue — {venueTz}.
             </p>
           )}
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-lg items-start" ref={capacityRef as unknown as React.Ref<HTMLDivElement>}>
-            <DateTimeSection value={datetime} onChange={(p) => setDatetime({ ...datetime, ...p })} />
-            <div>
-              <CapacityField value={basics} onChange={(p) => setBasics({ ...basics, ...p })} />
-              <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant mt-xs">
-                Leave blank for unlimited — registration then closes only on the close date.
-              </p>
-            </div>
-          </div>
+          <DateTimeSection value={datetime} onChange={(p) => setDatetime({ ...datetime, ...p })} />
         </div>
       </FormSection>
 

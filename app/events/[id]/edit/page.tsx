@@ -4,7 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { requireStaff, NotAuthorizedError, canManageEvent } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { formatInTz } from '@/lib/tz';
-import type { AgendaTopic } from '@/lib/agenda';
+import { labelForBlockKind, type AgendaTopic } from '@/lib/agenda';
 import { publishEvent } from './actions';
 import { updateEvent } from './updateAction';
 import DownloadQrButton from '@/components/DownloadQrButton';
@@ -82,7 +82,7 @@ export default async function StaffEventEditPage({
   //   deleted and then becomes deleted.
   const { data: blocks, error: blocksErr } = await supabase
     .from('agenda_blocks')
-    .select('id, kind, title, host, topics, notes, start_time, end_time, display_order')
+    .select('id, kind, title, host, topics, notes, start_time, end_time, display_order, sponsored, sponsor_name')
     .eq('event_id', id)
     .order('display_order', { ascending: true })
     .order('start_time', { ascending: true });
@@ -300,7 +300,7 @@ export default async function StaffEventEditPage({
                     <li key={b.id} className="px-lg py-md">
                       <div className="flex items-center justify-between flex-wrap gap-sm mb-xs">
                         <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
-                          {b.kind}
+                          {labelForBlockKind(b.kind)}
                         </span>
                         <span className="font-body-md text-body-md text-on-surface-variant">
                           {formatInTz(b.start_time, event.timezone)} → {formatInTz(b.end_time, event.timezone)}
@@ -492,6 +492,8 @@ function DraftEditFormPanel({
     notes: string | null;
     start_time: string;
     end_time: string;
+    sponsored: boolean | null;
+    sponsor_name: string | null;
   }>;
 }) {
   const initialEvent: InitialEvent = {
@@ -567,6 +569,8 @@ function DraftEditFormPanel({
     // no-edit Save would otherwise wipe organiser notes via the full-replace
     // payload — exactly the rule-12 silent-loss pattern.
     notes: b.notes,
+    sponsored: b.sponsored,
+    sponsor_name: b.sponsor_name,
   }));
 
   return (
