@@ -9,10 +9,12 @@
 
 import { redirect } from 'next/navigation';
 import { supabaseServer } from '@/lib/supabase/server';
-import { getMyAccountAndProfile, listMyLicences } from '../actions';
+import { getMyAccountAndProfile, listMyAppointments, listMyLicences, listMySocietyMemberships } from '../actions';
 import { ProfileClient } from './ProfileClient';
 import { SiteShell } from '@/components/shell/SiteShell';
 import type { AccreditingBodyView } from '../schema';
+import { isAccountComplete } from '@/lib/accountCompleteness';
+import type { ControlledListOption } from '../complete/schema';
 
 export const metadata = {
   title: 'Professional profile',
@@ -26,7 +28,24 @@ export default async function ProfilePage() {
     redirect('/account/sign-in');
   }
 
-  const [result, licencesResult, bodiesResult] = await Promise.all([
+  // Same completion guard as /account — plan Phase 4.
+  const completeness = await isAccountComplete(authRes.user.id, authRes.user.email_confirmed_at != null);
+  if (!completeness.complete) {
+    redirect('/account/complete');
+  }
+
+  const [
+    result,
+    licencesResult,
+    bodiesResult,
+    appointmentsResult,
+    membershipsResult,
+    professionsResult,
+    positionsResult,
+    specialtiesResult,
+    degreesResult,
+    societiesResult,
+  ] = await Promise.all([
     getMyAccountAndProfile(),
     listMyLicences(),
     // Direct read: accrediting_bodies has a public-read-active RLS policy
@@ -39,6 +58,13 @@ export default async function ProfilePage() {
       .select('id, short_name, full_name, jurisdiction')
       .eq('status', 'active')
       .order('short_name', { ascending: true }),
+    listMyAppointments(),
+    listMySocietyMemberships(),
+    supabase.from('professions').select('code, label_en').order('display_order', { ascending: true }),
+    supabase.from('positions').select('code, label_en').order('display_order', { ascending: true }),
+    supabase.from('specialties').select('code, profession_code, label_en').order('display_order', { ascending: true }),
+    supabase.from('degrees').select('code, label_en').order('display_order', { ascending: true }),
+    supabase.from('societies').select('code, label_en').order('display_order', { ascending: true }),
   ]);
   if (!result.ok) {
     const errorParam =
@@ -46,11 +72,18 @@ export default async function ProfilePage() {
     redirect(`/account/sign-in?error=${errorParam}`);
   }
 
-  // Licences + bodies degrade gracefully — a failure hides the licence
-  // section rather than blocking profile edit. Consistent with the account
-  // page's `initialUnlinkedCount` fallback.
+  // Licences + bodies + enrichment lists degrade gracefully — a failure
+  // hides that section rather than blocking profile edit. Consistent with
+  // the account page's `initialUnlinkedCount` fallback.
   const initialLicences = licencesResult.ok ? licencesResult.data.licences : [];
   const bodies: AccreditingBodyView[] = (bodiesResult.data ?? []) as AccreditingBodyView[];
+  const initialAppointments = appointmentsResult.ok ? appointmentsResult.data.appointments : [];
+  const initialMemberships = membershipsResult.ok ? membershipsResult.data.memberships : [];
+  const professions: ControlledListOption[] = professionsResult.data ?? [];
+  const positions: ControlledListOption[] = positionsResult.data ?? [];
+  const specialties: (ControlledListOption & { profession_code: string | null })[] = specialtiesResult.data ?? [];
+  const degrees: ControlledListOption[] = degreesResult.data ?? [];
+  const societies: ControlledListOption[] = societiesResult.data ?? [];
 
   return (
     <SiteShell active="account" signedIn>
@@ -59,6 +92,13 @@ export default async function ProfilePage() {
           initialProfile={result.data.profile}
           initialLicences={initialLicences}
           activeBodies={bodies}
+          initialAppointments={initialAppointments}
+          initialMemberships={initialMemberships}
+          professions={professions}
+          positions={positions}
+          specialties={specialties}
+          degrees={degrees}
+          societies={societies}
         />
       </div>
     </SiteShell>

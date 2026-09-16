@@ -12,6 +12,7 @@ import { supabaseServer } from '@/lib/supabase/server';
 import { getMyAccountAndProfile, getUnlinkedRegistrationCount, listMyLicences } from './actions';
 import { AccountClient } from './AccountClient';
 import { SiteShell } from '@/components/shell/SiteShell';
+import { isAccountComplete } from '@/lib/accountCompleteness';
 
 export const metadata = {
   title: 'Account',
@@ -23,6 +24,14 @@ export default async function AccountPage() {
   const { data: authRes } = await supabase.auth.getUser();
   if (!authRes?.user) {
     redirect('/account/sign-in');
+  }
+
+  // Force the guided creation flow before any other account surface — plan
+  // Phase 4. /account/complete does NOT run this check itself (it would
+  // infinite-loop); every other account page does.
+  const completeness = await isAccountComplete(authRes.user.id, authRes.user.email_confirmed_at != null);
+  if (!completeness.complete) {
+    redirect('/account/complete');
   }
 
   const [result, unlinkedResult, licencesResult] = await Promise.all([
@@ -64,10 +73,21 @@ export default async function AccountPage() {
     (p?.position_code ?? '').trim() !== '' && (p?.position_code ?? '') !== 'other'
       ? true
       : (p?.position_other ?? '').trim() !== '';
+  // dev-review finding: this predates the specialty widen (migration
+  // 20260916020000, F3 now also requires specialty_code/specialty_other)
+  // and never checked it — same "lying banner" risk as ProfileClient.tsx's
+  // f3Ready, just one layer further out (the /account strip, not the
+  // profile-page banner). Not special-cased on 'other' the way position is
+  // (2026-09-05 user-lens fix) — specialty's controlled list is scoped per
+  // profession and several professions have zero seeded rows today, so a
+  // bare specialty_other with no code is the NORMAL path there, not an
+  // edge case to guard against.
+  const specialtyFilled = (p?.specialty_code ?? '').trim() !== '' || (p?.specialty_other ?? '').trim() !== '';
   const profileReady =
     p != null &&
     (p.workplace_text ?? '').trim() !== '' &&
     positionFilled &&
+    specialtyFilled &&
     (p.profession_code ?? '').trim() !== '';
   const profileAndMembershipReady: boolean | null = licencesResult.ok
     ? profileReady && licencesResult.data.licences.some(

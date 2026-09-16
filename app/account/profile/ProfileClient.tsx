@@ -13,12 +13,22 @@ import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { declareMyLicence, updateMyProfessionalProfile } from '../actions';
+import {
+  addMyAppointment,
+  addMySocietyMembership,
+  declareMyLicence,
+  deleteMyAppointment,
+  deleteMySocietyMembership,
+  updateMyProfessionalProfile,
+} from '../actions';
 import type {
   AccreditingBodyView,
+  AppointmentView,
   LicenceRowView,
   ProfessionalProfileView,
+  SocietyMembershipView,
 } from '../schema';
+import type { ControlledListOption } from '../complete/schema';
 
 type Status =
   | null
@@ -35,6 +45,7 @@ type FormState = {
   department_text: string;
   biography: string;
   speaker_discovery_opt_in: boolean;
+  degree_codes: string[];
 };
 
 function toForm(p: ProfessionalProfileView | null): FormState {
@@ -48,6 +59,7 @@ function toForm(p: ProfessionalProfileView | null): FormState {
     department_text:           p?.department_text           ?? '',
     biography:                 p?.biography                 ?? '',
     speaker_discovery_opt_in:  p?.speaker_discovery_opt_in  ?? false,
+    degree_codes:              p?.degree_codes              ?? [],
   };
 }
 
@@ -55,6 +67,13 @@ export function ProfileClient({
   initialProfile,
   initialLicences = [],
   activeBodies = [],
+  initialAppointments = [],
+  initialMemberships = [],
+  professions = [],
+  positions = [],
+  specialties = [],
+  degrees = [],
+  societies = [],
 }: {
   initialProfile: ProfessionalProfileView | null;
   /**
@@ -69,6 +88,15 @@ export function ProfileClient({
    * cached body_short_name), but drops out of the picker.
    */
   activeBodies?: AccreditingBodyView[];
+  /** WP-B enrichment (2026-09-16) — repeatable appointments + society rows. */
+  initialAppointments?: AppointmentView[];
+  initialMemberships?: SocietyMembershipView[];
+  /** Controlled lists (WP-C) for the profession/specialty/position/degree/society pickers. */
+  professions?: ControlledListOption[];
+  positions?: ControlledListOption[];
+  specialties?: (ControlledListOption & { profession_code: string | null })[];
+  degrees?: ControlledListOption[];
+  societies?: ControlledListOption[];
 }) {
   const [form, setForm] = useState<FormState>(toForm(initialProfile));
   const [status, setStatus] = useState<Status>(null);
@@ -82,6 +110,85 @@ export function ProfileClient({
   const [lNumber, setLNumber] = useState<string>('');
   const [licenceStatus, setLicenceStatus] = useState<Status>(null);
   const [licencePending, startLicenceTransition] = useTransition();
+
+  // WP-B enrichment state — appointments + society memberships. Same
+  // "kept local, hoist if a second consumer emerges" posture as licences.
+  const [appointments, setAppointments] = useState<AppointmentView[]>(initialAppointments);
+  const [apptInstitution, setApptInstitution] = useState('');
+  const [apptTitle, setApptTitle] = useState('');
+  const [apptStatus, setApptStatus] = useState<Status>(null);
+  const [apptPending, startApptTransition] = useTransition();
+
+  const [memberships, setMemberships] = useState<SocietyMembershipView[]>(initialMemberships);
+  const [societyCode, setSocietyCode] = useState('');
+  const [societyRole, setSocietyRole] = useState('');
+  const [societyStatus, setSocietyStatus] = useState<Status>(null);
+  const [societyPending, startSocietyTransition] = useTransition();
+
+  function onAddAppointment(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setApptStatus(null);
+    startApptTransition(async () => {
+      const result = await addMyAppointment({
+        institution_name: apptInstitution.trim(),
+        title: apptTitle.trim(),
+      });
+      if (result.ok) {
+        setAppointments((prev) => [...prev, result.data.appointment]);
+        setApptInstitution('');
+        setApptTitle('');
+      } else {
+        setApptStatus({
+          kind: 'error',
+          message:
+            result.error === 'rate_limited'
+              ? 'Too many attempts in a short window. Please wait a moment.'
+              : 'Fill both fields — institution and title.',
+        });
+      }
+    });
+  }
+
+  function onDeleteAppointment(id: string) {
+    setAppointments((prev) => prev.filter((a) => a.id !== id));
+    startApptTransition(async () => {
+      await deleteMyAppointment(id);
+    });
+  }
+
+  function onAddSocietyMembership(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSocietyStatus(null);
+    startSocietyTransition(async () => {
+      const result = await addMySocietyMembership({
+        society_code: societyCode,
+        role_title: societyRole.trim() || null,
+      });
+      if (result.ok) {
+        const label = societies.find((s) => s.code === societyCode)?.label_en ?? null;
+        setMemberships((prev) => [...prev, { ...result.data.membership, society_label: label }]);
+        setSocietyCode('');
+        setSocietyRole('');
+      } else {
+        setSocietyStatus({
+          kind: 'error',
+          message:
+            result.error === 'already_declared'
+              ? "You've already added this society."
+              : result.error === 'rate_limited'
+                ? 'Too many attempts in a short window. Please wait a moment.'
+                : 'Select a society to add.',
+        });
+      }
+    });
+  }
+
+  function onDeleteSocietyMembership(id: string) {
+    setMemberships((prev) => prev.filter((m) => m.id !== id));
+    startSocietyTransition(async () => {
+      await deleteMySocietyMembership(id);
+    });
+  }
 
   function onDeclareLicence(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -170,6 +277,7 @@ export function ProfileClient({
         department_text:           form.department_text.trim() || null,
         biography:                 form.biography.trim()       || null,
         speaker_discovery_opt_in:  form.speaker_discovery_opt_in,
+        degree_codes:              form.degree_codes.length > 0 ? form.degree_codes : null,
       });
       if (result.ok) {
         setStatus({
@@ -192,10 +300,17 @@ export function ProfileClient({
     });
   }
 
+  const filteredSpecialtiesForForm = specialties.filter((s) => s.profession_code === form.profession_code);
+  // dev-review finding: f3Ready predates the specialty widen (migration
+  // 20260916020000) and never checked it — a profile with workplace +
+  // position + profession but no specialty would show the green "in place"
+  // banner here, then silently fail the real F3 gate at check-in. Same
+  // "lying banner" class the F3+F4 comment block above already warns about.
   const f3Ready =
     form.workplace_text.trim() !== '' &&
     (form.position_code.trim() !== '' || form.position_other.trim() !== '') &&
-    form.profession_code.trim() !== '';
+    form.profession_code.trim() !== '' &&
+    (form.specialty_code.trim() !== '' || form.specialty_other.trim() !== '');
   // F4 gate — a declared licence in a non-terminal state. Lapsed/revoked/
   // superseded rows exist in the caller's history but don't unlock credit,
   // so the "ready" signal must exclude them. Pairing this with f3Ready in
@@ -306,48 +421,108 @@ export function ProfileClient({
 
         <SectionCard icon="work" title="Role">
           <div className="grid gap-md md:grid-cols-2">
-            <FieldGroup label="Position code">
-              <Input
-                value={form.position_code}
-                onChange={(e) => set('position_code', e.target.value)}
-                placeholder="e.g. consultant"
-                maxLength={120}
-              />
-            </FieldGroup>
-            <FieldGroup label="Position (other)">
-              <Input
-                value={form.position_other}
-                onChange={(e) => set('position_other', e.target.value)}
-                placeholder="If your role isn't in the list"
-                maxLength={500}
-              />
-            </FieldGroup>
             <FieldGroup label="Profession">
-              <Input
+              <select
                 value={form.profession_code}
-                onChange={(e) => set('profession_code', e.target.value)}
-                placeholder="e.g. medicine"
-                maxLength={120}
-              />
+                onChange={(e) => {
+                  set('profession_code', e.target.value);
+                  set('specialty_code', '');
+                }}
+                className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+              >
+                <option value="">Select…</option>
+                {professions.map((p) => (
+                  <option key={p.code} value={p.code}>{p.label_en}</option>
+                ))}
+              </select>
             </FieldGroup>
-            <div />
             <FieldGroup label="Specialty">
-              <Input
+              <select
                 value={form.specialty_code}
                 onChange={(e) => set('specialty_code', e.target.value)}
-                placeholder="e.g. cardiology"
-                maxLength={120}
-              />
+                disabled={!form.profession_code || filteredSpecialtiesForForm.length === 0}
+                className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm disabled:opacity-50"
+              >
+                <option value="">
+                  {filteredSpecialtiesForForm.length === 0 && form.profession_code ? 'Not listed yet — use the field below' : 'Select…'}
+                </option>
+                {filteredSpecialtiesForForm.map((s) => (
+                  <option key={s.code} value={s.code}>{s.label_en}</option>
+                ))}
+              </select>
             </FieldGroup>
-            <FieldGroup label="Specialty (other)">
-              <Input
-                value={form.specialty_other}
-                onChange={(e) => set('specialty_other', e.target.value)}
-                placeholder="If your specialty isn't in the list"
-                maxLength={500}
-              />
+            {/* Renders whenever there's nothing to pick from (only
+                'medicine' has seeded specialties today — dev-review
+                CRITICAL: every other profession left this field
+                permanently unreachable, blocking F3 credit release for
+                anyone not in medicine), 'other' was picked, or existing
+                data already lives here (legacy rows / a value that no
+                longer matches any controlled-list code). */}
+            {(filteredSpecialtiesForForm.length === 0 && form.profession_code) ||
+            form.specialty_code === 'other' ||
+            form.specialty_other.trim() !== '' ? (
+              <FieldGroup label={filteredSpecialtiesForForm.length === 0 ? 'Specialty' : 'Specialty (if not listed)'}>
+                <Input
+                  value={form.specialty_other}
+                  onChange={(e) => set('specialty_other', e.target.value)}
+                  maxLength={500}
+                />
+              </FieldGroup>
+            ) : null}
+            <FieldGroup label="Position / rank">
+              <select
+                value={form.position_code}
+                onChange={(e) => set('position_code', e.target.value)}
+                className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+              >
+                <option value="">Select…</option>
+                {positions.map((p) => (
+                  <option key={p.code} value={p.code}>{p.label_en}</option>
+                ))}
+              </select>
             </FieldGroup>
+            {form.position_code === 'other' && (
+              <FieldGroup label="Position (if not listed)">
+                <Input
+                  value={form.position_other}
+                  onChange={(e) => set('position_other', e.target.value)}
+                  maxLength={500}
+                />
+              </FieldGroup>
+            )}
           </div>
+          {degrees.length > 0 && (
+            <div className="mt-md">
+              <FieldGroup label="Degrees / fellowships (optional)">
+                <div className="flex flex-wrap gap-xs">
+                  {degrees.map((d) => {
+                    const checked = form.degree_codes.includes(d.code);
+                    return (
+                      <button
+                        type="button"
+                        key={d.code}
+                        onClick={() =>
+                          set(
+                            'degree_codes',
+                            checked
+                              ? form.degree_codes.filter((c) => c !== d.code)
+                              : [...form.degree_codes, d.code],
+                          )
+                        }
+                        className={`rounded-full px-sm py-1 text-[calc(12px*var(--text-scale))] border ${
+                          checked
+                            ? 'bg-primary-fixed text-primary-ink border-transparent'
+                            : 'bg-transparent text-on-surface-variant border-outline-variant'
+                        }`}
+                      >
+                        {d.label_en}
+                      </button>
+                    );
+                  })}
+                </div>
+              </FieldGroup>
+            </div>
+          )}
         </SectionCard>
 
         <SectionCard icon="mic" title="Speaker preferences">
@@ -548,6 +723,107 @@ export function ProfileClient({
           </form>
         )}
       </section>
+
+      {/* WP-B enrichment (2026-09-16) — additional appointments + society
+          memberships. Profile-page-only, not on the account-creation path
+          (write-up §3.3/§8). Same sibling-of-the-form posture as Licences. */}
+      <SectionCard icon="apartment" title="Additional appointments">
+        <p className="font-body-md text-body-md text-on-surface-variant m-0 mb-md">
+          Other institutions you hold a title at, beyond your primary workplace above.
+        </p>
+        {appointments.length > 0 && (
+          <ul className="flex flex-col gap-sm m-0 p-0 list-none mb-md">
+            {appointments.map((a) => (
+              <li key={a.id} className="flex items-center justify-between gap-sm border-b border-outline-variant pb-sm last:border-b-0 last:pb-0">
+                <span className="flex-1 min-w-0">
+                  <span className="font-title-md text-title-md text-on-surface">{a.institution_name}</span>
+                  <span className="font-body-md text-body-md text-on-surface-variant"> — {a.title}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onDeleteAppointment(a.id)}
+                  aria-label={`Remove ${a.institution_name}`}
+                  className="shrink-0 text-on-surface-variant hover:text-on-surface"
+                >
+                  <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>close</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <form onSubmit={onAddAppointment} className="flex flex-col gap-md">
+          <div className="grid gap-md md:grid-cols-2">
+            <FieldGroup label="Institution">
+              <Input value={apptInstitution} onChange={(e) => setApptInstitution(e.target.value)} maxLength={500} disabled={apptPending} />
+            </FieldGroup>
+            <FieldGroup label="Title">
+              <Input value={apptTitle} onChange={(e) => setApptTitle(e.target.value)} maxLength={500} disabled={apptPending} placeholder="e.g. Visiting Fellow" />
+            </FieldGroup>
+          </div>
+          {apptStatus && <div role="status" aria-live="polite" className="font-body-md text-body-md text-on-error-container bg-error-container border border-error-container rounded-lg px-md py-sm">{apptStatus.message}</div>}
+          <div className="flex justify-end">
+            <Button type="submit" disabled={apptPending || !apptInstitution.trim() || !apptTitle.trim()}>
+              {apptPending ? 'Adding…' : 'Add appointment'}
+            </Button>
+          </div>
+        </form>
+      </SectionCard>
+
+      <SectionCard icon="group" title="Society & association roles">
+        <p className="font-body-md text-body-md text-on-surface-variant m-0 mb-md">
+          Councils, fellowships, or roles you hold at a medical society or association.
+        </p>
+        {memberships.length > 0 && (
+          <ul className="flex flex-col gap-sm m-0 p-0 list-none mb-md">
+            {memberships.map((m) => (
+              <li key={m.id} className="flex items-center justify-between gap-sm border-b border-outline-variant pb-sm last:border-b-0 last:pb-0">
+                <span className="flex-1 min-w-0">
+                  <span className="font-title-md text-title-md text-on-surface">{m.society_label ?? m.society_code}</span>
+                  {m.role_title && <span className="font-body-md text-body-md text-on-surface-variant"> — {m.role_title}</span>}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onDeleteSocietyMembership(m.id)}
+                  aria-label={`Remove ${m.society_label ?? m.society_code}`}
+                  className="shrink-0 text-on-surface-variant hover:text-on-surface"
+                >
+                  <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>close</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {societies.length === 0 ? (
+          <p className="font-body-md text-body-md text-on-surface-variant m-0">No societies available to add right now.</p>
+        ) : (
+          <form onSubmit={onAddSocietyMembership} className="flex flex-col gap-md">
+            <div className="grid gap-md md:grid-cols-2">
+              <FieldGroup label="Society">
+                <select
+                  value={societyCode}
+                  onChange={(e) => setSocietyCode(e.target.value)}
+                  disabled={societyPending}
+                  className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+                >
+                  <option value="">Select…</option>
+                  {societies.map((s) => (
+                    <option key={s.code} value={s.code}>{s.label_en}</option>
+                  ))}
+                </select>
+              </FieldGroup>
+              <FieldGroup label="Role (optional)">
+                <Input value={societyRole} onChange={(e) => setSocietyRole(e.target.value)} maxLength={200} disabled={societyPending} placeholder="e.g. Council Member" />
+              </FieldGroup>
+            </div>
+            {societyStatus && <div role="status" aria-live="polite" className="font-body-md text-body-md text-on-error-container bg-error-container border border-error-container rounded-lg px-md py-sm">{societyStatus.message}</div>}
+            <div className="flex justify-end">
+              <Button type="submit" disabled={societyPending || !societyCode}>
+                {societyPending ? 'Adding…' : 'Add'}
+              </Button>
+            </div>
+          </form>
+        )}
+      </SectionCard>
 
       {/* H2 aftershock (2026-09-05 user-lens): splitting Licences out of the
           profile form moved the only "Back to account" link WAY up the page.

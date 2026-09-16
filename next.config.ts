@@ -17,6 +17,17 @@ const CSP_REPORT_ONLY = [
 ].join('; ');
 
 const nextConfig: NextConfig = {
+  // uploadAvatar (app/account/actions.ts) advertises "up to 5MB" — Next's
+  // Server Action body cap defaults to 1MB (node_modules/next/dist/server/
+  // app-render/action-handler.js), which would silently reject an ordinary
+  // phone photo before the handler's own size/type validation ever runs.
+  // Schema-confirmed (config-schema.js) still nested under `experimental`
+  // in this installed 16.2.12, despite the docs snippet showing it flat.
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '5mb',
+    },
+  },
   async headers() {
     return [{
       source: '/:path*',

@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { supabaseServer } from '@/lib/supabase/server';
 import { ClaimClient } from './ClaimClient';
 import { SiteShell } from '@/components/shell/SiteShell';
+import { isAccountComplete } from '@/lib/accountCompleteness';
 
 export const metadata = {
   title: 'Link past registrations',
@@ -20,6 +21,12 @@ export default async function ClaimPage() {
   }
 
   const emailVerified = authRes.user.email_confirmed_at != null;
+
+  // Same completion guard as /account — plan Phase 4.
+  const completeness = await isAccountComplete(authRes.user.id, emailVerified);
+  if (!completeness.complete) {
+    redirect('/account/complete');
+  }
 
   return (
     <SiteShell active="account" signedIn>

@@ -146,10 +146,17 @@ describe.skipIf(!process.env.RLS_TESTS)('organisers RLS', () => {
   });
 
   it('primary_body_id rejects a non-existent accrediting_bodies id (FK violation, 23503)', async () => {
+    // organisation_id must be otherOrgId, not DEFAULT_ORG: since migration
+    // 20260916030000 added organisers_one_per_organisation (a unique index
+    // on organisation_id), DEFAULT_ORG already holds the beforeAll fixture's
+    // organiser row — inserting a second one there now hits 23505 (unique
+    // violation) before Postgres ever reaches the primary_body_id FK check
+    // this test means to isolate. otherOrgId has no organiser row, so this
+    // insert fails on the FK alone, same as originally intended.
     const { error } = await admin
       .from('organisers')
       .insert({
-        organisation_id: DEFAULT_ORG,
+        organisation_id: otherOrgId,
         legal_name: 'RLS Test Organiser Ltd 2',
         display_name: 'RLS Test Organiser 2',
         organisation_type: 'training_provider',

@@ -70,10 +70,48 @@ export const professionalProfileUpdateSchema = z
     // Plan §7.2: opt-in is storage only in this slice; no discovery product.
     // Timestamp is maintained by the DB trigger, not by the client.
     speaker_discovery_opt_in: z.boolean().optional(),
+    // WP-B (2026-09-16): multi-select of public.degrees codes + free text
+    // for anything not in the controlled list (write-up §3.5).
+    degree_codes: z.array(z.string().trim().min(1).max(120)).max(32).nullable().optional(),
   })
   .strict();
 
 export type ProfessionalProfileUpdateInput = z.infer<typeof professionalProfileUpdateSchema>;
+
+// ---------------------------------------------------------------------------
+// WP-B enrichment — additional_appointments, society_memberships
+// (migration 20260916040000). Profile-page-only, not on the creation path.
+// ---------------------------------------------------------------------------
+
+export const appointmentCreateSchema = z
+  .object({
+    institution_name: nonBlankString(500),
+    title: nonBlankString(500),
+  })
+  .strict();
+export type AppointmentCreateInput = z.infer<typeof appointmentCreateSchema>;
+
+export type AppointmentView = {
+  id: string;
+  institution_name: string;
+  title: string;
+  display_order: number;
+};
+
+export const societyMembershipCreateSchema = z
+  .object({
+    society_code: z.string().trim().min(1).max(120),
+    role_title: nonBlankString(200).nullable().optional(),
+  })
+  .strict();
+export type SocietyMembershipCreateInput = z.infer<typeof societyMembershipCreateSchema>;
+
+export type SocietyMembershipView = {
+  id: string;
+  society_code: string;
+  society_label: string | null;
+  role_title: string | null;
+};
 
 // ---------------------------------------------------------------------------
 // Licence declare (definer wrapper — declare_licence RPC)
@@ -136,6 +174,7 @@ export type ProfessionalProfileView = {
   presentation_languages: string[] | null;
   speaker_discovery_opt_in: boolean;
   speaker_discovery_opt_in_at: string | null;
+  degree_codes: string[] | null;
 };
 
 export type AccountAndProfile = {

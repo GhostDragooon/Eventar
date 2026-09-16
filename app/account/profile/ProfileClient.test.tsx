@@ -12,13 +12,23 @@ vi.mock('../actions', () => ({
     ok: true as const,
     data: { licence_id: 'lic-new-1' },
   })),
+  addMyAppointment: vi.fn(async () => ({
+    ok: true as const,
+    data: { appointment: { id: 'appt-new-1', institution_name: 'St. Teresa Hospital', title: 'Visiting Fellow', display_order: 0 } },
+  })),
+  deleteMyAppointment: vi.fn(async () => ({ ok: true as const, data: { deleted: true as const } })),
+  addMySocietyMembership: vi.fn(async () => ({
+    ok: true as const,
+    data: { membership: { id: 'soc-new-1', society_code: 'HKMA', role_title: null, society_label: null } },
+  })),
+  deleteMySocietyMembership: vi.fn(async () => ({ ok: true as const, data: { deleted: true as const } })),
 }));
 
 import { afterEach, describe, expect, it } from 'vitest';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { ProfileClient } from './ProfileClient';
-import { declareMyLicence } from '../actions';
-import type { AccreditingBodyView, LicenceRowView } from '../schema';
+import { addMyAppointment, addMySocietyMembership, declareMyLicence } from '../actions';
+import type { AccreditingBodyView, AppointmentView, LicenceRowView, SocietyMembershipView } from '../schema';
 
 afterEach(cleanup);
 
@@ -221,7 +231,7 @@ describe('ProfileClient — Licences SectionCard', () => {
           position_code: 'consultant',
           position_other: null,
           profession_code: 'medicine',
-          specialty_code: null,
+          specialty_code: 'cardiac_cardiovascular',
           specialty_other: null,
           department_text: null,
           biography: null,
@@ -229,6 +239,7 @@ describe('ProfileClient — Licences SectionCard', () => {
           presentation_languages: null,
           speaker_discovery_opt_in: false,
           speaker_discovery_opt_in_at: null,
+          degree_codes: null,
         }}
         initialLicences={[]}
         activeBodies={activeBodies}
@@ -249,7 +260,7 @@ describe('ProfileClient — Licences SectionCard', () => {
           position_code: 'consultant',
           position_other: null,
           profession_code: 'medicine',
-          specialty_code: null,
+          specialty_code: 'cardiac_cardiovascular',
           specialty_other: null,
           department_text: null,
           biography: null,
@@ -257,6 +268,7 @@ describe('ProfileClient — Licences SectionCard', () => {
           presentation_languages: null,
           speaker_discovery_opt_in: false,
           speaker_discovery_opt_in_at: null,
+          degree_codes: null,
         }}
         initialLicences={existingLicences}
         activeBodies={activeBodies}
@@ -265,11 +277,13 @@ describe('ProfileClient — Licences SectionCard', () => {
     expect(screen.getByText(/profile and licences are in place/i)).toBeInTheDocument();
   });
 
-  it('F3+F4 readiness: a lapsed licence does NOT satisfy F4', () => {
-    // Non-terminal statuses (declared, verified) satisfy F4; terminal
-    // states (lapsed, revoked, superseded) do not — otherwise a user
-    // whose licence expired last year would trip the same silent
-    // check-in gate the BLOCKER fix closed.
+  it('F3+F4 readiness banner: specialty missing alone keeps the banner in the "not yet" state (F3 gate widen)', () => {
+    // dev-review finding: f3Ready predated migration 20260916020000 (F3 now
+    // also requires specialty_code/specialty_other) and never checked it —
+    // a profile with workplace/position/profession but no specialty would
+    // have shown the green "in place" banner here, then silently failed
+    // the real F3 gate at check-in. Everything else in this fixture matches
+    // the green-banner test above; only specialty is missing.
     render(
       <ProfileClient
         initialProfile={{
@@ -286,6 +300,37 @@ describe('ProfileClient — Licences SectionCard', () => {
           presentation_languages: null,
           speaker_discovery_opt_in: false,
           speaker_discovery_opt_in_at: null,
+          degree_codes: null,
+        }}
+        initialLicences={existingLicences}
+        activeBodies={activeBodies}
+      />,
+    );
+    expect(screen.queryByText(/profile and licences are in place/i)).not.toBeInTheDocument();
+  });
+
+  it('F3+F4 readiness: a lapsed licence does NOT satisfy F4', () => {
+    // Non-terminal statuses (declared, verified) satisfy F4; terminal
+    // states (lapsed, revoked, superseded) do not — otherwise a user
+    // whose licence expired last year would trip the same silent
+    // check-in gate the BLOCKER fix closed.
+    render(
+      <ProfileClient
+        initialProfile={{
+          workplace_text: 'Queen Mary Hospital',
+          workplace_organisation_id: null,
+          position_code: 'consultant',
+          position_other: null,
+          profession_code: 'medicine',
+          specialty_code: 'cardiac_cardiovascular',
+          specialty_other: null,
+          department_text: null,
+          biography: null,
+          expertise_codes: null,
+          presentation_languages: null,
+          speaker_discovery_opt_in: false,
+          speaker_discovery_opt_in_at: null,
+          degree_codes: null,
         }}
         initialLicences={[{ ...existingLicences[0], status: 'lapsed' }]}
         activeBodies={activeBodies}
@@ -317,3 +362,97 @@ describe('ProfileClient — Licences SectionCard', () => {
 // BLOCKER 1 finding — attendees look for account controls on /account, not on
 // /account/profile (professional profile). Tests for it live in
 // AccountClient.test.tsx now.
+
+// WP-B enrichment (2026-09-16) — additional appointments + society
+// memberships. Profile-page-only sections, sibling to Licences.
+describe('ProfileClient — WP-B enrichment sections', () => {
+  const existingAppointment: AppointmentView = {
+    id: 'appt-1',
+    institution_name: 'Queen Elizabeth Hospital',
+    title: 'Honorary Consultant',
+    display_order: 0,
+  };
+  const existingMembership: SocietyMembershipView = {
+    id: 'soc-1',
+    society_code: 'HKCS',
+    society_label: 'Hong Kong College of Cardiology',
+    role_title: 'Fellow',
+  };
+
+  it('renders existing appointments and society memberships', () => {
+    render(
+      <ProfileClient
+        initialProfile={null}
+        initialLicences={[]}
+        activeBodies={activeBodies}
+        initialAppointments={[existingAppointment]}
+        initialMemberships={[existingMembership]}
+        societies={[{ code: 'HKCS', label_en: 'Hong Kong College of Cardiology' }]}
+      />,
+    );
+    expect(screen.getByText('Queen Elizabeth Hospital')).toBeInTheDocument();
+    expect(screen.getByText(/honorary consultant/i)).toBeInTheDocument();
+    // Appears twice: once as the membership's rendered label, once as the
+    // (still-selectable) dropdown option — getAllByText, not getByText.
+    expect(screen.getAllByText('Hong Kong College of Cardiology').length).toBeGreaterThanOrEqual(1);
+    // \bfellow\b, not /fellow/i — the section's own description text
+    // ("Councils, fellowships, or roles…") also contains the substring.
+    expect(screen.getByText(/\bfellow\b/i)).toBeInTheDocument();
+  });
+
+  it('adding an appointment calls the action and appends the row', async () => {
+    render(
+      <ProfileClient
+        initialProfile={null}
+        initialLicences={[]}
+        activeBodies={activeBodies}
+        initialAppointments={[]}
+      />,
+    );
+    const institution = screen.getByLabelText(/^institution$/i) as HTMLInputElement;
+    const title = screen.getByLabelText(/^title$/i) as HTMLInputElement;
+    fireEvent.change(institution, { target: { value: 'St. Teresa Hospital' } });
+    fireEvent.change(title, { target: { value: 'Visiting Fellow' } });
+    await act(async () => {
+      fireEvent.submit(title.closest('form')!);
+    });
+    expect(addMyAppointment).toHaveBeenCalledWith({
+      institution_name: 'St. Teresa Hospital',
+      title: 'Visiting Fellow',
+    });
+    expect(screen.getByText('St. Teresa Hospital')).toBeInTheDocument();
+  });
+
+  it('adding a society membership calls the action and appends the row', async () => {
+    render(
+      <ProfileClient
+        initialProfile={null}
+        initialLicences={[]}
+        activeBodies={activeBodies}
+        initialMemberships={[]}
+        societies={[{ code: 'HKMA', label_en: 'Hong Kong Medical Association' }]}
+      />,
+    );
+    const select = screen.getByLabelText(/^society$/i) as HTMLSelectElement;
+    fireEvent.change(select, { target: { value: 'HKMA' } });
+    await act(async () => {
+      fireEvent.submit(select.closest('form')!);
+    });
+    expect(addMySocietyMembership).toHaveBeenCalledWith({ society_code: 'HKMA', role_title: null });
+    // Now appears twice: the dropdown option (still selectable) and the
+    // newly-appended membership row — getAllByText, not getByText.
+    expect(screen.getAllByText('Hong Kong Medical Association').length).toBe(2);
+  });
+
+  it('shows a genuine empty state when no societies are available to add', () => {
+    render(
+      <ProfileClient
+        initialProfile={null}
+        initialLicences={[]}
+        activeBodies={activeBodies}
+        societies={[]}
+      />,
+    );
+    expect(screen.getByText(/no societies available to add/i)).toBeInTheDocument();
+  });
+});

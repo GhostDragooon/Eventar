@@ -39,6 +39,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — F1-F5 gate'
   let sinkF1: TestUser;
   let sinkF2: TestUser;
   let sinkF3: TestUser;
+  let sinkF3Specialty: TestUser;
   let sinkHappy: TestUser;
 
   const codes: Record<string, string> = {};
@@ -52,11 +53,15 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — F1-F5 gate'
 
   async function grantF3Profile(userId: string, workplace = 'Test Hospital'): Promise<void> {
     // Insert directly via admin so RLS with_check does not gate the fixture.
+    // specialty_code added 20260916 — F3 widened to require it (plan Phase 3);
+    // without it every happy-path/walk-in fixture here would now trip
+    // skipped:profile_incomplete instead of releasing credit.
     await admin.from('professional_profiles').insert({
       user_id: userId,
       workplace_text: workplace,
       position_code: 'doctor',
       profession_code: 'medicine',
+      specialty_code: 'cardiac_cardiovascular',
     });
   }
 
@@ -112,6 +117,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — F1-F5 gate'
     sinkF1 = await createTestUser(`f1f5-sinkf1-${ts}`);
     sinkF2 = await createTestUser(`f1f5-sinkf2-${ts}`);
     sinkF3 = await createTestUser(`f1f5-sinkf3-${ts}`);
+    sinkF3Specialty = await createTestUser(`f1f5-sinkf3spec-${ts}`);
     sinkHappy = await createTestUser(`f1f5-happy-${ts}`);
 
     for (const [u, role] of [
@@ -186,6 +192,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — F1-F5 gate'
     codes.f1 = `WK-F1${String(ts).slice(-4)}`;
     codes.f2 = `WK-F2${String(ts).slice(-4)}`;
     codes.f3 = `WK-F3${String(ts).slice(-4)}`;
+    codes.f3spec = `WK-F3S${String(ts).slice(-3)}`;
     codes.happy = `WK-HP${String(ts).slice(-4)}`;
     codes.walkin = `WK-WI${String(ts).slice(-4)}`;
 
@@ -214,6 +221,21 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — F1-F5 gate'
     await grantF2Consents(sinkF3.id);
     await grantF4Licence(sinkF3);
 
+    // sinkF3Specialty — profile row exists (workplace/position/profession
+    // all present) but specialty_code/specialty_other are both absent.
+    // Proves the widened F3 check (20260916) rejects on specialty alone,
+    // not just on a missing profile row entirely.
+    await registerLinked(sinkF3Specialty, codes.f3spec);
+    await grantF2Consents(sinkF3Specialty.id);
+    await admin.from('professional_profiles').insert({
+      user_id: sinkF3Specialty.id,
+      workplace_text: 'Test Hospital',
+      position_code: 'doctor',
+      profession_code: 'medicine',
+      // specialty_code / specialty_other intentionally omitted.
+    });
+    await grantF4Licence(sinkF3Specialty);
+
     // sinkHappy — every F satisfied.
     await registerLinked(sinkHappy, codes.happy);
     await grantF2Consents(sinkHappy.id);
@@ -221,7 +243,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — F1-F5 gate'
     await grantF4Licence(sinkHappy);
 
     // Check every sink in so the engine sees attendance.
-    for (const c of [codes.f5, codes.f1, codes.f2, codes.f3, codes.happy]) {
+    for (const c of [codes.f5, codes.f1, codes.f2, codes.f3, codes.f3spec, codes.happy]) {
       await checkIn(c);
     }
   }, 180_000);
@@ -232,7 +254,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — F1-F5 gate'
     // credit_ledger rows for this event pin the event via NO ACTION FK —
     // same accepted residue as roster_eligibility. Event stays.
     await admin.from('organisation_body_authorisations').delete().eq('body_id', bodyId);
-    for (const u of [owner, bodyAdmin, sinkF5, sinkF1, sinkF2, sinkF3, sinkHappy]) {
+    for (const u of [owner, bodyAdmin, sinkF5, sinkF1, sinkF2, sinkF3, sinkF3Specialty, sinkHappy]) {
       await admin.from('staff').delete().eq('email', u.email);
       await deleteTestUser(u);
     }
@@ -265,6 +287,14 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — F1-F5 gate'
   it('F3 fail: no professional_profiles row → skipped:profile_incomplete', async () => {
     const { data, error } = await admin.rpc('award_attendance_credit', {
       p_event_id: eventId, p_registration_code: codes.f3,
+    });
+    expect(error).toBeNull();
+    expect(data).toEqual([{ body_id: null, outcome: 'skipped:profile_incomplete' }]);
+  });
+
+  it('F3 fail: profile row exists but specialty missing → skipped:profile_incomplete', async () => {
+    const { data, error } = await admin.rpc('award_attendance_credit', {
+      p_event_id: eventId, p_registration_code: codes.f3spec,
     });
     expect(error).toBeNull();
     expect(data).toEqual([{ body_id: null, outcome: 'skipped:profile_incomplete' }]);

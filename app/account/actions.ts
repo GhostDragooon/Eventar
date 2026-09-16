@@ -25,13 +25,17 @@ import { rateLimitBySession } from '@/lib/rateLimit';
 import { getRequestOrigin } from '@/lib/origin';
 import {
   accountUpdateSchema,
+  appointmentCreateSchema,
   licenceDeclareSchema,
   professionalProfileUpdateSchema,
+  societyMembershipCreateSchema,
   type AccountActionResult,
   type AccountAndProfile,
   type AccountUpdateInput,
+  type AppointmentView,
   type LicenceRowView,
   type ProfessionalProfileUpdateInput,
+  type SocietyMembershipView,
 } from './schema';
 
 // ---------------------------------------------------------------------------
@@ -85,7 +89,7 @@ export async function getMyAccountAndProfile(): Promise<AccountActionResult<Acco
   const { data: profile, error: profileErr } = await supabase
     .from('professional_profiles')
     .select(
-      'workplace_text, workplace_organisation_id, position_code, position_other, profession_code, specialty_code, specialty_other, department_text, biography, expertise_codes, presentation_languages, speaker_discovery_opt_in, speaker_discovery_opt_in_at',
+      'workplace_text, workplace_organisation_id, position_code, position_other, profession_code, specialty_code, specialty_other, department_text, biography, expertise_codes, presentation_languages, speaker_discovery_opt_in, speaker_discovery_opt_in_at, degree_codes',
     )
     .eq('user_id', auth.userId)
     .maybeSingle();
@@ -537,4 +541,207 @@ export async function declareMyLicence(
   if (!licenceId) return { ok: false, error: 'db_error' };
   revalidatePath('/account/profile');
   return { ok: true, data: { licence_id: licenceId } };
+}
+
+// ---------------------------------------------------------------------------
+// uploadAvatar — optional, skippable photo at account creation (write-up
+// §3.2/§9). Uploads to the `avatars` bucket under the caller's own uid-
+// prefixed path (RLS on storage.objects scopes writes to that prefix —
+// migration 20260916010000) and stores the public URL on public.users.
+//
+// OPEN ITEM (write-up §9, not yet resolved by Ivan): the bucket is public-
+// read by design (avatars display wherever a profile picture is shown), but
+// whether that means "account-only" or "any public surface" in practice
+// depends on surfaces that don't exist yet (speaker discovery, rosters).
+// Moderation is out of scope for this slice — there is no review queue.
+// Ships with a conservative size/type cap as the safe default; revisit
+// before any surface actually displays these publicly.
+// ---------------------------------------------------------------------------
+
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024; // 5MB
+const ALLOWED_AVATAR_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+export async function uploadAvatar(
+  formData: FormData,
+): Promise<AccountActionResult<{ avatar_url: string }>> {
+  const auth = await requireAuthenticatedSelf();
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  const rl = await rateLimitBySession('account.avatar.upload', auth.userId, {
+    windowMs: 60_000,
+    max: 10,
+  });
+  if (!rl.allowed) return { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+
+  const file = formData.get('file');
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, error: 'invalid_input' };
+  }
+  if (file.size > MAX_AVATAR_BYTES) return { ok: false, error: 'invalid_input' };
+  if (!ALLOWED_AVATAR_TYPES.has(file.type)) return { ok: false, error: 'invalid_input' };
+
+  const supabase = await supabaseServer();
+  // Fixed, extension-less path (contentType carries the real MIME type,
+  // independent of the path string) — dev-review finding: branching the
+  // path on file.type left a same-user's old avatar.{other-ext} orphaned
+  // in storage forever on every re-upload with a different image type.
+  const path = `${auth.userId}/avatar`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(path, file, { upsert: true, contentType: file.type });
+  if (uploadError) return { ok: false, error: 'db_error' };
+
+  // Cache-buster: the path is stable across re-uploads (upsert), so without
+  // a varying query param the browser (or a CDN) may keep serving the prior
+  // image at the same URL — dev-review finding.
+  const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(path);
+  const avatarUrl = `${publicUrlData.publicUrl}?v=${Date.now()}`;
+
+  const { error: updateError } = await supabase
+    .from('users')
+    .update({ avatar_url: avatarUrl })
+    .eq('id', auth.userId);
+  if (updateError) return { ok: false, error: 'db_error' };
+
+  revalidatePath('/account');
+  revalidatePath('/account/complete');
+  revalidatePath('/account/profile');
+  return { ok: true, data: { avatar_url: avatarUrl } };
+}
+
+// ---------------------------------------------------------------------------
+// WP-B enrichment — additional_appointments, society_memberships CRUD.
+// Profile-page-only (not on the creation path, per write-up §8 non-goals).
+// Both tables are plain self-CRUD (migration 20260916040000) — RLS scopes
+// every operation to user_id = auth.uid(), so these are thin wrappers with
+// no admin/service-role bypass needed.
+// ---------------------------------------------------------------------------
+
+export async function listMyAppointments(): Promise<AccountActionResult<{ appointments: AppointmentView[] }>> {
+  const auth = await requireAuthenticatedSelf();
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from('additional_appointments')
+    .select('id, institution_name, title, display_order')
+    .eq('user_id', auth.userId)
+    .order('display_order', { ascending: true })
+    .order('created_at', { ascending: true });
+  if (error) return { ok: false, error: 'db_error' };
+
+  return { ok: true, data: { appointments: data ?? [] } };
+}
+
+export async function addMyAppointment(
+  raw: unknown,
+): Promise<AccountActionResult<{ appointment: AppointmentView }>> {
+  const auth = await requireAuthenticatedSelf();
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  const rl = await rateLimitBySession('account.appointments.add', auth.userId, { windowMs: 60_000, max: 20 });
+  if (!rl.allowed) return { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+
+  const parsed = appointmentCreateSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: 'invalid_input', issues: parsed.error.issues };
+
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from('additional_appointments')
+    .insert({ user_id: auth.userId, ...parsed.data })
+    .select('id, institution_name, title, display_order')
+    .single();
+  if (error || !data) return { ok: false, error: 'db_error' };
+
+  revalidatePath('/account/profile');
+  return { ok: true, data: { appointment: data } };
+}
+
+export async function deleteMyAppointment(id: string): Promise<AccountActionResult<{ deleted: true }>> {
+  const auth = await requireAuthenticatedSelf();
+  if (!auth.ok) return { ok: false, error: auth.error };
+  if (typeof id !== 'string' || id.length === 0) return { ok: false, error: 'invalid_input' };
+
+  const supabase = await supabaseServer();
+  const { error } = await supabase.from('additional_appointments').delete().eq('id', id).eq('user_id', auth.userId);
+  if (error) return { ok: false, error: 'db_error' };
+
+  revalidatePath('/account/profile');
+  return { ok: true, data: { deleted: true } };
+}
+
+export async function listMySocietyMemberships(): Promise<
+  AccountActionResult<{ memberships: SocietyMembershipView[] }>
+> {
+  const auth = await requireAuthenticatedSelf();
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from('society_memberships')
+    .select('id, society_code, role_title')
+    .eq('user_id', auth.userId)
+    .order('created_at', { ascending: true });
+  if (error) return { ok: false, error: 'db_error' };
+
+  const rows = data ?? [];
+  // App-join the society label, same pattern listMyLicences uses for
+  // body_short_name — societies has a public-read-active RLS policy.
+  const codes = Array.from(new Set(rows.map((r) => r.society_code)));
+  const labels = new Map<string, string>();
+  if (codes.length > 0) {
+    // eslint-disable-next-line no-restricted-syntax -- join failure downgrades to null label, list still renders
+    const { data: societies } = await supabase.from('societies').select('code, label_en').in('code', codes);
+    for (const s of societies ?? []) labels.set(s.code, s.label_en);
+  }
+
+  const memberships: SocietyMembershipView[] = rows.map((r) => ({
+    id: r.id,
+    society_code: r.society_code,
+    society_label: labels.get(r.society_code) ?? null,
+    role_title: r.role_title,
+  }));
+  return { ok: true, data: { memberships } };
+}
+
+export async function addMySocietyMembership(
+  raw: unknown,
+): Promise<AccountActionResult<{ membership: SocietyMembershipView }>> {
+  const auth = await requireAuthenticatedSelf();
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  const rl = await rateLimitBySession('account.societies.add', auth.userId, { windowMs: 60_000, max: 20 });
+  if (!rl.allowed) return { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+
+  const parsed = societyMembershipCreateSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: 'invalid_input', issues: parsed.error.issues };
+
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from('society_memberships')
+    .insert({ user_id: auth.userId, ...parsed.data })
+    .select('id, society_code, role_title')
+    .single();
+  if (error) {
+    if (error.code === '23505') return { ok: false, error: 'already_declared' };
+    return { ok: false, error: 'db_error' };
+  }
+  if (!data) return { ok: false, error: 'db_error' };
+
+  revalidatePath('/account/profile');
+  return { ok: true, data: { membership: { ...data, society_label: null } } };
+}
+
+export async function deleteMySocietyMembership(id: string): Promise<AccountActionResult<{ deleted: true }>> {
+  const auth = await requireAuthenticatedSelf();
+  if (!auth.ok) return { ok: false, error: auth.error };
+  if (typeof id !== 'string' || id.length === 0) return { ok: false, error: 'invalid_input' };
+
+  const supabase = await supabaseServer();
+  const { error } = await supabase.from('society_memberships').delete().eq('id', id).eq('user_id', auth.userId);
+  if (error) return { ok: false, error: 'db_error' };
+
+  revalidatePath('/account/profile');
+  return { ok: true, data: { deleted: true } };
 }
