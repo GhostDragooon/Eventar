@@ -20,8 +20,25 @@
 // This page does NOT run the isAccountComplete redirect guard itself (that
 // would infinite-loop). If the caller is ALREADY complete, it redirects
 // to /account instead of showing the flow again.
+//
+// That guard must not fire on a Server Action's own re-render of this same
+// route: declaring a licence is always the step that flips completeness to
+// true (it's checked last in the initialStep ladder below), so the POST that
+// declares it would otherwise trigger this page's redirect mid-action —
+// skipping the wizard's own "Done" button entirely. `next-action` is Next's
+// own request header identifying that a render is happening as a Server
+// Action response, not a fresh navigation (confirmed against
+// node_modules/next/dist/client/components/app-router-headers.js:
+// ACTION_HEADER = 'next-action') — a real BROWSER navigation (bookmark, back
+// button) never carries it, so the bounce-if-already-complete behavior is
+// unchanged for them. (An arbitrary HTTP client could set this header on a
+// plain GET; harmless here — this check is a routing convenience, not an
+// authorization control, per lib/accountCompleteness.ts's own header, and
+// every step it would let through is idempotent against the caller's own
+// already-authenticated account.)
 
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { supabaseServer } from '@/lib/supabase/server';
 import { isAccountComplete } from '@/lib/accountCompleteness';
 import { getMyAccountAndProfile, listMyLicences } from '../actions';
@@ -44,7 +61,8 @@ export default async function CompleteAccountPage() {
 
   const emailConfirmed = authRes.user.email_confirmed_at != null;
   const completeness = await isAccountComplete(authRes.user.id, emailConfirmed);
-  if (completeness.complete) {
+  const isActionRerender = (await headers()).has('next-action');
+  if (completeness.complete && !isActionRerender) {
     redirect('/account');
   }
 
