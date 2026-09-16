@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { isReviewMode } from './reviewMode';
+import { isReviewMode, isRealAuthCookiePresent } from './reviewMode';
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -35,4 +35,26 @@ describe('isReviewMode', () => {
       expect(isReviewMode()).toBe(false);
     },
   );
+});
+
+// Shared by lib/auth.ts's requireStaff(), lib/supabase/server.ts's
+// supabaseServer(), and proxy.ts — three call sites disagreeing on this
+// predicate is exactly the bug class fixed 2026-09-16/17 (see reviewMode.ts's
+// own doc comment). One test file for the one predicate all three share.
+describe('isRealAuthCookiePresent', () => {
+  it('is false with no cookies at all', () => {
+    expect(isRealAuthCookiePresent([])).toBe(false);
+  });
+
+  it('is false for unrelated cookies', () => {
+    expect(isRealAuthCookiePresent([{ name: 'theme' }, { name: 'sb-project-ref' }])).toBe(false);
+  });
+
+  it('is true for a real Supabase auth-token cookie', () => {
+    expect(isRealAuthCookiePresent([{ name: 'sb-abcdefgh-auth-token' }])).toBe(true);
+  });
+
+  it('is true when the auth-token cookie is chunked (sb-...-auth-token.0, .1, ...)', () => {
+    expect(isRealAuthCookiePresent([{ name: 'sb-abcdefgh-auth-token.0' }])).toBe(true);
+  });
 });

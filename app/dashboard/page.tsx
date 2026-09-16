@@ -47,12 +47,28 @@ export default async function DashboardPage() {
 
   // eslint-disable-next-line react-hooks/purity
   const nowMs = Date.now();
-  const { events: decorated, registered7d, checkedInToday } = await fetchDecoratedEvents(supabase, nowMs);
+  const { events: decorated, registered7d, checkedInToday } = await fetchDecoratedEvents(supabase, nowMs, staff);
 
   // ---- CPD pulse + capture rate (IA spec stat row) -------------------------
   const admin = supabaseAdmin();
+  const orgEventIds = decorated.map((d) => d.id);
   const [issuedRes, blockedRes] = await Promise.all([
-    admin.from('credit_ledger').select('id', { count: 'exact', head: true }).eq('entry_type', 'credit_earned'),
+    // credit_ledger has no organisation_id column, but attendance credit is
+    // always awarded against a specific event (record_credit_entry() takes
+    // p_event_id as a required parameter) — scope by `decorated`'s ids, which
+    // fetchDecoratedEvents() has already resolved to the right set for this
+    // caller's role (their own org, or every org for eventar_staff). Before
+    // this fix the count was global across every organisation, invisible
+    // under review mode for the same reason as the D4 events leak.
+    orgEventIds.length > 0
+      ? admin.from('credit_ledger').select('id', { count: 'exact', head: true }).eq('entry_type', 'credit_earned').in('event_id', orgEventIds)
+      : { count: 0, error: null },
+    // practitioner_licences is practitioner-owned, not organisation-owned
+    // (no organisation_id, no event_id — see its own migration comment) — an
+    // organiser_admin/organiser_member has no valid join to scope "blocked"
+    // licences to their org by, so this stays global. Flagged, not fixed:
+    // this is a genuine "which population does this card mean" product
+    // question, not a missing join. See handoff for the two concrete options.
     admin
       .from('practitioner_licences')
       .select('id', { count: 'exact', head: true })
@@ -91,8 +107,17 @@ export default async function DashboardPage() {
   const liveIds = decorated.filter((d) => !d.deleted && d.lifecycle === 'live').map((d) => d.id);
   const attentionEventIds = decorated.filter((d) => !d.deleted).slice(0, 60).map((d) => d.id);
 
+  // email_log has no RLS policies and no grant for `authenticated` — every
+  // other read in this codebase goes through supabaseAdmin() (see
+  // lib/email/eventEmails.ts's explicit "NOT the RLS-scoped supabaseServer"
+  // convention). This query used the session-scoped `supabase` client
+  // instead, which 42501s for any real signed-in staff member with at least
+  // one event — invisible under review mode, since review mode's borrowed
+  // identity always ran this query as service_role (RLS/grants bypassed
+  // entirely) until requireStaff() was fixed to stop doing that
+  // unconditionally (2026-09-17).
   const sendsRes = attentionEventIds.length > 0
-    ? await supabase
+    ? await admin
         .from('email_log')
         .select('event_id, purpose, status')
         .in('event_id', attentionEventIds)

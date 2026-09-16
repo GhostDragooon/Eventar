@@ -76,3 +76,42 @@ export function isReviewMode(): boolean {
   if (process.env.NODE_ENV === 'production') return false;
   return process.env.EVENTAR_REVIEW_MODE === 'true';
 }
+
+/**
+ * Pure predicate — given a request's cookies, is a real Supabase auth session
+ * present? Shared by every review-mode call site so "should this request
+ * bypass auth" is answered the same way everywhere.
+ *
+ * `lib/supabase/server.ts` originally had this check alone; `requireStaff()`
+ * in `lib/auth.ts` bypassed unconditionally instead, so a request with a real
+ * staff session (e.g. a tester signed in for real, then continuing to browse
+ * other staff pages under review mode without signing out) got a genuine
+ * session-bound Supabase client for its data reads but a borrowed identity
+ * for its authorization check — two different actors resolved for one
+ * request, with a SECURITY DEFINER RPC free to trust whichever one it read
+ * (`auth.email()`/`current_staff_id()`) over the borrowed one the app layer
+ * passed along. Found 2026-09-16 creating an event that silently landed
+ * under the wrong organisation.
+ *
+ * `proxy.ts` (middleware/edge runtime) had the SAME unconditional bypass and
+ * needed the SAME fix, but can't use `hasRealAuthCookie()` below —
+ * `next/headers`'s `cookies()` isn't available there; middleware reads
+ * `req.cookies.getAll()` directly. Both shapes are `{name, value}[]`, so this
+ * one pure function serves both callers instead of proxy.ts growing its own
+ * copy of the predicate — which is what proxy.ts's own comment ("Same guard
+ * function, so both layers open and close together and there is one thing to
+ * audit") already claimed, before this fix actually made it true. Found
+ * 2026-09-17 via live user-lens review: a real non-staff session under review
+ * mode sailed past proxy.ts's own specific "not on the organizer list"
+ * rejection into a bare, unlabelled `/login` bounce from the page layer.
+ */
+export function isRealAuthCookiePresent(cookies: Array<{ name: string }>): boolean {
+  return cookies.some((c) => c.name.startsWith('sb-') && c.name.includes('auth-token'));
+}
+
+/** Server Component / Server Action convenience wrapper — see the predicate above for why proxy.ts can't use this one. */
+export async function hasRealAuthCookie(): Promise<boolean> {
+  const { cookies } = await import('next/headers');
+  const cookieStore = await cookies();
+  return isRealAuthCookiePresent(cookieStore.getAll());
+}

@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { isReviewMode } from '@/lib/reviewMode';
+import { isReviewMode, hasRealAuthCookie } from '@/lib/reviewMode';
 
 export async function supabaseServer() {
   // LOCAL REVIEW BYPASS. Staff pages read through this client under RLS; with
@@ -27,15 +27,9 @@ export async function supabaseServer() {
   // admin client. Discovered 2026-09-05 during the account-hygiene walkthrough.
   //
   // lib/reviewMode.ts checks NODE_ENV first and unconditionally.
-  if (isReviewMode()) {
-    const cookieStore = await cookies();
-    const hasAuthCookie = cookieStore
-      .getAll()
-      .some((c) => c.name.startsWith('sb-') && c.name.includes('auth-token'));
-    if (!hasAuthCookie) {
-      const { supabaseAdmin } = await import('@/lib/supabase/admin');
-      return supabaseAdmin();
-    }
+  if (isReviewMode() && !(await hasRealAuthCookie())) {
+    const { supabaseAdmin } = await import('@/lib/supabase/admin');
+    return supabaseAdmin();
   }
   return supabaseAnonServer();
 }

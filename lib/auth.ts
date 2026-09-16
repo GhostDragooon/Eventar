@@ -1,7 +1,7 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabaseServer } from './supabase/server';
-import { isReviewMode, resolveReviewStaff } from './reviewMode';
+import { isReviewMode, resolveReviewStaff, hasRealAuthCookie } from './reviewMode';
 
 export type Staff = {
   id: string;
@@ -30,7 +30,20 @@ export async function requireStaff(client?: SupabaseClient): Promise<Staff> {
   // LOCAL REVIEW BYPASS — see lib/reviewMode.ts, which checks NODE_ENV first
   // and unconditionally, so a production build cannot reach this branch.
   // Warned on every call: a running server must never be quietly in this state.
-  if (isReviewMode()) {
+  //
+  // Gated on the SAME "no real session" condition supabaseServer() uses
+  // (lib/supabase/server.ts) — not unconditional. A request that already
+  // carries a real auth cookie gets the real staff lookup below instead of a
+  // borrowed identity: previously this branch borrowed regardless, so a
+  // request with a genuine session resolved to a borrowed identity here but
+  // a real, cookie-bound Supabase client wherever the caller went on to run
+  // a query or RPC — two different actors for one request. A SECURITY
+  // DEFINER function resolving its own actor via auth.email() (rather than
+  // trusting an app-passed id) would then silently act as the REAL session,
+  // not the identity this function just returned. Found 2026-09-16: an event
+  // created under review mode landed under a different organisation than the
+  // one displayed, because create_event_with_blocks did exactly that.
+  if (isReviewMode() && !(await hasRealAuthCookie())) {
     // Borrows a real staff row so ownership-scoped pages actually have content
     // — see resolveReviewStaff. Admin client because there is no session to
     // read `staff` with; that is the whole point of the bypass.

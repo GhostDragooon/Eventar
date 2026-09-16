@@ -3,7 +3,7 @@
 // See: node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/proxy.md
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
-import { isReviewMode } from '@/lib/reviewMode';
+import { isReviewMode, isRealAuthCookiePresent } from '@/lib/reviewMode';
 
 export async function proxy(req: NextRequest) {
   // LOCAL REVIEW BYPASS — Layer 1 of the three-layer auth gate. Without this
@@ -12,7 +12,16 @@ export async function proxy(req: NextRequest) {
   // layers open and close together and there is one thing to audit.
   // lib/reviewMode.ts checks NODE_ENV first: a production build never reaches
   // this branch. RLS (Layer 3) is untouched either way.
-  if (isReviewMode()) {
+  //
+  // Gated on a real auth cookie too, matching requireStaff() and
+  // supabaseServer() (lib/reviewMode.ts's isRealAuthCookiePresent). Left
+  // unconditional until 2026-09-17: a real, non-staff session under review
+  // mode sailed straight through this layer's own specific
+  // "?error=not_authorized" rejection (clear copy, explicit sign-out) into
+  // the page layer's bare requireStaff() catch instead — same identity, a
+  // strictly worse rejection experience for the one case review mode is
+  // supposed to stand down for.
+  if (isReviewMode() && !isRealAuthCookiePresent(req.cookies.getAll())) {
     console.warn('[review-mode] proxy gate BYPASSED for', req.nextUrl.pathname);
     return NextResponse.next();
   }

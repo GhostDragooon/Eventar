@@ -1,6 +1,7 @@
 import 'server-only';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Staff } from '@/lib/auth';
 import type { ProgrammeEvent } from '@/components/dashboard/DashboardWorkstation';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 
@@ -16,12 +17,25 @@ function fmtTime(iso: string, tz: string): string {
 export async function fetchDecoratedEvents(
   supabase: SupabaseClient,
   nowMs: number,
+  staff: Pick<Staff, 'role' | 'organisation_id'>,
 ): Promise<{ events: ProgrammeEvent[]; registered7d: number; checkedInToday: number }> {
-  const { data: events, error: eventsErr } = await supabase
+  // events_public_read_published (RLS) legitimately lets any authenticated —
+  // or anon — caller read any PUBLISHED event, for the public discovery
+  // pages. This query has no such purpose: it backs the organiser's own
+  // Programme/Manage dashboards, which must show only that organisation's
+  // events. Relying on RLS alone here mixed other orgs' published events
+  // into the caller's own event list — RLS answers "can this role read this
+  // row at all" (yes, it's public), not "does this page's business logic
+  // want this row." Same eventar_staff exception as canManageEvent().
+  let query = supabase
     .from('events')
     .select('id, title, description, start_time, end_time, timezone, status, venue_name, max_attendees, registration_close_at, registration_open_at, created_by, category, deleted_at, format, hero_image_url, city, organized_by')
     .order('start_time', { ascending: false })
     .limit(300);
+  if (staff.role !== 'eventar_staff') {
+    query = query.eq('organisation_id', staff.organisation_id);
+  }
+  const { data: events, error: eventsErr } = await query;
   if (eventsErr) throw eventsErr;
 
   const eventIds = (events ?? []).map((e) => e.id);

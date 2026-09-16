@@ -25,7 +25,7 @@ export default async function ManagePage() {
   const supabase = await supabaseServer();
   // eslint-disable-next-line react-hooks/purity
   const nowMs = Date.now();
-  const { events } = await fetchDecoratedEvents(supabase, nowMs);
+  const { events } = await fetchDecoratedEvents(supabase, nowMs, staff);
 
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role, full_name: staff.full_name }}>
