@@ -56,6 +56,57 @@ describe('CpdAccreditationSection — multi-body coexistence', () => {
   });
 });
 
+describe('CpdAccreditationSection — prior-approval advisory suppressed when locked', () => {
+  const hkcp = { id: 'b1', full_name: 'HK College of Pathologists', short_name: 'HKCP', cycle_config: { prior_approval: { lead_time_days: 30, accepts_retrospective: false, applies_to: 'local', source: 'test' } } };
+
+  // Found in the 2026-09-17 phase-completion review (user-lens): the banner
+  // above already says this body binding is stale/"not what's actually in
+  // effect", so a live "Apply to HKCP by DATE" directly under it contradicted
+  // its own page — the deadline notice was never gated on `locked` at all.
+  it('is suppressed when multiBodyConfigured locks the field', () => {
+    render(
+      <CpdAccreditationSection
+        eventId="e1"
+        startTime="2026-12-01T09:00:00Z"
+        bodies={[hkcp]}
+        currentBodyId="b1"
+        currentHours={3}
+        creditsIssued={0}
+        multiBodyConfigured
+      />,
+    );
+    expect(screen.queryByText(/prior-approval/i)).toBeNull();
+  });
+
+  it('is suppressed when issued credits freeze the field', () => {
+    render(
+      <CpdAccreditationSection
+        eventId="e1"
+        startTime="2026-12-01T09:00:00Z"
+        bodies={[hkcp]}
+        currentBodyId="b1"
+        currentHours={3}
+        creditsIssued={1}
+      />,
+    );
+    expect(screen.queryByText(/prior-approval/i)).toBeNull();
+  });
+
+  it('still shows while the field is live and editable', () => {
+    render(
+      <CpdAccreditationSection
+        eventId="e1"
+        startTime="2026-12-01T09:00:00Z"
+        bodies={[hkcp]}
+        currentBodyId="b1"
+        currentHours={3}
+        creditsIssued={0}
+      />,
+    );
+    expect(screen.getByText(/apply to hkcp by/i)).toBeTruthy();
+  });
+});
+
 describe('durationPrefill — Decision 8, prefill not derivation', () => {
   it('rounds to the 0.5 step the input itself accepts', () => {
     expect(durationPrefill('2026-09-01T09:00:00Z', '2026-09-01T17:00:00Z')).toBe('8');

@@ -2,9 +2,8 @@
 
 import { useActionState, useState } from 'react';
 import { setEventCpdConfig } from '@/app/events/[id]/details/cpdActions';
-import { priorApprovalDeadline } from '@/lib/cpd/priorApproval';
-import { formatInTz } from '@/lib/tz';
 import { Button } from '@/components/ui/button';
+import { PriorApprovalAdvisory } from './PriorApprovalAdvisory';
 
 export type AccreditingBodyOption = {
   id: string;
@@ -136,12 +135,10 @@ export function CpdAccreditationSection({
   // next save. Surface the current binding as its own option instead.
   const currentIsMissing = currentBodyId !== null && !bodies.some((b) => b.id === currentBodyId);
 
-  // Derived, advisory only — recomputed live as the organiser changes the
-  // <select>. `null` (no sourced prior_approval key on this body, or no
-  // body selected) means render nothing: not a placeholder, not a zero-date.
+  // Recomputed live as the organiser changes the <select> — PriorApprovalAdvisory
+  // itself renders nothing when no body is selected or the body has no sourced
+  // prior_approval key.
   const selectedBody = bodies.find((b) => b.id === bodyId) ?? null;
-  const approval = selectedBody ? priorApprovalDeadline(startTime, selectedBody.cycle_config) : null;
-  const approvalBodyLabel = selectedBody ? (selectedBody.short_name ?? selectedBody.full_name) : '';
 
   return (
     <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
@@ -192,25 +189,11 @@ export function CpdAccreditationSection({
         </p>
       )}
 
-      {approval && (
-        <p className="mt-md rounded-lg bg-primary-container px-md py-sm text-body-md text-on-primary-container">
-          {approval.passed ? (
-            <>
-              The suggested prior-approval application deadline for {approvalBodyLabel} was{' '}
-              <strong>{formatInTz(approval.deadline.toISOString(), 'Asia/Hong_Kong')} (HKT)</strong>, and has passed.
-              This is advisory only &mdash; saving still works; confirm directly with the body whether a late
-              application is possible.
-            </>
-          ) : (
-            <>
-              Apply to {approvalBodyLabel} by{' '}
-              <strong>{formatInTz(approval.deadline.toISOString(), 'Asia/Hong_Kong')} (HKT)</strong> to meet its
-              prior-approval requirement. This is advisory only &mdash; Eventar doesn&rsquo;t track applications, so
-              saving here is never blocked by it.
-            </>
-          )}
-        </p>
-      )}
+      {/* Suppressed once locked: the banners above already say this field's
+          value is stale/not in effect (multiBodyConfigured) or frozen by
+          issued credits — a live "apply by" deadline for a selection that
+          isn't actually in effect would contradict them, not clarify. */}
+      {!locked && <PriorApprovalAdvisory startTime={startTime} body={selectedBody} />}
 
       <form action={formAction} className="mt-lg grid gap-md sm:grid-cols-[2fr_1fr_auto] sm:items-end">
         <input type="hidden" name="eventId" value={eventId} />

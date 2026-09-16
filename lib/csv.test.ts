@@ -37,22 +37,26 @@ describe('csvEscape', () => {
 
 describe('buildCsv', () => {
   it('joins rows with CRLF and fields with commas', () => {
-    expect(buildCsv([['a', 'b'], ['c', 'd']])).toBe('a,b\r\nc,d\r\n');
+    expect(buildCsv([['a', 'b'], ['c', 'd']])).toBe('﻿a,b\r\nc,d\r\n');
   });
 
   it('escapes each field via csvEscape', () => {
-    expect(buildCsv([['hello, world', 'plain']])).toBe('"hello, world",plain\r\n');
+    expect(buildCsv([['hello, world', 'plain']])).toBe('﻿"hello, world",plain\r\n');
   });
 
-  it('handles zero rows (empty string)', () => {
+  it('handles zero rows (empty string, no BOM — nothing to open)', () => {
     expect(buildCsv([])).toBe('');
   });
 
   it('handles a single header row + zero data rows', () => {
-    expect(buildCsv([['name', 'email']])).toBe('name,email\r\n');
+    expect(buildCsv([['name', 'email']])).toBe('﻿name,email\r\n');
   });
 
   it('preserves empty fields between populated fields', () => {
-    expect(buildCsv([['a', '', 'b']])).toBe('a,,b\r\n');
+    expect(buildCsv([['a', '', 'b']])).toBe('﻿a,,b\r\n');
+  });
+
+  it('prefixes a UTF-8 BOM so Excel on Windows renders non-ASCII text correctly', () => {
+    expect(buildCsv([['陳大文', 'HKCP']]).startsWith('﻿')).toBe(true);
   });
 });

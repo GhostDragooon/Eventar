@@ -12,6 +12,7 @@ import {
   unlinkAccreditationOccurrence,
 } from '@/app/events/[id]/details/multiBodyActions';
 import type { AccreditingBodyOption } from './CpdAccreditationSection';
+import { PriorApprovalAdvisory } from './PriorApprovalAdvisory';
 
 export type WizardOccurrence = { id: string; ordinal: number; name: string | null; starts_at: string };
 export type WizardAccreditationRow = { id: string; credit_value: number; occurrenceIds: string[] };
@@ -26,6 +27,8 @@ export type WizardGroup = {
 
 type Props = {
   eventId: string;
+  /** The event's own start time — the prior-approval advisory is derived from this. */
+  startTime: string;
   /** Bodies the org may CLAIM new accreditation from — the add-body picker's option list. */
   bodies: AccreditingBodyOption[];
   /**
@@ -50,7 +53,7 @@ function bodyLabel(directory: AccreditingBodyOption[], id: string): string {
   return b.short_name ? `${b.short_name} — ${b.full_name}` : b.full_name;
 }
 
-export function MultiBodyAccreditationWizard({ eventId, bodies, bodyDirectory, occurrences, initialGroups, frozen }: Props) {
+export function MultiBodyAccreditationWizard({ eventId, startTime, bodies, bodyDirectory, occurrences, initialGroups, frozen }: Props) {
   const [open, setOpen] = useState(initialGroups.length > 0);
   const [step, setStep] = useState<0 | 1 | 2>(0);
   const [groups, setGroups] = useState<WizardGroup[]>(initialGroups);
@@ -249,17 +252,23 @@ export function MultiBodyAccreditationWizard({ eventId, bodies, bodyDirectory, o
           {groups.length === 0 && <p className="text-body-md text-on-surface-variant">No accrediting bodies added yet.</p>}
           <ul className="space-y-sm">
             {groups.map((g) => (
-              <li key={g.id} className="flex items-center justify-between rounded-lg border border-outline-variant bg-surface px-md py-sm">
-                <div>
-                  <p className="text-body-md font-medium text-on-surface">{bodyLabel(bodyDirectory, g.bodyId)}</p>
-                  <p className="text-label-md text-on-surface-variant">
-                    {g.awardScheme === 'proportional' ? 'Proportional' : 'Explicit per-day schedule'} · {g.unit ?? 'hours'}
-                    {g.categoryCode ? ` · category ${g.categoryCode}` : ''}
-                  </p>
+              <li key={g.id} className="rounded-lg border border-outline-variant bg-surface px-md py-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-body-md font-medium text-on-surface">{bodyLabel(bodyDirectory, g.bodyId)}</p>
+                    <p className="text-label-md text-on-surface-variant">
+                      {g.awardScheme === 'proportional' ? 'Proportional' : 'Explicit per-day schedule'} · {g.unit ?? 'hours'}
+                      {g.categoryCode ? ` · category ${g.categoryCode}` : ''}
+                    </p>
+                  </div>
+                  <Button type="button" variant="destructive" size="sm" disabled={pending || frozen} onClick={() => requestRemoveGroup(g)}>
+                    Remove
+                  </Button>
                 </div>
-                <Button type="button" variant="destructive" size="sm" disabled={pending || frozen} onClick={() => requestRemoveGroup(g)}>
-                  Remove
-                </Button>
+                {/* Reappears for an already-added body on every revisit — unlike
+                    the add-picker below, which only shows it while newBodyId is
+                    highlighted and forgets it the instant "Add body" succeeds. */}
+                <PriorApprovalAdvisory startTime={startTime} body={bodyDirectory.find((b) => b.id === g.bodyId) ?? null} />
               </li>
             ))}
           </ul>
@@ -338,6 +347,10 @@ export function MultiBodyAccreditationWizard({ eventId, bodies, bodyDirectory, o
                   </p>
                 </div>
               </div>
+              <PriorApprovalAdvisory
+                startTime={startTime}
+                body={availableBodies.find((b) => b.id === newBodyId) ?? null}
+              />
               <Button type="button" className="mt-md" disabled={pending} onClick={addGroup}>
                 {pending ? 'Adding…' : 'Add body'}
               </Button>

@@ -23,6 +23,7 @@ import { EmailDeliveryStrip, type EmailDeliveryRow } from '@/components/details/
 import { EmailSendControls } from './EmailSendControls';
 import { EvidenceExportButton } from './EvidenceExportButton';
 import { AttendanceExportButton } from './AttendanceExportButton';
+import { CollegeExportButton } from './CollegeExportButton';
 import { LiveScoreboard } from '@/components/details/LiveScoreboard';
 import { StickyLiveBar } from '@/components/details/StickyLiveBar';
 
@@ -423,6 +424,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
 
       <MultiBodyAccreditationWizard
         eventId={event.id}
+        startTime={event.start_time}
         bodies={accreditingBodies}
         bodyDirectory={bodyDirectory}
         occurrences={wizardOccurrences}
@@ -449,6 +451,12 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
             reader can pin the export to the pack version it was generated against.
           </p>
           <EvidenceExportButton eventId={event.id} disabled={creditsIssued === 0} />
+          <p className="text-body-sm text-on-surface-variant mt-lg mb-md">
+            A College/MCHK-oriented package: one row per credit entry, with practitioner identity,
+            licence, and evidence in plain columns a body&rsquo;s administrator can read directly
+            &mdash; no JSON payload to parse.
+          </p>
+          <CollegeExportButton eventId={event.id} disabled={creditsIssued === 0} />
         </section>
       )}
 

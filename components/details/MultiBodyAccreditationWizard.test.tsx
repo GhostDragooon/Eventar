@@ -32,7 +32,7 @@ beforeEach(() => {
 
 describe('MultiBodyAccreditationWizard', () => {
   it('renders collapsed by default when nothing is configured', () => {
-    render(<MultiBodyAccreditationWizard eventId="e1" bodies={bodies} bodyDirectory={bodies} occurrences={occurrences} initialGroups={[]} frozen={false} />);
+    render(<MultiBodyAccreditationWizard eventId="e1" startTime="2026-09-01T00:00:00Z" bodies={bodies} bodyDirectory={bodies} occurrences={occurrences} initialGroups={[]} frozen={false} />);
     expect(screen.getByText(/configure multiple accrediting bodies/i)).toBeTruthy();
     expect(screen.queryByText('Accrediting bodies')).toBeNull();
   });
@@ -40,7 +40,7 @@ describe('MultiBodyAccreditationWizard', () => {
   it('opens automatically when a group already exists', () => {
     render(
       <MultiBodyAccreditationWizard
-        eventId="e1"
+        eventId="e1" startTime="2026-09-01T00:00:00Z"
         bodies={bodies}
         bodyDirectory={bodies}
         occurrences={occurrences}
@@ -55,7 +55,7 @@ describe('MultiBodyAccreditationWizard', () => {
 
   it('adds a body, shows it in the list, and removes it from the add-picker (no silent duplicates)', async () => {
     vi.mocked(actions.addAccreditationGroup).mockResolvedValue({ ok: true, data: { id: 'g-new' } });
-    render(<MultiBodyAccreditationWizard eventId="e1" bodies={bodies} bodyDirectory={bodies} occurrences={occurrences} initialGroups={[]} frozen={false} />);
+    render(<MultiBodyAccreditationWizard eventId="e1" startTime="2026-09-01T00:00:00Z" bodies={bodies} bodyDirectory={bodies} occurrences={occurrences} initialGroups={[]} frozen={false} />);
 
     fireEvent.click(screen.getByText(/configure multiple accrediting bodies/i));
     fireEvent.change(screen.getByLabelText(/accrediting body/i), { target: { value: 'b1' } });
@@ -71,7 +71,7 @@ describe('MultiBodyAccreditationWizard', () => {
 
   it('surfaces the translated RPC error instead of silently failing', async () => {
     vi.mocked(actions.addAccreditationGroup).mockResolvedValue({ error: 'Your organisation isn’t authorised by that accrediting body.' });
-    render(<MultiBodyAccreditationWizard eventId="e1" bodies={bodies} bodyDirectory={bodies} occurrences={occurrences} initialGroups={[]} frozen={false} />);
+    render(<MultiBodyAccreditationWizard eventId="e1" startTime="2026-09-01T00:00:00Z" bodies={bodies} bodyDirectory={bodies} occurrences={occurrences} initialGroups={[]} frozen={false} />);
 
     fireEvent.click(screen.getByText(/configure multiple accrediting bodies/i));
     fireEvent.change(screen.getByLabelText(/accrediting body/i), { target: { value: 'b1' } });
@@ -84,7 +84,7 @@ describe('MultiBodyAccreditationWizard', () => {
   });
 
   it('blocks a body pick with no body chosen instead of calling the server', () => {
-    render(<MultiBodyAccreditationWizard eventId="e1" bodies={bodies} bodyDirectory={bodies} occurrences={occurrences} initialGroups={[]} frozen={false} />);
+    render(<MultiBodyAccreditationWizard eventId="e1" startTime="2026-09-01T00:00:00Z" bodies={bodies} bodyDirectory={bodies} occurrences={occurrences} initialGroups={[]} frozen={false} />);
     fireEvent.click(screen.getByText(/configure multiple accrediting bodies/i));
     fireEvent.click(screen.getByRole('button', { name: /^add body$/i }));
 
@@ -95,7 +95,7 @@ describe('MultiBodyAccreditationWizard', () => {
   it('disables remove and add controls once credit has been issued (frozen)', () => {
     render(
       <MultiBodyAccreditationWizard
-        eventId="e1"
+        eventId="e1" startTime="2026-09-01T00:00:00Z"
         bodies={bodies}
         bodyDirectory={bodies}
         occurrences={occurrences}
@@ -116,7 +116,7 @@ describe('MultiBodyAccreditationWizard', () => {
     const lapsedBody = { id: 'b2', full_name: 'Lapsed Authorisation College', short_name: 'LAC', cycle_config: {} };
     render(
       <MultiBodyAccreditationWizard
-        eventId="e1"
+        eventId="e1" startTime="2026-09-01T00:00:00Z"
         bodies={[]}
         bodyDirectory={[lapsedBody]}
         occurrences={occurrences}
@@ -131,7 +131,7 @@ describe('MultiBodyAccreditationWizard', () => {
   it('falls back to an explicit label when a body is in neither list', () => {
     render(
       <MultiBodyAccreditationWizard
-        eventId="e1"
+        eventId="e1" startTime="2026-09-01T00:00:00Z"
         bodies={[]}
         bodyDirectory={[]}
         occurrences={occurrences}
@@ -149,7 +149,7 @@ describe('MultiBodyAccreditationWizard', () => {
     vi.mocked(actions.removeAccreditationGroup).mockResolvedValue({ ok: true, data: undefined });
     render(
       <MultiBodyAccreditationWizard
-        eventId="e1"
+        eventId="e1" startTime="2026-09-01T00:00:00Z"
         bodies={bodies}
         bodyDirectory={bodies}
         occurrences={occurrences}
@@ -172,7 +172,7 @@ describe('MultiBodyAccreditationWizard', () => {
   it('abandons the removal when the confirm step is cancelled', () => {
     render(
       <MultiBodyAccreditationWizard
-        eventId="e1"
+        eventId="e1" startTime="2026-09-01T00:00:00Z"
         bodies={bodies}
         bodyDirectory={bodies}
         occurrences={occurrences}
@@ -194,7 +194,7 @@ describe('MultiBodyAccreditationWizard', () => {
     vi.mocked(actions.removeAccreditationGroup).mockResolvedValue({ ok: true, data: undefined });
     render(
       <MultiBodyAccreditationWizard
-        eventId="e1"
+        eventId="e1" startTime="2026-09-01T00:00:00Z"
         bodies={bodies}
         bodyDirectory={bodies}
         occurrences={occurrences}
@@ -214,7 +214,7 @@ describe('MultiBodyAccreditationWizard', () => {
     vi.mocked(actions.addAccreditationRow).mockResolvedValue({ ok: true, data: { id: 'row-1' } });
     render(
       <MultiBodyAccreditationWizard
-        eventId="e1"
+        eventId="e1" startTime="2026-09-01T00:00:00Z"
         bodies={bodies}
         bodyDirectory={bodies}
         occurrences={occurrences}
@@ -231,5 +231,99 @@ describe('MultiBodyAccreditationWizard', () => {
     await waitFor(() => expect(screen.getByText(/total credit value: 3 hours/i)).toBeTruthy());
     expect(screen.queryByLabelText(/total credit value/i)).toBeNull();
     expect(screen.queryByRole('button', { name: /^add row$/i })).toBeNull();
+  });
+
+  // Task 10.9/10.9 (S3) parity: the single-body form (CpdAccreditationSection)
+  // already shows this advisory; the wizard's own body picker is the other
+  // place an organiser selects a body and must see the same notice.
+  describe('prior-approval advisory', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const hkcp = { id: 'hkcp', full_name: 'HK College of Pathologists', short_name: 'HKCP', cycle_config: { prior_approval: { lead_time_days: 30, accepts_retrospective: false, applies_to: 'local', source: 'test' } } };
+    const mchk = { id: 'mchk', full_name: 'Medical Council of Hong Kong', short_name: 'MCHK', cycle_config: {} };
+
+    it('shows the advisory once a body with a sourced prior_approval key is picked', () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-08-15T00:00:00.000Z'));
+      render(
+        <MultiBodyAccreditationWizard
+          eventId="e1"
+          startTime="2026-12-01T09:00:00Z"
+          bodies={[hkcp]}
+          bodyDirectory={[hkcp]}
+          occurrences={occurrences}
+          initialGroups={[]}
+          frozen={false}
+        />,
+      );
+      fireEvent.click(screen.getByText(/configure multiple accrediting bodies/i));
+      expect(screen.queryByText(/prior-approval/i)).toBeNull();
+
+      fireEvent.change(screen.getByLabelText(/accrediting body/i), { target: { value: 'hkcp' } });
+      expect(screen.getByText(/apply to hkcp by/i)).toBeTruthy();
+    });
+
+    it('shows nothing for a body with no sourced prior_approval key', () => {
+      render(
+        <MultiBodyAccreditationWizard
+          eventId="e1"
+          startTime="2026-12-01T09:00:00Z"
+          bodies={[mchk]}
+          bodyDirectory={[mchk]}
+          occurrences={occurrences}
+          initialGroups={[]}
+          frozen={false}
+        />,
+      );
+      fireEvent.click(screen.getByText(/configure multiple accrediting bodies/i));
+      fireEvent.change(screen.getByLabelText(/accrediting body/i), { target: { value: 'mchk' } });
+      expect(screen.queryByText(/prior-approval/i)).toBeNull();
+    });
+
+    it('never disables the Add body button, passed or not', () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-08-15T00:00:00.000Z'));
+      render(
+        <MultiBodyAccreditationWizard
+          eventId="e1"
+          startTime="2026-08-20T09:00:00Z"
+          bodies={[hkcp]}
+          bodyDirectory={[hkcp]}
+          occurrences={occurrences}
+          initialGroups={[]}
+          frozen={false}
+        />,
+      );
+      fireEvent.click(screen.getByText(/configure multiple accrediting bodies/i));
+      fireEvent.change(screen.getByLabelText(/accrediting body/i), { target: { value: 'hkcp' } });
+      expect(screen.getByText(/has passed/i)).toBeTruthy();
+      expect(screen.getByRole('button', { name: /^add body$/i })).not.toBeDisabled();
+    });
+
+    // Found in the 2026-09-17 phase-completion review (user-lens): the
+    // advisory was wired only to newBodyId (the in-progress picker), so it
+    // vanished the instant "Add body" succeeded and never reappeared on a
+    // later revisit — the opposite of the single-body form, whose advisory
+    // is tied to a persisted selection. An organiser reopening the event
+    // weeks later must still see the reminder for a body already added.
+    it('reappears for an already-added body on revisit, not just while picking a new one', () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-08-15T00:00:00.000Z'));
+      render(
+        <MultiBodyAccreditationWizard
+          eventId="e1"
+          startTime="2026-12-01T09:00:00Z"
+          bodies={[]}
+          bodyDirectory={[hkcp]}
+          occurrences={occurrences}
+          initialGroups={[{ id: 'g1', bodyId: 'hkcp', categoryCode: null, unit: 'points', awardScheme: 'proportional', rows: [] }]}
+          frozen={false}
+        />,
+      );
+      // Opens automatically (initialGroups non-empty) — no picker interaction at all.
+      expect(screen.getByText(/apply to hkcp by/i)).toBeTruthy();
+    });
   });
 });

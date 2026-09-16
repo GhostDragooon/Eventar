@@ -229,6 +229,7 @@ export default async function StaffEventEditPage({
             the DB then refused with 42501. */}
         <MultiBodyAccreditationWizard
           eventId={event.id}
+          startTime={event.start_time}
           bodies={authorised.bodies}
           bodyDirectory={bodyDirectory}
           occurrences={wizardOccurrences}

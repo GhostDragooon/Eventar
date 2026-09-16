@@ -419,12 +419,14 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
 
     let practitionerFull: TestUser; // licensed @ Path + Anaes, attends both days
     let practitionerPartial: TestUser; // licensed @ Path + Anaes, attends Day 1 only
+    let practitionerDay2Only: TestUser; // licensed @ Path, attends Day 2 ONLY
     let practitionerOrphan: TestUser; // licensed @ Orphan only
     let practitionerRoleChair: TestUser; // licensed @ RoleTax, role=chair
     let practitionerRoleMismatch: TestUser; // licensed @ RoleTax, no role row (defaults attendee)
 
     let fullReg: { id: string; code: string };
     let partialReg: { id: string; code: string };
+    let day2OnlyReg: { id: string; code: string };
     let orphanReg: { id: string; code: string };
     let roleChairReg: { id: string; code: string };
     let roleMismatchReg: { id: string; code: string };
@@ -605,6 +607,11 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
       partialReg = await regFor(icEventId, practitionerPartial, `PART${mbTs}`);
       await checkin(partialReg.id, icEventId, [1]);
 
+      practitionerDay2Only = await createTestUser(`mb-day2only-${mbTs}`);
+      await declareAndVerify(practitionerDay2Only, bodyPath, `MB-DAY2ONLY-PATH-${mbTs}`);
+      day2OnlyReg = await regFor(icEventId, practitionerDay2Only, `D2O${mbTs}`);
+      await checkin(day2OnlyReg.id, icEventId, [2]);
+
       orphanReg = await regFor(icEventId, practitionerOrphan, `ORPH${mbTs}`);
       await checkin(orphanReg.id, icEventId, [1, 2]);
 
@@ -622,12 +629,12 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
       // licences/events/bodies/staff) — always safely deletable, same as
       // the outer describe's own registrationIds cleanup.
       await mustDelete(
-        admin.from('registrations').delete().in('id', [fullReg.id, partialReg.id, orphanReg.id, roleChairReg.id, roleMismatchReg.id]),
+        admin.from('registrations').delete().in('id', [fullReg.id, partialReg.id, day2OnlyReg.id, orphanReg.id, roleChairReg.id, roleMismatchReg.id]),
         'multi-body registration fixtures',
       );
       // NOT deleted: icEventId (permanently pinned — bodyPath/bodyAnaes/
       // bodyPsych all earn real credit against it across the tests below),
-      // its 5 accrediting bodies, or any of the 5 practitioners' auth
+      // its 5 accrediting bodies, or any of the 6 practitioners' auth
       // users. The auth users are NOT deletable even for the ones that
       // never earn credit (practitionerOrphan, practitionerRoleMismatch):
       // practitioner_licences.user_id -> users(id) is a plain NO ACTION FK
@@ -727,6 +734,25 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — config-free
       const anaesRow = ledgerRows.find((r) => r.body_id === bodyAnaes)!;
       // earned(1)/available(2) * 7 = 3.5 — proves numeric, not integer-truncated, division.
       expect(Number(anaesRow.hours)).toBe(3.5);
+    }, 30_000);
+
+    // ADR-0002's own worked example calls this the sharpest case: Day 2's
+    // published value (6) differs from BOTH Day 1 (5, tested above) and Both
+    // Days (12, tested above). Day-1-only and Both-Days both happen to
+    // contain occurrence 1 in their linked set — only a Day-2-ONLY check-in
+    // proves the engine selects by the actual satisfied occurrence set
+    // rather than e.g. always matching whichever row contains the earliest
+    // occurrence.
+    it('Day 2 only attendance selects the published Day-2 value (6), not Day 1 (5) or Both Days (12)', async () => {
+      const { data, error } = await admin.rpc('award_attendance_credit', {
+        p_event_id: icEventId,
+        p_registration_code: day2OnlyReg.code, p_enforce_full_setup: false });
+      expect(error).toBeNull();
+      expect(outcomeFor(data as AwardRow[], bodyPath)).toEqual({ body_id: bodyPath, outcome: 'issued' });
+
+      const ledgerRows = await ledgerRowsFor(practitionerDay2Only.id, icEventId);
+      const pathRow = ledgerRows.find((r) => r.body_id === bodyPath)!;
+      expect(Number(pathRow.points)).toBe(6);
     }, 30_000);
 
     it('a proportional group whose accreditation links to zero occurrences returns skipped:no_occurrences, not an error', async () => {
