@@ -209,6 +209,72 @@ export type LicenceRowView = {
 };
 
 // ---------------------------------------------------------------------------
+// Practitioner Eventar record (/account/record, 2026-09-18 product decision)
+// — read-only history of the caller's own registrations + credit_ledger
+// rows. Both event_title/event_start are nullable: the cookie-bound session
+// can only see events.status='published' (20260514164830), so titles for
+// events later un-published/archived are backfilled via a narrow
+// supabaseAdmin() lookup scoped to exactly the caller's own event_ids
+// (listMyAttendanceRecords/listMyCreditRecords in ./actions.ts); a null
+// here means even that lookup found nothing (the event row is gone).
+// ---------------------------------------------------------------------------
+
+export type AttendanceRecordView = {
+  registration_id: string;
+  event_id: string;
+  event_title: string | null;
+  event_start: string | null;
+  event_timezone: string | null;
+  status: 'registered' | 'attended' | 'cancelled';
+  check_in_at: string | null;
+  check_in_method: 'qr' | 'manual' | null;
+  source: 'self_registration' | 'staff_walk_in' | 'invitation_import' | 'system_migration' | null;
+  /**
+   * True/false iff the ledger read succeeded: at least one of the event's
+   * accrediting bodies has a net-active credit_earned entry for this user
+   * (earned, and not subsequently revoked/expired). See
+   * computeHasCreditByEvent in ./actions.ts — credit_ledger_attendance_uniq
+   * is keyed on (user_id, event_id, body_id), so one event can carry
+   * independent per-body credit states; this flag is an OR across them.
+   * The CPD points section (CreditRecordView rows) is where the per-body
+   * detail lives.
+   *
+   * null = the ledger read itself failed. Must render as "couldn't check",
+   * never as a confident false — a transient read failure collapsing into
+   * "not yet on record" would tell a practitioner who already has real
+   * credit that they don't, which is the exact bug class already fixed
+   * once for profileAndMembershipReady on /account (app/account/page.tsx,
+   * dev-lens 2026-09-05) and caught again here in review (dev-lens
+   * 2026-09-19).
+   */
+  has_credit: boolean | null;
+};
+
+// entry_type/attestation_status unions mirror the live CHECK constraints —
+// entry_type widened by 20260815050000 (adds credit_confirmed), attestation_status
+// widened by 20260724164730 (adds attendance_verified).
+export type CreditRecordView = {
+  id: string;
+  event_id: string | null;
+  event_title: string | null;
+  body_id: string;
+  body_short_name: string | null;
+  entry_type:
+    | 'credit_earned'
+    | 'credit_adjusted'
+    | 'credit_transferred'
+    | 'credit_expired'
+    | 'credit_revoked'
+    | 'credit_confirmed';
+  points: number | null;
+  hours: number | null;
+  category: string | null;
+  effective_date: string;
+  attestation_status: 'organiser_attested' | 'body_confirmed' | 'attendance_verified' | null;
+  created_at: string;
+};
+
+// ---------------------------------------------------------------------------
 // Standard action result shape (matches lib/withSecurity's ActionResult)
 // ---------------------------------------------------------------------------
 

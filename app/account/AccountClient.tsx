@@ -472,6 +472,12 @@ export function AccountClient({
                 Link past registrations
               </Link>
             )}
+            <Link
+              href="/account/record"
+              className="text-sm font-medium text-primary-ink hover:underline"
+            >
+              View your record
+            </Link>
           </div>
           <Button type="submit" disabled={pending}>
             {pending ? 'Saving…' : 'Save changes'}

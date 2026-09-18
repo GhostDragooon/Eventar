@@ -33,6 +33,8 @@ import {
   type AccountAndProfile,
   type AccountUpdateInput,
   type AppointmentView,
+  type AttendanceRecordView,
+  type CreditRecordView,
   type LicenceRowView,
   type ProfessionalProfileUpdateInput,
   type SocietyMembershipView,
@@ -288,6 +290,7 @@ export async function claimMyRegistrations(): Promise<AccountActionResult<{ clai
   // Revalidate any surface that might list "my registrations" once it exists
   // (Stage C). Cheap even if the route is not built yet.
   revalidatePath('/account');
+  revalidatePath('/account/record');
   revalidatePath('/checkin');
   return { ok: true, data: { claimed } };
 }
@@ -345,6 +348,170 @@ export async function listMyLicences(): Promise<AccountActionResult<{ licences: 
   }));
 
   return { ok: true, data: { licences } };
+}
+
+// ---------------------------------------------------------------------------
+// Practitioner Eventar record (/account/record, 2026-09-18 product decision)
+// — listMyAttendanceRecords + listMyCreditRecords. Both self-read:
+// registrations gained a self_read policy in 20260919000000; credit_ledger
+// already had one (20260709250000). No rate limit, matching the existing
+// pure-read convention (listMyLicences / getMyAccountAndProfile have none;
+// Ivan confirmed 2026-09-19).
+// ---------------------------------------------------------------------------
+
+// Net-active per (event_id, body_id): a credit_earned row exists for the
+// triple and no credit_revoked/credit_expired row shares it.
+// credit_ledger_attendance_uniq (20260815030000) is a partial unique index on
+// exactly (user_id, event_id, body_id) where entry_type='credit_earned', so a
+// second credit_earned row for the same triple can never be inserted — there
+// is no "re-earned after revoke" case to fold in. has_credit per event is an
+// OR across that event's bodies (one event can carry multiple accrediting
+// bodies with independent credit states).
+function computeHasCreditByEvent(
+  ledgerRows: Array<{ event_id: string | null; body_id: string; entry_type: string }>,
+): Map<string, boolean> {
+  const earnedTriples = new Set<string>();
+  const revokedTriples = new Set<string>();
+  for (const row of ledgerRows) {
+    if (!row.event_id) continue;
+    const triple = `${row.event_id}:${row.body_id}`;
+    if (row.entry_type === 'credit_earned') earnedTriples.add(triple);
+    if (row.entry_type === 'credit_revoked' || row.entry_type === 'credit_expired') revokedTriples.add(triple);
+  }
+
+  const hasCreditByEvent = new Map<string, boolean>();
+  for (const triple of earnedTriples) {
+    const eventId = triple.split(':')[0];
+    if (!revokedTriples.has(triple)) {
+      hasCreditByEvent.set(eventId, true);
+    } else if (!hasCreditByEvent.has(eventId)) {
+      hasCreditByEvent.set(eventId, false);
+    }
+  }
+  return hasCreditByEvent;
+}
+
+export async function listMyAttendanceRecords(): Promise<
+  AccountActionResult<{ items: AttendanceRecordView[] }>
+> {
+  const auth = await requireAuthenticatedSelf();
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from('registrations')
+    .select('id, event_id, status, check_in_at, check_in_method, source, registered_at')
+    .eq('user_id', auth.userId)
+    .order('registered_at', { ascending: false })
+    .limit(100);
+  if (error) return { ok: false, error: 'db_error' };
+
+  const rows = data ?? [];
+  const eventIds = Array.from(new Set(rows.map((r) => r.event_id)));
+
+  // A failed ledger read must not silently read as "no credit anywhere" —
+  // that's a confident false where the honest answer is "we don't know"
+  // (dev-lens 2026-09-19). null propagates through to every row's
+  // has_credit below rather than defaulting to false.
+  const { data: ledgerRows, error: ledgerError } = await supabase
+    .from('credit_ledger')
+    .select('event_id, body_id, entry_type')
+    .eq('user_id', auth.userId);
+  const hasCreditByEvent = ledgerError ? null : computeHasCreditByEvent(ledgerRows ?? []);
+
+  // events.status='published' is the only row an authenticated cookie
+  // session can read (20260514164830) — an event the caller attended may
+  // since have been un-published/archived. Titles come from a narrow
+  // service-role lookup scoped to exactly these event_ids, never widened
+  // (same shape as getUnlinkedRegistrationCount's admin read above).
+  const eventById = new Map<string, { title: string; start_time: string; timezone: string }>();
+  if (eventIds.length > 0) {
+    // eslint-disable-next-line no-restricted-syntax -- join failure downgrades event fields to null, list still renders
+    const { data: events } = await supabaseAdmin()
+      .from('events')
+      .select('id, title, start_time, timezone')
+      .in('id', eventIds);
+    for (const e of events ?? []) eventById.set(e.id, e);
+  }
+
+  const items: AttendanceRecordView[] = rows.map((r) => {
+    const event = eventById.get(r.event_id);
+    return {
+      registration_id: r.id,
+      event_id: r.event_id,
+      event_title: event?.title ?? null,
+      event_start: event?.start_time ?? null,
+      event_timezone: event?.timezone ?? null,
+      status: r.status,
+      check_in_at: r.check_in_at,
+      check_in_method: r.check_in_method,
+      source: r.source,
+      has_credit: hasCreditByEvent === null ? null : hasCreditByEvent.get(r.event_id) ?? false,
+    };
+  });
+
+  // Spec order: event start desc, nulls (event title unresolved) last.
+  items.sort((a, b) => {
+    if (a.event_start == null) return b.event_start == null ? 0 : 1;
+    if (b.event_start == null) return -1;
+    return b.event_start.localeCompare(a.event_start);
+  });
+
+  return { ok: true, data: { items } };
+}
+
+export async function listMyCreditRecords(): Promise<AccountActionResult<{ items: CreditRecordView[] }>> {
+  const auth = await requireAuthenticatedSelf();
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from('credit_ledger')
+    .select(
+      'id, event_id, body_id, entry_type, points, hours, category, effective_date, attestation_status, created_at',
+    )
+    .eq('user_id', auth.userId)
+    .order('effective_date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(100);
+  if (error) return { ok: false, error: 'db_error' };
+
+  const rows = data ?? [];
+
+  const bodyIds = Array.from(new Set(rows.map((r) => r.body_id)));
+  const bodyShortNames = new Map<string, string>();
+  if (bodyIds.length > 0) {
+    // eslint-disable-next-line no-restricted-syntax -- join failure downgrades to null short_name, list still renders
+    const { data: bodies } = await supabase.from('accrediting_bodies').select('id, short_name').in('id', bodyIds);
+    for (const b of bodies ?? []) bodyShortNames.set(b.id, b.short_name);
+  }
+
+  // Same un-published-event caveat as listMyAttendanceRecords above — narrow
+  // service-role lookup, scoped to exactly this caller's own ledger event_ids.
+  const eventIds = Array.from(new Set(rows.map((r) => r.event_id).filter((id): id is string => id != null)));
+  const eventTitles = new Map<string, string>();
+  if (eventIds.length > 0) {
+    // eslint-disable-next-line no-restricted-syntax -- join failure downgrades to null title, list still renders
+    const { data: events } = await supabaseAdmin().from('events').select('id, title').in('id', eventIds);
+    for (const e of events ?? []) eventTitles.set(e.id, e.title);
+  }
+
+  const items: CreditRecordView[] = rows.map((r) => ({
+    id: r.id,
+    event_id: r.event_id,
+    event_title: r.event_id ? eventTitles.get(r.event_id) ?? null : null,
+    body_id: r.body_id,
+    body_short_name: bodyShortNames.get(r.body_id) ?? null,
+    entry_type: r.entry_type,
+    points: r.points,
+    hours: r.hours,
+    category: r.category,
+    effective_date: r.effective_date,
+    attestation_status: r.attestation_status,
+    created_at: r.created_at,
+  }));
+
+  return { ok: true, data: { items } };
 }
 
 // ---------------------------------------------------------------------------
