@@ -48,6 +48,7 @@ export default function RosterClient({
   eventId,
   eventTimezone,
   eventStartTime,
+  eventEndTime,
   lifecycle,
   initialRoster,
   eligibility,
@@ -60,6 +61,7 @@ export default function RosterClient({
   eventId: string;
   eventTimezone: string;
   eventStartTime: string;
+  eventEndTime: string;
   lifecycle: Lifecycle;
   initialRoster: RosterRow[];
   /** registration_id \u2192 eligibility enum from event_registration_eligibility. */
@@ -143,6 +145,7 @@ export default function RosterClient({
   const attendedCount = roster.filter(r => r.status === 'attended').length;
   const registeredTotal = roster.length;
   const startMs = useMemo(() => new Date(eventStartTime).getTime(), [eventStartTime]);
+  const endMs = useMemo(() => new Date(eventEndTime).getTime(), [eventEndTime]);
 
   // Returns the outcome as well as toasting it: the manual-entry dialog shows
   // its own inline success/error state, so it needs the result rather than
@@ -198,6 +201,7 @@ export default function RosterClient({
       <Scoreboard
         lifecycle={lifecycle}
         startMs={startMs}
+        endMs={endMs}
         attended={attendedCount}
         registered={registeredTotal}
       />

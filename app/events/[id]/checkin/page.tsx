@@ -159,6 +159,7 @@ export default async function StaffCheckinPage({
         eventId={event.id}
         eventTimezone={event.timezone}
         eventStartTime={event.start_time}
+        eventEndTime={event.end_time}
         lifecycle={lifecycle}
         initialRoster={rosterRes.data ?? []}
         eligibility={eligibility}

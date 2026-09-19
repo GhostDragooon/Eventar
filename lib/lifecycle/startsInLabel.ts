@@ -21,7 +21,7 @@ export function startsInLabel(startMs: number, nowMs: number): string {
   return `Starts in ${formatDuration(deltaMs)}`;
 }
 
-function formatDuration(ms: number): string {
+export function formatDuration(ms: number): string {
   if (ms < 60_000) return '<1m';
   const totalMinutes = Math.floor(ms / 60_000);
   const days = Math.floor(totalMinutes / (60 * 24));

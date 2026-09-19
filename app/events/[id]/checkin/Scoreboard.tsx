@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
-import { startsInLabel } from '@/lib/lifecycle/startsInLabel';
+import { startsInLabel, formatDuration } from '@/lib/lifecycle/startsInLabel';
 
 /**
  * TC scoreboard — the door tablet's dark status band (locked TC spec:
@@ -15,11 +15,13 @@ import { startsInLabel } from '@/lib/lifecycle/startsInLabel';
 export function Scoreboard({
   lifecycle,
   startMs,
+  endMs,
   attended,
   registered,
 }: {
   lifecycle: Lifecycle;
   startMs: number;
+  endMs: number;
   attended: number;
   registered: number;
 }) {
@@ -31,8 +33,30 @@ export function Scoreboard({
   }, []);
 
   const pct = registered > 0 ? Math.min(100, (attended / registered) * 100) : 0;
-  const countdown = startsInLabel(startMs, nowMs);
   const isLive = lifecycle === 'live';
+  // The status eyebrow used to fall through to 'Not open yet' for every
+  // lifecycle value except live/upcoming — including completed and
+  // cancelled, so a finished event's own check-in desk falsely claimed
+  // check-in hadn't started yet (F-CHECKIN-1). Cover all six Lifecycle
+  // values explicitly instead of leaving the tail an implicit default.
+  const isClosed = lifecycle === 'completed';
+  const isCancelled = lifecycle === 'cancelled';
+  const statusLabel = isLive ? 'Live'
+    : isClosed ? 'Closed'
+    : isCancelled ? 'Cancelled'
+    : lifecycle === 'upcoming' ? 'Door prep'
+    : 'Not open yet'; // drafted, registering
+  // startsInLabel only knows "time relative to start" (correct for the
+  // pre-open and live states), so a completed event fell through to
+  // "Started Xh ago" forever — technically true but never says the event
+  // is OVER, which read as a second, milder instance of F-CHECKIN-1 right
+  // next to a badge that correctly says "Closed". Cancelled has the same
+  // problem in reverse: the event may never have run as scheduled, so a
+  // start/end-relative duration claim isn't meaningful — echo the status
+  // instead of computing one.
+  const headline = isClosed ? `Ended ${formatDuration(Math.max(0, nowMs - endMs))} ago`
+    : isCancelled ? 'Cancelled'
+    : startsInLabel(startMs, nowMs);
 
   return (
     <section
@@ -48,16 +72,18 @@ export function Scoreboard({
           }`}
         >
           <span aria-hidden>●</span>
-          {isLive ? 'Live' : lifecycle === 'upcoming' ? 'Door prep' : 'Not open yet'}
+          {statusLabel}
         </span>
       </div>
 
-      {/* Biggest element on the page: the start countdown. */}
+      {/* Biggest element on the page: the start countdown (live/upcoming),
+          or the closed/cancelled state once there's nothing left to count
+          down to. */}
       <p
         className="text-[calc(44px*var(--text-scale))] leading-none font-extrabold tracking-[-0.03em] tabular-nums mb-lg"
         aria-live="polite"
       >
-        {countdown}
+        {headline}
       </p>
 
       <div className="flex flex-wrap items-end justify-between gap-md">
@@ -68,7 +94,7 @@ export function Scoreboard({
           <span className="text-body-md text-white/40"> / {registered} checked in</span>
         </p>
         <p className="text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-[0.14em] text-white/50">
-          Attendance · {isLive ? 'live' : 'pending'}
+          Attendance · {isLive ? 'live' : isClosed ? 'final' : isCancelled ? 'n/a' : 'pending'}
         </p>
       </div>
 
