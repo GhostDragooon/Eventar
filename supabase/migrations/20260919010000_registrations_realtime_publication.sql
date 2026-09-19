@@ -1,0 +1,19 @@
+-- `registrations` was never added to the supabase_realtime publication — on
+-- Seoul AND local, `select tablename from pg_publication_tables where
+-- pubname = 'supabase_realtime'` returns zero rows. RosterClient.tsx has
+-- subscribed to `postgres_changes` INSERT/UPDATE on this table since it was
+-- written, expecting live roster updates (a new walk-in, a check-in from
+-- another tab) to appear without a reload — but with the table never
+-- published, Postgres never emits WAL changes for it to Realtime, so the
+-- subscription has silently done nothing since day one, for every session,
+-- not just review mode. The initial page load still renders correctly (a
+-- normal server-side fetch, unrelated to this publication), which is why
+-- the gap went unnoticed — only the "stays live without reloading" promise
+-- was broken.
+--
+-- Safe to add: postgres_changes respects each subscriber's own RLS, so this
+-- doesn't grant any new visibility — a subscriber still only receives
+-- change events for rows its existing SELECT policies
+-- (registrations_org_member_select / registrations_manager_select_all /
+-- registrations_self_read, all `authenticated`-scoped) already let it read.
+alter publication supabase_realtime add table public.registrations;

@@ -103,9 +103,27 @@ export default async function StaffCheckinPage({
       .map((e) => [e.registration_id, e.eligibility]),
   );
 
+  // Only the roster itself throws. It's the one read with no honest
+  // degraded state — an empty roster is indistinguishable from "nobody
+  // registered", so a failed read must surface as a failure, not silently
+  // render as an empty desk (rule 12). Agenda blocks and speaker check-ins
+  // feed the Speakers card only, which already renders a normal, specced
+  // empty state ("No speakers configured…") for zero speakers — so a
+  // failed read here degrades into that same state rather than taking
+  // down the whole check-in desk, matching the roles/eligibility tier
+  // below. Previously these threw too, which under concurrent DB load
+  // (multiple reads on this page timing out in the same window) produced
+  // an inconsistent experience: the SAME load spike sometimes only hit
+  // eligibility/roles (graceful) and sometimes also hit these two
+  // (hard crash to the generic app-wide error boundary), even though none
+  // of the four is more load-bearing than the roster itself.
   if (rosterRes.error) throw rosterRes.error;
-  if (blocksRes.error) throw blocksRes.error;
-  if (checkinsRes.error) throw checkinsRes.error;
+  if (blocksRes.error) {
+    console.error('[checkin] agenda_blocks read failed', { code: blocksRes.error.code });
+  }
+  if (checkinsRes.error) {
+    console.error('[checkin] speaker_checkins read failed', { code: checkinsRes.error.code });
+  }
   if (rolesRes.error) {
     console.error('[checkin] registration_roles read failed', { code: rolesRes.error.code });
   }

@@ -41,3 +41,16 @@ export function computeLifecycle(event: EventLifecycleRow, nowMs: number): Lifec
   if (openMs != null && nowMs < openMs) return 'upcoming';
   return 'registering';
 }
+
+/**
+ * Single source of truth for "why can't a walk-in happen right now",
+ * shared by the walk-in server action (walkInRegisterAndCheckIn) and the
+ * WalkInDialog client component, so the two copies can't drift. `null`
+ * means walk-ins are allowed (lifecycle === 'live').
+ */
+export function walkInClosedMessage(lifecycle: Lifecycle): string | null {
+  if (lifecycle === 'live') return null;
+  if (lifecycle === 'cancelled') return 'This event was cancelled — walk-in registration is closed.';
+  if (lifecycle === 'completed') return 'This event has ended — walk-in registration is closed.';
+  return 'This event has not opened for check-in yet.';
+}

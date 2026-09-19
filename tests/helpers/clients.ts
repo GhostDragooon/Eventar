@@ -103,3 +103,19 @@ export async function sqlSuperuser(sql: string): Promise<void> {
     await c.end();
   }
 }
+
+// Same connection as sqlSuperuser, but for reads that need rows back —
+// e.g. asserting catalog facts (pg_publication_tables, has_table_privilege)
+// that PostgREST doesn't expose. Kept a separate function rather than
+// widening sqlSuperuser's return type so its 9 existing fire-and-forget
+// callers are untouched.
+export async function sqlSuperuserQuery<T = Record<string, unknown>>(sql: string): Promise<T[]> {
+  const c = new PgClient({ connectionString: 'postgresql://postgres:postgres@127.0.0.1:54322/postgres' });
+  await c.connect();
+  try {
+    const res = await c.query(sql);
+    return res.rows as T[];
+  } finally {
+    await c.end();
+  }
+}

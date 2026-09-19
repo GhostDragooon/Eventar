@@ -7,6 +7,7 @@ import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { isValidRegistrationCode, generateRegistrationCode } from '@/lib/registrationCode';
 import { rateLimitBySession } from '@/lib/rateLimit';
+import { computeLifecycle, walkInClosedMessage, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 import {
   awardAttendanceCredit,
   type AwardOutcome,
@@ -245,14 +246,24 @@ export async function walkInRegisterAndCheckIn(input: {
 
   const { data: event, error: eventErr } = await admin
     .from('events')
-    .select('id, title, status, max_attendees, organisation_id, deleted_at')
+    .select('id, title, status, max_attendees, organisation_id, deleted_at, start_time, end_time, registration_close_at, registration_open_at')
     .eq('id', eventId)
     .maybeSingle();
 
   if (eventErr) return { error: 'Could not load event.' };
-  if (!event || event.status !== 'published' || event.deleted_at != null) {
+  if (!event || event.deleted_at != null) {
     return { error: 'This event is not available for walk-in registration.' };
   }
+  // Gate on the DERIVED lifecycle, not the raw status column: pg_cron
+  // (Stage 8, deferred) never flips status to 'completed' automatically, so
+  // a `status !== 'published'` check alone never catches an event that has
+  // simply run past its end_time — it stays 'published' forever. Every
+  // other status-derived surface on this page (the Scoreboard) already
+  // reads the same computeLifecycle() value, so this keeps the walk-in
+  // gate honest with what the door screen visibly says.
+  const lifecycle = computeLifecycle(event as EventLifecycleRow, Date.now());
+  const closedMessage = walkInClosedMessage(lifecycle);
+  if (closedMessage) return { error: closedMessage };
 
   if (!canManageEvent(event, staff)) {
     return { error: 'You do not have access to this event.' };

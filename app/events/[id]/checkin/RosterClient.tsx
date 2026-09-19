@@ -5,7 +5,7 @@ import { supabaseBrowser } from '@/lib/supabase/browser';
 import { formatInTz } from '@/lib/tz';
 import { isValidRegistrationCode } from '@/lib/registrationCode';
 import { humanizeCameraError } from '@/lib/cameraError';
-import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
+import { walkInClosedMessage, type Lifecycle } from '@/lib/lifecycle/eventLifecycle';
 import { markAttended, walkInRegisterAndCheckIn } from './actions';
 import { setRegistrationRole, removeRegistrationRole } from '../details/multiBodyActions';
 import { Scoreboard } from './Scoreboard';
@@ -223,6 +223,7 @@ export default function RosterClient({
       {walkInOpen && (
         <WalkInDialog
           eventId={eventId}
+          lifecycle={lifecycle}
           onClose={() => setWalkInOpen(false)}
           onSuccess={(name, creditLines) => {
             setWalkInOpen(false);
@@ -456,10 +457,12 @@ function RosterRowItem({
 
 function WalkInDialog({
   eventId,
+  lifecycle,
   onClose,
   onSuccess,
 }: {
   eventId: string;
+  lifecycle: Lifecycle;
   onClose: () => void;
   onSuccess: (name: string, creditLines?: string[]) => void;
 }) {
@@ -467,6 +470,12 @@ function WalkInDialog({
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // The server action enforces this too (it's the source of truth) — this
+  // is the same check surfaced up front, so an operator learns the event
+  // is closed before filling the form and waiting on a doomed round trip,
+  // rather than only after submitting (user-lens finding, 2026-09-19).
+  const closedMessage = walkInClosedMessage(lifecycle);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -489,6 +498,9 @@ function WalkInDialog({
           Close
         </button>
       </div>
+      {closedMessage && (
+        <p className="font-body-md text-body-md text-error mb-sm">{closedMessage}</p>
+      )}
       <form onSubmit={handleSubmit} className="flex flex-col gap-sm">
         <input
           type="text"
@@ -507,7 +519,11 @@ function WalkInDialog({
           className="px-md py-sm bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
         />
         {error && <p className="font-body-md text-body-md text-error">{error}</p>}
-        <Button type="submit" disabled={submitting} className="self-start min-h-11 px-md py-sm font-label-md text-label-md">
+        <Button
+          type="submit"
+          disabled={submitting || closedMessage != null}
+          className="self-start min-h-11 px-md py-sm font-label-md text-label-md"
+        >
           {submitting ? 'Registering…' : 'Register & check in'}
         </Button>
       </form>

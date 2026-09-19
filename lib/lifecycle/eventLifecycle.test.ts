@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeLifecycle, type EventLifecycleRow } from './eventLifecycle';
+import { computeLifecycle, walkInClosedMessage, type EventLifecycleRow } from './eventLifecycle';
 
 const baseEvent = (overrides: Partial<EventLifecycleRow> = {}): EventLifecycleRow => ({
   status: 'published',
@@ -99,4 +99,27 @@ describe('computeLifecycle', () => {
   it('published, beyond 48h post-end → completed (derived, same outcome)', () => {
     expect(computeLifecycle(baseEvent(), at('2026-06-10T00:00:00Z'))).toBe('completed');
   });
+});
+
+describe('walkInClosedMessage', () => {
+  it('returns null (walk-ins allowed) when live', () => {
+    expect(walkInClosedMessage('live')).toBeNull();
+  });
+
+  it('names cancellation specifically', () => {
+    expect(walkInClosedMessage('cancelled')).toMatch(/cancelled/i);
+  });
+
+  it('names the event having ended specifically, distinct from cancellation', () => {
+    const msg = walkInClosedMessage('completed');
+    expect(msg).toMatch(/ended/i);
+    expect(msg).not.toMatch(/cancelled/i);
+  });
+
+  it.each(['drafted', 'registering', 'upcoming'] as const)(
+    'gives a generic not-open-yet message for %s',
+    (lifecycle) => {
+      expect(walkInClosedMessage(lifecycle)).toBe('This event has not opened for check-in yet.');
+    },
+  );
 });
