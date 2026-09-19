@@ -25,8 +25,15 @@ import { SiteFooter } from './SiteFooter';
 // Q32's audience-boundary rule holds: the pill picks the right door rather
 // than surfacing two.
 
+// whitespace-nowrap: at narrow (375px) widths the three flex children (brand,
+// nav links, CTA pill) don't all fit on one line unwrapped, so flexbox was
+// shrinking each Link below its content width instead — wrapping "Upcoming
+// events" and "Sign in" awkwardly mid-phrase rather than overflowing.
+// nowrap + shrink-0 keeps each label intact; nav's own overflow-x-auto
+// (below) is the safety net if labels still don't all fit (user-lens
+// 2026-09-19).
 const NAV_ITEM =
-  'nav-item rounded-full px-[11px] py-[7px] text-[calc(13px*var(--text-scale))] font-medium';
+  'nav-item shrink-0 whitespace-nowrap rounded-full px-[11px] py-[7px] text-[calc(13px*var(--text-scale))] font-medium';
 const NAV_IDLE = 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface';
 const NAV_ACTIVE = 'bg-surface-container-high font-semibold text-on-surface';
 
@@ -61,9 +68,16 @@ export function SiteShell({
         aria-label="Primary"
         className="glass-nav sticky top-[10px] z-[5] mx-[18px] flex items-center justify-between gap-md rounded-full py-sm pl-md pr-sm"
       >
-        <BrandMark />
+        <div className="shrink-0">
+          <BrandMark />
+        </div>
 
-        <div className="flex items-center gap-[2px]">
+        {/* min-w-0 + overflow-x-auto: the safety net for narrow viewports.
+            Brand and the CTA pill (shrink-0 on both) always stay fully
+            visible; this is the one flex child allowed to scroll
+            horizontally if "Home" + "Upcoming events" still don't both fit
+            at their full (now nowrap) width (user-lens 2026-09-19). */}
+        <div className="flex min-w-0 items-center gap-[2px] overflow-x-auto">
           <Link
             href="/"
             aria-current={active === 'home' ? 'page' : undefined}
@@ -84,7 +98,7 @@ export function SiteShell({
           <Link
             href="/account"
             aria-current={active === 'account' ? 'page' : undefined}
-            className="rounded-full bg-primary px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary transition-transform duration-150 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+            className="shrink-0 whitespace-nowrap rounded-full bg-primary px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary transition-transform duration-150 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
           >
             Account
           </Link>
@@ -92,7 +106,7 @@ export function SiteShell({
           <Link
             href="/account/sign-in"
             aria-current={active === 'signin' ? 'page' : undefined}
-            className="rounded-full bg-primary px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary transition-transform duration-150 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+            className="shrink-0 whitespace-nowrap rounded-full bg-primary px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary transition-transform duration-150 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
           >
             Sign in
           </Link>
