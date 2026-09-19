@@ -20,7 +20,7 @@ export default async function AccountRecordPage() {
   // eslint-disable-next-line no-restricted-syntax -- no-session and call-failed collapse to "must sign in"
   const { data: authRes } = await supabase.auth.getUser();
   if (!authRes?.user) {
-    redirect('/account/sign-in');
+    redirect(`/account/sign-in?next=${encodeURIComponent('/account/record')}`);
   }
 
   const [attendanceResult, creditsResult] = await Promise.all([
@@ -31,7 +31,7 @@ export default async function AccountRecordPage() {
   // failure bounces to sign-in; any other error degrades to an empty list
   // (this is a personal history view, not a gate the account depends on).
   if (!attendanceResult.ok && attendanceResult.error === 'not_authorized') {
-    redirect('/account/sign-in');
+    redirect(`/account/sign-in?next=${encodeURIComponent('/account/record')}`);
   }
 
   const attendance = attendanceResult.ok ? attendanceResult.data.items : [];

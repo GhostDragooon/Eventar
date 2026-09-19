@@ -25,7 +25,7 @@ export default async function ProfilePage() {
   // eslint-disable-next-line no-restricted-syntax -- no-session and call-failed collapse to "must sign in"
   const { data: authRes } = await supabase.auth.getUser();
   if (!authRes?.user) {
-    redirect('/account/sign-in');
+    redirect(`/account/sign-in?next=${encodeURIComponent('/account/profile')}`);
   }
 
   // Same completion guard as /account — plan Phase 4.
@@ -69,7 +69,7 @@ export default async function ProfilePage() {
   if (!result.ok) {
     const errorParam =
       result.error === 'not_authorized' ? 'not_authorized' : 'unavailable';
-    redirect(`/account/sign-in?error=${errorParam}`);
+    redirect(`/account/sign-in?error=${errorParam}&next=${encodeURIComponent('/account/profile')}`);
   }
 
   // Licences + bodies + enrichment lists degrade gracefully — a failure

@@ -17,7 +17,7 @@ export default async function ClaimPage() {
   // eslint-disable-next-line no-restricted-syntax -- no-session and call-failed collapse to "must sign in"
   const { data: authRes } = await supabase.auth.getUser();
   if (!authRes?.user) {
-    redirect('/account/sign-in');
+    redirect(`/account/sign-in?next=${encodeURIComponent('/account/claim')}`);
   }
 
   const emailVerified = authRes.user.email_confirmed_at != null;

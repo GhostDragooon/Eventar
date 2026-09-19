@@ -56,7 +56,7 @@ export default async function CompleteAccountPage() {
   // eslint-disable-next-line no-restricted-syntax -- no-session and call-failed collapse to "must sign in"
   const { data: authRes } = await supabase.auth.getUser();
   if (!authRes?.user) {
-    redirect('/account/sign-in');
+    redirect(`/account/sign-in?next=${encodeURIComponent('/account/complete')}`);
   }
 
   const emailConfirmed = authRes.user.email_confirmed_at != null;
@@ -82,7 +82,7 @@ export default async function CompleteAccountPage() {
 
   if (!accountResult.ok) {
     const errorParam = accountResult.error === 'not_authorized' ? 'not_authorized' : 'unavailable';
-    redirect(`/account/sign-in?error=${errorParam}`);
+    redirect(`/account/sign-in?error=${errorParam}&next=${encodeURIComponent('/account/complete')}`);
   }
 
   const bodies: AccreditingBodyView[] = (bodiesResult.data ?? []) as AccreditingBodyView[];
