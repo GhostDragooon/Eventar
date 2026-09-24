@@ -63,7 +63,7 @@ export default async function CompleteAccountPage() {
   const completeness = await isAccountComplete(authRes.user.id, emailConfirmed);
   const isActionRerender = (await headers()).has('next-action');
   if (completeness.complete && !isActionRerender) {
-    redirect('/account');
+    redirect('/account/record');
   }
 
   const [accountResult, licencesResult, bodiesResult, professionsResult, positionsResult, specialtiesResult] =
@@ -103,7 +103,7 @@ export default async function CompleteAccountPage() {
         : 4;
 
   return (
-    <SiteShell active="account" signedIn>
+    <SiteShell active="account" signedIn accountComplete={completeness.complete}>
       <div className="mx-auto w-full max-w-2xl px-grid-margin py-xl">
         <CompleteClient
           initialStep={initialStep}

@@ -279,7 +279,19 @@ export async function walkInRegisterAndCheckIn(input: {
     }
   }
 
-  // Register with code-collision retry (same pattern as registerForEvent)
+  // Register with code-collision retry (same pattern as registerForEvent).
+  // source: 'walk_in' is set EXPLICITLY (2026-09-24, Ivan): the column
+  // default is 'self_registration', so omitting the field previously wrote
+  // every walk-in as if the attendee had self-registered — a lie about
+  // provenance the whole downstream chain (audit, exports, credit release)
+  // trusts. The label describes the attendee's pathway (they walked in on
+  // the day), NOT who typed the keys — staff typing at the door on the
+  // attendee's behalf is still, from the attendee's perspective, a walk-in.
+  // Actor stratification (who typed it, whether it was a VIP/exception)
+  // lives in audit metadata, never in this enum (Ivan's "one clean pathway
+  // vocabulary, no bloat" call). The column is set-at-insert-only per the
+  // registrations_link_columns_immutable_from_client trigger, so this is
+  // the one and only chance to record it honestly.
   let reg: { id: string; registration_code: string } | null = null;
   let regErr: { code?: string; message: string } | null = null;
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -291,6 +303,7 @@ export async function walkInRegisterAndCheckIn(input: {
         email,
         full_name: fullName,
         registration_code: candidate,
+        source: 'walk_in',
       })
       .select('id, registration_code')
       .single();

@@ -7,6 +7,7 @@ import { rateLimitByIp } from '@/lib/rateLimit';
 import { getRequestOrigin } from '@/lib/origin';
 import { buildCheckinQrPng } from '@/lib/checkinQr';
 import { PublicShell } from '@/components/shell/PublicShell';
+import { getAccountMenuState } from '@/app/account/actions';
 import ConfirmButton from './ConfirmButton';
 import { CHECKIN_OPEN_MINUTES } from '@/lib/lifecycle/eventLifecycle';
 
@@ -69,6 +70,22 @@ export default async function SelfCheckinPage({
   // eslint-disable-next-line no-restricted-syntax -- no-session and call-failed both collapse to "signed out"
   const { data: authRes } = await authClient.auth.getUser();
   const signedIn = authRes?.user != null;
+  // Account menu's item set — only fetched when signed in. This runs before
+  // the rate limiter and every early return below, on every load of the
+  // door-side check-in page (dd1cf30 hardened this exact page against
+  // decorative reads throwing under DB load) — must degrade the menu, never
+  // crash the page (dev-lens catch).
+  let menuState: { isStaff: boolean; accountComplete: boolean; unlinkedCount: number } | null = null;
+  if (signedIn) {
+    try {
+      menuState = await getAccountMenuState();
+    } catch {
+      menuState = null;
+    }
+  }
+  const isStaff = menuState?.isStaff ?? false;
+  const accountComplete = menuState?.accountComplete ?? false;
+  const unlinkedCount = menuState?.unlinkedCount ?? 0;
 
   if (!code) {
     return (
@@ -76,17 +93,38 @@ export default async function SelfCheckinPage({
         title="No check-in code"
         body="Open this page from your registration link or by scanning your personal QR code. If you don't have one, ask the event organiser for help."
         signedIn={signedIn}
+        isStaff={isStaff}
+        accountComplete={accountComplete}
+        unlinkedCount={unlinkedCount}
       />
     );
   }
   if (!isValidRegistrationCode(code)) {
-    return <Empty title="Code not recognised" body="Please show this code (or your QR) to the event organiser. They can check you in manually." signedIn={signedIn} />;
+    return (
+      <Empty
+        title="Code not recognised"
+        body="Please show this code (or your QR) to the event organiser. They can check you in manually."
+        signedIn={signedIn}
+        isStaff={isStaff}
+        accountComplete={accountComplete}
+        unlinkedCount={unlinkedCount}
+      />
+    );
   }
 
   // Enumeration defense: cap per-IP page loads before the admin lookup runs.
   const limit = await rateLimitByIp('confirmGet', { windowMs: 60_000, max: 60 });
   if (!limit.allowed) {
-    return <Empty title="Too many requests" body="Please slow down and try again in a moment." signedIn={signedIn} />;
+    return (
+      <Empty
+        title="Too many requests"
+        body="Please slow down and try again in a moment."
+        signedIn={signedIn}
+        isStaff={isStaff}
+        accountComplete={accountComplete}
+        unlinkedCount={unlinkedCount}
+      />
+    );
   }
 
   const admin = supabaseAdmin();
@@ -124,12 +162,24 @@ export default async function SelfCheckinPage({
         title="Something went wrong"
         body="We couldn't look up your pass just now. Your registration is unaffected — please try again in a moment, or show this page to a member of staff."
         signedIn={signedIn}
+        isStaff={isStaff}
+        accountComplete={accountComplete}
+        unlinkedCount={unlinkedCount}
       />
     );
   }
 
   if (!reg || !reg.events) {
-    return <Empty title="Code not recognised" body="Please show this code (or your QR) to the event organiser. They can check you in manually." signedIn={signedIn} />;
+    return (
+      <Empty
+        title="Code not recognised"
+        body="Please show this code (or your QR) to the event organiser. They can check you in manually."
+        signedIn={signedIn}
+        isStaff={isStaff}
+        accountComplete={accountComplete}
+        unlinkedCount={unlinkedCount}
+      />
+    );
   }
 
   const event = Array.isArray(reg.events) ? reg.events[0] : reg.events;
@@ -137,13 +187,26 @@ export default async function SelfCheckinPage({
   // run sheet pre-opens this page before the publish beat and it read as a
   // broken seed.
   if (!event) {
-    return <Empty title="Code not recognised" body="Please show this code (or your QR) to the event organiser. They can check you in manually." signedIn={signedIn} />;
+    return (
+      <Empty
+        title="Code not recognised"
+        body="Please show this code (or your QR) to the event organiser. They can check you in manually."
+        signedIn={signedIn}
+        isStaff={isStaff}
+        accountComplete={accountComplete}
+        unlinkedCount={unlinkedCount}
+      />
+    );
   }
   if (event.status !== 'published') {
     return (
       <Empty
         title="This event isn't open yet"
         body="Your registration is valid — the organiser hasn't published this event yet. Your pass will appear here once they do."
+        signedIn={signedIn}
+        isStaff={isStaff}
+        accountComplete={accountComplete}
+        unlinkedCount={unlinkedCount}
       />
     );
   }
@@ -157,6 +220,10 @@ export default async function SelfCheckinPage({
       <Empty
         title="This registration was cancelled"
         body="If you think that's wrong, please speak to the event organiser — they can re-register you."
+        signedIn={signedIn}
+        isStaff={isStaff}
+        accountComplete={accountComplete}
+        unlinkedCount={unlinkedCount}
       />
     );
   }
@@ -189,7 +256,13 @@ export default async function SelfCheckinPage({
       creditStatus = creditData;
     }
     return (
-      <PublicShell pill={{ label: 'Checked in', tone: 'success' }} signedIn={signedIn}>
+      <PublicShell
+        pill={{ label: 'Checked in', tone: 'success' }}
+        signedIn={signedIn}
+        isStaff={isStaff}
+        accountComplete={accountComplete}
+        unlinkedCount={unlinkedCount}
+      >
         <PageWrap>
           <CheckedInView
             event={event}
@@ -218,7 +291,13 @@ export default async function SelfCheckinPage({
     nowMs < opensAtMs ? 'early' : nowMs > new Date(event.end_time).getTime() ? 'closed' : 'open';
 
   return (
-    <PublicShell pill={{ label: 'Pass ready', tone: 'success' }} signedIn={signedIn}>
+    <PublicShell
+      pill={{ label: 'Pass ready', tone: 'success' }}
+      signedIn={signedIn}
+      isStaff={isStaff}
+      accountComplete={accountComplete}
+      unlinkedCount={unlinkedCount}
+    >
       <PageWrap>
         <PassView event={event} code={code} qrDataUri={`data:image/png;base64,${qr.pngBase64}`} selfServe={selfServe} checkinState={checkinState} opensAtIso={new Date(opensAtMs).toISOString()} />
       </PageWrap>
@@ -238,9 +317,23 @@ function PageWrap({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Empty({ title, body, signedIn = false }: { title: string; body: string; signedIn?: boolean }) {
+function Empty({
+  title,
+  body,
+  signedIn = false,
+  isStaff = false,
+  accountComplete = false,
+  unlinkedCount = 0,
+}: {
+  title: string;
+  body: string;
+  signedIn?: boolean;
+  isStaff?: boolean;
+  accountComplete?: boolean;
+  unlinkedCount?: number;
+}) {
   return (
-    <PublicShell signedIn={signedIn}>
+    <PublicShell signedIn={signedIn} isStaff={isStaff} accountComplete={accountComplete} unlinkedCount={unlinkedCount}>
       <PageWrap>
         <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">{title}</h1>
         <p className="font-body-md text-body-md text-on-surface-variant m-0">{body}</p>

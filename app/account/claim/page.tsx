@@ -29,7 +29,9 @@ export default async function ClaimPage() {
   }
 
   return (
-    <SiteShell active="account" signedIn>
+    // unlinkedCount omitted (defaults 0): showing "Claim past events" in the
+    // menu while already on the claim page would just point at itself.
+    <SiteShell active="account" signedIn accountComplete>
       <div className="mx-auto w-full max-w-2xl px-grid-margin py-xl">
         <ClaimClient
           email={authRes.user.email ?? ''}

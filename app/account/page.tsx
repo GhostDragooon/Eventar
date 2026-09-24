@@ -96,7 +96,7 @@ export default async function AccountPage() {
     : null;
 
   return (
-    <SiteShell active="account" signedIn>
+    <SiteShell active="account" signedIn accountComplete unlinkedCount={initialUnlinkedCount}>
       <div className="mx-auto w-full max-w-2xl px-grid-margin py-xl">
         <AccountClient
           initialAccount={result.data.account}

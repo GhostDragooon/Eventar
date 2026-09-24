@@ -2,8 +2,10 @@
 
 // Attendee sign-in via native email OTP. Parallels app/login/actions.ts
 // (staff sign-in), same signInWithOtp mechanic, different redirect
-// destination — attendees land on /account, not /dashboard, so the
-// existing proxy.ts staff gate never touches them.
+// destination — attendees land on /account/record, not /dashboard, so the
+// existing proxy.ts staff gate never touches them. (2026-09-21: default
+// changed from /account to /account/record — a complete practitioner's home
+// is their record, not the settings page.)
 //
 // Plan §7.4 + Q1 (2026-08-30 Stage C decision): separate /account/sign-in
 // page using requestAttendeeOtp / signInWithOtp is the attendee door
@@ -29,7 +31,7 @@ export async function sendAttendeeMagicLink(
   const nextPath =
     rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
       ? rawNext
-      : '/account';
+      : '/account/record';
 
   const origin = await getRequestOrigin();
   const supabase = await supabaseAnonServer();

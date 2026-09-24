@@ -252,7 +252,7 @@ export function CompleteClient({
   }
 
   function onFinish() {
-    router.push('/account');
+    router.push('/account/record');
   }
 
   return (

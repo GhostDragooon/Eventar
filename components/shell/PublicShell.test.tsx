@@ -17,14 +17,16 @@ describe('PublicShell — state-aware right-side CTA (SiteShell parity)', () => 
     expect(screen.queryByRole('link', { name: /^account$/i })).not.toBeInTheDocument();
   });
 
-  it('signed-in renders an "Account" pill pointing at /account', () => {
+  it('signed-in renders an "Account" menu trigger, not a plain link', () => {
+    // 2026-09-21: the signed-in CTA became a disclosure menu (AccountMenu)
+    // instead of a link straight to /account — SiteShell parity.
     render(
       <PublicShell signedIn>
         <div>content</div>
       </PublicShell>,
     );
-    const cta = screen.getByRole('link', { name: /^account$/i });
-    expect(cta).toHaveAttribute('href', '/account');
+    const cta = screen.getByRole('button', { name: /^account$/i });
+    expect(cta).toHaveAttribute('aria-haspopup', 'menu');
     expect(screen.queryByRole('link', { name: /^sign in$/i })).not.toBeInTheDocument();
   });
 
@@ -50,6 +52,20 @@ describe('PublicShell — state-aware right-side CTA (SiteShell parity)', () => 
     expect(screen.getByRole('link', { name: /^sign in$/i })).toBeInTheDocument();
   });
 
+  it('signed-in + isStaff renders StaffProgrammePill (Programme -> /dashboard), NOT the AccountMenu', () => {
+    // Ivan 2026-09-24: organisers have no attendee identity on PublicShell —
+    // suppress attendee chrome, give them a route back to /dashboard.
+    render(
+      <PublicShell signedIn isStaff>
+        <div>content</div>
+      </PublicShell>,
+    );
+    const programme = screen.getByRole('link', { name: /^programme$/i });
+    expect(programme).toHaveAttribute('href', '/dashboard');
+    expect(screen.queryByRole('button', { name: /^account$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^sign in$/i })).not.toBeInTheDocument();
+  });
+
   it('renders a state pill alongside the CTA when `pill` is passed (does not replace the CTA)', () => {
     // The check-in confirm page passes pill={{label:'Checked in'|'Pass ready'}}
     // to give the shell a status indicator. Before 2026-09-05 this replaced
@@ -60,7 +76,7 @@ describe('PublicShell — state-aware right-side CTA (SiteShell parity)', () => 
       </PublicShell>,
     );
     expect(screen.getByText(/pass ready/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /^account$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^account$/i })).toBeInTheDocument();
   });
 
   it('still renders "Upcoming events" link in the nav', () => {

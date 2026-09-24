@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { BrandMark } from './BrandMark';
 import { SiteFooter } from './SiteFooter';
+import { AccountMenu } from '@/components/ui/AccountMenu';
+import { StaffProgrammePill } from './StaffProgrammePill';
 
 // Attendee-surface shell (check-in pass, survey, public event page, register).
 //
@@ -36,19 +38,33 @@ export function PublicShell({
   children,
   pill,
   signedIn = false,
+  isStaff = false,
+  accountComplete = false,
+  unlinkedCount = 0,
 }: {
   children: React.ReactNode;
   pill?: PublicShellPill;
   /**
    * Whether the visitor is signed in. Drives the right-side auth CTA — mirror
    * of SiteShell's state-aware pill (commit 9b0412f). Attendee door for
-   * signed-out, /account for signed-in; staff /login stays unlinked from
-   * public chrome per Q32's audience-boundary rule. Discovered 2026-09-05
-   * that this shell had no auth CTA at all — a signed-out visitor on an
-   * event page had no shell-level path to sign in, only the in-form nudge.
-   * Same shape and default as SiteShell (false when a caller can't know).
+   * signed-out, the Account disclosure menu (or Programme pill when isStaff)
+   * for signed-in; staff /login stays unlinked from public chrome per Q32's
+   * audience-boundary rule. Same shape and default as SiteShell (false when
+   * a caller can't know).
    */
   signedIn?: boolean;
+  /**
+   * Whether the signed-in caller is an organiser (staff session). Ivan
+   * 2026-09-24: organisers have no attendee identity — render
+   * StaffProgrammePill instead of AccountMenu, giving them a route back to
+   * /dashboard rather than attendee-flavored chrome. Ignored when signedIn
+   * is false.
+   */
+  isStaff?: boolean;
+  /** Picks the Account menu's item set — see SiteShell's same prop. Ignored when isStaff. */
+  accountComplete?: boolean;
+  /** Shows "Claim past events" in the menu only when > 0. Ignored when isStaff. */
+  unlinkedCount?: number;
 }) {
   return (
     <div className="app-atmo flex min-h-screen flex-col text-on-surface">
@@ -58,11 +74,15 @@ export function PublicShell({
       >
         <BrandMark />
 
+        {/* Short/long label below sm (2026-09-23 user-lens, SiteShell parity):
+            the Account control's shrink-0 now claims a guaranteed width on
+            this shell too, leaving less room for this link at 375px. */}
         <Link
           href="/events"
-          className="nav-item rounded-full px-[11px] py-[7px] text-[calc(13px*var(--text-scale))] font-medium text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
+          className="nav-item shrink-0 whitespace-nowrap rounded-full px-[11px] py-[7px] text-[calc(13px*var(--text-scale))] font-medium text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
         >
-          Upcoming events
+          <span className="sm:hidden">Events</span>
+          <span className="hidden sm:inline">Upcoming events</span>
         </Link>
 
         <div className="flex items-center gap-sm">
@@ -85,12 +105,11 @@ export function PublicShell({
           )}
 
           {signedIn ? (
-            <Link
-              href="/account"
-              className="rounded-full bg-primary px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary transition-transform duration-150 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-            >
-              Account
-            </Link>
+            isStaff ? (
+              <StaffProgrammePill />
+            ) : (
+              <AccountMenu complete={accountComplete} unlinkedCount={unlinkedCount} />
+            )
           ) : (
             <Link
               href="/account/sign-in"

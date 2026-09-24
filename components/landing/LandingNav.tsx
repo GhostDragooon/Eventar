@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { BrandMark } from '@/components/shell/BrandMark';
+import { AccountMenu } from '@/components/ui/AccountMenu';
 import { LandingAuthPill } from './LandingAuthPill';
 
 const NAV_ITEM =
@@ -82,14 +83,19 @@ export function LandingNav({ signedIn }: { signedIn?: boolean } = {}) {
 
       <div className="flex items-center gap-xs">
         {/* Added 2026-08-20: was Log-in-only, so a visitor with an event to
-            run had no path other than clicking Log in and hoping. Points at
-            /events/new directly — requireStaff() there already redirects an
-            anonymous visitor to /login, so this doesn't bypass auth, it just
-            names the actual destination instead of making them guess it's
-            behind "Log in". Outline, not filled: Log in stays the one
-            emphasised action, unchanged from Ivan's 2026-08-08 call. */}
+            run had no path other than clicking Log in and hoping. Outline,
+            not filled: Log in stays the one emphasised action, unchanged
+            from Ivan's 2026-08-08 call.
+            2026-09-24: retargeted from /events/new to /login?next=/events/new
+            per Ivan's "two pathways" call — a signed-in practitioner clicking
+            this used to have their session silently destroyed by proxy.ts
+            (which signs out any session lacking a staff row before bouncing
+            to /login?error=not_authorized). Now the round-trip goes through
+            /login first: an anonymous visitor still lands on the login form
+            same as before, a practitioner keeps their session and just sees
+            the organiser sign-in page. */}
         <Link
-          href="/events/new"
+          href="/login?next=/events/new"
           className="rounded-full border border-outline px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-surface transition-transform duration-150 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
         >
           Start an Event
@@ -107,12 +113,11 @@ export function LandingNav({ signedIn }: { signedIn?: boolean } = {}) {
         {signedIn === undefined ? (
           <LandingAuthPill />
         ) : signedIn ? (
-          <Link
-            href="/account"
-            className="rounded-full bg-primary px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary transition-transform duration-150 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-          >
-            Account
-          </Link>
+          // Pinned-signedIn path (SSR test rig / non-browser caller) has no
+          // server-fetched completeness signal to pass — assumes complete,
+          // nothing to claim. The client-island path above (the real
+          // production path) fetches the real values.
+          <AccountMenu complete unlinkedCount={0} />
         ) : (
           <Link
             href="/account/sign-in"

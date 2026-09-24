@@ -9,7 +9,13 @@
 
 import { redirect } from 'next/navigation';
 import { supabaseServer } from '@/lib/supabase/server';
-import { getMyAccountAndProfile, listMyAppointments, listMyLicences, listMySocietyMemberships } from '../actions';
+import {
+  getMyAccountAndProfile,
+  getUnlinkedRegistrationCount,
+  listMyAppointments,
+  listMyLicences,
+  listMySocietyMemberships,
+} from '../actions';
 import { ProfileClient } from './ProfileClient';
 import { SiteShell } from '@/components/shell/SiteShell';
 import type { AccreditingBodyView } from '../schema';
@@ -45,6 +51,7 @@ export default async function ProfilePage() {
     specialtiesResult,
     degreesResult,
     societiesResult,
+    unlinkedResult,
   ] = await Promise.all([
     getMyAccountAndProfile(),
     listMyLicences(),
@@ -65,6 +72,7 @@ export default async function ProfilePage() {
     supabase.from('specialties').select('code, profession_code, label_en').order('display_order', { ascending: true }),
     supabase.from('degrees').select('code, label_en').order('display_order', { ascending: true }),
     supabase.from('societies').select('code, label_en').order('display_order', { ascending: true }),
+    getUnlinkedRegistrationCount(),
   ]);
   if (!result.ok) {
     const errorParam =
@@ -84,9 +92,10 @@ export default async function ProfilePage() {
   const specialties: (ControlledListOption & { profession_code: string | null })[] = specialtiesResult.data ?? [];
   const degrees: ControlledListOption[] = degreesResult.data ?? [];
   const societies: ControlledListOption[] = societiesResult.data ?? [];
+  const unlinkedCount = unlinkedResult.ok ? unlinkedResult.data.count : 0;
 
   return (
-    <SiteShell active="account" signedIn>
+    <SiteShell active="account" signedIn accountComplete unlinkedCount={unlinkedCount}>
       <div className="mx-auto w-full max-w-2xl px-grid-margin py-xl">
         <ProfileClient
           initialProfile={result.data.profile}

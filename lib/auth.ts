@@ -26,6 +26,42 @@ export function canManageEvent(
   return event.organisation_id != null && event.organisation_id === staff.organisation_id;
 }
 
+// Non-throwing mirror of requireStaff — the single source of truth for
+// "is this session an organiser?" used by attendee surfaces (shells +
+// /account/* layout gate) to enforce the Q32 audience boundary. Ivan's
+// 2026-09-24 restatement: organisers own the organiser side; they have no
+// attendee identity by design; attendee surfaces must not silently render
+// attendee chrome to a staff session or accumulate practitioner data under
+// a staff UUID.
+//
+// Non-throwing because callers redirect/branch on the result rather than
+// serving a 500; every failure mode (no session, no staff row, review
+// mode, DB blip) collapses to false. Fail-open is safe here because the
+// surfaces that consume this result are UI framing and route redirects,
+// not authorization — RLS still gates every actual write.
+export async function isStaffSession(client?: SupabaseClient): Promise<boolean> {
+  // Review-mode identical to requireStaff's early branch: only fires when
+  // there is no real auth cookie. NODE_ENV=production short-circuits
+  // isReviewMode() unconditionally, so a production build cannot reach
+  // this branch. A real session on a dev server takes the query path below.
+  if (isReviewMode() && !(await hasRealAuthCookie())) {
+    return false;
+  }
+  const supabase = client ?? (await supabaseServer());
+  // eslint-disable-next-line no-restricted-syntax -- no-session and call-failed both collapse to "not staff"
+  const { data: userRes } = await supabase.auth.getUser();
+  const email = userRes?.user?.email?.toLowerCase();
+  if (!email) return false;
+  // eslint-disable-next-line no-restricted-syntax -- DB failure collapses to "not confirmed staff" (fail-open, framing only)
+  const { data: staff } = await supabase
+    .from('staff')
+    .select('id')
+    .eq('email', email)
+    .eq('status', 'active')
+    .maybeSingle();
+  return staff != null;
+}
+
 export async function requireStaff(client?: SupabaseClient): Promise<Staff> {
   // LOCAL REVIEW BYPASS — see lib/reviewMode.ts, which checks NODE_ENV first
   // and unconditionally, so a production build cannot reach this branch.

@@ -17,14 +17,17 @@ describe('SiteShell — state-aware right-side CTA', () => {
     expect(screen.queryByRole('link', { name: /^account$/i })).not.toBeInTheDocument();
   });
 
-  it('signed-in renders an "Account" pill pointing at /account', () => {
+  it('signed-in renders an "Account" menu trigger, not a plain link', () => {
+    // 2026-09-21: the signed-in CTA became a disclosure menu (AccountMenu)
+    // instead of a link straight to /account — it opens a menu whose items
+    // include /account, rather than navigating there itself.
     render(
       <SiteShell active="account" signedIn>
         <div>content</div>
       </SiteShell>,
     );
-    const cta = screen.getByRole('link', { name: /^account$/i });
-    expect(cta).toHaveAttribute('href', '/account');
+    const cta = screen.getByRole('button', { name: /^account$/i });
+    expect(cta).toHaveAttribute('aria-haspopup', 'menu');
     expect(screen.queryByRole('link', { name: /^sign in$/i })).not.toBeInTheDocument();
   });
 
@@ -42,13 +45,13 @@ describe('SiteShell — state-aware right-side CTA', () => {
     expect(hrefs).not.toContain('/login');
   });
 
-  it('signed-in Account pill marks itself active via aria-current when active="account"', () => {
+  it('signed-in Account menu trigger marks itself active via aria-current when active="account"', () => {
     render(
       <SiteShell active="account" signedIn>
         <div>content</div>
       </SiteShell>,
     );
-    const cta = screen.getByRole('link', { name: /^account$/i });
+    const cta = screen.getByRole('button', { name: /^account$/i });
     expect(cta).toHaveAttribute('aria-current', 'page');
   });
 
@@ -59,5 +62,22 @@ describe('SiteShell — state-aware right-side CTA', () => {
       </SiteShell>,
     );
     expect(screen.getByRole('link', { name: /^sign in$/i })).toBeInTheDocument();
+  });
+
+  it('signed-in + isStaff renders the StaffProgrammePill (Programme link to /dashboard), NOT the attendee AccountMenu', () => {
+    // Ivan 2026-09-24: organisers have no attendee identity — attendee
+    // shells suppress the AccountMenu and render an escape hatch back to
+    // /dashboard when the session is staff.
+    render(
+      <SiteShell active="account" signedIn isStaff>
+        <div>content</div>
+      </SiteShell>,
+    );
+    const programme = screen.getByRole('link', { name: /^programme$/i });
+    expect(programme).toHaveAttribute('href', '/dashboard');
+    // Attendee Account menu MUST NOT render for a staff session.
+    expect(screen.queryByRole('button', { name: /^account$/i })).not.toBeInTheDocument();
+    // Sign-in pill MUST NOT render either — this is a signed-in state.
+    expect(screen.queryByRole('link', { name: /^sign in$/i })).not.toBeInTheDocument();
   });
 });

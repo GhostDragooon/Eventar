@@ -181,7 +181,7 @@ describe.skipIf(!process.env.RLS_TESTS)('registrations link-columns immutability
   it('authenticated organiser UPDATE that changes source is blocked (42501)', async () => {
     const { error } = await owner.client
       .from('registrations')
-      .update({ source: 'staff_walk_in' })
+      .update({ source: 'walk_in' })
       .eq('id', linkedRegId);
     expect(error).not.toBeNull();
     expect(error!.code).toBe('42501');

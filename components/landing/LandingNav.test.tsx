@@ -14,6 +14,16 @@ vi.mock('@/lib/supabase/browser', () => ({
   }),
 }));
 
+// LandingAuthPill statically imports getAccountMenuState (a Server Action)
+// from app/account/actions — that file transitively imports the
+// server-only-guarded admin client. Next's real build splits Server Actions
+// into a client-safe RPC stub automatically; Vitest doesn't, so the real
+// module (and its server-only import) would load directly and crash. Same
+// convention as app/account/AccountClient.test.tsx.
+vi.mock('@/app/account/actions', () => ({
+  getAccountMenuState: async () => ({ accountComplete: false, unlinkedCount: 0 }),
+}));
+
 // Parity with components/shell/PublicShell.test.tsx + SiteShell.test.tsx —
 // the landing surface's top-right pill was flipped to state-aware attendee-first
 // on 2026-09-06 (superseding the 2026-08-08 "Log in only" pin) to align with
@@ -31,10 +41,12 @@ describe('LandingNav — state-aware attendee-first CTA (shell parity)', () => {
     expect(screen.queryByRole('link', { name: /^account$/i })).not.toBeInTheDocument();
   });
 
-  it('signedIn={true} renders an "Account" pill pointing at /account', () => {
+  it('signedIn={true} renders an "Account" menu trigger, not a plain link', () => {
+    // 2026-09-21: the pinned-signedIn path also renders AccountMenu now
+    // (SiteShell/PublicShell parity) instead of a link straight to /account.
     render(<LandingNav signedIn />);
-    const cta = screen.getByRole('link', { name: /^account$/i });
-    expect(cta).toHaveAttribute('href', '/account');
+    const cta = screen.getByRole('button', { name: /^account$/i });
+    expect(cta).toHaveAttribute('aria-haspopup', 'menu');
     expect(screen.queryByRole('link', { name: /^sign in$/i })).not.toBeInTheDocument();
   });
 
@@ -56,14 +68,19 @@ describe('LandingNav — state-aware attendee-first CTA (shell parity)', () => {
     expect(screen.getByRole('link', { name: /^sign in$/i })).toHaveAttribute('href', '/account/sign-in');
   });
 
-  it('"Start an Event" pill still points at /events/new regardless of signedIn state', () => {
-    // Organizer entry is unchanged by the top-right flip — the "Start an Event"
-    // pill remains on both branches (requireStaff() handles the anon case).
+  it('"Start an Event" pill routes through /login?next=/events/new (never direct-to-/events/new)', () => {
+    // 2026-09-24: retargeted from /events/new to /login?next=/events/new so a
+    // signed-in practitioner clicking the organiser CTA doesn't get their
+    // session silently destroyed by proxy.ts's staff-row check. The signed-out
+    // flow is unchanged (both routes ultimately land on /login).
     for (const signedIn of [false, true]) {
       cleanup();
       render(<LandingNav signedIn={signedIn} />);
       const start = screen.getByRole('link', { name: /start an event/i });
-      expect(start).toHaveAttribute('href', '/events/new');
+      expect(start).toHaveAttribute('href', '/login?next=/events/new');
+      // Regression guard: never direct-to-/events/new — that path silently
+      // destroys a non-staff session before bouncing to /login.
+      expect(start.getAttribute('href')).not.toBe('/events/new');
     }
   });
 });

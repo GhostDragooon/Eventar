@@ -23,6 +23,8 @@ import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { rateLimitBySession } from '@/lib/rateLimit';
 import { getRequestOrigin } from '@/lib/origin';
+import { isAccountComplete } from '@/lib/accountCompleteness';
+import { isStaffSession } from '@/lib/auth';
 import {
   accountUpdateSchema,
   appointmentCreateSchema,
@@ -254,6 +256,48 @@ export async function getUnlinkedRegistrationCount(): Promise<AccountActionResul
   if (error) return { ok: false, error: 'db_error' };
 
   return { ok: true, data: { count: count ?? 0 } };
+}
+
+// ---------------------------------------------------------------------------
+// getAccountMenuState — the two signals the signed-in Account disclosure
+// menu (components/ui/AccountMenu.tsx) needs to pick its item set: whether
+// the account is complete (gates My record / Profile / Claim) and the
+// unlinked-registration count (shows Claim past events only when there's
+// something to claim). One call so SiteShell/PublicShell/landing consumers
+// that don't already compute these for their own page content (readiness
+// strip, completeness gate) don't each duplicate the pair. Signed-out
+// collapses to the safe "settings only, nothing to claim" shape — callers
+// only invoke this once they already know the visitor is signed in.
+// ---------------------------------------------------------------------------
+
+export async function getAccountMenuState(): Promise<{
+  isStaff: boolean;
+  accountComplete: boolean;
+  unlinkedCount: number;
+}> {
+  const auth = await requireAuthenticatedSelf();
+  if (!auth.ok) return { isStaff: false, accountComplete: false, unlinkedCount: 0 };
+
+  // Q32 boundary (Ivan 2026-09-24): a staff session has no attendee identity;
+  // skip the practitioner-shaped completeness + unlinked-count lookups entirely
+  // and let the caller render organiser chrome. accountComplete + unlinkedCount
+  // stay at their safe defaults (false/0) — the shell branches on isStaff first
+  // and never renders the attendee menu for a staff session.
+  const staff = await isStaffSession();
+  if (staff) {
+    return { isStaff: true, accountComplete: false, unlinkedCount: 0 };
+  }
+
+  const [completeness, unlinkedResult] = await Promise.all([
+    isAccountComplete(auth.userId, auth.emailConfirmed),
+    getUnlinkedRegistrationCount(),
+  ]);
+
+  return {
+    isStaff: false,
+    accountComplete: completeness.complete,
+    unlinkedCount: unlinkedResult.ok ? unlinkedResult.data.count : 0,
+  };
 }
 
 export async function claimMyRegistrations(): Promise<AccountActionResult<{ claimed: number }>> {

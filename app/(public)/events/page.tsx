@@ -1,6 +1,7 @@
 import { supabaseServer } from '@/lib/supabase/server';
 import { SiteShell } from '@/components/shell/SiteShell';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
+import { getAccountMenuState } from '@/app/account/actions';
 import { EventsListClient, type PublicEventCard } from './EventsListClient';
 
 export const metadata = {
@@ -20,6 +21,19 @@ export default async function PublicEventsPage() {
   // eslint-disable-next-line no-restricted-syntax -- no-session is a valid public state
   const { data: authRes } = await supabase.auth.getUser();
   const signedIn = Boolean(authRes?.user);
+  // Account menu's item set — only fetched when signed in (getAccountMenuState
+  // does its own auth check internally; skipping the call for anon visitors
+  // avoids a wasted round trip on the highest-traffic public page). Same
+  // decorative-failure posture as events/[id]/page.tsx's unlinkedCount read
+  // (dev-lens catch): a throw here must degrade the menu, not 500 the page.
+  let menuState: { isStaff: boolean; accountComplete: boolean; unlinkedCount: number } | null = null;
+  if (signedIn) {
+    try {
+      menuState = await getAccountMenuState();
+    } catch {
+      menuState = null;
+    }
+  }
   // Anon RLS exposes published events only; deleted_at filter is defense in
   // depth for the review-mode service-role client.
   // Thrown, not swallowed (rule 12): a discarded error rendered the "no
@@ -68,7 +82,13 @@ export default async function PublicEventsPage() {
     });
 
   return (
-    <SiteShell active="events" signedIn={signedIn}>
+    <SiteShell
+      active="events"
+      signedIn={signedIn}
+      isStaff={menuState?.isStaff ?? false}
+      accountComplete={menuState?.accountComplete ?? false}
+      unlinkedCount={menuState?.unlinkedCount ?? 0}
+    >
       <div className="max-w-[860px] mx-auto px-grid-margin py-xl">
         <header className="text-center mb-lg">
           <p className="text-label-md font-semibold uppercase tracking-[0.18em] text-[color:var(--on-primary-container)] mb-xs">Events</p>

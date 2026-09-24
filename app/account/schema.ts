@@ -228,7 +228,7 @@ export type AttendanceRecordView = {
   status: 'registered' | 'attended' | 'cancelled';
   check_in_at: string | null;
   check_in_method: 'qr' | 'manual' | null;
-  source: 'self_registration' | 'staff_walk_in' | 'invitation_import' | 'system_migration' | null;
+  source: 'self_registration' | 'walk_in' | 'invitation_import' | 'system_migration' | null;
   /**
    * True/false iff the ledger read succeeded: at least one of the event's
    * accrediting bodies has a net-active credit_earned entry for this user

@@ -102,28 +102,73 @@ export default function LandingPage() {
           sub="Three things that stop being your problem."
         />
 
-        {/* CTA band — one line per audience, so neither is an afterthought. */}
+        {/* CTA band — two-persona funnel instruction (2026-09-21): previously
+            one audience-agnostic pair (Get started / Log in) where "Log in"
+            silently pointed at the ORGANISER door with no framing telling a
+            practitioner that. Restructured into two columns, each mirroring
+            its audience's hero CTA pair exactly (same labels/hrefs/styling —
+            "pick one label, use it everywhere"). sr-only h2 keeps the
+            section's own heading level valid (h1 hero -> h2 FeatureBands ->
+            h2 here -> h3 per column) without a redundant visible line above
+            two column headings that already say enough. */}
         <section id="get-started" className="mx-auto mt-[46px] max-w-[1200px] px-[15px]">
-          <div className="rounded-[18px] border border-outline-variant bg-surface-container-low p-xl text-center">
-            <h2 className="text-[calc(26px*var(--text-scale))] font-semibold tracking-[-0.01em] text-on-surface">
-              Your next event keeps your record for you
-            </h2>
-            <p className="mt-sm text-[calc(13.5px*var(--text-scale))] text-on-surface-variant">
-              Run your next accredited event on Eventar.
-            </p>
-            <div className="mt-lg flex flex-wrap justify-center gap-sm">
-              <Link
-                href="/events"
-                className="rounded-full bg-primary px-[19px] py-[9px] text-[calc(13px*var(--text-scale))] font-semibold text-white"
-              >
-                Get started
-              </Link>
-              <Link
-                href="/login"
-                className="rounded-full border border-outline bg-surface-container-lowest px-[19px] py-[9px] text-[calc(13px*var(--text-scale))] font-semibold text-on-surface"
-              >
-                Log in
-              </Link>
+          <h2 className="sr-only">Get started</h2>
+          <div className="rounded-[18px] border border-outline-variant bg-surface-container-low p-xl">
+            <div className="grid gap-lg text-center md:grid-cols-2 md:text-left">
+              <div className="md:border-r md:border-outline-variant md:pr-lg">
+                <p className="text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-[.08em] text-on-surface-variant">
+                  For practitioners
+                </p>
+                <h3 className="mt-xs text-[calc(20px*var(--text-scale))] font-semibold tracking-[-0.01em] text-on-surface">
+                  Find your next accredited event
+                </h3>
+                <p className="mt-sm text-[calc(13.5px*var(--text-scale))] text-on-surface-variant">
+                  Register, check in, and your attendance is captured on your Eventar record.
+                </p>
+                <div className="mt-lg flex flex-wrap justify-center gap-sm md:justify-start">
+                  <Link
+                    href="/account/sign-up"
+                    className="rounded-full bg-primary px-[19px] py-[9px] text-[calc(13px*var(--text-scale))] font-semibold text-on-primary"
+                  >
+                    Get started
+                  </Link>
+                  <Link
+                    href="/events"
+                    className="rounded-full bg-primary px-[19px] py-[9px] text-[calc(13px*var(--text-scale))] font-semibold text-on-primary"
+                  >
+                    Browse events
+                  </Link>
+                </div>
+              </div>
+              <div className="md:pl-lg">
+                <p className="text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-[.08em] text-on-surface-variant">
+                  For organisers
+                </p>
+                <h3 className="mt-xs text-[calc(20px*var(--text-scale))] font-semibold tracking-[-0.01em] text-on-surface">
+                  Your next event keeps your record for you
+                </h3>
+                <p className="mt-sm text-[calc(13.5px*var(--text-scale))] text-on-surface-variant">
+                  Run your next accredited event on Eventar.
+                </p>
+                {/* 2026-09-24 (Ivan's "two pathways" call): Start an Event
+                    now routes through /login?next=/events/new so a signed-in
+                    practitioner clicking the organiser CTA doesn't get their
+                    session destroyed by proxy.ts's staff-row check. */}
+                <div className="mt-lg flex flex-wrap justify-center gap-sm md:justify-start">
+                  <Link
+                    href="/login?next=/events/new"
+                    className="rounded-full bg-primary px-[19px] py-[9px] text-[calc(13px*var(--text-scale))] font-semibold text-on-primary"
+                  >
+                    Start an Event
+                  </Link>
+                  <Link
+                    href="/login"
+                    className="rounded-full bg-primary px-[19px] py-[9px] text-[calc(13px*var(--text-scale))] font-semibold text-on-primary"
+                  >
+                    Organiser log in
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </section>

@@ -39,22 +39,36 @@ import { LedgerWindow } from './LedgerWindow';
 // "your record updates itself" claims that overstate what Eventar owns.
 // The record Eventar issues is an Eventar record — a running log of what
 // happened through the platform, not a substitute for iCMECPD or the college.
+//
+// Two-persona funnel instruction (2026-09-21): each audience gets a pair of
+// EQUAL-weight CTAs (Ivan's call via AskUserQuestion — not a primary +
+// subordinate secondary). Both render with the same filled-pill styling
+// below; "ctas" replaces the old primary/secondary+secondaryHref shape,
+// which pointed the secondary at an in-page anchor rather than a real
+// destination.
 const COPY = {
   practitioner: {
     chip: 'For practitioners · CME/CPD attendance without the paperwork',
     head: ['Your CME/CPD log', 'should keep itself.'],
     sub: 'Find accredited events, register, check in on the day. Your Eventar record captures what you attended and the points released — alongside iCMECPD and your college, not instead of them.',
-    primary: 'Get started',
-    secondary: 'See how it works',
-    secondaryHref: '#how-it-works',
+    ctas: [
+      { label: 'Get started', href: '/account/sign-up' },
+      { label: 'Browse events', href: '/events' },
+    ],
   },
   organiser: {
     chip: 'For organisers & training providers',
     head: ['Run the event,', 'not the admin behind it.'],
     sub: 'Publish to practitioners looking for accredited hours, keep accreditation configuration in one place, and let attendance and points fall out of the check-in itself.',
-    primary: 'Get started',
-    secondary: 'Book a demo',
-    secondaryHref: '#get-started',
+    ctas: [
+      // Retargeted 2026-09-24 (Ivan's "two pathways" call): /events/new is
+      // in proxy.ts's matcher, which signs out any session lacking a staff
+      // row before bouncing to /login?error=not_authorized. Going through
+      // /login first keeps a signed-in practitioner's session alive when
+      // they click the organiser CTA. Same round-trip for anon visitors.
+      { label: 'Start an Event', href: '/login?next=/events/new' },
+      { label: 'Organiser log in', href: '/login' },
+    ],
   },
 } as const;
 
@@ -160,23 +174,25 @@ export function LandingHero({
               {c.sub}
             </p>
 
-            {/* Both CTAs previously pointed at /login, so "See how verification
-                works" and "Book a demo" both dumped the visitor on a sign-in
-                form that answers neither. The secondary now goes to the
-                section that actually shows the thing it names. */}
+            {/* Two-persona funnel instruction (2026-09-21): both CTAs render
+                identically (same classes, both filled) — Ivan chose equal
+                weight over a primary+secondary framing, so the diff is only
+                label/href, never a second visual tier. Both are real
+                destinations now, not one real link + one in-page anchor.
+                text-on-primary, not text-white: same 4.55:1 in light mode
+                (both are #FFFFFF there), but text-white on --primary drops
+                to 2.23:1 in dark mode (fails AA) vs text-on-primary's
+                7.59:1 — dev-lens catch. */}
             <div className="mt-[22px] flex flex-wrap justify-center gap-sm lg:justify-start">
-              <Link
-                href="/events"
-                className="rounded-full bg-primary px-[19px] py-[9px] text-[calc(13px*var(--text-scale))] font-semibold text-white transition-shadow hover:shadow-[0_8px_22px_rgba(13,116,226,.35)]"
-              >
-                {c.primary}
-              </Link>
-              <a
-                href={c.secondaryHref}
-                className="rounded-full border border-outline bg-surface-container-lowest/75 px-[19px] py-[9px] text-[calc(13px*var(--text-scale))] font-semibold text-on-surface backdrop-blur-sm"
-              >
-                {c.secondary}
-              </a>
+              {c.ctas.map((cta) => (
+                <Link
+                  key={cta.href}
+                  href={cta.href}
+                  className="rounded-full bg-primary px-[19px] py-[9px] text-[calc(13px*var(--text-scale))] font-semibold text-on-primary transition-shadow hover:shadow-[0_8px_22px_rgba(13,116,226,.35)]"
+                >
+                  {cta.label}
+                </Link>
+              ))}
             </div>
 
             {/* "8 bodies" means encoded rulebooks, NOT endorsements — the

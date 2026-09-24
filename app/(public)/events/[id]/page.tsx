@@ -8,8 +8,9 @@ import RegisterCard from '@/components/RegisterCard';
 import { PublicShell } from '@/components/shell/PublicShell';
 import { StatusPill } from '@/components/lifecycle/StatusPill';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
-import { requireStaff, NotAuthorizedError, canManageEvent } from '@/lib/auth';
+import { requireStaff, NotAuthorizedError, canManageEvent, isStaffSession } from '@/lib/auth';
 import { getUnlinkedRegistrationCount } from '@/app/account/actions';
+import { isAccountComplete } from '@/lib/accountCompleteness';
 
 export const dynamic = 'force-dynamic';
 
@@ -120,7 +121,6 @@ export default async function PublicEventPage({
   // eslint-disable-next-line no-restricted-syntax -- signed-out is not an error here
   const { data: authRes } = await supabase.auth.getUser();
   const signedInUser = authRes?.user ?? null;
-  const signedInEmail = signedInUser?.email ?? null;
   // full_name lives on public.users (mirrored from auth via trigger). Read it
   // only when the caller is signed in; a failure here silently drops the
   // prefill (register form still works, just uninitialised). Same call also
@@ -128,9 +128,30 @@ export default async function PublicEventPage({
   // gives the round-tripped visitor the discovery moment ("we found N")
   // right where they land, closing the user-lens gap where /account/*'s
   // banner never fires because the round-trip target is the event page.
+  // Detect a staff session early — organisers have no attendee identity, so
+  // all the attendee-flavored decoration below (name prefill, unlinked-count
+  // nudge, isAccountComplete lookup) is suppressed for them. Ivan 2026-09-24:
+  // "The Account menu, self-serve register prefill, claim discovery, and any
+  // other attendee identity chrome are wrong here." Public event content
+  // itself stays intact — organisers can legitimately view their own event's
+  // public page — but the shell renders StaffProgrammePill instead of the
+  // AccountMenu, and the register-card prefill is left empty so the form
+  // doesn't try to register the organiser as an attendee under their staff
+  // identity. isStaffSession() fails-open on any error (returns false), so a
+  // transient blip degrades the branch to attendee posture, not a page crash.
+  let isStaff = false;
+  if (signedInUser) {
+    try {
+      isStaff = await isStaffSession(supabase);
+    } catch {
+      isStaff = false;
+    }
+  }
+
   let signedInName: string | null = null;
   let unlinkedCount = 0;
-  if (signedInUser) {
+  let accountComplete = false;
+  if (signedInUser && !isStaff) {
     // eslint-disable-next-line no-restricted-syntax -- prefill is decorative
     const { data: profile } = await supabase
       .from('users')
@@ -148,10 +169,29 @@ export default async function PublicEventPage({
     } catch {
       unlinkedCount = 0;
     }
+    // Account menu's item set (2026-09-21). Same decorative-failure posture
+    // as the count above — isAccountComplete already fails closed internally
+    // (lib/accountCompleteness.ts), so a throw here would be a genuine bug,
+    // not an expected path; still guarded so a transient blip degrades the
+    // menu rather than the whole event page.
+    try {
+      const completeness = await isAccountComplete(signedInUser.id, signedInUser.email_confirmed_at != null);
+      accountComplete = completeness.complete;
+    } catch {
+      accountComplete = false;
+    }
   }
+  // signInHref exists only for anon visitors (nudge them at the register form).
+  // A staff session gets null too (they see the shell's StaffProgrammePill and
+  // shouldn't be nudged toward /account/sign-in, which they'd bounce off of).
   const signInHref = signedInUser
     ? null
     : `/account/sign-in?next=/events/${event.id}`;
+  // Prefill email only for an attendee session (Ivan 2026-09-24: no attendee
+  // identity chrome for staff on PublicShell). A staff visitor previewing
+  // their own event should not have the register form pre-populated with
+  // their staff email — that would silently register them as an attendee.
+  const signedInEmail = signedInUser && !isStaff ? signedInUser.email ?? null : null;
 
   // Origin via NEXT_PUBLIC_SITE_URL (with header fallback in dev) — prevents
   // host-header spoofing from poisoning the QR URL. See lib/origin.ts.
@@ -172,7 +212,12 @@ export default async function PublicEventPage({
     (event as unknown as { hero_image_url?: string | null }).hero_image_url ?? null;
 
   return (
-    <PublicShell signedIn={signedInUser !== null}>
+    <PublicShell
+      signedIn={signedInUser !== null}
+      isStaff={isStaff}
+      accountComplete={accountComplete}
+      unlinkedCount={unlinkedCount}
+    >
       {/* Wave 3 — hero backdrop. Full-width band, image when uploaded,
           accent-tinted palette fallback otherwise. No overlay text — the
           existing event-meta block below is the source of truth for title

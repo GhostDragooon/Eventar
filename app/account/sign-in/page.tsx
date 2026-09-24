@@ -84,7 +84,7 @@ function AttendeeSignInForm() {
       const { data } = await supabaseBrowser().auth.getSession();
       if (cancelled) return;
       if (data.session) {
-        router.replace(next ?? '/account');
+        router.replace(next ?? '/account/record');
         // Do NOT set sessionKnown — leave the form unmounted while the
         // navigation completes so the visitor cannot submit into the void.
       } else {
