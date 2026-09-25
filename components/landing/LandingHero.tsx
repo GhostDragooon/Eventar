@@ -46,14 +46,17 @@ import { LedgerWindow } from './LedgerWindow';
 // below; "ctas" replaces the old primary/secondary+secondaryHref shape,
 // which pointed the secondary at an in-page anchor rather than a real
 // destination.
+// 2026-09-25 reversal for practitioner only: reduced to one CTA (Get
+// started → /events). Browsing is ungated; account creation happens at
+// register/claim/walk-in, never as the marketing primary. Organiser pair
+// unchanged.
 const COPY = {
   practitioner: {
     chip: 'For practitioners · CME/CPD attendance without the paperwork',
     head: ['Your CME/CPD log', 'should keep itself.'],
     sub: 'Find accredited events, register, check in on the day. Your Eventar record captures what you attended and the points released — alongside iCMECPD and your college, not instead of them.',
     ctas: [
-      { label: 'Get started', href: '/account/sign-up' },
-      { label: 'Browse events', href: '/events' },
+      { label: 'Get started', href: '/events' },
     ],
   },
   organiser: {
