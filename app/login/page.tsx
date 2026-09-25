@@ -46,8 +46,19 @@ function LoginForm() {
   // codes; its one behavioural difference is the unknown-code fallback,
   // which is a fixed generic string here instead of reflecting the raw code
   // into the page — a deliberate hardening, not a regression.
-  const urlErrorCode = useSearchParams().get('error');
+  const searchParams = useSearchParams();
+  const urlErrorCode = searchParams.get('error');
   const urlErr = resolveAuthError(urlErrorCode);
+  // Round-trip destination for the organiser CTA that links here with
+  // ?next=/events/new (LandingHero/LandingNav "Start an Event" — 2026-09-24).
+  // Same open-redirect guard as /auth/callback and the attendee sign-in
+  // page: a relative path starting with a single '/' only. The action
+  // re-validates; this is defence in depth against a tampered link.
+  const rawNext = searchParams.get('next');
+  const next =
+    rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
+      ? rawNext
+      : undefined;
 
   return (
     <LoginLayout>
@@ -69,7 +80,7 @@ function LoginForm() {
 
       <ControlledAccessNotice contactLabel="Contact an admin to be added" />
 
-      <MagicLinkSignInForm submitMagicLink={sendMagicLink} initialError={urlErr} />
+      <MagicLinkSignInForm submitMagicLink={sendMagicLink} initialError={urlErr} next={next} />
 
       <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant text-center m-0">
         The link expires after 15 minutes and works once.

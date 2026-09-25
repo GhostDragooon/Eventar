@@ -10,6 +10,18 @@ export async function sendMagicLink(
     return { error: 'Please enter a valid email address.' };
   }
 
+  // Optional post-sign-in destination (e.g. the landing page's "Start an
+  // Event" CTA → /login?next=/events/new). Same open-redirect guard as
+  // app/account/sign-in/actions.ts and /auth/callback: a relative path
+  // starting with a single '/' only. Omitted (not just defaulted) when
+  // absent/invalid so the emailed link is byte-identical to before this
+  // param existed, and /auth/callback's own /dashboard default applies.
+  const rawNext = String(formData.get('next') ?? '');
+  const nextPath =
+    rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
+      ? rawNext
+      : null;
+
   // NEXT_PUBLIC_SITE_URL in prod (Phase-8 gate 3); request headers in dev.
   const origin = await getRequestOrigin();
 
@@ -19,7 +31,11 @@ export async function sendMagicLink(
   const supabase = await supabaseAnonServer();
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: `${origin}/auth/callback` },
+    options: {
+      emailRedirectTo: nextPath
+        ? `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`
+        : `${origin}/auth/callback`,
+    },
   });
 
   // Never leak whether the email exists in `staff`. Same response either way.

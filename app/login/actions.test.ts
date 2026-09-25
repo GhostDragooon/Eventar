@@ -28,9 +28,10 @@ import { sendMagicLink } from './actions';
 type OtpRequest = { url: string; body: Record<string, unknown> };
 const captured: OtpRequest[] = [];
 
-function makeFormData(email: string): FormData {
+function makeFormData(email: string, next?: string): FormData {
   const fd = new FormData();
   fd.set('email', email);
+  if (next !== undefined) fd.set('next', next);
   return fd;
 }
 
@@ -122,5 +123,28 @@ describe('sendMagicLink', () => {
     const res = await sendMagicLink(makeFormData('not-an-email'));
     expect(res).toEqual({ error: 'Please enter a valid email address.' });
     expect(captured).toHaveLength(0);
+  });
+
+  // Regression: the landing page's "Start an Event" CTA links to
+  // /login?next=/events/new (2026-09-24) expecting the organiser to land
+  // there post-sign-in, but this action used to drop `next` on the floor —
+  // the emailed link always redirected to bare /auth/callback, so
+  // /auth/callback's own default landed everyone on /dashboard regardless.
+  it('forwards a valid `next` onto the redirect_to sent to GoTrue', async () => {
+    const res = await sendMagicLink(makeFormData('staff@example.com', '/events/new'));
+    expect(res).toEqual({ ok: true });
+    const otp = captured.find((r) => r.url.includes('/auth/v1/otp'));
+    expect(otp!.url).toContain(
+      `redirect_to=${encodeURIComponent('http://localhost:3000/auth/callback?next=%2Fevents%2Fnew')}`,
+    );
+  });
+
+  // Same open-redirect guard as /auth/callback and
+  // app/account/sign-in/actions.ts — a protocol-relative or absolute URL
+  // must never reach `redirect_to`.
+  it('drops an unsafe `next` (protocol-relative — open-redirect attempt)', async () => {
+    const res = await sendMagicLink(makeFormData('staff@example.com', '//evil.example.com'));
+    expect(res).toEqual({ ok: true });
+    expectPkceOtpRequest();
   });
 });

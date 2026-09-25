@@ -14,11 +14,16 @@ export async function GET(request: NextRequest) {
   const rawNext = url.searchParams.get('next');
   // Attendee-supplied `next` isn't always /account-prefixed — the public
   // event page's sign-in link round-trips back to /events/[id] (see
-  // app/(public)/events/[id]/page.tsx). Both prefixes are attendee-only:
-  // no staff flow ever sets `next` to either (staff /login never sets
-  // `next`; changeEmail's organizer branch is the literal '/settings').
+  // app/(public)/events/[id]/page.tsx). changeEmail's organizer branch is
+  // the literal '/settings', so '/account'/'/events/' used to be
+  // attendee-only signals. That stopped being true 2026-09-24: the landing
+  // page's "Start an Event" CTA now sends staff through /login?next=/events/new
+  // (app/login/actions.ts), which also starts with '/events/' — carve it out
+  // explicitly so a failed organiser OTP exchange still bounces to /login,
+  // not the attendee door.
   const errorBase =
-    rawNext?.startsWith('/account') || rawNext?.startsWith('/events/')
+    (rawNext?.startsWith('/account') || rawNext?.startsWith('/events/')) &&
+    rawNext !== '/events/new'
       ? '/account/sign-in'
       : '/login';
 
