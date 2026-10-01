@@ -6,6 +6,12 @@
       "runtimeExecutable": "bash",
       "runtimeArgs": ["/Users/ivan/Eventar/scripts/demo/dev-local.sh"],
       "port": 3100
+    },
+    {
+      "name": "eventar-noreview",
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["EVENTAR_REVIEW_MODE=false", "bash", "/Users/ivan/Eventar/scripts/demo/dev-local.sh"],
+      "port": 3100
     }
   ]
 }
