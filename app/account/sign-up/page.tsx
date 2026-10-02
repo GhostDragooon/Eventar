@@ -18,6 +18,7 @@ import { sendAttendeeMagicLink } from '../sign-in/actions';
 import { SiteShell } from '@/components/shell/SiteShell';
 import { MagicLinkSignInForm } from '@/components/auth/MagicLinkSignInForm';
 import { resolveAuthError } from '@/components/auth/auth-error-messages';
+import { safeNextPath } from '@/lib/authDoor';
 import { supabaseBrowser } from '@/lib/supabase/browser';
 
 export default function AttendeeSignUpPage() {
@@ -47,11 +48,7 @@ function AttendeeSignUpForm() {
   const urlErr = resolveAuthError(urlErrorCode, 'attendee');
   // Same open-redirect guard as /account/sign-in — see that page for the
   // reasoning (re-validated server-side in the Server Action either way).
-  const rawNext = searchParams.get('next');
-  const next =
-    rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
-      ? rawNext
-      : undefined;
+  const next = safeNextPath(searchParams.get('next')) ?? undefined;
 
   // Same already-signed-in short-circuit as /account/sign-in — a visitor who
   // reaches this page while already signed in doesn't need to create an

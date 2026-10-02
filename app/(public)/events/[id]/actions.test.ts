@@ -82,6 +82,40 @@ let mockEventRow: EventRow | null = null;
 let lastEmailLogUpdate: Record<string, unknown> | null = null;
 let lastEmailLogUpdateId: string | null = null;
 
+// Session + staff-row state for the register-while-logged-in tests. Defaults
+// (reset in the file-level beforeEach below) are an anonymous guest, so every
+// pre-existing test keeps exercising the path it was written against.
+type SessionUser = { id: string; email: string };
+type StaffRow = { id: string; email: string; status: string };
+let mockAuthUser: SessionUser | null = null;
+let mockStaffRow: StaffRow | null = null;
+let mockStaffError: { code: string; message: string } | null = null;
+let staffLookups = 0;
+// Everything the write layer sent to the DB — the B2 bug lived in the INSERT
+// payload, so the payload (not the UI) is what these tests assert on.
+let lastRegistrationInsert: Record<string, unknown> | null = null;
+let lastEmailLogInsert: Record<string, unknown> | null = null;
+let rpcCalls: Array<{ fn: string; args: unknown }> = [];
+let opOrder: string[] = [];
+const profileSnapshot = { full_name: 'Ivan Lee', profession_code: 'doctor' };
+
+// Applies each .eq(field, value) predicate against the fixture row (same trick
+// as lib/auth.test.ts), so dropping the status='active' or email filter from
+// the staff lookup would surface here rather than pass vacuously.
+function staffChain(row: StaffRow | null): {
+  eq: (field: string, value: unknown) => ReturnType<typeof staffChain>;
+  maybeSingle: () => Promise<{ data: { id: string } | null; error: typeof mockStaffError }>;
+} {
+  return {
+    eq: (field, value) =>
+      staffChain(row && (row as Record<string, unknown>)[field] === value ? row : null),
+    maybeSingle: async () => ({
+      data: mockStaffError || !row ? null : { id: row.id },
+      error: mockStaffError,
+    }),
+  };
+}
+
 vi.mock('@/lib/supabase/server', () => ({
   supabaseServer: vi.fn(async () => ({
     // auth.getUser is used by registerForEvent to detect a logged-in caller
@@ -89,31 +123,48 @@ vi.mock('@/lib/supabase/server', () => ({
     // guest — null user, so the pre-plan tests keep exercising the guest
     // registration path they were written against.
     auth: {
-      getUser: vi.fn(async () => ({ data: { user: null }, error: null })),
+      getUser: vi.fn(async () => ({ data: { user: mockAuthUser }, error: null })),
     },
-    from: (_table: string) => ({
-      select: (cols: string) => {
-        colCapture.eventCols = cols;
-        return {
-          eq: (_col: string, _val: string) => ({
-            maybeSingle: async () => ({ data: mockEventRow, error: null }),
-          }),
-        };
-      },
-    }),
+    from: (table: string) => {
+      // lib/auth's getStaffSessionState reads the caller's own staff row
+      // through this same session client.
+      if (table === 'staff') {
+        staffLookups += 1;
+        return { select: (_cols: string) => staffChain(mockStaffRow) };
+      }
+      return {
+        select: (cols: string) => {
+          colCapture.eventCols = cols;
+          return {
+            eq: (_col: string, _val: string) => ({
+              maybeSingle: async () => ({ data: mockEventRow, error: null }),
+            }),
+          };
+        },
+      };
+    },
   })),
 }));
 
 vi.mock('@/lib/supabase/admin', () => ({
   supabaseAdmin: vi.fn(() => ({
+    // build_profile_snapshot is the only rpc registerForEvent calls.
+    rpc: async (fn: string, args: unknown) => {
+      rpcCalls.push({ fn, args });
+      return { data: profileSnapshot, error: null };
+    },
     from: (table: string) => {
       if (table === 'email_log') {
         return {
-          insert: (_payload: Record<string, unknown>) => ({
-            select: (_cols: string) => ({
-              single: async () => ({ data: { id: logId }, error: null }),
-            }),
-          }),
+          insert: (payload: Record<string, unknown>) => {
+            lastEmailLogInsert = payload;
+            opOrder.push('email_log.insert');
+            return {
+              select: (_cols: string) => ({
+                single: async () => ({ data: { id: logId }, error: null }),
+              }),
+            };
+          },
           update: (payload: Record<string, unknown>) => {
             lastEmailLogUpdate = payload;
             return {
@@ -133,14 +184,18 @@ vi.mock('@/lib/supabase/admin', () => ({
           select: (_cols: string, _opts?: { count?: string; head?: boolean }) => ({
             eq: async (_col: string, _val: string) => ({ count: 0, error: null }),
           }),
-          insert: (_payload: Record<string, unknown>) => ({
-            select: (_cols: string) => ({
-              single: async () => ({
-                data: { id: regId, registration_code: 'WK-ABCDEF' },
-                error: null,
+          insert: (payload: Record<string, unknown>) => {
+            lastRegistrationInsert = payload;
+            opOrder.push('registrations.insert');
+            return {
+              select: (_cols: string) => ({
+                single: async () => ({
+                  data: { id: regId, registration_code: 'WK-ABCDEF' },
+                  error: null,
+                }),
               }),
-            }),
-          }),
+            };
+          },
         };
       }
       throw new Error(`unexpected table: ${table}`);
@@ -148,9 +203,29 @@ vi.mock('@/lib/supabase/admin', () => ({
   })),
 }));
 
-import { beforeEach, describe, it, expect } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect } from 'vitest';
 import { registrationInputSchema } from './schema';
 import { registerForEvent } from './actions';
+
+// File-level reset of the session/capture state, so no test inherits another's
+// signed-in user, staff row or captured payload.
+beforeEach(() => {
+  mockAuthUser = null;
+  mockStaffRow = null;
+  mockStaffError = null;
+  staffLookups = 0;
+  lastRegistrationInsert = null;
+  lastEmailLogInsert = null;
+  rpcCalls = [];
+  opOrder = [];
+  // lib/auth's getStaffSessionState consults review mode; pin it off so a
+  // developer's exported EVENTAR_REVIEW_MODE=true can't route these tests
+  // into the cookie-reading bypass branch.
+  vi.stubEnv('EVENTAR_REVIEW_MODE', 'false');
+});
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 // Real v4 UUID (third group starts with 4, fourth with 8|9|a|b) — Zod 4's
 // .uuid() validator is version-strict.
@@ -352,5 +427,134 @@ describe('registerForEvent — registration window gate', () => {
     expect(mockSendReal).not.toHaveBeenCalled();
     // The gate is only real if the column is actually fetched.
     expect(colCapture.eventCols).toContain('deleted_at');
+  });
+});
+
+// D2 (Ivan, 2026-10-01) / finding B2 of handoff_20260925-two-persona-review.md.
+// The 2026-09-24 hardening suppressed the register form's PREFILL for staff and
+// called that "attendee decoration suppressed" — but the WRITE still attached
+// the organiser's auth id whenever the typed email matched the session email
+// (live read-back: registrations.user_id = the organiser's auth.users.id). A
+// UI-level assertion would repeat that mistake, so every test below asserts on
+// the payload the action actually sends to the registrations INSERT.
+describe('registerForEvent — a staff session never attaches an attendee identity (D2 / B2)', () => {
+  const OWN_EMAIL = 'ivan@example.com'; // === valid.email
+  const STAFF_UID = 'aaaaaaaa-1111-4222-8333-444444444444';
+  const PRACTITIONER_UID = 'bbbbbbbb-1111-4222-8333-444444444444';
+  const activeStaffRow: StaffRow = { id: 'staff-1', email: OWN_EMAIL, status: 'active' };
+
+  // The row an anonymous guest produces — the contract the staff/unknown rows
+  // must equal byte for byte (user_id NULL, profile_snapshot NULL, no `source`
+  // key so the column default applies).
+  const GUEST_ROW = {
+    event_id: valid.event_id,
+    email: OWN_EMAIL,
+    full_name: 'Ivan Lee',
+    registration_code: 'WK-ABCDEF',
+    user_id: null,
+    profile_snapshot: null,
+  };
+
+  beforeEach(() => {
+    mockEventRow = futureEventRow();
+    mockSendStub.mockReset();
+    mockSendStub.mockResolvedValue({ skipped: true });
+    mockSendReal.mockReset();
+    delete process.env.RESEND_API_KEY;
+  });
+
+  it('anonymous guest: the row carries no identity and the staff table is never read', async () => {
+    const result = await registerForEvent(valid);
+
+    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev' });
+    expect(lastRegistrationInsert).toEqual(GUEST_ROW);
+    expect(rpcCalls).toEqual([]);
+    expect(staffLookups).toBe(0);
+  });
+
+  it('staff registering their OWN email writes the exact anonymous-guest row (B2 repro)', async () => {
+    mockAuthUser = { id: STAFF_UID, email: OWN_EMAIL };
+    mockStaffRow = activeStaffRow;
+
+    const result = await registerForEvent(valid);
+
+    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev' });
+    expect(lastRegistrationInsert).toEqual(GUEST_ROW);
+    // No snapshot was even built: nothing practitioner-shaped is read under a
+    // staff UUID.
+    expect(rpcCalls).toEqual([]);
+    expect(staffLookups).toBe(1);
+  });
+
+  it('staff registration still sends the confirmation to the typed address, email_log first', async () => {
+    mockAuthUser = { id: STAFF_UID, email: OWN_EMAIL };
+    mockStaffRow = activeStaffRow;
+
+    await registerForEvent(valid);
+
+    expect(lastEmailLogInsert).toMatchObject({
+      purpose: 'confirmation',
+      event_id: valid.event_id,
+      recipient_email: OWN_EMAIL,
+      status: 'queued',
+    });
+    expect(opOrder).toEqual(['email_log.insert', 'registrations.insert']);
+    expect(mockSendStub).toHaveBeenCalledTimes(1);
+    expect(mockSendStub.mock.calls[0][0]).toMatchObject({ to: OWN_EMAIL });
+  });
+
+  it('staff registering a colleague (a different email) is the same guest row — the form stays usable', async () => {
+    mockAuthUser = { id: STAFF_UID, email: OWN_EMAIL };
+    mockStaffRow = activeStaffRow;
+
+    const result = await registerForEvent({ ...valid, email: 'colleague@example.com' });
+
+    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev' });
+    expect(lastRegistrationInsert).toEqual({ ...GUEST_ROW, email: 'colleague@example.com' });
+    expect(rpcCalls).toEqual([]);
+  });
+
+  it("'unknown' (the staff read failed) is treated like staff: the same guest row, still registered, and logged", async () => {
+    mockAuthUser = { id: STAFF_UID, email: OWN_EMAIL };
+    mockStaffRow = activeStaffRow;
+    mockStaffError = { code: '57014', message: 'canceling statement due to statement timeout' };
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const result = await registerForEvent(valid);
+
+    // A failed staff read must never read as "not staff" and attach the id
+    // (N1: the old boolean helper failed open) — but it must not block the
+    // seat either. The skipped attach is logged (rule 12), with no PII.
+    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev' });
+    expect(lastRegistrationInsert).toEqual(GUEST_ROW);
+    expect(rpcCalls).toEqual([]);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('staff state unknown'));
+    expect(JSON.stringify(warn.mock.calls)).not.toContain(OWN_EMAIL);
+    warn.mockRestore();
+  });
+
+  it('positive control: a confirmed non-staff session registering their own email still attaches user_id + snapshot', async () => {
+    mockAuthUser = { id: PRACTITIONER_UID, email: OWN_EMAIL };
+    mockStaffRow = null; // signed in, but no staff row => 'not_staff'
+
+    const result = await registerForEvent(valid);
+
+    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev' });
+    expect(lastRegistrationInsert).toEqual({
+      ...GUEST_ROW,
+      user_id: PRACTITIONER_UID,
+      profile_snapshot: profileSnapshot,
+    });
+    expect(rpcCalls).toEqual([{ fn: 'build_profile_snapshot', args: { p_user_id: PRACTITIONER_UID } }]);
+  });
+
+  it('a signed-in non-staff caller registering someone ELSE’s email is a guest row (email-match guard)', async () => {
+    mockAuthUser = { id: PRACTITIONER_UID, email: OWN_EMAIL };
+
+    const result = await registerForEvent({ ...valid, email: 'alice@work.com' });
+
+    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev' });
+    expect(lastRegistrationInsert).toEqual({ ...GUEST_ROW, email: 'alice@work.com' });
+    expect(rpcCalls).toEqual([]);
   });
 });

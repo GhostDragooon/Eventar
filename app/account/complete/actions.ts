@@ -10,6 +10,7 @@
 import { revalidatePath } from 'next/cache';
 import { supabaseServer } from '@/lib/supabase/server';
 import { rateLimitBySession } from '@/lib/rateLimit';
+import { getStaffSessionState } from '@/lib/auth';
 import { LEGAL_VERSIONS } from '@/lib/legalVersions';
 import type { AccountActionResult } from '../schema';
 
@@ -33,6 +34,13 @@ async function requireAuthenticatedSelf(): Promise<
 export async function acceptRequiredConsents(): Promise<AccountActionResult<{ accepted: true }>> {
   const auth = await requireAuthenticatedSelf();
   if (!auth.ok) return { ok: false, error: auth.error };
+
+  // Practitioner-only write (N1 + N3, WP5): same policy as requirePractitionerSelf
+  // in ../actions.ts, which a 'use server' module can't export (every export
+  // there is a public action). 'unknown' fails closed.
+  const staffState = await getStaffSessionState();
+  if (staffState === 'staff') return { ok: false, error: 'not_authorized' };
+  if (staffState === 'unknown') return { ok: false, error: 'db_error' };
 
   const rl = await rateLimitBySession('account.complete.consents', auth.userId, {
     windowMs: 60_000,

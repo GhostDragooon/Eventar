@@ -1,6 +1,7 @@
 'use server';
 import { supabaseAnonServer } from '@/lib/supabase/server';
 import { getRequestOrigin } from '@/lib/origin';
+import { safeNextPath } from '@/lib/authDoor';
 
 export async function sendMagicLink(
   formData: FormData,
@@ -11,16 +12,12 @@ export async function sendMagicLink(
   }
 
   // Optional post-sign-in destination (e.g. the landing page's "Start an
-  // Event" CTA → /login?next=/events/new). Same open-redirect guard as
-  // app/account/sign-in/actions.ts and /auth/callback: a relative path
-  // starting with a single '/' only. Omitted (not just defaulted) when
-  // absent/invalid so the emailed link is byte-identical to before this
-  // param existed, and /auth/callback's own /dashboard default applies.
-  const rawNext = String(formData.get('next') ?? '');
-  const nextPath =
-    rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
-      ? rawNext
-      : null;
+  // Event" CTA → /login?next=/events/new). safeNextPath is the shared
+  // open-redirect guard (lib/authDoor.ts): a path on this origin only.
+  // Omitted (not just defaulted) when absent/invalid so the emailed link is
+  // byte-identical to before this param existed, and /auth/callback's own
+  // /dashboard default applies.
+  const nextPath = safeNextPath(String(formData.get('next') ?? ''));
 
   // NEXT_PUBLIC_SITE_URL in prod (Phase-8 gate 3); request headers in dev.
   const origin = await getRequestOrigin();

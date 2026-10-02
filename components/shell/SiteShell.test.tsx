@@ -64,6 +64,19 @@ describe('SiteShell — state-aware right-side CTA', () => {
     expect(screen.getByRole('link', { name: /^sign in$/i })).toBeInTheDocument();
   });
 
+  // M1 (2026-09-25): /login is the organiser door but used to pass
+  // active="signin", which tints the pill that points at the practitioner
+  // door. Pages that belong to no nav item now omit `active`.
+  it('`active` is optional: nothing is marked as the current page without it', () => {
+    render(
+      <SiteShell>
+        <div>content</div>
+      </SiteShell>,
+    );
+    expect(document.querySelectorAll('[aria-current]')).toHaveLength(0);
+    expect(screen.getByRole('link', { name: /^sign in$/i })).not.toHaveAttribute('aria-current');
+  });
+
   it('signed-in + isStaff renders the StaffProgrammePill (Programme link to /dashboard), NOT the attendee AccountMenu', () => {
     // Ivan 2026-09-24: organisers have no attendee identity — attendee
     // shells suppress the AccountMenu and render an escape hatch back to

@@ -17,10 +17,11 @@ export async function proxy(req: NextRequest) {
   // supabaseServer() (lib/reviewMode.ts's isRealAuthCookiePresent). Left
   // unconditional until 2026-09-17: a real, non-staff session under review
   // mode sailed straight through this layer's own specific
-  // "?error=not_authorized" rejection (clear copy, explicit sign-out) into
-  // the page layer's bare requireStaff() catch instead — same identity, a
-  // strictly worse rejection experience for the one case review mode is
-  // supposed to stand down for.
+  // "?error=not_organiser" rejection (the /login panel that explains the
+  // session — until 2026-09-25 this was "?error=not_authorized" plus a
+  // sign-out) into the page layer's bare requireStaff() catch instead — same
+  // identity, a strictly worse rejection experience for the one case review
+  // mode is supposed to stand down for.
   if (isReviewMode() && !isRealAuthCookiePresent(req.cookies.getAll())) {
     console.warn('[review-mode] proxy gate BYPASSED for', req.nextUrl.pathname);
     return NextResponse.next();
@@ -56,13 +57,24 @@ export async function proxy(req: NextRequest) {
     return redirect;
   }
 
+  // /login with the destination as ?next= (finding I5, 2026-09-25): an
+  // organiser who follows a deep link, signs in, and is sent back lands where
+  // they were going instead of on /dashboard. pathname + search is same-origin
+  // by construction; /login and /auth/callback re-validate it regardless.
+  function loginUrl(error?: string): URL {
+    const url = new URL('/login', req.url);
+    if (error) url.searchParams.set('error', error);
+    url.searchParams.set('next', req.nextUrl.pathname + req.nextUrl.search);
+    return url;
+  }
+
   // Same as requireStaff: getUser() reports "no session" as an error, so a
   // failed call and an absent session are the same fact here, and a gate must
   // fail closed to /login on either.
   // eslint-disable-next-line no-restricted-syntax -- see above: no-session and call-failed are the same fact
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return redirectWithCookies(new URL('/login', req.url));
+    return redirectWithCookies(loginUrl());
   }
 
   const email = user.email?.toLowerCase();
@@ -71,10 +83,14 @@ export async function proxy(req: NextRequest) {
     return redirectWithCookies(new URL('/login?error=not_authorized', req.url));
   }
 
+  // status = 'active' matches requireStaff() and getStaffSessionState():
+  // suspended/removed staff lose access at Layer 1 too, not only at Layer 2
+  // (finding N2, 2026-09-25).
   const { data: staff, error: staffErr } = await supabase
     .from('staff')
     .select('id')
     .eq('email', email)
+    .eq('status', 'active')
     .maybeSingle();
 
   // An unreadable staff table is an outage, not a verdict. Swallowing the error
@@ -86,9 +102,16 @@ export async function proxy(req: NextRequest) {
     return redirectWithCookies(new URL('/login?error=unavailable', req.url));
   }
 
+  // Signed in, but no active staff row: a practitioner who followed an
+  // organiser link, a removed or suspended organiser, an invitee who has not
+  // accepted yet. The session is kept. It is a perfectly good attendee session,
+  // and signing it out destroyed a practitioner's login for clicking "Start an
+  // Event" and then told them their email was "not on the organizer list"
+  // (finding I1, 2026-09-25; D1). /login explains the session and lets the
+  // person choose. Only the no-email branch above still signs out: that
+  // session is broken, not merely unprivileged.
   if (!staff) {
-    await supabase.auth.signOut();
-    return redirectWithCookies(new URL('/login?error=not_authorized', req.url));
+    return redirectWithCookies(loginUrl('not_organiser'));
   }
 
   return res;
@@ -99,6 +122,12 @@ export async function proxy(req: NextRequest) {
 // /dashboard, /events/new, and /events/[id]/{edit,checkin,details,analytics}.
 // Defense-in-depth: each staff page also gates via requireStaff() (Layer 2);
 // this matcher is Layer 1.
+//
+// Every path gated here is an organiser-door path, and lib/authDoor.ts has to
+// say so (/auth/callback uses it to pick the error door). Next statically
+// analyses `matcher`, so this list cannot import that module; lib/authDoor.test.ts
+// is the drift guard — it fails when a path is added here without teaching the
+// classifier.
 export const config = {
   matcher: [
     '/dashboard/:path*',

@@ -142,8 +142,15 @@ describe('sendMagicLink', () => {
   // Same open-redirect guard as /auth/callback and
   // app/account/sign-in/actions.ts — a protocol-relative or absolute URL
   // must never reach `redirect_to`.
-  it('drops an unsafe `next` (protocol-relative — open-redirect attempt)', async () => {
-    const res = await sendMagicLink(makeFormData('staff@example.com', '//evil.example.com'));
+  // The old check (`startsWith('/') && !startsWith('//')`) let the backslash
+  // and tab forms through; /auth/callback then redirected to the attacker's host.
+  it.each([
+    ['protocol-relative', '//evil.example.com'],
+    ['backslash', '/\\evil.example.com'],
+    ['tab', '/\t/evil.example.com'],
+    ['line feed', '/\n/evil.example.com'],
+  ])('drops an unsafe `next` (%s: open-redirect attempt)', async (_label, hostile) => {
+    const res = await sendMagicLink(makeFormData('staff@example.com', hostile));
     expect(res).toEqual({ ok: true });
     expectPkceOtpRequest();
   });

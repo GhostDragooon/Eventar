@@ -52,8 +52,10 @@ export function SiteShell({
   // 'account' no longer changes the CTA's visual state (it's a menu
   // trigger now, not a link to a single page) but is kept in the union for
   // existing callers that still pass it; 'signin' still active-tints the
-  // signed-out "Sign in" pill.
-  active: 'home' | 'events' | 'signin' | 'account';
+  // signed-out "Sign in" pill. Optional: a page that belongs to none of the
+  // nav items (the organiser door at /login) passes nothing instead of
+  // highlighting an item that points somewhere else.
+  active?: 'home' | 'events' | 'signin' | 'account';
   footer?: 'brand' | 'none';
   /**
    * Whether the visitor is signed in. Drives the right-side CTA — signed-in

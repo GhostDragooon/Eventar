@@ -24,7 +24,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { rateLimitBySession } from '@/lib/rateLimit';
 import { getRequestOrigin } from '@/lib/origin';
 import { isAccountComplete } from '@/lib/accountCompleteness';
-import { isStaffSession } from '@/lib/auth';
+import { getStaffSessionState } from '@/lib/auth';
 import {
   accountUpdateSchema,
   appointmentCreateSchema,
@@ -68,6 +68,25 @@ async function requireAuthenticatedSelf(): Promise<
     email: user.email ?? null,
     emailConfirmed: user.email_confirmed_at != null,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Practitioner-only writes (N1 + N3, 2026-09-25 re-review; WP5): a staff
+// session has no attendee identity (Q32) and must not write practitioner data
+// under its UUID. The /account layout redirects staff, but that is UI framing,
+// and the self-write RLS policies key on auth.uid() alone — so each such write
+// asks here. Fails closed: 'unknown' (the staff read failed) is refused like
+// 'staff'. NOT used by the list*/get* reads, getAccountMenuState (must still
+// see staff) or changeEmail('/settings') (organisers use it from /settings).
+// ---------------------------------------------------------------------------
+
+async function requirePractitionerSelf() {
+  const auth = await requireAuthenticatedSelf();
+  if (!auth.ok) return auth;
+  const state = await getStaffSessionState();
+  if (state === 'staff') return { ok: false as const, error: 'not_authorized' as const };
+  if (state === 'unknown') return { ok: false as const, error: 'db_error' as const };
+  return auth;
 }
 
 // ---------------------------------------------------------------------------
@@ -115,7 +134,7 @@ export async function getMyAccountAndProfile(): Promise<AccountActionResult<Acco
 export async function updateMyAccount(
   raw: unknown,
 ): Promise<AccountActionResult<{ full_name: string }>> {
-  const auth = await requireAuthenticatedSelf();
+  const auth = await requirePractitionerSelf();
   if (!auth.ok) return { ok: false, error: auth.error };
 
   // Per-user rate limit — cheap protection against a runaway client submit
@@ -162,7 +181,7 @@ export async function updateMyAccount(
 export async function updateMyProfessionalProfile(
   raw: unknown,
 ): Promise<AccountActionResult<{ profile_created: boolean }>> {
-  const auth = await requireAuthenticatedSelf();
+  const auth = await requirePractitionerSelf();
   if (!auth.ok) return { ok: false, error: auth.error };
 
   const rl = await rateLimitBySession('account.profile.update', auth.userId, {
@@ -274,18 +293,29 @@ export async function getAccountMenuState(): Promise<{
   isStaff: boolean;
   accountComplete: boolean;
   unlinkedCount: number;
+  /**
+   * The server could not say whether this session is staff: the staff read
+   * failed, or it holds no session at all. `isStaff` is then the fail-open
+   * false that menu and shell framing want; only /login reads this flag,
+   * because telling a possible organiser "you're signed in as a practitioner"
+   * on a failed read would be a verdict nobody checked.
+   */
+  staffUnknown?: true;
 }> {
   const auth = await requireAuthenticatedSelf();
-  if (!auth.ok) return { isStaff: false, accountComplete: false, unlinkedCount: 0 };
+  if (!auth.ok) return { isStaff: false, accountComplete: false, unlinkedCount: 0, staffUnknown: true };
 
   // Q32 boundary (Ivan 2026-09-24): a staff session has no attendee identity;
   // skip the practitioner-shaped completeness + unlinked-count lookups entirely
   // and let the caller render organiser chrome. accountComplete + unlinkedCount
   // stay at their safe defaults (false/0) — the shell branches on isStaff first
   // and never renders the attendee menu for a staff session.
-  const staff = await isStaffSession();
-  if (staff) {
+  const staffState = await getStaffSessionState();
+  if (staffState === 'staff') {
     return { isStaff: true, accountComplete: false, unlinkedCount: 0 };
+  }
+  if (staffState === 'unknown') {
+    return { isStaff: false, accountComplete: false, unlinkedCount: 0, staffUnknown: true };
   }
 
   const [completeness, unlinkedResult] = await Promise.all([
@@ -301,7 +331,7 @@ export async function getAccountMenuState(): Promise<{
 }
 
 export async function claimMyRegistrations(): Promise<AccountActionResult<{ claimed: number }>> {
-  const auth = await requireAuthenticatedSelf();
+  const auth = await requirePractitionerSelf();
   if (!auth.ok) return { ok: false, error: auth.error };
 
   // The definer re-checks email_confirmed_at server-side and raises
@@ -572,7 +602,7 @@ export async function listMyCreditRecords(): Promise<AccountActionResult<{ items
 // ---------------------------------------------------------------------------
 
 export async function resendVerificationEmail(): Promise<AccountActionResult<{ sent: true }>> {
-  const auth = await requireAuthenticatedSelf();
+  const auth = await requirePractitionerSelf();
   if (!auth.ok) return { ok: false, error: auth.error };
   if (!auth.email) return { ok: false, error: 'not_found' };
   if (auth.emailConfirmed) return { ok: false, error: 'already_confirmed' };
@@ -627,7 +657,9 @@ export async function changeEmail(
   rawNewEmail: unknown,
   nextPath: '/account' | '/settings',
 ): Promise<AccountActionResult<{ sent: true; new_email: string }>> {
-  const auth = await requireAuthenticatedSelf();
+  // Organisers use this action from /settings: guard the attendee surface only.
+  const auth =
+    nextPath === '/account' ? await requirePractitionerSelf() : await requireAuthenticatedSelf();
   if (!auth.ok) return { ok: false, error: auth.error };
 
   // Runtime guard for nextPath — the TS union is compile-time only, any
@@ -701,7 +733,7 @@ export async function changeEmail(
 export async function declareMyLicence(
   raw: unknown,
 ): Promise<AccountActionResult<{ licence_id: string }>> {
-  const auth = await requireAuthenticatedSelf();
+  const auth = await requirePractitionerSelf();
   if (!auth.ok) return { ok: false, error: auth.error };
 
   const rl = await rateLimitBySession('account.licences.declare', auth.userId, {
@@ -775,7 +807,7 @@ const ALLOWED_AVATAR_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 export async function uploadAvatar(
   formData: FormData,
 ): Promise<AccountActionResult<{ avatar_url: string }>> {
-  const auth = await requireAuthenticatedSelf();
+  const auth = await requirePractitionerSelf();
   if (!auth.ok) return { ok: false, error: auth.error };
 
   const rl = await rateLimitBySession('account.avatar.upload', auth.userId, {
@@ -848,7 +880,7 @@ export async function listMyAppointments(): Promise<AccountActionResult<{ appoin
 export async function addMyAppointment(
   raw: unknown,
 ): Promise<AccountActionResult<{ appointment: AppointmentView }>> {
-  const auth = await requireAuthenticatedSelf();
+  const auth = await requirePractitionerSelf();
   if (!auth.ok) return { ok: false, error: auth.error };
 
   const rl = await rateLimitBySession('account.appointments.add', auth.userId, { windowMs: 60_000, max: 20 });
@@ -870,7 +902,7 @@ export async function addMyAppointment(
 }
 
 export async function deleteMyAppointment(id: string): Promise<AccountActionResult<{ deleted: true }>> {
-  const auth = await requireAuthenticatedSelf();
+  const auth = await requirePractitionerSelf();
   if (!auth.ok) return { ok: false, error: auth.error };
   if (typeof id !== 'string' || id.length === 0) return { ok: false, error: 'invalid_input' };
 
@@ -919,7 +951,7 @@ export async function listMySocietyMemberships(): Promise<
 export async function addMySocietyMembership(
   raw: unknown,
 ): Promise<AccountActionResult<{ membership: SocietyMembershipView }>> {
-  const auth = await requireAuthenticatedSelf();
+  const auth = await requirePractitionerSelf();
   if (!auth.ok) return { ok: false, error: auth.error };
 
   const rl = await rateLimitBySession('account.societies.add', auth.userId, { windowMs: 60_000, max: 20 });
@@ -945,7 +977,7 @@ export async function addMySocietyMembership(
 }
 
 export async function deleteMySocietyMembership(id: string): Promise<AccountActionResult<{ deleted: true }>> {
-  const auth = await requireAuthenticatedSelf();
+  const auth = await requirePractitionerSelf();
   if (!auth.ok) return { ok: false, error: auth.error };
   if (typeof id !== 'string' || id.length === 0) return { ok: false, error: 'invalid_input' };
 

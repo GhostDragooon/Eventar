@@ -493,8 +493,8 @@ export function AccountClient({
       {!emailConfirmed && (
         <SectionCard icon="mark_email_unread" title="Verify your email" id="verify-email">
           <p className="font-body-md text-body-md text-on-surface-variant m-0">
-            Your email <span className="font-medium text-on-surface">{email}</span> hasn&apos;t
-            been verified yet. Verification is required before we can link
+            Your email <span className="font-medium text-on-surface">{email}</span>{' '}
+            hasn&apos;t been verified yet. Verification is required before we can link
             past registrations or release CME/CPD points.
           </p>
           <div className="mt-md flex items-center justify-between flex-wrap gap-md">

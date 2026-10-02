@@ -1,5 +1,5 @@
 import 'server-only';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { isAuthSessionMissingError, type SupabaseClient } from '@supabase/supabase-js';
 import { supabaseServer } from './supabase/server';
 import { isReviewMode, resolveReviewStaff, hasRealAuthCookie } from './reviewMode';
 
@@ -27,39 +27,52 @@ export function canManageEvent(
 }
 
 // Non-throwing mirror of requireStaff — the single source of truth for
-// "is this session an organiser?" used by attendee surfaces (shells +
-// /account/* layout gate) to enforce the Q32 audience boundary. Ivan's
-// 2026-09-24 restatement: organisers own the organiser side; they have no
-// attendee identity by design; attendee surfaces must not silently render
-// attendee chrome to a staff session or accumulate practitioner data under
-// a staff UUID.
+// "is this session an organiser?" (Q32 audience boundary). Ivan's 2026-09-24
+// restatement: organisers own the organiser side; they have no attendee
+// identity by design; attendee surfaces must not silently render attendee
+// chrome to a staff session or accumulate practitioner data under a staff
+// UUID.
 //
-// Non-throwing because callers redirect/branch on the result rather than
-// serving a 500; every failure mode (no session, no staff row, review
-// mode, DB blip) collapses to false. Fail-open is safe here because the
-// surfaces that consume this result are UI framing and route redirects,
-// not authorization — RLS still gates every actual write.
-export async function isStaffSession(client?: SupabaseClient): Promise<boolean> {
+// Tri-state because the two kinds of consumer fail in opposite directions.
+// A WRITE that must not attach practitioner data to a staff UUID acts only
+// on 'not_staff' — 'unknown' (a failed read) is never "not staff" (N1,
+// 2026-09-25: the old boolean collapsed a DB blip into "not staff", and no
+// RLS policy catches the gap — registerForEvent writes via service_role and
+// the self-write policies key on auth.uid() alone). UI framing uses
+// isStaffSession below, which stays fail-open.
+//
+// "No session" is a definite 'not_staff' (nobody to protect); any other
+// identity-read failure is 'unknown'.
+export async function getStaffSessionState(
+  client?: SupabaseClient,
+): Promise<'staff' | 'not_staff' | 'unknown'> {
   // Review-mode identical to requireStaff's early branch: only fires when
   // there is no real auth cookie. NODE_ENV=production short-circuits
   // isReviewMode() unconditionally, so a production build cannot reach
   // this branch. A real session on a dev server takes the query path below.
   if (isReviewMode() && !(await hasRealAuthCookie())) {
-    return false;
+    return 'not_staff';
   }
   const supabase = client ?? (await supabaseServer());
-  // eslint-disable-next-line no-restricted-syntax -- no-session and call-failed both collapse to "not staff"
-  const { data: userRes } = await supabase.auth.getUser();
+  const { data: userRes, error: userErr } = await supabase.auth.getUser();
   const email = userRes?.user?.email?.toLowerCase();
-  if (!email) return false;
-  // eslint-disable-next-line no-restricted-syntax -- DB failure collapses to "not confirmed staff" (fail-open, framing only)
-  const { data: staff } = await supabase
+  if (!email) return userErr && !isAuthSessionMissingError(userErr) ? 'unknown' : 'not_staff';
+  const { data: staff, error: staffErr } = await supabase
     .from('staff')
     .select('id')
     .eq('email', email)
     .eq('status', 'active')
     .maybeSingle();
-  return staff != null;
+  if (staffErr) return 'unknown';
+  return staff != null ? 'staff' : 'not_staff';
+}
+
+// Fail-open boolean for UI framing and route redirects (shells, the
+// /account/* layout, getAccountMenuState): a read error renders attendee
+// posture instead of a 500. Never use it to decide a write — use
+// getStaffSessionState and act only on 'not_staff'.
+export async function isStaffSession(client?: SupabaseClient): Promise<boolean> {
+  return (await getStaffSessionState(client)) === 'staff';
 }
 
 export async function requireStaff(client?: SupabaseClient): Promise<Staff> {

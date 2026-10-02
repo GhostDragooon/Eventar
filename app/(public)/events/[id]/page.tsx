@@ -135,10 +135,11 @@ export default async function PublicEventPage({
   // other attendee identity chrome are wrong here." Public event content
   // itself stays intact — organisers can legitimately view their own event's
   // public page — but the shell renders StaffProgrammePill instead of the
-  // AccountMenu, and the register-card prefill is left empty so the form
-  // doesn't try to register the organiser as an attendee under their staff
-  // identity. isStaffSession() fails-open on any error (returns false), so a
-  // transient blip degrades the branch to attendee posture, not a page crash.
+  // AccountMenu and the register-card prefill is left empty. That is framing
+  // only: keeping a staff UUID off registrations is registerForEvent's job
+  // (D2 / B2 — the prefill alone did not do it). isStaff drives what the
+  // visitor SEES; isStaffSession() fails open on any error (returns false), so
+  // a transient blip degrades the chrome to attendee posture, not a page crash.
   let isStaff = false;
   if (signedInUser) {
     try {
@@ -343,6 +344,7 @@ export default async function PublicEventPage({
           signInHref={signInHref ?? undefined}
           unlinkedRegistrationsCount={unlinkedCount}
           signedIn={signedInUser !== null}
+          isStaff={isStaff}
         />
 
         {/* Share QR — compact, sits inside the rhythm; no separate card chrome. */}

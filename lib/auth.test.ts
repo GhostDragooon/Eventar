@@ -16,16 +16,19 @@ vi.mock('next/headers', () => ({ cookies: cookiesMock }));
 vi.mock('@/lib/supabase/admin', () => ({ supabaseAdmin: () => 'admin-client-marker' }));
 
 import { afterEach, describe, expect, it } from 'vitest';
-import { requireStaff, NotAuthorizedError } from './auth';
+import { AuthRetryableFetchError, AuthSessionMissingError } from '@supabase/supabase-js';
+import { requireStaff, NotAuthorizedError, getStaffSessionState, isStaffSession } from './auth';
 
 // Fabricate a minimal supabase client shape that requireStaff depends on.
 // The fake chain actually APPLIES each .eq(field, value) predicate against
 // the fixture row (nulling it out on a mismatch), so a regression that
 // removes a .eq(...) call from requireStaff is caught here rather than
 // silently passing regardless of the filter.
-function mockClient({ user, staffRow }: {
+function mockClient({ user, staffRow, userError = null, staffError = null }: {
   user: { email: string } | null;
   staffRow: { id: string; email: string; role: 'organizer' | 'manager'; full_name: string | null; status: string } | null;
+  userError?: Error | null;
+  staffError?: { code: string; message: string } | null;
 }) {
   function makeChain(row: typeof staffRow) {
     return {
@@ -39,13 +42,13 @@ function mockClient({ user, staffRow }: {
       // that shape so `status` (filter-only) never leaks into the returned
       // Staff object, matching real Postgres SELECT-column behavior.
       maybeSingle: async () => ({
-        data: row ? { id: row.id, email: row.email, role: row.role, full_name: row.full_name } : null,
-        error: null,
+        data: staffError ? null : row ? { id: row.id, email: row.email, role: row.role, full_name: row.full_name } : null,
+        error: staffError,
       }),
     };
   }
   return {
-    auth: { getUser: async () => ({ data: { user }, error: null }) },
+    auth: { getUser: async () => ({ data: { user }, error: userError }) },
     from: () => ({ select: () => makeChain(staffRow) }),
   } as any;
 }
@@ -85,6 +88,66 @@ describe('requireStaff', () => {
       staffRow: { id: 's-3', email: 'suspended@x.com', role: 'organizer', full_name: 'Suspended Person', status: 'suspended' },
     });
     await expect(requireStaff(c)).rejects.toBeInstanceOf(NotAuthorizedError);
+  });
+});
+
+// WP4/WP5 (2026-10-01): the tri-state behind every staff check. Writes act
+// only on 'not_staff'; 'unknown' must never collapse into it (N1 — the old
+// boolean failed open, so a staff-read blip read as "not staff").
+describe('getStaffSessionState', () => {
+  const activeStaff = { id: 's-1', email: 'org@x.com', role: 'organizer' as const, full_name: 'Org', status: 'active' };
+
+  it("returns 'staff' for a session whose email has an active staff row", async () => {
+    const c = mockClient({ user: { email: 'org@x.com' }, staffRow: activeStaff });
+    expect(await getStaffSessionState(c)).toBe('staff');
+  });
+
+  it("returns 'not_staff' for a signed-in session with no staff row", async () => {
+    const c = mockClient({ user: { email: 'prac@x.com' }, staffRow: null });
+    expect(await getStaffSessionState(c)).toBe('not_staff');
+  });
+
+  it("returns 'not_staff' when the staff row is not active", async () => {
+    const c = mockClient({ user: { email: 'org@x.com' }, staffRow: { ...activeStaff, status: 'suspended' } });
+    expect(await getStaffSessionState(c)).toBe('not_staff');
+  });
+
+  it("returns 'not_staff' when there is no session at all", async () => {
+    const c = mockClient({ user: null, staffRow: null, userError: new AuthSessionMissingError() });
+    expect(await getStaffSessionState(c)).toBe('not_staff');
+  });
+
+  it("returns 'unknown' when the staff read fails", async () => {
+    const c = mockClient({
+      user: { email: 'org@x.com' },
+      staffRow: activeStaff,
+      staffError: { code: '57014', message: 'canceling statement due to statement timeout' },
+    });
+    expect(await getStaffSessionState(c)).toBe('unknown');
+  });
+
+  it("returns 'unknown' when the identity read fails for a reason other than a missing session", async () => {
+    const c = mockClient({ user: null, staffRow: activeStaff, userError: new AuthRetryableFetchError('fetch failed', 0) });
+    expect(await getStaffSessionState(c)).toBe('unknown');
+  });
+});
+
+// The boolean keeps its fail-open UI semantics: only a confirmed staff row is
+// true, so a read error still renders attendee chrome instead of crashing.
+describe('isStaffSession', () => {
+  it('is true only when the state is staff', async () => {
+    const staffRow = { id: 's-1', email: 'org@x.com', role: 'organizer' as const, full_name: 'Org', status: 'active' };
+    expect(await isStaffSession(mockClient({ user: { email: 'org@x.com' }, staffRow }))).toBe(true);
+    expect(await isStaffSession(mockClient({ user: { email: 'prac@x.com' }, staffRow: null }))).toBe(false);
+  });
+
+  it('is false when the staff read fails (fail-open framing, unchanged)', async () => {
+    const c = mockClient({
+      user: { email: 'org@x.com' },
+      staffRow: { id: 's-1', email: 'org@x.com', role: 'organizer', full_name: 'Org', status: 'active' },
+      staffError: { code: '57014', message: 'timeout' },
+    });
+    expect(await isStaffSession(c)).toBe(false);
   });
 });
 
@@ -147,5 +210,19 @@ describe('requireStaff — review mode only borrows when there is no real sessio
 
     await expect(requireStaff(c)).rejects.toBeInstanceOf(NotAuthorizedError);
     expect(resolveReviewStaff).not.toHaveBeenCalled();
+  });
+
+  // No real session = no attendee identity to protect; the borrowed staff
+  // identity is a requireStaff concept only, so this stays 'not_staff'.
+  it("getStaffSessionState returns 'not_staff' under review mode with no real auth cookie", async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('EVENTAR_REVIEW_MODE', 'true');
+    cookiesMock.mockResolvedValue({ getAll: () => [{ name: 'theme', value: 'dark' }] });
+    const c = mockClient({
+      user: { email: 'org@x.com' },
+      staffRow: { id: 's-1', email: 'org@x.com', role: 'organizer', full_name: 'Org', status: 'active' },
+    });
+
+    expect(await getStaffSessionState(c)).toBe('not_staff');
   });
 });

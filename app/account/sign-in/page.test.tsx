@@ -72,6 +72,6 @@ describe('AttendeeSignInPage — trouble-signing-in help', () => {
     // /account/sign-in?error=..., which re-triggered the same redirect).
     mockSearchParams = new URLSearchParams('error=missing_code');
     render(<AttendeeSignInPage />);
-    expect(screen.getByText(/verification code/i)).toBeInTheDocument();
+    expect(screen.getByText(/this sign-in link has expired or was already used/i)).toBeInTheDocument();
   });
 });

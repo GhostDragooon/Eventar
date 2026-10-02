@@ -14,6 +14,7 @@
 
 import { supabaseAnonServer } from '@/lib/supabase/server';
 import { getRequestOrigin } from '@/lib/origin';
+import { safeNextPath } from '@/lib/authDoor';
 
 export async function sendAttendeeMagicLink(
   formData: FormData,
@@ -24,14 +25,10 @@ export async function sendAttendeeMagicLink(
   }
 
   // Optional post-sign-in destination the caller passed as a hidden form
-  // field. Same open-redirect guard as /auth/callback:23-28 — a relative
-  // path that starts with a single '/' only; anything else drops to the
-  // default. Walk-in flow round-trips /events/[id] this way.
-  const rawNext = String(formData.get('next') ?? '');
-  const nextPath =
-    rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
-      ? rawNext
-      : '/account/record';
+  // field. safeNextPath is the shared open-redirect guard (lib/authDoor.ts):
+  // a path on this origin only; anything else drops to the default. Walk-in
+  // flow round-trips /events/[id] this way.
+  const nextPath = safeNextPath(String(formData.get('next') ?? '')) ?? '/account/record';
 
   const origin = await getRequestOrigin();
   const supabase = await supabaseAnonServer();

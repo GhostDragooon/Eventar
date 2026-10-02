@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -57,12 +57,19 @@ type Props = {
    * directly. Second-pass review MODERATE 5.
    */
   signedIn?: boolean;
+  /**
+   * The session is an organiser (D2, Ivan 2026-10-01). The form stays usable
+   * (e.g. registering a colleague) but registerForEvent writes a plain guest
+   * row for staff, so the attendee lines (attribution, claim nudge) give way
+   * to one static line saying so.
+   */
+  isStaff?: boolean;
 };
 
 type FormState =
   | { kind: 'idle' }
   | { kind: 'submitting' }
-  | { kind: 'success'; email: string; emailDelivery: EmailDelivery }
+  | { kind: 'success'; name: string; email: string; emailDelivery: EmailDelivery }
   | { kind: 'error'; message: string };
 
 export default function RegisterCard({
@@ -76,13 +83,116 @@ export default function RegisterCard({
   signInHref,
   unlinkedRegistrationsCount = 0,
   signedIn = false,
+  isStaff = false,
 }: Props) {
   const [name, setName] = useState(defaultName ?? '');
   const [email, setEmail] = useState(defaultEmail ?? '');
   const [state, setState] = useState<FormState>({ kind: 'idle' });
   const [, startTransition] = useTransition();
+  // The submit button unmounts when the card swaps to its success view, which
+  // leaves keyboard focus on <body> and tells a screen reader nothing happened
+  // (Band 1 review F7). The result heading takes focus instead.
+  const successHeadingRef = useRef<HTMLHeadingElement>(null);
+  const errorRef = useRef<HTMLParagraphElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const [resetCount, setResetCount] = useState(0);
+  useEffect(() => {
+    if (state.kind === 'success') successHeadingRef.current?.focus();
+    // Same on failure: submitting disables the controls, so focus would fall to
+    // <body>. It goes to the message itself, which a screen reader then reads.
+    if (state.kind === 'error') errorRef.current?.focus();
+  }, [state.kind]);
+  useEffect(() => {
+    if (resetCount > 0) nameInputRef.current?.focus();
+  }, [resetCount]);
 
   const atCapacity = maxAttendees !== null && currentCount >= maxAttendees;
+
+  // Checked FIRST, ahead of the closed and at-capacity cards below: registering
+  // revalidates the page, which re-renders this card with the new count, so the
+  // person who just took the last seat used to be told "At capacity" instead of
+  // "See you on the day" (dev-lens round 2). A result on screen outranks the
+  // current state of the event.
+  // ─── State 3: Success (PR — post-register) ────────────────────────────
+  // §4 IA order: Pill → Hero → (Event card lives on the page above this
+  // component) → Email delivery-honest sentence → Pass-later note → Fine print.
+  // Pre-2026-08-27 this block claimed "a confirmation has been sent" regardless
+  // of what actually happened, and gestured at scanning "the QR code" — but
+  // Email #1 carries no QR (that is Email #2, the pass, which arrives closer to
+  // the event). Both lies fixed together per playbook items 1 + 2.
+  if (state.kind === 'success') {
+    const deliveryCopy = successDeliveryCopy(state.emailDelivery, state.email, isStaff);
+    return (
+      <Section>
+        <span className="font-label-md text-label-md px-sm py-xs rounded-full uppercase inline-flex items-center gap-sm bg-success-container text-on-success-container border border-transparent self-start">
+          <span className="material-symbols-outlined text-[calc(14px*var(--text-scale))]" data-fill="1" aria-hidden>check_circle</span>
+          {isStaff ? 'Guest registered' : <>You&apos;re registered</>}
+        </span>
+        <h2
+          ref={successHeadingRef}
+          tabIndex={-1}
+          className="font-headline-sm text-headline-sm text-on-surface m-0 outline-none"
+        >
+          {isStaff ? 'Registered as a guest' : 'See you on the day'}
+        </h2>
+        {/* Who was just registered, so an organiser can spot a typo without
+            going to the roster (Band 1 review F10). */}
+        {isStaff && (
+          <p className="font-body-md text-body-md text-on-surface m-0 [overflow-wrap:anywhere]">
+            <strong>{state.name}</strong>{' '}
+            <span className="text-on-surface-variant">({state.email})</span>
+          </p>
+        )}
+        <div className="flex flex-col gap-0">
+          <p className="font-body-md text-body-md text-on-surface m-0">
+            {deliveryCopy}
+          </p>
+          {/* Item 2: pass timing. The check-in QR + manual code live on Email
+              #2, which fires ~60 min before start — not in the confirmation.
+              An organiser registered someone else: the pass goes to the guest. */}
+          <p className="font-body-md text-body-md text-on-surface m-0">
+            {isStaff
+              ? 'Closer to the event the guest receives their personal check-in pass by email.'
+              : <>Closer to the event we&apos;ll email your personal check-in pass.</>}
+          </p>
+        </div>
+        {/* Item 3: inline dev-stub marker in the success block. Rendered here
+            only when the parent tells us delivery is stubbed; the same strip
+            appears at the top of the operator dashboard. */}
+        {!deliveryLive && <DevEmailStubStrip />}
+        {/* Cancel fine print: only mention "reply to your confirmation email"
+            when a confirmation email was actually accepted by the provider.
+            In the queued_dev (stub) and failed branches, no email reached the
+            attendee, so directing them at a non-existent inbox is the same
+            class of rule-12 lie the primary copy fix just closed. Not shown to
+            an organiser: this tab is not the guest's proof of anything. */}
+        {!isStaff && (
+          <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant m-0">
+            {state.emailDelivery === 'sent'
+              ? 'Need to cancel? Reply to your confirmation email.'
+              : 'Need to cancel? See event staff at check-in — this browser tab is your proof of registration.'}
+          </p>
+        )}
+        {/* An organiser at a desk registers several people in a row; the form
+            used to vanish and only a reload brought it back. */}
+        {isStaff && (
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11 w-full"
+            onClick={() => {
+              setName('');
+              setEmail('');
+              setState({ kind: 'idle' });
+              setResetCount((n) => n + 1);
+            }}
+          >
+            Register another guest
+          </Button>
+        )}
+      </Section>
+    );
+  }
 
   // ─── State 6: Registration window closed (form layer of the 3-layer
   // rule — the Server Action enforces the same boundary authoritatively).
@@ -121,65 +231,27 @@ export default function RegisterCard({
     );
   }
 
-  // ─── State 3: Success (PR — post-register) ────────────────────────────
-  // §4 IA order: Pill → Hero → (Event card lives on the page above this
-  // component) → Email delivery-honest sentence → Pass-later note → Fine print.
-  // Pre-2026-08-27 this block claimed "a confirmation has been sent" regardless
-  // of what actually happened, and gestured at scanning "the QR code" — but
-  // Email #1 carries no QR (that is Email #2, the pass, which arrives closer to
-  // the event). Both lies fixed together per playbook items 1 + 2.
-  if (state.kind === 'success') {
-    const deliveryCopy = successDeliveryCopy(state.emailDelivery, state.email);
-    return (
-      <Section>
-        <span className="font-label-md text-label-md px-sm py-xs rounded-full uppercase inline-flex items-center gap-sm bg-success-container text-on-success-container border border-transparent self-start">
-          <span className="material-symbols-outlined text-[calc(14px*var(--text-scale))]" data-fill="1" aria-hidden>check_circle</span>
-          You&apos;re registered
-        </span>
-        <h2 className="font-headline-sm text-headline-sm text-on-surface m-0">
-          See you on the day
-        </h2>
-        <div className="flex flex-col gap-0">
-          <p className="font-body-md text-body-md text-on-surface m-0">
-            {deliveryCopy}
-          </p>
-          {/* Item 2: pass timing. The check-in QR + manual code live on Email
-              #2, which fires ~60 min before start — not in the confirmation. */}
-          <p className="font-body-md text-body-md text-on-surface m-0">
-            Closer to the event we&apos;ll email your personal check-in pass.
-          </p>
-        </div>
-        {/* Item 3: inline dev-stub marker in the success block. Rendered here
-            only when the parent tells us delivery is stubbed; the same strip
-            appears at the top of the operator dashboard. */}
-        {!deliveryLive && <DevEmailStubStrip />}
-        {/* Cancel fine print: only mention "reply to your confirmation email"
-            when a confirmation email was actually accepted by the provider.
-            In the queued_dev (stub) and failed branches, no email reached the
-            attendee, so directing them at a non-existent inbox is the same
-            class of rule-12 lie the primary copy fix just closed. */}
-        <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant m-0">
-          {state.emailDelivery === 'sent'
-            ? 'Need to cancel? Reply to your confirmation email.'
-            : 'Need to cancel? See event staff at check-in — this browser tab is your proof of registration.'}
-        </p>
-      </Section>
-    );
-  }
-
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setState({ kind: 'submitting' });
     startTransition(async () => {
-      const res = await registerForEvent({ event_id: eventId, full_name: name, email });
-      if ('error' in res) {
-        setState({ kind: 'error', message: res.error });
-      } else {
-        setState({
-          kind: 'success',
-          email: email.trim().toLowerCase(),
-          emailDelivery: res.emailDelivery,
-        });
+      try {
+        const res = await registerForEvent({ event_id: eventId, full_name: name, email });
+        if ('error' in res) {
+          setState({ kind: 'error', message: res.error });
+        } else {
+          setState({
+            kind: 'success',
+            name: name.trim(),
+            email: email.trim().toLowerCase(),
+            emailDelivery: res.emailDelivery,
+          });
+        }
+      } catch {
+        // A rejected Server Action (network down) used to reach the error
+        // boundary and replace the whole page with the crash screen. Say what
+        // happened and leave the form as it was (rule 12).
+        setState({ kind: 'error', message: "We couldn't complete the registration just now. Try again." });
       }
     });
   }
@@ -209,6 +281,13 @@ export default function RegisterCard({
           </span>
         </p>
       )}
+      {/* Organiser session (D2): replaces the attribution line + claim nudge
+          below, which describe an attendee account organisers don't have. */}
+      {isStaff && (
+        <p className="font-body-md text-body-md text-on-surface-variant m-0">
+          You&apos;re signed in as an organiser. This creates a guest registration.
+        </p>
+      )}
       {/* Signed-in attribution line: makes the prefill visible so a
           shared-inbox signer registering a colleague notices the defaults
           before they submit. Belt to the server-side email-match guard's
@@ -221,7 +300,7 @@ export default function RegisterCard({
           the actual value lives). "Not you?" prompt fires only while the
           form still matches the pre-filled defaults; once edited, the
           factual "Registering as X" remains but the prompt drops. */}
-      {signedIn && (name || email) && (
+      {!isStaff && signedIn && (name || email) && (
         <p className="font-body-md text-body-md text-on-surface-variant m-0">
           Registering as{' '}
           <span className="text-on-surface font-semibold">
@@ -237,7 +316,7 @@ export default function RegisterCard({
           not visible to a walk-in who came from an event page and landed
           back on it after OTP. Surfacing the count here closes that gap
           (user-lens IMPORTANT 2). */}
-      {signedIn && unlinkedRegistrationsCount > 0 && (
+      {!isStaff && signedIn && unlinkedRegistrationsCount > 0 && (
         <p
           role="status"
           className="font-body-md text-body-md text-on-surface-variant bg-primary-fixed border border-outline-variant rounded-lg px-md py-sm flex items-start gap-sm m-0"
@@ -262,11 +341,15 @@ export default function RegisterCard({
             Full name
           </span>
           <Input
+            ref={nameInputRef}
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
             maxLength={100}
-            placeholder="Your name"
+            placeholder={isStaff ? "Guest's name" : 'Your name'}
+            // An organiser is typing someone else's details; do not let the
+            // browser offer their own.
+            autoComplete={isStaff ? 'off' : 'name'}
             disabled={isSubmitting}
           />
         </label>
@@ -279,15 +362,18 @@ export default function RegisterCard({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            placeholder="you@example.com"
+            placeholder={isStaff ? 'guest@example.com' : 'you@example.com'}
+            autoComplete={isStaff ? 'off' : 'email'}
             disabled={isSubmitting}
           />
         </label>
 
         {errorMessage && (
           <p
+            ref={errorRef}
+            tabIndex={-1}
             role="alert"
-            className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
+            className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm outline-none"
           >
             <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>
               warning
@@ -326,7 +412,7 @@ function Section({ children }: { children: React.ReactNode }) {
  * `<strong>{email}</strong>` inline); the other two never name the recipient,
  * matching the playbook copy exactly.
  */
-function successDeliveryCopy(emailDelivery: EmailDelivery, email: string): React.ReactNode {
+function successDeliveryCopy(emailDelivery: EmailDelivery, email: string, isStaff: boolean): React.ReactNode {
   if (emailDelivery === 'sent') {
     return (
       <>
@@ -334,9 +420,15 @@ function successDeliveryCopy(emailDelivery: EmailDelivery, email: string): React
       </>
     );
   }
+  // An organiser registered a guest (D2): the attendee lines tell a person at
+  // this screen to show it to staff, which makes no sense here.
   if (emailDelivery === 'queued_dev') {
-    return "You're registered. Email delivery is in dev mode — check the operator console.";
+    return isStaff
+      ? 'Registered. Email delivery is in dev mode, so check the operator console.'
+      : "You're registered. Email delivery is in dev mode — check the operator console.";
   }
   // failed
-  return "You're registered. We couldn't send email; show this screen to staff.";
+  return isStaff
+    ? 'Registered, but the confirmation email did not send. Check the address and contact the guest another way.'
+    : "You're registered. We couldn't send email; show this screen to staff.";
 }

@@ -102,8 +102,10 @@ export function isReviewMode(): boolean {
  * function, so both layers open and close together and there is one thing to
  * audit") already claimed, before this fix actually made it true. Found
  * 2026-09-17 via live user-lens review: a real non-staff session under review
- * mode sailed past proxy.ts's own specific "not on the organizer list"
- * rejection into a bare, unlabelled `/login` bounce from the page layer.
+ * mode sailed past proxy.ts's own specific rejection into a bare, unlabelled
+ * `/login` bounce from the page layer. (That rejection is now a redirect to
+ * `/login?error=not_organiser`, which explains the session and keeps it; on
+ * 2026-09-17 it was a "not on the organizer list" message plus a sign-out.)
  */
 export function isRealAuthCookiePresent(cookies: Array<{ name: string }>): boolean {
   return cookies.some((c) => c.name.startsWith('sb-') && c.name.includes('auth-token'));

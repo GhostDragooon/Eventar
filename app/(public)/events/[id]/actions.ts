@@ -9,6 +9,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { rateLimitByIp } from '@/lib/rateLimit';
 import { registrationInputSchema, type RegisterResult, type EmailDelivery } from './schema';
 import { generateRegistrationCode } from '@/lib/registrationCode';
+import { getStaffSessionState } from '@/lib/auth';
 import { CHECKIN_OPEN_MINUTES } from '@/lib/lifecycle/eventLifecycle';
 // TEMP: dual import while RESEND_API_KEY is being set up.
 // REMOVE both lines + the env-switch below once the key is in .env.local.
@@ -67,8 +68,17 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
   // alice@work.com would get Bob's user_id + Bob's licence credited on
   // Alice's check-in (D4 review, both lenses). Case-insensitive comparison
   // matches the registrations_lowercase_email trigger's normalisation.
-  const canAttachUserId =
+  const emailMatchesSession =
     authedUserId != null && authedEmail != null && authedEmail === email.toLowerCase().trim();
+  // ...and only for a CONFIRMED non-staff session (D2, Ivan 2026-10-01; finding
+  // B2): an organiser's registration is a plain guest row even with their own
+  // email. This is the only gate — the insert runs as service_role, so no RLS
+  // policy sees staff status — so 'unknown' (staff read failed) fails closed
+  // like 'staff'. Read only when attaching is otherwise possible: the
+  // anonymous guest path makes no extra call.
+  const staffState = emailMatchesSession ? await getStaffSessionState(anon) : null;
+  if (staffState === 'unknown') console.warn('[registerForEvent] staff state unknown; registering as guest');
+  const canAttachUserId = emailMatchesSession && staffState === 'not_staff';
 
   // Step 2 — event must exist and be published. Anon RLS already filters
   // non-published events, but selecting explicit columns lets us read
@@ -212,10 +222,10 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
         // service_role or definer). The registrations_guest_insert_no_user_id
         // trigger blocks any authenticated/anon direct INSERT that carries
         // a user_id; this admin path passes because current_user is
-        // service_role, not in the trigger's blocklist. When the form email
-        // does not match the caller's own auth email (canAttachUserId
-        // false), user_id + snapshot both stay null — the row lands as a
-        // plain guest.
+        // service_role, not in the trigger's blocklist. When canAttachUserId
+        // is false — the form email does not match the caller's own auth
+        // email, or the session is staff / of unknown staff status (D2) —
+        // user_id + snapshot both stay null: the row lands as a plain guest.
         user_id: canAttachUserId ? authedUserId : null,
         profile_snapshot: canAttachUserId ? profileSnapshot : null,
       })
@@ -251,7 +261,7 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
     // for `unique (event_id, email)`); the code-collision branch above
     // already retried + bailed on registrations_code_unique.
     if (regErr?.code === '23505' && regErr.message.includes('registrations_event_id_email_key')) {
-      return { error: "You're already registered for this event." };
+      return { error: 'That email is already registered for this event.' };
     }
     return { error: 'Registration failed. Please try again.' };
   }

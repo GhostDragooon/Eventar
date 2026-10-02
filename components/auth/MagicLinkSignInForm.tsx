@@ -23,10 +23,11 @@ type Props = {
   /**
    * Which surface is rendering this form. Only difference today is the
    * help-text sentence under the input — organizer references an allowlist,
-   * attendee cannot (self-serve sign-up). Default preserves organizer copy
-   * so existing callers stay identical.
+   * attendee cannot (self-serve sign-up), and an invitee is not on any list
+   * yet: accepting the invite is what puts them on one. Default preserves
+   * organizer copy so existing callers stay identical.
    */
-  audience?: 'organizer' | 'attendee';
+  audience?: 'organizer' | 'attendee' | 'invitee';
 };
 
 export function MagicLinkSignInForm({
@@ -38,18 +39,30 @@ export function MagicLinkSignInForm({
   audience = 'organizer',
 }: Props) {
   const [pending, startTransition] = useTransition();
-  const [status, setStatus] = useState<AuthStatus | null>(
+  // The error the page arrived with (an expired link, a failed role check) sits
+  // above the form, where it is seen before the field it asks you to use again;
+  // it used to render after the submit button, below the fold on a laptop
+  // (Band 1 review F4). What a submit returns still lands under the button.
+  const [notice, setNotice] = useState<AuthStatus | null>(
     initialError ? { kind: 'error', message: initialError } : null,
   );
+  const [status, setStatus] = useState<AuthStatus | null>(null);
 
   function submit(formData: FormData) {
+    setNotice(null);
     setStatus(null);
+    // The field clears when the action completes; naming the address lets a
+    // mistyped one be spotted instead of waiting for an email that never comes.
+    const sentTo = String(formData.get('email') ?? '').trim();
     startTransition(async () => {
       const result = await submitMagicLink(formData);
       setStatus(
         'error' in result
           ? { kind: 'error', message: result.error }
-          : { kind: 'success', message: 'Check your inbox for a sign-in link.' },
+          : {
+              kind: 'success',
+              message: sentTo ? `Check your inbox (${sentTo}) for a sign-in link.` : 'Check your inbox for a sign-in link.',
+            },
       );
     });
   }
@@ -61,6 +74,7 @@ export function MagicLinkSignInForm({
   // guarantee.
   return (
     <form action={submit} className="space-y-md">
+      {notice && <AuthStatusMessage status={notice} />}
       {next && <input type="hidden" name="next" value={next} />}
       <label className="block space-y-xs">
         <span className="font-label-md text-label-md text-on-surface">Email address</span>
@@ -82,9 +96,15 @@ export function MagicLinkSignInForm({
         Eventar will send a one-time sign-in link.{' '}
         {audience === 'attendee'
           ? 'The response does not reveal whether an account already exists.'
-          : 'The response does not reveal whether an address is on the organizer list.'}
+          : audience === 'invitee'
+            ? 'Use the address you want for your organiser account.'
+            : 'The response does not reveal whether an address is on the organizer list.'}
       </p>
-      <Button type="submit" disabled={pending} className="min-h-11 w-full font-label-md text-label-md">
+      {/* text-on-primary!: tailwind-merge reads `text-label-md` (a font size) as
+          a text colour and drops the Button's own text-on-primary, leaving dark
+          text on the blue fill (3.82:1, and 1.96:1 in dark). Remove the `!` when
+          cn() learns the type scale (G1 token sweep). */}
+      <Button type="submit" disabled={pending} className="min-h-11 w-full font-label-md text-label-md text-on-primary!">
         <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>mail</span>
         {pending ? 'Sending…' : submitLabel}
       </Button>

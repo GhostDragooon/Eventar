@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { classifyPath, safeNextPath } from '@/lib/authDoor';
 
 // IMPORTANT: do not use the @/lib/supabase/server helper here. In Next 15+/16
 // Route Handlers, cookies set via the implicit `cookies()` store are NOT
@@ -11,36 +12,31 @@ import { createServerClient } from '@supabase/ssr';
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
-  const rawNext = url.searchParams.get('next');
-  // Attendee-supplied `next` isn't always /account-prefixed — the public
-  // event page's sign-in link round-trips back to /events/[id] (see
-  // app/(public)/events/[id]/page.tsx). changeEmail's organizer branch is
-  // the literal '/settings', so '/account'/'/events/' used to be
-  // attendee-only signals. That stopped being true 2026-09-24: the landing
-  // page's "Start an Event" CTA now sends staff through /login?next=/events/new
-  // (app/login/actions.ts), which also starts with '/events/' — carve it out
-  // explicitly so a failed organiser OTP exchange still bounces to /login,
-  // not the attendee door.
-  const errorBase =
-    (rawNext?.startsWith('/account') || rawNext?.startsWith('/events/')) &&
-    rawNext !== '/events/new'
-      ? '/account/sign-in'
-      : '/login';
-
-  if (!code) {
-    return NextResponse.redirect(new URL(`${errorBase}?error=missing_code`, url));
-  }
-
   // Same-origin redirect target the sign-in surface passed in
   // (?next=/account for attendee flows, unset for the pre-plan staff flow
-  // which continues to land on /dashboard). Guard against open-redirect —
-  // only accept a relative path that starts with a single '/'. Anything
-  // else silently falls back to the staff default.
-  const nextPath =
-    rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
-      ? rawNext
-      : '/dashboard';
-  const response = NextResponse.redirect(new URL(nextPath, url));
+  // which continues to land on /dashboard). safeNextPath is the open-redirect
+  // guard: anything that is not a path on this origin is dropped, and the
+  // success redirect falls back to the staff default.
+  const safeNext = safeNextPath(url.searchParams.get('next'));
+  // A failed sign-in bounces back to the door it started from. Both audiences
+  // share this callback, and `next` is the only signal of which one — the
+  // attendee door's links carry /account/* or the public /events/<id> page,
+  // the organiser door's carry staff routes, /invite/<token> or nothing.
+  // lib/authDoor.ts holds the explicit inventory (it replaced a path-prefix
+  // heuristic that sent organiser sub-routes under /events/<id>/ to the
+  // attendee door — finding I4, 2026-09-25). Neutral or unknown → /login,
+  // the same default a bare callback has always had.
+  const errorBase = classifyPath(safeNext) === 'attendee' ? '/account/sign-in' : '/login';
+  // The error redirect keeps `next`, so a re-requested link (an expired or
+  // already-used one) still lands the invitee on /invite/<token> instead of
+  // silently dropping them on /dashboard and the wrong door.
+  const keepNext = safeNext ? `&next=${encodeURIComponent(safeNext)}` : '';
+
+  if (!code) {
+    return NextResponse.redirect(new URL(`${errorBase}?error=missing_code${keepNext}`, url));
+  }
+
+  const response = NextResponse.redirect(new URL(safeNext ?? '/dashboard', url));
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -58,7 +54,7 @@ export async function GET(request: NextRequest) {
 
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
-    return NextResponse.redirect(new URL(`${errorBase}?error=exchange_failed`, url));
+    return NextResponse.redirect(new URL(`${errorBase}?error=exchange_failed${keepNext}`, url));
   }
 
   return response;

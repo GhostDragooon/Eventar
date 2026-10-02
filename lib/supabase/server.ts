@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { isReviewMode, hasRealAuthCookie } from '@/lib/reviewMode';
+import { retryStaleJwt } from '@/lib/supabase/retryStaleJwt';
 
 export async function supabaseServer() {
   // LOCAL REVIEW BYPASS. Staff pages read through this client under RLS; with
@@ -45,6 +46,9 @@ export async function supabaseAnonServer() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // A fresh session's first burst of reads can be refused by PostgREST 14
+      // ("JWT issued at future"); see the module for why one retry is safe.
+      global: { fetch: retryStaleJwt() },
       cookies: {
         getAll: () => cookieStore.getAll(),
         setAll: (toSet) => {
