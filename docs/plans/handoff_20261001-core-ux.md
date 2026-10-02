@@ -70,7 +70,7 @@ WP1–WP5 (the 09-25 plan) run first · funnels into the attendee portal: hero p
 
 ## 7. Band 1 (the wall, WP1–WP5): implementation record, 2026-10-01 → 02
 
-**Status: committed on `main` at `89910b0` (Ivan's go-ahead, 2026-10-02); not pushed.** Static gates green (§7.6). Checks run: dev-lens review ×2 (the second on the post-review delta), user-lens review ×1, a live backtest, and my own live re-checks of every fix. Evidence tags as above; **[X]** now also covers the local stack on :3100 with `EVENTAR_REVIEW_MODE=false`.
+**Status: committed on `main` at `89910b0` and pushed to `origin/main` with the docs commit `1795cfa` (Ivan's go-ahead, 2026-10-02).** Static gates green (§7.6). Checks run: dev-lens review ×2 (the second on the post-review delta), user-lens review ×1, a live backtest, and my own live re-checks of every fix. Evidence tags as above; **[X]** now also covers the local stack on :3100 with `EVENTAR_REVIEW_MODE=false`.
 
 ### 7.1 What shipped, by work package (behaviour, not file list)
 
@@ -147,7 +147,7 @@ D12 direction C (Atmospheric) for both portals + landing hero pair · D13 ground
 
 ### 7.8 Open for Ivan
 
-1. ~~Commit go-ahead~~ **Done:** code and tests at `89910b0` (47 files), this record in the following docs commit. **Still unstaged and NOT part of Band 1:** the peer session's `app/globals.css` + `app/globals.test.ts` (`--primary-ink` dark fix), `.specify/*` (constitution draft and templates), `supabase/snippets/`. Nothing is pushed to `origin`.
+1. ~~Commit go-ahead~~ **Done:** code and tests at `89910b0` (47 files), this record in the following docs commit. **Still unstaged and NOT part of Band 1:** the peer session's `app/globals.css` + `app/globals.test.ts` (`--primary-ink` dark fix), `.specify/*` (constitution draft and templates), `supabase/snippets/`. Those stay local; everything else is pushed.
 2. **PostgREST stale clock:** confirm which PostgREST version Seoul runs (dashboard → Infrastructure), and whether to add the retry to `proxy.ts` (one line).
 3. **`cn()` / tailwind-merge (§7.2 item 4):** keep the local `!` workaround and fold the root fix into G1, or fix `cn()` now (three non-Band-1 spots change size).
 4. **The invite peek function** (§7.3 round 2, M1): build `peek_invite_token` now as a small local-only migration, or leave it to Lane B? Recommended: Lane B, right after the Band 1 commit (it also gives the invite page the organisation and role before sign-in).
