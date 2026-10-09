@@ -1,5 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
-import { requireStaff, NotAuthorizedError } from '@/lib/auth';
+import { requireStaff, NotAuthorizedError, canManageEvent } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { StaffShell } from '@/components/shell/StaffShell';
 import {
@@ -76,7 +76,7 @@ export default async function EventAnalyticsPage({
   const [eventRes, regsRes, surveysRes, blocksRes] = await Promise.all([
     supabase
       .from('events')
-      .select('id, title, start_time, end_time, timezone, venue_name, max_attendees, status')
+      .select('id, title, start_time, end_time, timezone, venue_name, max_attendees, status, organisation_id')
       .eq('id', id)
       .maybeSingle(),
     supabase.from('registrations').select('id, status, check_in_at').eq('event_id', id),
@@ -95,6 +95,11 @@ export default async function EventAnalyticsPage({
 
   if (eventRes.error) throw eventRes.error;
   if (!eventRes.data) notFound();
+  // Any signed-in session can read a published event, but its registrations and
+  // survey answers are RLS-scoped to the owning organisation, so without this
+  // another organisation's staff get a page of confident zeros. 404 like /details,
+  // which is where a redirect would only lead them to a 404.
+  if (!canManageEvent(eventRes.data, staff)) notFound();
   if (regsRes.error) throw regsRes.error;
   if (surveysRes.error) throw surveysRes.error;
   if (blocksRes.error) throw blocksRes.error;

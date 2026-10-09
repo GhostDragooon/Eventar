@@ -136,6 +136,10 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
 
   if (eventRes.error) throw eventRes.error;
   if (!eventRes.data) notFound();
+  // Any signed-in session can read a published event, but this page renders
+  // admin-client values that are the owning organisation's alone (credits issued,
+  // authorised accrediting bodies). 404: there is no read-only view to fall back to.
+  if (!canManageEvent(eventRes.data, staff)) notFound();
   if (regsRes.error) throw regsRes.error;
   if (surveysRes.error) throw surveysRes.error;
   if (blocksRes.error) throw blocksRes.error;
@@ -250,10 +254,9 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
   const responseCount = surveys.length;
   const attended = regs.filter((r) => r.status === 'attended').length;
   const missingEvidence = Math.max(0, attended - checkinEvidenceCount);
-  // Gate the admin email_log count on owner-or-manager. supabaseAdmin bypasses
-  // RLS, so without this gate a peer organizer could read the confirmations-sent
-  // count for any event by typing the URL. Non-authorized readers see 0, which
-  // is consistent with the all-zero RLS-gated registration counts they'll see.
+  // Always true now that the page gate above 404s non-managers. Still guards the
+  // email and evidence panels below; credits issued and authorised bodies rely on
+  // the page gate alone, so dropping it re-exposes them.
   const canSeeConfirmationsSent = canManageEvent(event, staff);
   const confirmationsSent = canSeeConfirmationsSent
     ? (confirmationsRes.count ?? 0)
