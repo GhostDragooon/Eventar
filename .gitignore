@@ -43,3 +43,6 @@ next-env.d.ts
 
 # local demo artifacts (rendered emails, etc.) — scripts/demo/*
 /scratch-demo/
+
+# Playwright MCP browser logs and page snapshots
+/.playwright-mcp/
