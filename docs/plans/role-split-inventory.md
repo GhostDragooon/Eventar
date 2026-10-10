@@ -20,29 +20,31 @@ proved this blast radius is real — `is_manager()`, `pseudonymise_user`, `trans
 `mark_attended`, `publish_event` and a fistful of fixtures all hardcoded role literals and
 all needed coordinated changes. The **mitigating** finding from the live sweep below: the
 blast radius is real but **partially pre-consolidated** — most sites already route through
-three existing indirection points (`is_manager()`, `is_eventar_staff()`,
-`require_active_staff()`), so the refactor extends three choke points rather than rewriting
+a few indirection points (`is_eventar_staff()`, `require_active_staff()`, and since 2026-10-10
+`staff_for_subject()` and `is_org_admin()`; `is_manager()` was dropped), so the refactor extends four choke points rather than rewriting
 dozens of scattered comparisons. That's the good news; the inventory is still mandatory.
 
 ## Full live blast radius (queried against the DB, not migration history)
 
-### A. The three existing indirection points — extend these, don't bypass
+### A. The existing indirection points — extend these, don't bypass
 | Site | Current role logic | Refactor action |
 |---|---|---|
-| `app_private.is_manager()` | `role in ('organiser_admin','eventar_staff')` | resolve via platform-role mapping |
+| ~~`app_private.is_manager()`~~ | dropped 2026-10-10 (migration `20261010083221`, Q43): it had no organisation test, and seven read policies built on it exposed every organisation's people, audit log and staff | none; do not reintroduce a role-only check in a tenant-data policy |
 | `app_private.is_eventar_staff()` | `role = 'eventar_staff'` | resolve via platform-role mapping |
+| `app_private.is_org_admin(p_org_id)` (added 2026-10-10, migration `20261010083221`) | hard-codes `role = 'organiser_admin'`, `status = 'active'` and the organisation (and `staff_self_read` adds `role <> 'eventar_staff'`) | resolve via platform-role mapping; replaces `is_manager()` as a choke point, used by `staff_self_read` |
 | `app_private.require_active_staff(variadic p_roles)` | callers pass raw role literals as args | args become platform-role enum values; body labels resolved before the call |
+| `app_private.staff_for_subject(p_subject)` (added 2026-10-10, migration `20261010000725`) | hard-codes `role = 'eventar_staff'` (any subject) and `role = 'organiser_admin'` plus a registration at the caller's organisation | resolve via platform-role mapping; a fourth choke point, used by `transition_dsr` and the `dsr_staff_read` policy (erasure does not use it) |
 
 ### B. Definer functions passing raw role literals to `require_active_staff(...)`
 | Function | Literal args today |
 |---|---|
-| `transition_dsr` | `('organiser_admin','eventar_staff')` |
+| `transition_dsr` | ~~`('organiser_admin','eventar_staff')`~~ since 2026-10-10 routes through `staff_for_subject` (see A), no longer a `require_active_staff` literal |
 | `mark_attended` | `('organiser_admin','organiser_member','eventar_staff')` |
 | `publish_event` | `('organiser_admin','organiser_member','eventar_staff')` |
 | `verify_licence` | `('body_admin','eventar_staff')` |
 | `lapse_licence` | `('body_admin','eventar_staff')` |
 | `revoke_licence` | `('body_admin','eventar_staff')` |
-| `pseudonymise_user` | inline `role in ('organiser_admin','eventar_staff')` (not via the helper) |
+| `pseudonymise_user` | inline `role = 'eventar_staff'` (platform-only since 2026-10-10; was `('organiser_admin','eventar_staff')`) |
 
 ### C. RLS policies with role literals **inlined** (not via a helper) — the easy-to-miss ones
 | Table | Policy | Inline literal |
@@ -51,9 +53,13 @@ dozens of scattered comparisons. That's the good news; the inventory is still ma
 | `practitioner_licences` | `practitioner_licences_body_admin_read` | `s.role = ANY(ARRAY['body_admin','eventar_staff'])` |
 
 ### D. RLS policies routing through the helpers (change once the helpers change — no per-policy edit)
-`audit_events_staff_read`, `consent_staff_read`, `dsr_staff_all`, `organisations_staff_read`,
-`users_staff_read` — all `is_manager() OR is_eventar_staff()`. These are covered by fixing A;
-listed so the refactor knows they're *already* consolidated and don't need touching individually.
+`audit_events_staff_read`, `consent_staff_read`, `users_staff_read`, `professional_profiles_staff_read`,
+`society_memberships_staff_read`, `additional_appointments_staff_read` — `is_eventar_staff()` alone since
+2026-10-10 (they were `is_manager() OR is_eventar_staff()`; Q43). `staff_self_read` — own row,
+`is_eventar_staff()` or `is_org_admin(organisation_id)`. `organisations_staff_read` — `is_eventar_staff()`
+plus an inline staff subquery. These are covered by fixing A; listed so the refactor knows they're
+*already* consolidated and don't need touching individually.
+(2026-10-10: `dsr_staff_all` was replaced by `dsr_staff_read`, SELECT only, keyed on `staff_for_subject`, see A.)
 
 ### E. TS app-layer sites (frozen frontend — change with the unfreeze, not before)
 | File:line | Check |
@@ -72,9 +78,10 @@ time, they're mechanical once A–E are settled.
 
 ## Sequencing note for the eventual execution
 1. Add the platform-role enum + `body_role_mappings` (additive, no behaviour change).
-2. Fix the three choke points (A) to resolve through the mapping.
+2. Fix the choke points (A) to resolve through the mapping.
 3. Convert the two inline policies (C) and `pseudonymise_user`'s inline check.
 4. `require_active_staff` callers (B) — arg lists become platform-role values.
-5. TS sites (E) — **with** the frontend unfreeze, not before (and remember `is_manager()`'s
-   coverage was never extended to the 4 TS `eventar_staff`-only checks — see DEFERRED).
+5. TS sites (E) — **with** the frontend unfreeze, not before (and remember the 4 TS
+   `eventar_staff`-only checks were never widened to `organiser_admin` — see DEFERRED; `is_manager()`,
+   whose coverage they were meant to match, was dropped 2026-10-10).
 6. Fixtures (F) last, driven by `tsc`/`test:rls` red.
