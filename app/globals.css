@@ -430,6 +430,8 @@
     color-scheme: dark;
 
     --primary: #7fb0f4;
+    /* Keep identical to :root.dark below (tested: app/globals.test.ts). */
+    --primary-ink: #7fb0f4;
     --on-primary: #0b1b3e;
     --primary-container: rgba(108, 170, 239, 0.14);
     --on-primary-container: #cfe2fa;
