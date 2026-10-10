@@ -15,6 +15,9 @@
 -- blanket grant doesn't silently undo them. Keep this list in sync with the
 -- migrations' table-level revokes (audit_events / credit_ledger /
 -- practitioner_licences) — a new audited table must be added here too.
+-- DML only, on purpose: never widen this to ALL. That hands TRUNCATE and TRIGGER back to the API roles
+-- (20261010175112_revoke_truncate_and_trigger_from_api_roles.sql); the sweep in
+-- tests/rls/audited_table_writes.rls.test.ts fails if it does.
 grant select, insert, update, delete on all tables in schema public
   to anon, authenticated, service_role;
 grant usage, select on all sequences in schema public

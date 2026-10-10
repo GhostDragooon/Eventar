@@ -37,6 +37,13 @@
 // table-level grant revoke blocks it. This is the exact hole caught four times
 // across Sprints 2/3 (D1, the anon gap, credit_ledger C3, practitioner_licences).
 //
+// TRUNCATE and TRIGGER (added 2026-10-11) are the privileges none of those revokes covered:
+// the platform's default privileges hand both to anon, authenticated and service_role on every
+// table in public. TRUNCATE ignores row-level triggers, RLS and the DELETE revoke; TRIGGER lets a
+// role slip a trigger in ahead of the hash-chain trigger. The last describe block asserts that no
+// API role holds either on any table in public, and that tables postgres creates there start
+// without them.
+//
 // NON-VACUOUSNESS: every denial asserts the specific permission-denied SQLSTATE
 // 42501, NOT merely "an error occurred". A bare not-null check would pass even
 // against an OPEN grant, because e.g. inserting a partial row still fails on a
@@ -52,6 +59,7 @@ import {
   createAnonClient,
   createTestUser,
   deleteTestUser,
+  sqlSuperuserQuery,
 } from '../helpers/clients';
 import { mustDelete } from '../helpers/mustDelete';
 
@@ -408,5 +416,121 @@ describe.skipIf(!process.env.RLS_TESTS)('audited-table write guard (service_role
         await deleteTestUser(user);
       }
     }, 60_000);
+  });
+
+  // ---- TRUNCATE and TRIGGER: the privileges no revoke above covers ----
+  // INSERT/UPDATE/DELETE are revoked table by table, but the platform's default privileges also hand the API
+  // roles TRUNCATE and TRIGGER (plus REFERENCES and MAINTAIN) on every table in public.
+  //   TRUNCATE ignores RLS, row-level triggers and the DELETE revoke.
+  //   TRIGGER lets a role attach a BEFORE INSERT trigger that sorts ahead of the chain trigger, so it can
+  //   rewrite or drop a row before it is hashed.
+  // Measured 2026-10-11, local stack, rolled-back transactions: TRUNCATE audit_events succeeded as all three
+  // API roles; as service_role TRUNCATE credit_ledger CASCADE and TRUNCATE users CASCADE (14 more tables)
+  // succeeded; a trigger created by `authenticated` rewrote an audit event before it was hashed and
+  // verify_audit_chain() flagged 0 of 7,677 rows. anon/authenticated were stopped on the ledger cascades only
+  // because credit_disputes had lost TRUNCATE in 20260804040000 and references the ledger.
+  //
+  // Both need SQL running as an API role. PostgREST exposes only GET/POST/PATCH/DELETE and no function in
+  // public runs dynamic SQL, so no shipped path reaches them today; this is for the day one does.
+  // SECURITY DEFINER functions owned by postgres, and anything on the postgres connection, keep both
+  // privileges: that is a code-review matter, not a grant.
+  //
+  // Catalog reads only: has_table_privilege follows role inheritance and PUBLIC, needs no fixtures, and raises
+  // on an unknown table or role, so a rename cannot turn these into vacuous passes. Scope: tables in public.
+  // Platform-owned schemas (storage, net, supabase_functions) still grant TRUNCATE to the API roles and are
+  // not ours to change. Runs under `pnpm test:rls` only, so the CI replay job does not execute it.
+  //
+  // To empty a table in a local test or script, connect as postgres (sqlSuperuser in tests/helpers/clients.ts).
+  describe('TRUNCATE and TRIGGER — no API role holds them (Hard Rule 11 grant layer)', () => {
+    const API_ROLES = `(values ('anon'), ('authenticated'), ('service_role')) r(role)`;
+    const PRIVS = `(values ('TRUNCATE'), ('TRIGGER')) p(priv)`;
+
+    // Appended to every failure. The cause is often not the role the message names (PUBLIC, inheritance, or
+    // the migration not applied), so say what to do.
+    const REMEDY =
+      ' | Fix in a NEW migration: revoke truncate, trigger on public.<table> from PUBLIC, anon, authenticated, service_role.' +
+      ' Usual cause: `grant all` (grant select, insert, update, delete instead).' +
+      ' All three roles on one table = granted to PUBLIC; one role = inherited through a role (psql \\dp, \\du).' +
+      ' Every table failing = migration 20261010175112 is not applied to this database.';
+
+    // Tables whose writes Hard Rule 11 or a migration restricts at the grant level, kept as readable rows. Not
+    // every such table (invite_tokens, events, staff, ... are covered by the sweep below, the real guard).
+    const PROTECTED = [
+      // permanent append-only
+      'audit_events',
+      'credit_ledger',
+      // lifecycle: definer-only INSERT/UPDATE (service_role keeps DELETE)
+      'practitioner_licences',
+      'participation_evidence',
+      // lifecycle: a person keeps a self-service write to their own row; the rest is revoked or definer-only
+      'data_subject_requests',
+      'credit_disputes',
+      'professional_profiles',
+      // registry
+      'organisation_body_authorisations',
+      // definer-only: written by triggers and SECURITY DEFINER functions, never by an API role
+      'event_occurrences',
+      'registration_checkins',
+      'registration_roles',
+      'event_accreditation_groups',
+      'event_accreditations',
+      'event_accreditation_occurrences',
+    ];
+
+    it.each(PROTECTED)('%s: anon, authenticated and service_role all lack TRUNCATE and TRIGGER', async (table) => {
+      const rows = await sqlSuperuserQuery<{ role: string; priv: string; held: boolean }>(
+        `select r.role, p.priv, has_table_privilege(r.role, 'public.${table}', p.priv) as held
+           from ${API_ROLES} cross join ${PRIVS}
+          order by 1, 2`,
+      );
+      expect(rows, `${table}: the query must cover 3 roles x 2 privileges`).toHaveLength(6);
+      const holders = rows.filter((r) => r.held).map((r) => `${r.role} (${r.priv})`);
+      // Names go in the message itself: vitest abbreviates long arrays in its one-line summary.
+      expect(holders, `${table}: still held by ${holders.join(', ')}${REMEDY}`).toEqual([]);
+    }, 30_000);
+
+    it('no API role holds TRUNCATE or TRIGGER on any table in public', async () => {
+      const [{ n }] = await sqlSuperuserQuery<{ n: number }>(
+        `select count(*)::int as n from pg_class c join pg_namespace ns on ns.oid = c.relnamespace where ns.nspname = 'public' and c.relkind in ('r', 'p', 'f')`,
+      );
+      expect(n, 'the sweep must at least see every protected table').toBeGreaterThanOrEqual(PROTECTED.length);
+
+      const held = await sqlSuperuserQuery<{ tbl: string; role: string; priv: string }>(
+        `select c.relname as tbl, r.role, p.priv
+           from pg_class c
+           join pg_namespace ns on ns.oid = c.relnamespace
+           cross join ${API_ROLES}
+           cross join ${PRIVS}
+          where ns.nspname = 'public' and c.relkind in ('r', 'p', 'f')
+            and has_table_privilege(r.role, c.oid, p.priv)
+          order by 1, 2, 3`,
+      );
+      const offenders = held.map((h) => `${h.tbl} -> ${h.role} (${h.priv})`);
+      expect(offenders, `still held: ${offenders.join(', ')}${REMEDY}`).toEqual([]);
+    }, 30_000);
+
+    it('default privileges for postgres no longer hand TRUNCATE or TRIGGER to the API roles on new tables', async () => {
+      // Only the postgres rows: it is the role migrations run as. supabase_admin's row (tables the platform
+      // itself creates) is not ours to change. Namespace 0 is the schema-less row, which is added to the
+      // per-schema row for every new table.
+      const grants = await sqlSuperuserQuery<{ role: string; priv: string }>(
+        `select case when a.grantee = 0 then 'PUBLIC' else a.grantee::regrole::text end as role, a.privilege_type as priv
+           from pg_default_acl d, lateral aclexplode(d.defaclacl) a
+          where d.defaclrole = 'postgres'::regrole
+            and (d.defaclnamespace = 0 or d.defaclnamespace = 'public'::regnamespace)
+            and d.defaclobjtype = 'r'
+            and (a.grantee = 0 or a.grantee::regrole::text in ('anon', 'authenticated', 'service_role'))`,
+      );
+      // Control: this is the row init_staff.sql restates, so it must still carry the DML grants.
+      expect(
+        [...new Set(grants.filter((g) => g.priv === 'INSERT').map((g) => g.role))].sort(),
+        'default ACL row for postgres in public not found, or it lost the DML grants',
+      ).toEqual(['anon', 'authenticated', 'service_role']);
+      const born = grants.filter((g) => g.priv === 'TRUNCATE' || g.priv === 'TRIGGER').map((g) => `${g.role} (${g.priv})`);
+      expect(
+        born,
+        `a table created in public would start with: ${born.join(', ')} | Fix in a NEW migration: alter default privileges for role postgres [in schema public] revoke truncate, trigger on tables from anon, authenticated, service_role.`,
+      ).toEqual([]);
+    }, 30_000);
   });
 });
