@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { requireStaff, NotAuthorizedError, canManageEvent } from '@/lib/auth';
+import { requireStaff, NotAuthorizedError, canManageEvent, canSetAccreditation } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { StaffShell } from '@/components/shell/StaffShell';
@@ -413,6 +413,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
         creditsIssued={creditsIssued}
         bodiesUnavailable={bodiesUnavailable}
         noAuthorisedBodies={noAuthorisedBodies}
+        canSetAccreditation={canSetAccreditation(staff.role)}
       />
 
       <MultiBodyAccreditationWizard

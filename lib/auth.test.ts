@@ -17,7 +17,7 @@ vi.mock('@/lib/supabase/admin', () => ({ supabaseAdmin: () => 'admin-client-mark
 
 import { afterEach, describe, expect, it } from 'vitest';
 import { AuthRetryableFetchError, AuthSessionMissingError } from '@supabase/supabase-js';
-import { requireStaff, NotAuthorizedError, getStaffSessionState, isStaffSession } from './auth';
+import { requireStaff, NotAuthorizedError, getStaffSessionState, isStaffSession, canPublishEvents, canSetAccreditation } from './auth';
 
 // Fabricate a minimal supabase client shape that requireStaff depends on.
 // The fake chain actually APPLIES each .eq(field, value) predicate against
@@ -224,5 +224,35 @@ describe('requireStaff — review mode only borrows when there is no real sessio
     });
 
     expect(await getStaffSessionState(c)).toBe('not_staff');
+  });
+});
+
+// P2a: what the UI shows follows the roles publish_event() accepts (its
+// resolve_actor gate names organiser_admin, organiser_member and eventar_staff).
+// body_admin and auditor were offered a Publish button that ended on the crash page.
+describe('canPublishEvents', () => {
+  it.each([
+    ['organiser_admin', true],
+    ['organiser_member', true],
+    ['eventar_staff', true],
+    ['body_admin', false],
+    ['auditor', false],
+  ] as const)('%s -> %s', (role, expected) => {
+    expect(canPublishEvents(role)).toBe(expected);
+  });
+});
+
+// set_event_cpd_config()'s resolve_actor gate names only organiser_admin and
+// eventar_staff. An organiser_member who chose an accrediting body on the create
+// form got a published event and an error that blamed "this account".
+describe('canSetAccreditation', () => {
+  it.each([
+    ['organiser_admin', true],
+    ['organiser_member', false],
+    ['eventar_staff', true],
+    ['body_admin', false],
+    ['auditor', false],
+  ] as const)('%s -> %s', (role, expected) => {
+    expect(canSetAccreditation(role)).toBe(expected);
   });
 });

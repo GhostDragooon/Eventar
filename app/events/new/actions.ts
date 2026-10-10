@@ -6,7 +6,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { requireStaff } from '@/lib/auth';
+import { canPublishEvents, canSetAccreditation, requireStaff } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { tzFromCoords } from '@/lib/tz';
 import {
@@ -58,6 +58,14 @@ const cpdSchema = z
   })
   .optional();
 
+const PUBLISH_REFUSED =
+  "Your role can't publish events. Nothing was saved. Save a draft, then ask an organiser admin to publish it.";
+
+const ACCREDITATION_REFUSED =
+  "Your role can't set accreditation. Nothing was saved. Remove the accreditation to continue, or ask an organiser admin to add it after you save.";
+const CPD_HOURS_INVALID = 'CPD hours must be more than 0 and at most 24.';
+const CPD_PAIR_INVALID = 'Choose the accrediting body and enter its CPD hours together, or leave both empty.';
+
 // createEvent returns { error } on validation/DB failure, or redirects on
 // success (never returns). `eventId` is present only in the one partial-success
 // case: the event saved but its accreditation did not, so the caller can link
@@ -73,6 +81,28 @@ export async function createEvent(input: {
   const statusParse = statusSchema.safeParse(input.status);
   if (!statusParse.success) {
     return { error: `status: ${statusParse.error.issues[0]?.message ?? 'invalid'}` };
+  }
+
+  // A role that may not publish never reaches the database with a publish
+  // request: say so plainly and save nothing. Three layers, as everywhere: the
+  // form hides the control, this check explains, and publish_event() is the
+  // authority that refuses regardless.
+  if (statusParse.data === 'published' && !canPublishEvents(staff.role)) {
+    return { error: PUBLISH_REFUSED };
+  }
+
+  // Same shape for accreditation: set_event_cpd_config refuses organiser_member,
+  // body_admin and auditor, and it runs AFTER the event exists. Without this a
+  // member who chose a body and pressed Publish got a LIVE event and an error, and
+  // the re-enabled buttons made a second live event one click away (dev-lens
+  // 2026-10-02). Refused here, before anything is written.
+  const cpd = cpdSchema.safeParse(input.cpd);
+  if (!cpd.success) {
+    // The form checks this before it submits, so this is a stale or hand-built payload.
+    return { error: cpd.error.issues.some((i) => i.path[0] === 'hours') ? CPD_HOURS_INVALID : CPD_PAIR_INVALID };
+  }
+  if (cpd.data?.bodyId && !canSetAccreditation(staff.role)) {
+    return { error: ACCREDITATION_REFUSED };
   }
 
   const eventParse = eventInputSchema.safeParse(input.event);
@@ -102,13 +132,15 @@ export async function createEvent(input: {
     blocks_input: blockParse.data,
   });
 
-  // A publish that the caller isn't allowed to make raises 42501 inside
-  // publish_event and rolls the whole create back — nothing is saved, so say
-  // that rather than leaking the raw require_active_staff message. Same
-  // treatment publishEvent gives the identical gate (edit/actions.ts).
+  // A publish the database refuses raises 42501 inside publish_event and rolls
+  // the whole create back, so nothing is saved: say that rather than leaking
+  // the raw require_active_staff message. Since 20261002000000 the nested
+  // publish carries the creator, so for a publishing role this is no longer
+  // reachable except if the role changed after the page loaded; it used to
+  // fire under review mode for EVERY role and the copy blamed "this account".
   if (error) {
     if (statusParse.data === 'published' && error.code === '42501') {
-      return { error: 'Cannot publish: this account is not allowed to publish events. Nothing was saved — use "Save Draft".' };
+      return { error: PUBLISH_REFUSED };
     }
     return { error: error.message };
   }
@@ -128,7 +160,6 @@ export async function createEvent(input: {
   // created even if accreditation is refused — which is the right failure
   // shape (the organiser keeps their work) as long as we SAY SO rather than
   // redirecting as though everything succeeded (rule 12).
-  const cpd = cpdSchema.safeParse(input.cpd);
   if (cpd.success && cpd.data && cpd.data.bodyId) {
     // p_actor_override: inert for a real session, makes this callable under
     // review mode too — see 20260814020000.
@@ -139,18 +170,24 @@ export async function createEvent(input: {
       p_actor_override: staff.id,
     });
     if (cpdErr) {
-      const reason =
-        cpdErr.code === '42501' && cpdErr.details === 'not_authorised_for_body'
-          ? 'your organisation isn’t authorised by that accrediting body'
-          : cpdErr.code === '42501'
-            ? 'this account can’t set accreditation'
-            : cpdErr.code === '23514'
-              ? 'CPD hours must be between 0 and 24'
-              : 'the accreditation could not be saved';
-      return {
-        error: `The event was saved, but ${reason}. Open it and set the accreditation there.`,
-        eventId: data,
-      };
+      const bodyRefused = cpdErr.code === '42501' && cpdErr.details === 'not_authorised_for_body';
+      const roleRefused = cpdErr.code === '42501' && !bodyRefused;
+      const reason = bodyRefused
+        ? 'your organisation isn’t authorised by that accrediting body'
+        : roleRefused
+          ? 'your role can’t set accreditation'
+          : cpdErr.code === '23514'
+            ? 'CPD hours must be between 0 and 24'
+            : 'the accreditation could not be set';
+      const next = roleRefused
+        ? 'Ask an organiser admin to add it from the event page.'
+        : 'Open it and set the accreditation there.';
+      if (!bodyRefused && !roleRefused && cpdErr.code !== '23514') {
+        console.error('[events/new] accreditation not set', { code: cpdErr.code });
+      }
+      // Say what actually happened: with Publish pressed the event is LIVE.
+      const done = statusParse.data === 'published' ? 'published' : 'saved';
+      return { error: `The event was ${done}, but ${reason}. ${next}`, eventId: data };
     }
   }
 

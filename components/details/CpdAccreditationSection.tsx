@@ -46,6 +46,15 @@ export type CpdAccreditationSectionProps = {
    * than breaking.
    */
   endTime?: string | null;
+  /**
+   * False when the viewer's role cannot set accreditation: set_event_cpd_config
+   * admits only organiser_admin and eventar_staff, so for anyone else a live Save
+   * ended in a refusal that blamed the event owner, even when the viewer WAS the
+   * owner (user-lens 2026-10-09). Treated like `frozen`: the controls are disabled
+   * and the reason is stated up front. Optional, true by default, so an omitting
+   * caller is unchanged.
+   */
+  canSetAccreditation?: boolean;
 };
 
 /**
@@ -93,7 +102,9 @@ export function CpdAccreditationSection({
   bodiesUnavailable = false,
   noAuthorisedBodies = false,
   multiBodyConfigured = false,
+  canSetAccreditation = true,
 }: CpdAccreditationSectionProps) {
+  const roleBlocked = !canSetAccreditation;
   const [bodyId, setBodyId] = useState(currentBodyId ?? '');
   // A SAVED value always wins — the prefill fills an empty field, it never
   // recomputes over a number the organiser chose deliberately (reopening this
@@ -106,7 +117,7 @@ export function CpdAccreditationSection({
   // and that no save could ever establish.
   const [hours, setHours] = useState(() => {
     if (currentHours != null) return String(currentHours);
-    if (creditsIssued > 0 || multiBodyConfigured) return '';
+    if (creditsIssued > 0 || multiBodyConfigured || roleBlocked) return '';
     return durationPrefill(startTime, endTime);
   });
   // useActionState + <form action={...}>: submission works with or without
@@ -125,7 +136,7 @@ export function CpdAccreditationSection({
   // still hold a real prior value here (the bridge writes them, and they
   // aren't cleared when the wizard takes over) — locking, not hiding it, is
   // consistent with how `frozen` treats existing data.
-  const locked = frozen || multiBodyConfigured;
+  const locked = frozen || multiBodyConfigured || roleBlocked;
   const accredited = (currentBodyId !== null && currentHours !== null) || multiBodyConfigured;
 
   // An event can be bound to a body that is no longer `active` (retired, or
@@ -179,6 +190,12 @@ export function CpdAccreditationSection({
           Your organisation isn&rsquo;t yet authorised by any accrediting body, so events can&rsquo;t be marked as
           CPD-accredited. This is arranged with the body directly &mdash; reloading won&rsquo;t change it. Existing
           accreditation is unaffected.
+        </p>
+      )}
+
+      {roleBlocked && (
+        <p className="mt-md rounded-lg bg-surface-container-low px-md py-sm text-body-md text-on-surface-variant">
+          Your role can&rsquo;t set accreditation. An organiser admin can add or change it from this page.
         </p>
       )}
 

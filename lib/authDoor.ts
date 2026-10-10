@@ -78,3 +78,12 @@ export function classifyPath(next: string | null | undefined): 'attendee' | 'org
       return null;
   }
 }
+
+// The organiser pages that sit BEHIND the gate (the proxy.ts matcher): the only
+// places "Back to Programme" means something. /login and /invite/<token> are
+// organiser-door paths too, but a person there has no workspace to go back to yet
+// (signed out, or not yet staff), and /dashboard would only bounce them to /login
+// and lose an invite token.
+export function isOrganiserWorkspacePath(next: string | null | undefined): boolean {
+  return classifyPath(next) === 'organiser' && !/^\/(login|invite)/.test(next as string);
+}

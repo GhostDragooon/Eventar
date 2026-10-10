@@ -13,8 +13,13 @@ vi.mock('./actions', () => ({
 // for Cancel navigation in both modes.
 const refreshMock = vi.fn();
 const pushMock = vi.fn();
+const { searchVenues } = vi.hoisted(() => ({ searchVenues: vi.fn() }));
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: refreshMock, push: pushMock }),
+}));
+vi.mock('@/lib/nominatim', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/nominatim')>()),
+  searchVenues,
 }));
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -79,6 +84,7 @@ const initialBlocks: InitialBlock[] = [
 beforeEach(() => {
   refreshMock.mockClear();
   pushMock.mockClear();
+  searchVenues.mockReset().mockResolvedValue([initialVenue]);
 });
 
 describe('NewEventForm — edit mode prefill', () => {
@@ -295,7 +301,13 @@ describe('NewEventForm — edit mode prefill', () => {
     // below failed. Waiting on the ENABLED state is the real precondition,
     // and the clear is async, so it needs waitFor too.
     const button = screen.getByRole('button', { name: /save changes/i });
-    await waitFor(() => expect(button).toBeEnabled());
+    // The pending state is aria-disabled, not the native `disabled` attribute: the Save
+    // buttons use focusableWhenDisabled so keyboard focus survives a save (P2a, 2026-10-09).
+    // toBeEnabled() only reads the native attribute, so it passed at once and the second
+    // click landed on a button that was still pending. And the label cannot be the signal
+    // either: it flips back to "Save changes" as soon as `intent` clears, before the
+    // transition settles. Wait for aria-disabled to clear.
+    await waitFor(() => expect(button).not.toHaveAttribute('aria-disabled', 'true'));
     fireEvent.click(button);
     await waitFor(() => expect(screen.queryByTestId('save-confirmation')).toBeNull());
   });
@@ -746,5 +758,240 @@ describe('NewEventForm — check-in mode (self-serve)', () => {
     expect(
       screen.getByText(/posts attendance credit with no staff member present/i),
     ).toBeInTheDocument();
+  });
+});
+
+// P2a (findings B2, B5): a role that cannot publish was offered the button and
+// ended on the crash page; a saved-but-not-accredited event left the organiser
+// on a failed form with no way back to the event they had just saved.
+describe('NewEventForm — create mode, publishing role and the saved-event link', () => {
+  const createProps = {
+    mode: 'create' as const,
+    cpdBodies: [],
+    cpdBodiesUnavailable: false,
+  };
+
+  it('offers Publish event by default', () => {
+    render(<NewEventForm {...createProps} submit={vi.fn(async () => ({ ok: true as const }))} />);
+    expect(screen.getByRole('button', { name: /publish event/i })).toBeInTheDocument();
+    expect(screen.queryByText(/your role can't publish events/i)).not.toBeInTheDocument();
+  });
+
+  it('hides Publish event for a role that cannot publish, says why, and keeps Save draft', () => {
+    render(<NewEventForm {...createProps} canPublish={false} submit={vi.fn(async () => ({ ok: true as const }))} />);
+    expect(screen.queryByRole('button', { name: /publish event/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /save draft/i })).toBeInTheDocument();
+    expect(screen.getByText(/your role can't publish events\. save a draft and ask an organiser admin to publish it\./i)).toBeInTheDocument();
+  });
+
+  // One primary action per card (D16). With Publish hidden, Save draft is the only
+  // way forward and must look like it; beside Publish it stays the quiet one. The
+  // default variant carries bg-primary, the outline variant does not.
+  it('makes Save draft the primary action only when Publish is hidden', () => {
+    const { unmount } = render(<NewEventForm {...createProps} canPublish={false} submit={vi.fn(async () => ({ ok: true as const }))} />);
+    expect(screen.getByRole('button', { name: /save draft/i }).className).toMatch(/(^|\s)bg-primary(\s|$)/);
+    unmount();
+    render(<NewEventForm {...createProps} submit={vi.fn(async () => ({ ok: true as const }))} />);
+    expect(screen.getByRole('button', { name: /save draft/i }).className).not.toMatch(/(^|\s)bg-primary(\s|$)/);
+    expect(screen.getByRole('button', { name: /publish event/i }).className).toMatch(/(^|\s)bg-primary(\s|$)/);
+  });
+
+  // User-lens 2026-10-02: the action row was 32px tall on a phone. 44px is the touch
+  // target everywhere else on the surface (D16).
+  it('keeps every action-row button at a 44px touch target', () => {
+    render(<NewEventForm {...createProps} submit={vi.fn(async () => ({ ok: true as const }))} />);
+    for (const name of [/^cancel$/i, /save draft/i, /publish event/i]) {
+      expect(screen.getByRole('button', { name }).className, String(name)).toMatch(/(^|\s)min-h-11(\s|$)/);
+    }
+  });
+
+  it('explains when this role cannot set accreditation and hides the unusable picker', () => {
+    render(
+      <NewEventForm
+        {...createProps}
+        canSetAccreditation={false}
+        cpdBodies={[{ id: 'body-1', full_name: 'Example Council', short_name: 'EC' }]}
+        submit={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+    expect(screen.getByText(/your role can't set accreditation\. you can still create the event without it/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/accrediting body/i)).not.toBeInTheDocument();
+  });
+
+  it('never shows the role note in edit mode (edit has no publish control to hide)', () => {
+    render(
+      <NewEventForm
+        mode="edit"
+        eventId="11111111-2222-4333-8444-555555555555"
+        initialEvent={initialEvent}
+        initialBlocks={initialBlocks}
+        submit={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+    expect(screen.queryByText(/your role can't publish events/i)).not.toBeInTheDocument();
+  });
+
+  // Create mode is the only real path: createEvent returns {error, eventId} on a partial
+  // success, updateEvent never returns an eventId (dev-lens, 2026-10-11).
+  it('links to the saved event when the create reports an error AND an event id', async () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    const submit = vi.fn(async () => ({
+      error: 'The event was published, but the accreditation could not be saved. Open it and set the accreditation there.',
+      eventId: 'abc-123',
+    }));
+    render(<NewEventForm {...createBase} submit={submit} />);
+    await fillValidEvent();
+    fireEvent.click(screen.getByRole('button', { name: /publish event/i }));
+
+    const link = await screen.findByRole('link', { name: /open the saved event/i });
+    expect(link).toHaveAttribute('href', '/events/abc-123/edit');
+  });
+
+  it('shows no link for an error that did not save anything', async () => {
+    render(
+      <NewEventForm
+        mode="edit"
+        eventId="11111111-2222-4333-8444-555555555555"
+        initialEvent={initialEvent}
+        initialBlocks={initialBlocks}
+        submit={vi.fn(async () => ({ error: 'rpc blew up' }))}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+    await screen.findByText(/rpc blew up/);
+    expect(screen.queryByRole('link', { name: /open the saved event/i })).not.toBeInTheDocument();
+  });
+});
+
+// ---- Round 2 (2026-10-09): what the second review found on the create form ----------
+
+async function fillValidEvent() {
+  fireEvent.change(screen.getByPlaceholderText('Workshop on TDD'), { target: { value: 'Test event' } });
+  fireEvent.change(screen.getByPlaceholderText(/search a venue/i), { target: { value: 'Rosewood' } });
+  const venue = await screen.findByRole('option', { name: /Rosewood Sand Hill/ });
+  fireEvent.click(within(venue).getByRole('button'));
+  fireEvent.click(screen.getByRole('button', { name: new Date().toDateString() }));
+  fireEvent.click(screen.getByRole('button', { name: 'Event start time (required)' }));
+  fireEvent.click(screen.getByRole('option', { name: '09:00 AM' }));
+  fireEvent.click(screen.getByRole('button', { name: /Event end time \(required\)/ }));
+  fireEvent.click(screen.getByRole('option', { name: '10:00 AM' }));
+}
+
+const createBase = { mode: 'create' as const, cpdBodies: [], cpdBodiesUnavailable: false };
+const okSubmit = () => vi.fn(async () => ({ ok: true as const }));
+const sectionHeading = (el: HTMLElement) => el.closest('section')?.querySelector('h2')?.textContent ?? '';
+
+describe('NewEventForm: a validation message appears in the section it names', () => {
+  beforeEach(() => {
+    // jsdom does not implement scrollIntoView.
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  // User-lens 2026-10-09: the message rendered under the buttons, ~1,500px from the field
+  // the page had just scrolled to, so Save draft looked like it did nothing.
+  it('puts the name message under the Basics heading, focuses it, and shows it once', () => {
+    const submit = okSubmit();
+    render(<NewEventForm {...createBase} submit={submit} />);
+    fireEvent.click(screen.getByRole('button', { name: /save draft/i }));
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent('Add the event basics (name) to continue.');
+    expect(sectionHeading(alert)).toMatch(/Basics/);
+    expect(document.activeElement).toBe(alert);
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it('puts the venue message under Date & venue, and clears it on the next attempt that gets further', async () => {
+    render(<NewEventForm {...createBase} submit={okSubmit()} />);
+    fireEvent.change(screen.getByPlaceholderText('Workshop on TDD'), { target: { value: 'Only a name' } });
+    fireEvent.click(screen.getByRole('button', { name: /save draft/i }));
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent('Pick a venue from the dropdown to continue.');
+    expect(sectionHeading(alert)).toMatch(/Date & venue/);
+
+    fireEvent.change(screen.getByPlaceholderText(/search a venue/i), { target: { value: 'Rosewood' } });
+    const venue = await screen.findByRole('option', { name: /Rosewood Sand Hill/ });
+    fireEvent.click(within(venue).getByRole('button'));
+    fireEvent.click(screen.getByRole('button', { name: /save draft/i }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Set the date, start, and end time to continue.');
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+  });
+});
+
+// User-lens 2026-10-09 / dev-lens round 2: a chosen accrediting body with empty hours was
+// sent as "no accreditation" and the event was created (or published) unaccredited, with
+// no message. Both-or-neither is the server's rule; the form now stops and says so.
+describe('NewEventForm: a chosen accrediting body needs its hours', () => {
+  const cpdProps = { ...createBase, cpdBodies: [{ id: 'body-1', full_name: 'Example Council', short_name: 'EC' }] };
+
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  it('stops before submitting, names the field in section 7, and sends the pair once it is valid', async () => {
+    const submit = okSubmit();
+    render(<NewEventForm {...cpdProps} submit={submit} />);
+    await fillValidEvent();
+    fireEvent.change(screen.getByLabelText(/accrediting body/i), { target: { value: 'body-1' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /save draft/i }));
+    const empty = screen.getByRole('alert');
+    expect(empty).toHaveTextContent(/enter the cpd hours \(more than 0, up to 24\) for the accrediting body, or set it back to "not accredited"/i);
+    expect(sectionHeading(empty)).toMatch(/CPD accreditation/);
+    expect(submit).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText(/cpd hours/i), { target: { value: '25' } });
+    fireEvent.click(screen.getByRole('button', { name: /save draft/i }));
+    expect(screen.getByRole('alert')).toHaveTextContent(/enter the cpd hours/i);
+    expect(submit).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText(/cpd hours/i), { target: { value: '0' } });
+    fireEvent.click(screen.getByRole('button', { name: /save draft/i }));
+    expect(screen.getByRole('alert')).toHaveTextContent(/enter the cpd hours/i);
+    expect(submit).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText(/cpd hours/i), { target: { value: '3' } });
+    fireEvent.click(screen.getByRole('button', { name: /save draft/i }));
+    await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
+    expect(submit).toHaveBeenCalledWith(expect.objectContaining({ cpd: { bodyId: 'body-1', hours: 3 } }));
+  });
+
+  it('is not triggered when no body is chosen', async () => {
+    const submit = okSubmit();
+    render(<NewEventForm {...cpdProps} submit={submit} />);
+    await fillValidEvent();
+    fireEvent.click(screen.getByRole('button', { name: /save draft/i }));
+    await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
+    expect(submit).toHaveBeenCalledWith(expect.objectContaining({ cpd: { bodyId: null, hours: null } }));
+  });
+});
+
+describe('NewEventForm: the create buttons and notes, round 2', () => {
+  // Where Publish is the blue button, say what it costs BEFORE the click.
+  it('warns publishers that details cannot be edited after publishing, and not other roles', () => {
+    const { unmount } = render(<NewEventForm {...createBase} submit={okSubmit()} />);
+    expect(screen.getByText(/publish event makes the registration page live\. details cannot be edited after publishing yet, so check them first/i)).toBeInTheDocument();
+    unmount();
+    render(<NewEventForm {...createBase} canPublish={false} submit={okSubmit()} />);
+    expect(screen.queryByText(/details cannot be edited after publishing/i)).not.toBeInTheDocument();
+  });
+
+  // A disabled button drops keyboard focus to <body> the moment the click lands.
+  it('keeps keyboard focus on the button while it saves (aria-disabled, not disabled)', async () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    let finish!: (v: { ok: true }) => void;
+    const submit = vi.fn(() => new Promise<{ ok: true }>((resolve) => { finish = resolve; }));
+    render(<NewEventForm {...createBase} submit={submit} />);
+    await fillValidEvent();
+    const save = screen.getByRole('button', { name: /save draft/i });
+    save.focus();
+    fireEvent.click(save);
+    const pendingButton = await screen.findByRole('button', { name: /saving/i });
+    expect(pendingButton).toHaveAttribute('aria-disabled', 'true');
+    expect(pendingButton).not.toHaveAttribute('disabled');
+    expect(document.activeElement).toBe(pendingButton);
+    fireEvent.click(pendingButton);
+    expect(submit).toHaveBeenCalledTimes(1);
+    finish({ ok: true });
   });
 });

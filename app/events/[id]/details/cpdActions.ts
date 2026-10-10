@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { requireStaff, NotAuthorizedError } from '@/lib/auth';
+import { requireStaff, NotAuthorizedError, canSetAccreditation } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 
 // Organiser-facing CPD accreditation config. This is the surface that makes
@@ -54,6 +54,14 @@ export async function setEventCpdConfig(
   } catch (e) {
     if (e instanceof NotAuthorizedError) return { error: 'Not authorised.' };
     throw e;
+  }
+  // set_event_cpd_config admits only organiser_admin and eventar_staff. Every other
+  // role used to reach the database and come back with "Only the event owner can
+  // set its accreditation", which is untrue for a member who created the event
+  // (user-lens 2026-10-09). Said before the database is asked; the database stays
+  // the authority.
+  if (!canSetAccreditation(staff.role)) {
+    return { error: 'Your role can’t set accreditation. Ask an organiser admin to add or change it.' };
   }
 
   const rawBody = String(formData.get('bodyId') ?? '').trim();
@@ -113,7 +121,9 @@ export async function setEventCpdConfig(
             'This event already has a multiple-body accreditation set up below — use that section to change accreditation, not this field.',
         };
       }
-      return { error: 'Only the event owner can set its accreditation.' };
+      // Role is vetted above, so what is left is the organisation check or a role
+      // that changed after the page loaded. Neither is "the owner".
+      return { error: 'That accreditation change was refused for your account. Ask an organiser admin to check the event and your access.' };
     }
     return { error: 'Could not save the accreditation. Try again.' };
   }

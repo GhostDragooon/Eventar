@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classifyPath, safeNextPath } from './authDoor';
+import { classifyPath, isOrganiserWorkspacePath, safeNextPath } from './authDoor';
 import { config } from '../proxy';
 
 const EVENT = '37e37c81-b10a-4077-8f7d-5b5d247b1adc';
@@ -190,5 +190,43 @@ describe('proxy.ts matcher ↔ classifier drift guard', () => {
 
   it.each(samples)('gated path %s classifies as organiser', (path) => {
     expect(classifyPath(path)).toBe('organiser');
+  });
+
+  // Everything the proxy gates is, by definition, behind the gate.
+  it.each(samples)('gated path %s is a workspace path', (path) => {
+    expect(isOrganiserWorkspacePath(path)).toBe(true);
+  });
+});
+
+// The error page offers "Back to Programme" only where a Programme exists to go
+// back to. /login and an invite link are organiser-DOOR paths: a signed-out
+// organiser or a not-yet-staff invitee has no workspace, and /dashboard would only
+// bounce them to /login and lose the invite token.
+describe('isOrganiserWorkspacePath', () => {
+  it.each([
+    '/dashboard', '/dashboard/manage', '/events/new', `/events/${EVENT}/edit`, `/events/${EVENT}/checkin`,
+    `/events/${EVENT}/details`, `/events/${EVENT}/analytics`, '/settings', '/settings/team',
+    '/participants', '/analytics', '/checkin', '/dashboard?tab=draft',
+  ])('%s is behind the gate', (path) => {
+    expect(isOrganiserWorkspacePath(path)).toBe(true);
+  });
+
+  it.each([
+    '/login', '/login?next=/dashboard', '/login#x', '/invite/abc123', '/invite/abc123?x=1',
+    '/', '/pricing', `/events/${EVENT}`, '/account/record', '/checkin/confirm', '/survey', '/events',
+  ])('%s is not', (path) => {
+    expect(isOrganiserWorkspacePath(path)).toBe(false);
+  });
+
+  it('is not fooled by a path that merely starts with login or invite', () => {
+    expect(classifyPath('/loginx')).toBeNull();
+    expect(isOrganiserWorkspacePath('/loginx')).toBe(false);
+    expect(isOrganiserWorkspacePath('/dashboard/login')).toBe(true);
+  });
+
+  it('null, undefined and hostile strings are not workspace paths', () => {
+    for (const bad of [null, undefined, '', '//evil.example', '/\\evil.example', 'https://evil.example/dashboard']) {
+      expect(isOrganiserWorkspacePath(bad as string | null | undefined)).toBe(false);
+    }
   });
 });

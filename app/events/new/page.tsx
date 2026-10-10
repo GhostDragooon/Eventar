@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { requireStaff, NotAuthorizedError } from '@/lib/auth';
+import { requireStaff, NotAuthorizedError, canPublishEvents, canSetAccreditation } from '@/lib/auth';
 import { StaffShell } from '@/components/shell/StaffShell';
 import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
 import { LayoutDashboardIcon, CalendarPlusIcon } from 'lucide-react';
@@ -21,24 +21,31 @@ export default async function NewEventPage() {
     if (e instanceof NotAuthorizedError) redirect('/login');
     throw e;
   }
+  const canPublish = canPublishEvents(staff.role);
+  const canAccredit = canSetAccreditation(staff.role);
   // The event does not exist yet, so the allow-list is scoped to the CREATING
   // staff member's organisation — which is exactly the organisation the
   // set_event_organisation trigger will stamp on the new event, so the picker
   // and the server agree by construction.
-  // A failed read leaves staffRow null, which falls through to
-  // `{ bodies: [], unavailable: true }` — already the honest state, and exactly
-  // the "genuine lookup failure, distinct from no bodies" distinction
-  // listAuthorisedBodies documents. The picker renders it as unavailable
-  // rather than as an empty list.
-  // eslint-disable-next-line no-restricted-syntax -- see above: already degrades to unavailable:true
-  const { data: staffRow } = await supabaseAdmin()
-    .from('staff')
-    .select('organisation_id')
-    .eq('id', staff.id)
-    .maybeSingle();
-  const authorised = staffRow?.organisation_id
-    ? await listAuthorisedBodies(staffRow.organisation_id as string)
-    : { bodies: [], unavailable: true };
+  // Roles that cannot set accreditation don't need its allow-list. For the
+  // other roles, a failed lookup is distinct from an empty list and is shown
+  // as unavailable rather than as "no authorised bodies".
+  let authorised: Awaited<ReturnType<typeof listAuthorisedBodies>> = { bodies: [], unavailable: false };
+  if (canAccredit) {
+    const { data: staffRow, error: staffRowError } = await supabaseAdmin()
+      .from('staff')
+      .select('organisation_id')
+      .eq('id', staff.id)
+      .maybeSingle();
+    if (staffRowError) {
+      console.error('[events/new] organisation lookup failed', { code: staffRowError.code });
+      authorised = { bodies: [], unavailable: true };
+    } else {
+      authorised = staffRow?.organisation_id
+        ? await listAuthorisedBodies(staffRow.organisation_id as string)
+        : { bodies: [], unavailable: true };
+    }
+  }
 
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role }} backHref="/dashboard" backLabel="Programme">
@@ -55,8 +62,16 @@ export default async function NewEventPage() {
         <p className="font-body-lg text-body-lg text-on-surface-variant mt-sm">
           {/* Names the buttons verbatim ("Save draft" / "Publish event").
               Guidance that paraphrases the control it points at is the same
-              defect as an error message naming a button that does not exist. */}
-          Save draft first; publish event when ready.
+              defect as an error message naming a button that does not exist.
+              It used to say "Save draft first" above a filled "Publish event"
+              (finding B1: the copy and the primary action disagreed). */}
+          {/* A draft needs a name, a venue picked from the dropdown, and a date with
+              start and end times (the validation order in NewEventForm.onSubmit);
+              everything else is optional. The reason a role cannot publish is said
+              once, next to the buttons, not repeated here. */}
+          {canPublish
+            ? 'A name, date, times and venue are enough to save a draft. Use Save draft to keep working on it, or Publish event when it is ready to go live.'
+            : 'A name, date, times and venue are enough to save a draft. Use Save draft to keep working on it.'}
         </p>
       </header>
 
@@ -64,6 +79,8 @@ export default async function NewEventPage() {
         mode="create"
         cpdBodies={authorised.bodies}
         cpdBodiesUnavailable={authorised.unavailable}
+        canPublish={canPublish}
+        canSetAccreditation={canAccredit}
         submit={async (payload: SubmitPayload) => {
           'use server';
           // createEvent throws a Next-internal redirect on success (never

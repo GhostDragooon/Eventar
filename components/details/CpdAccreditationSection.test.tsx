@@ -202,3 +202,38 @@ describe('CpdAccreditationSection — hours prefill guards', () => {
     expect(field).toHaveValue(null);
   });
 });
+
+// set_event_cpd_config admits only organiser_admin and eventar_staff. The card used to
+// offer every role a live Save that ended in "Only the event owner can set its
+// accreditation", even for the member who owned the event (user-lens 2026-10-09). It is
+// now locked like the frozen and multi-body cases, with the reason stated up front.
+describe('CpdAccreditationSection — a role that cannot set accreditation', () => {
+  const props = {
+    eventId: 'e1',
+    startTime: '2026-09-01T00:00:00Z',
+    endTime: '2026-09-01T03:00:00Z',
+    bodies,
+    currentBodyId: null,
+    currentHours: null,
+    creditsIssued: 0,
+  };
+
+  it('disables every control, says why, and does not prefill hours it could never save', () => {
+    render(<CpdAccreditationSection {...props} canSetAccreditation={false} />);
+    expect(screen.getByLabelText(/accrediting body/i)).toBeDisabled();
+    expect(screen.getByLabelText(/cpd hours/i)).toBeDisabled();
+    expect((screen.getByLabelText(/cpd hours/i) as HTMLInputElement).value).toBe('');
+    expect(screen.getByRole('button', { name: /save/i })).toBeDisabled();
+    expect(screen.getByText(/your role can.t set accreditation\. an organiser admin can add or change it from this page/i)).toBeTruthy();
+  });
+
+  it('is unchanged when the role may set it (default and explicit true)', () => {
+    const { unmount } = render(<CpdAccreditationSection {...props} />);
+    expect(screen.getByLabelText(/accrediting body/i)).toBeEnabled();
+    expect(screen.queryByText(/your role can.t set accreditation/i)).toBeNull();
+    unmount();
+    render(<CpdAccreditationSection {...props} canSetAccreditation />);
+    expect(screen.getByLabelText(/accrediting body/i)).toBeEnabled();
+    expect(screen.getByRole('button', { name: /save/i })).toBeEnabled();
+  });
+});

@@ -26,6 +26,26 @@ export function canManageEvent(
   return event.organisation_id != null && event.organisation_id === staff.organisation_id;
 }
 
+// Which roles publish_event() accepts: its resolve_actor gate names exactly
+// these three (set in 20260910000000, unchanged by 20261002010000, which only
+// narrows WHICH events it will transition). body_admin and auditor cannot publish (they can
+// still save a draft). This decides what to SHOW (a Publish control a role
+// cannot use, or the plain reason it is missing); the database stays the
+// authority and still refuses the call, so a stale or hostile client gains
+// nothing.
+export function canPublishEvents(role: Staff['role']): boolean {
+  return role === 'organiser_admin' || role === 'organiser_member' || role === 'eventar_staff';
+}
+
+// Which roles set_event_cpd_config() accepts: its resolve_actor gate names only
+// these two (read from the live definition on 2026-10-02). An organiser_member
+// can create and publish an event but not accredit it; the create form used to
+// offer the picker anyway and ended on a half-success. Same contract as above:
+// this decides what to show, the database refuses regardless.
+export function canSetAccreditation(role: Staff['role']): boolean {
+  return role === 'organiser_admin' || role === 'eventar_staff';
+}
+
 // Non-throwing mirror of requireStaff — the single source of truth for
 // "is this session an organiser?" (Q32 audience boundary). Ivan's 2026-09-24
 // restatement: organisers own the organiser side; they have no attendee

@@ -6,9 +6,11 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 const requireStaffMock = vi.fn();
 const rpcMock = vi.fn();
 
-vi.mock('@/lib/auth', () => ({
+vi.mock('server-only', () => ({}));
+// canSetAccreditation stays REAL: the role pre-check is part of what is under test.
+vi.mock('@/lib/auth', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/auth')>()),
   requireStaff: () => requireStaffMock(),
-  NotAuthorizedError: class NotAuthorizedError extends Error {},
 }));
 vi.mock('@/lib/supabase/server', () => ({
   supabaseServer: async () => ({ rpc: rpcMock }),
@@ -76,10 +78,27 @@ describe('setEventCpdConfig — error translation', () => {
     expect(result).toEqual({ error: expect.stringContaining('already been issued') });
   });
 
-  it('turns the ownership refusal (42501) into a plain permission message', async () => {
-    rpcMock.mockResolvedValue({ error: { code: '42501', message: 'set_event_cpd_config: not the owner of event ...' } });
+  it('turns an unclassified refusal (42501) into guidance that does not blame the event owner', async () => {
+    rpcMock.mockResolvedValue({ error: { code: '42501', message: 'set_event_cpd_config: event is not in the caller organisation' } });
     const result = await setEventCpdConfig(null, fd({ eventId: EVENT_ID, bodyId: BODY_ID, cpdHours: '3' }));
-    expect(result).toEqual({ error: 'Only the event owner can set its accreditation.' });
+    expect(result).toEqual({ error: 'That accreditation change was refused for your account. Ask an organiser admin to check the event and your access.' });
+    expect(JSON.stringify(result)).not.toMatch(/event owner/i);
+  });
+
+  // set_event_cpd_config admits only organiser_admin and eventar_staff. An
+  // organiser_member who CREATED the event used to be told only the owner could set
+  // its accreditation (user-lens 2026-10-09).
+  it.each(['organiser_member', 'body_admin', 'auditor'] as const)('%s is refused before the database is asked, with a reason that is true', async (role) => {
+    requireStaffMock.mockResolvedValue({ id: 's1', email: 's@x.test', role });
+    const result = await setEventCpdConfig(null, fd({ eventId: EVENT_ID, bodyId: BODY_ID, cpdHours: '3' }));
+    expect(result).toEqual({ error: 'Your role can’t set accreditation. Ask an organiser admin to add or change it.' });
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  it.each(['organiser_admin', 'eventar_staff'] as const)('%s reaches the audited RPC with itself as the actor', async (role) => {
+    requireStaffMock.mockResolvedValue({ id: 's1', email: 's@x.test', role });
+    await setEventCpdConfig(null, fd({ eventId: EVENT_ID, bodyId: BODY_ID, cpdHours: '3' }));
+    expect(rpcMock).toHaveBeenCalledWith('set_event_cpd_config', expect.objectContaining({ p_actor_override: 's1' }));
   });
 
   it('never leaks the raw Postgres message for an unmapped code', async () => {

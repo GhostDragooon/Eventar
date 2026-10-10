@@ -1,11 +1,10 @@
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { notFound, redirect } from 'next/navigation';
-import { requireStaff, NotAuthorizedError, canManageEvent } from '@/lib/auth';
+import { requireStaff, NotAuthorizedError, canManageEvent, canPublishEvents, canSetAccreditation } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { formatInTz } from '@/lib/tz';
 import { labelForBlockKind, type AgendaTopic } from '@/lib/agenda';
-import { publishEvent } from './actions';
+import PublishDraftButton from './PublishDraftButton';
 import { updateEvent } from './updateAction';
 import DownloadQrButton from '@/components/DownloadQrButton';
 import ExportRegistrantsButton from '@/components/ExportRegistrantsButton';
@@ -58,12 +57,15 @@ export default async function StaffEventEditPage({
   // Owner-only gate: /edit is the mutation surface (Publish, future field
   // edits). Per the 2026-06-02 access policy refinement, only the event
   // owner reaches this page; non-owners (other organisers via direct URL,
-  // managers viewing on the dashboard) get bounced to /details which is
-  // the read-only ops view. RLS would deny their UPDATEs anyway — this
-  // just stops them from seeing a page their writes would silently fail.
+  // managers viewing on the dashboard) get bounced to /details. Since
+  // ea5a6a7 /details answers 404 for anyone who cannot manage the event, so
+  // for another organisation's staff the redirect ends at "not found" and
+  // never confirms the event exists. RLS would deny their UPDATEs anyway —
+  // this just stops them from seeing a page their writes would silently fail.
   if (!canManageEvent(event, staff)) {
     redirect(`/events/${id}/details`);
   }
+  const canPublish = canPublishEvents(staff.role);
 
   // Read every column the form treats as full-replace input. Omitting any of
   // them and round-tripping to updateEvent would silently wipe the persisted
@@ -220,6 +222,7 @@ export default async function StaffEventEditPage({
           creditsIssued={creditsRes.count ?? 0}
           bodiesUnavailable={authorised.unavailable}
           noAuthorisedBodies={!authorised.unavailable && authorised.bodies.length === 0}
+          canSetAccreditation={canSetAccreditation(staff.role)}
         />
 
         {/* Decision 9: parity with /details. Without this an organiser could
@@ -252,21 +255,23 @@ export default async function StaffEventEditPage({
             <DraftEditFormPanel event={event} blocks={blocks ?? []} />
           </div>
           <aside className="lg:col-span-4 lg:sticky lg:top-[72px] space-y-md self-start">
+            {/* The card sits OUTSIDE the form, so it publishes what was last SAVED,
+                not what is typed in the form (a typo fix pressed straight into
+                Publish went live with the old title: user-lens 2026-10-02). And a
+                published event is read-only until package P9b, so the card says so
+                before the one-way step. Role-aware: a role that cannot publish
+                gets the reason in the heading, not a sales line above a missing
+                button. */}
             <ActionCard
               icon="publish"
-              title="Ready to publish?"
-              body="Publishing makes the registration page live. The QR also unlocks."
+              title={canPublish ? 'Ready to publish?' : 'Publishing needs an organiser admin'}
+              body={
+                canPublish
+                  ? 'Makes the registration page live with the version you last saved, and unlocks the event QR code.'
+                  : "Your role can't publish events."
+              }
             >
-              <form
-                action={async () => {
-                  'use server';
-                  await publishEvent(event.id);
-                }}
-              >
-                <Button type="submit" className="w-full font-label-md text-label-md">
-                  Publish event
-                </Button>
-              </form>
+              <PublishDraftButton eventId={event.id} canPublish={canPublish} />
             </ActionCard>
           </aside>
         </div>

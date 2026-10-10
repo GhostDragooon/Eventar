@@ -1,6 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { requireStaff, canManageEvent } from '@/lib/auth';
+import { requireStaff, canManageEvent, canPublishEvents } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { buildEventQrPng } from '@/lib/qr';
@@ -8,25 +8,40 @@ import { getRequestOrigin } from '@/lib/origin';
 import { buildCsv } from '@/lib/csv';
 import { slugifyTitle } from '@/lib/slugify';
 
-export async function publishEvent(id: string) {
+const PUBLISH_ROLE_REFUSED = "Your role can't publish events. Ask an organiser admin to publish this draft.";
+
+type PublishResult = { ok: true } | { error: string };
+
+// Refusals come back as a result the draft card shows inline; they used to be
+// thrown, which ended on the crash page for something an organiser can fix by
+// asking a colleague. An unexpected database failure still throws, into the
+// organiser error boundary (CLAUDE.md rule 12: never report success).
+export async function publishEvent(id: string): Promise<PublishResult> {
   const staff = await requireStaff();
+  // Said before the database is asked, in the same words the form uses.
+  if (!canPublishEvents(staff.role)) return { error: PUBLISH_ROLE_REFUSED };
   const supabase = await supabaseServer();
   // Atomic + audited via publish_event() (SECURITY DEFINER): owner-exclusive
-  // check happens in-function now, so a 42501 means "not found or not owned"
-  // — preserved as the same thrown message as before (CLAUDE.md rule 12).
+  // check happens in-function now. With the role already vetted above, a 42501
+  // here means "event not found or not in your organisation".
   // p_actor_override: inert for a real session (only honoured when
   // auth.role()='service_role', which a forged JWT cannot produce) — makes
   // this callable under review mode too, see 20260814020000.
   const { error } = await supabase.rpc('publish_event', { p_event_id: id, p_actor_override: staff.id });
   if (error) {
     if (error.code === '42501') {
-      throw new Error('Cannot publish: event not found or not in your organisation.');
+      return { error: 'Cannot publish: event not found or not in your organisation.' };
+    }
+    // 20261002010000: only an active draft can be published.
+    if (error.code === '22023' && error.message.startsWith('publish_event:')) {
+      return { error: "This event can't be published because it is no longer a current draft. It may have been cancelled or deleted. Check it in Manage." };
     }
     throw error;
   }
   revalidatePath(`/events/${id}/edit`);
   revalidatePath(`/events/${id}`);
   revalidatePath('/dashboard');
+  return { ok: true };
 }
 
 export async function getEventQrPng(

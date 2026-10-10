@@ -1,7 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useRef, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { CheckIcon, ChevronRightIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -51,7 +52,9 @@ export type SubmitPayload = {
 
 export type CpdBodyOption = { id: string; full_name: string; short_name: string | null };
 
-type SubmitResult = { ok: true } | { error: string };
+// `eventId` rides along only when the event WAS saved but something after it failed
+// (its accreditation); the form then links to it instead of stranding the organiser.
+type SubmitResult = { ok: true } | { error: string; eventId?: string };
 
 /**
  * Pre-fill shape the edit page sends in. Mirrors the event row's columns +
@@ -121,6 +124,14 @@ type Props =
        */
       cpdBodies: CpdBodyOption[];
       cpdBodiesUnavailable: boolean;
+      /**
+       * Whether this role may publish (canPublishEvents). False hides the
+       * Publish button and says why, instead of offering a control that ends on
+       * a refusal. Default true so existing callers are unchanged.
+       */
+      canPublish?: boolean;
+      /** Whether this role may set CPD accreditation during event creation. */
+      canSetAccreditation?: boolean;
     }
   | {
       mode: 'edit';
@@ -224,6 +235,9 @@ export default function NewEventForm(props: Props) {
   const [pending, start] = useTransition();
   const [intent, setIntent] = useState<Intent | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [savedEventId, setSavedEventId] = useState<string | null>(null);
+  // A validation failure is shown IN the section it names (round 2, user-lens 2026-10-09).
+  const [fieldErr, setFieldErr] = useState<{ section: FieldSection; message: string } | null>(null);
 
   const initialEvent = props.mode === 'edit' ? props.initialEvent : null;
 
@@ -283,6 +297,18 @@ export default function NewEventForm(props: Props) {
   const capacityRef  = useRef<HTMLElement>(null);
   const agendaRef    = useRef<HTMLElement>(null);
   const regRef       = useRef<HTMLElement>(null);
+  const cpdRef       = useRef<HTMLElement>(null);
+  const errRef       = useRef<HTMLParagraphElement>(null);
+
+  // The failing section scrolls itself into view; its alert then takes focus without a
+  // second scroll, so keyboard and screen-reader users land on the message too.
+  useEffect(() => {
+    if (fieldErr) document.getElementById('form-field-error')?.focus({ preventScroll: true });
+  }, [fieldErr]);
+  // A server refusal takes focus.
+  useEffect(() => {
+    if (err) errRef.current?.focus();
+  }, [err]);
 
   const v1 = basicsValid(basics);
   const v2 = venueValid(venue);
@@ -298,28 +324,30 @@ export default function NewEventForm(props: Props) {
 
   function onSubmit(nextIntent: Intent) {
     setErr(null);
+    setFieldErr(null);
+    setSavedEventId(null);
     setSavedAt(null);
     // Validate in section order; on the first failure, scroll the user to
-    // that section and explain. Buttons stay enabled (disabled-with-no-reason
+    // that section and explain it THERE. Buttons stay enabled (disabled-with-no-reason
     // reads as "broken"), so the click is what surfaces what's still needed.
+    function invalid(section: FieldSection, ref: React.RefObject<HTMLElement | null>, message: string) {
+      setFieldErr({ section, message });
+      ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
     if (!v1) {
-      basicsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setErr('Add the event basics (name) to continue.');
+      invalid('basics', basicsRef, 'Add the event basics (name) to continue.');
       return;
     }
     if (!v2) {
-      dateVenueRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setErr('Pick a venue from the dropdown to continue.');
+      invalid('venue', dateVenueRef, 'Pick a venue from the dropdown to continue.');
       return;
     }
     if (!v3) {
-      dateVenueRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setErr('Set the date, start, and end time to continue.');
+      invalid('venue', dateVenueRef, 'Set the date, start, and end time to continue.');
       return;
     }
     if (!v4) {
-      agendaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setErr('Fix the highlighted agenda blocks (each needs a valid time inside the event window, plus a title).');
+      invalid('agenda', agendaRef, 'Fix the highlighted agenda blocks (each needs a valid time inside the event window, plus a title).');
       return;
     }
     // Registration window: each bound needs BOTH date and time once touched;
@@ -333,14 +361,23 @@ export default function NewEventForm(props: Props) {
     const openPartial = (regOpen.date !== '') !== (regOpen.minutes != null);
     const closePartial = (regClose.date !== '') !== (regClose.minutes != null);
     if (openPartial || closePartial) {
-      regRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setErr('Registration period needs both a date and a time for each bound.');
+      invalid('reg', regRef, 'Registration period needs both a date and a time for each bound.');
       return;
     }
     if (openIso && closeIso && new Date(closeIso) <= new Date(openIso)) {
-      regRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setErr('Registration must close after it opens.');
+      invalid('reg', regRef, 'Registration must close after it opens.');
       return;
+    }
+    // A chosen accrediting body needs its hours. Both-or-neither is the server's own
+    // rule, and this used to be enforced by SILENTLY sending "no accreditation" when
+    // one half was empty: the event was created unaccredited and no credit would ever
+    // post, with no message (user-lens 2026-10-09; rule 12).
+    if (props.mode === 'create' && cpdBodyId) {
+      const hours = Number(cpdHours);
+      if (cpdHours.trim() === '' || !Number.isFinite(hours) || hours <= 0 || hours > 24) {
+        invalid('cpd', cpdRef, 'Enter the CPD hours (more than 0, up to 24) for the accrediting body, or set it back to "Not accredited".');
+        return;
+      }
     }
     setIntent(nextIntent);
 
@@ -391,8 +428,9 @@ export default function NewEventForm(props: Props) {
           status: nextIntent === 'publish' ? 'published' : 'draft',
           // Both-or-neither, matching set_event_cpd_config's own rule. Sending
           // one without the other would half-configure the event, which
-          // award_attendance_credit silently skips.
-          cpd: cpdBodyId && cpdHours
+          // award_attendance_credit silently skips. A body with no valid hours
+          // was stopped above, so this is always a complete pair or neither.
+          cpd: cpdBodyId
             ? { bodyId: cpdBodyId, hours: Number(cpdHours) }
             : { bodyId: null, hours: null },
         };
@@ -406,6 +444,7 @@ export default function NewEventForm(props: Props) {
       const res = await props.submit(payload);
       if (res && 'error' in res) {
         setErr(res.error);
+        setSavedEventId(res.eventId ?? null);
         setIntent(null);
         return;
       }
@@ -440,6 +479,8 @@ export default function NewEventForm(props: Props) {
   }
 
   const isEdit = props.mode === 'edit';
+  const canPublish = props.mode === 'create' ? (props.canPublish ?? true) : false;
+  const canAccredit = props.mode === 'create' ? (props.canSetAccreditation ?? true) : false;
 
   return (
     <div className="pb-xxl space-y-xl">
@@ -475,7 +516,7 @@ export default function NewEventForm(props: Props) {
 
       {/* 2 · Basics — v4: title/description + hosted by / organized by rows
           + profession category (drives the dashboard tag + public-list tabs). */}
-      <FormSection ref={basicsRef} number="2" title="Basics">
+      <FormSection ref={basicsRef} number="2" title="Basics" error={fieldErr?.section === 'basics' ? fieldErr.message : null}>
         <div className="space-y-lg">
           <BasicsSection value={basics} onChange={(p) => setBasics({ ...basics, ...p })} />
           <label className="block max-w-xs">
@@ -512,7 +553,7 @@ export default function NewEventForm(props: Props) {
           inline calendar + start/end times (DateTimeSection's own internal
           grid). Timezone hint sits between the rows, once a venue is picked
           (so the copy is grounded in a real zone string). */}
-      <FormSection ref={dateVenueRef} number="3" title="Date & venue">
+      <FormSection ref={dateVenueRef} number="3" title="Date & venue" error={fieldErr?.section === 'venue' ? fieldErr.message : null}>
         <div className="space-y-lg">
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-lg items-start" ref={capacityRef as unknown as React.Ref<HTMLDivElement>}>
             <VenueSection value={venue} onChange={setVenue} />
@@ -536,7 +577,7 @@ export default function NewEventForm(props: Props) {
       </FormSection>
 
       {/* 4 · Agenda (optional) */}
-      <FormSection ref={agendaRef} number="4" title="Agenda" optional>
+      <FormSection ref={agendaRef} number="4" title="Agenda" optional error={fieldErr?.section === 'agenda' ? fieldErr.message : null}>
         <AgendaSection
           date={datetime.date}
           eventStartMinutes={datetime.startMinutes}
@@ -548,7 +589,7 @@ export default function NewEventForm(props: Props) {
 
       {/* 5 · Registration period (v4 — moved to the bottom): explicit
           open → close range + the auto day-counter chip. */}
-      <FormSection ref={regRef} number="5" title="Registration period" optional>
+      <FormSection ref={regRef} number="5" title="Registration period" optional error={fieldErr?.section === 'reg' ? fieldErr.message : null}>
         <div className="space-y-md">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-lg">
             <div>
@@ -644,8 +685,12 @@ export default function NewEventForm(props: Props) {
           columns are revoked from every app role, so there is no direct-write
           shortcut to take. */}
       {props.mode === 'create' && (
-        <FormSection number="7" title="CPD accreditation" optional>
-          {props.cpdBodiesUnavailable ? (
+        <FormSection ref={cpdRef} number="7" title="CPD accreditation" optional error={fieldErr?.section === 'cpd' ? fieldErr.message : null}>
+          {!canAccredit ? (
+            <p className="rounded-lg bg-surface-container-low px-md py-sm font-body-md text-body-md text-on-surface-variant max-w-prose">
+              Your role can&apos;t set accreditation. You can still create the event without it and ask an organiser admin to add it later.
+            </p>
+          ) : props.cpdBodiesUnavailable ? (
             <p className="rounded-lg bg-error-container px-md py-sm font-body-md text-body-md text-on-error-container max-w-prose">
               The list of accrediting bodies couldn&rsquo;t be loaded. Save the event and set its accreditation from
               the event page.
@@ -708,6 +753,7 @@ export default function NewEventForm(props: Props) {
           variant="outline"
           onClick={onCancel}
           disabled={pending}
+          className="min-h-11"
         >
           Cancel
         </Button>
@@ -718,6 +764,8 @@ export default function NewEventForm(props: Props) {
               variant="outline"
               onClick={() => onSubmit('preview')}
               disabled={pending}
+              focusableWhenDisabled
+              className="min-h-11 aria-disabled:opacity-50"
             >
               {pending && intent === 'preview' ? 'Saving…' : 'Save & Preview'}
             </Button>
@@ -727,39 +775,76 @@ export default function NewEventForm(props: Props) {
               type="button"
               onClick={() => onSubmit('draft')}
               disabled={pending}
+              focusableWhenDisabled
+              className="min-h-11 aria-disabled:opacity-50"
             >
               {pending && intent === 'draft' ? 'Saving…' : 'Save changes'}
             </Button>
           ) : (
             <>
+              {/* With Publish hidden for this role, Save draft is the only way
+                  forward, so it takes the primary style (one primary action per
+                  card, D16); it stays outlined beside a Publish button. */}
               <Button
                 type="button"
-                variant="outline"
+                variant={canPublish ? 'outline' : 'default'}
                 onClick={() => onSubmit('draft')}
                 disabled={pending}
+                focusableWhenDisabled
+                className="min-h-11 aria-disabled:opacity-50"
               >
                 {pending && intent === 'draft' ? 'Saving…' : 'Save draft'}
               </Button>
-              <Button
-                type="button"
-                onClick={() => onSubmit('publish')}
-                disabled={pending}
-              >
-                {pending && intent === 'publish' ? 'Publishing…' : 'Publish event'}
-              </Button>
+              {canPublish && (
+                <Button
+                  type="button"
+                  onClick={() => onSubmit('publish')}
+                  disabled={pending}
+                  focusableWhenDisabled
+                  className="min-h-11 aria-disabled:opacity-50"
+                >
+                  {pending && intent === 'publish' ? 'Publishing…' : 'Publish event'}
+                </Button>
+              )}
             </>
           )}
         </div>
       </div>
 
+      {!isEdit && !canPublish && (
+        <p className="font-body-md text-body-md text-on-surface-variant">
+          Your role can&apos;t publish events. Save a draft and ask an organiser admin to publish it.
+        </p>
+      )}
+      {/* Where Publish is the blue button, say what it costs BEFORE the click: a published
+          event is read-only until package P9b, so a first-time organiser could publish a
+          typo they cannot fix (user-lens 2026-10-09). The edit card says the same. */}
+      {!isEdit && canPublish && (
+        <p className="font-body-md text-body-md text-on-surface-variant">
+          Publish event makes the registration page live. Details cannot be edited after publishing yet, so check them first.
+        </p>
+      )}
+
       {err && (
         <p
+          ref={errRef}
+          tabIndex={-1}
           role="alert"
-          className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
+          className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm outline-none"
         >
           <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
           <span className="flex-1">{err}</span>
         </p>
+      )}
+      {/* Only when the event itself was saved: the organiser keeps their work
+          and can open it, instead of being left on a failed form. */}
+      {err && savedEventId && (
+        <Link
+          href={`/events/${savedEventId}/edit`}
+          className="font-label-md text-label-md text-primary-ink underline underline-offset-4 min-h-11 inline-flex items-center"
+        >
+          Open the saved event
+        </Link>
       )}
       {savedAt && !err && (
         <p
@@ -776,6 +861,8 @@ export default function NewEventForm(props: Props) {
   );
 }
 
+type FieldSection = 'basics' | 'venue' | 'agenda' | 'reg' | 'cpd';
+
 /**
  * Numbered linear section per the EE mockup. The `ref` is forwarded onto
  * the outer <section> so the form's scroll-to-first-invalid can target it
@@ -787,12 +874,15 @@ function FormSection({
   number,
   title,
   optional = false,
+  error = null,
   children,
 }: {
   ref?: React.Ref<HTMLElement>;
   number: string;
   title: string;
   optional?: boolean;
+  /** Validation message for THIS section, shown directly under its heading. */
+  error?: string | null;
   children: React.ReactNode;
 }) {
   return (
@@ -806,6 +896,17 @@ function FormSection({
           </span>
         )}
       </h2>
+      {error && (
+        <p
+          id="form-field-error"
+          role="alert"
+          tabIndex={-1}
+          className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm outline-none"
+        >
+          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
+          <span className="flex-1">{error}</span>
+        </p>
+      )}
       {children}
     </section>
   );
