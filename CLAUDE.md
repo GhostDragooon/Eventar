@@ -14,8 +14,8 @@
    speculative features. No abstractions for single-use code.
 3. Surgical changes. Touch only what is asked. Do not "improve"
    adjacent code, comments, or formatting. Match existing style.
-4. Goal-driven execution. Define success criteria. Loop until
-   verified. Do not narrate steps; tell me what success looks like.
+4. Goal-driven execution. Define success criteria and loop until
+   verified. Report against those criteria, with a short note at each milestone or decision point.
 5. Do not make the model do non-language work. Retry policies,
    routing, escalation thresholds belong in deterministic code.
 6. Hard token budgets, no exceptions. Stop and ask if a task is
@@ -70,9 +70,9 @@
 
 ## What this repo is
 
-> ⚠️ **PIVOT — 2026-07-03.** Eventar pivoted from internal workshop manager to a **CPD/CME/CE event + credit platform** for regulated professions (HK launch, HKCP first accrediting body). Canonical record + frozen design baseline: vault `20 — Roadmap/Pivot — CPD Platform (2026-07-03).md` + Decisions Log **Q20**. Active plan: vault `20 — Roadmap/CPD Roadmap — Backend First.md` — backend first. ⚠️ **That note's frontend freeze is LIFTED (2026-08-01) — see the pivot-era rules below.** The vault note has not been updated and still reads "post-M4"; it is wrong on this point. Until 2026-08-10 this sentence said "frontend FROZEN", contradicting the rule 12 lines further down and the row in the table below — two of the three statements in this contract told a fresh session not to touch a frontend Ivan had just had rebuilt. Current phase: `docs/plans/PROJECT_STATE.md`. Pre-pivot vault notes are historical unless they say otherwise.
+> ⚠️ **PIVOT — 2026-07-03.** Eventar pivoted from internal workshop manager to a **CPD/CME/CE event + credit platform** for regulated professions (HK launch, HKCP first accrediting body). Canonical record + frozen design baseline: vault `20 — Roadmap/Pivot — CPD Platform (2026-07-03).md` + Decisions Log **Q20**. Active plan: vault `20 — Roadmap/CPD Roadmap — Backend First.md` — backend first. ⚠️ **That note's frontend freeze is LIFTED (2026-08-01) — see the pivot-era rules below.** The vault note has not been updated and still reads "post-M4"; it is wrong on this point. Current phase: `docs/plans/PROJECT_STATE.md`. Pre-pivot vault notes are historical unless they say otherwise.
 
-> **📛 Roadmap vocabulary is Stage 1–13 ONLY. `docs/plans/STAGES.md` is the authority.** "M1–M4", "Sprint 0–5", "Milestone A–E" and "Phase 7/8/9" are retired — translate via its table. Historical handoffs keep their original wording; every live instruction document does not. Note that `STAGES.md` was itself unreferenced by this file and by the vault until 2026-08-10, which is how four naming axes stayed alive after being retired.
+> **📛 Roadmap vocabulary is Stage 1–13 ONLY. `docs/plans/STAGES.md` is the authority.** "M1–M4", "Sprint 0–5", "Milestone A–E" and "Phase 7/8/9" are retired — translate via its table. Historical handoffs keep their original wording; every live instruction document does not.
 
 **Eventar** — CPD platform (post-pivot). **Next.js 16** (App Router) + Tailwind v4 + Supabase + Resend.
 *Note: vault notes were written assuming Next 15; if you find a discrepancy between vault and Next 16 reality, the Next 16 docs win.*
@@ -84,7 +84,7 @@ The shipped workshop loop (registration → confirmation email → 60-min-before
 - **Audit insert last.** Any transaction writing `audit_events` emits the audit event as the LAST statement before commit (the chain trigger holds `pg_advisory_xact_lock` until commit).
 - **Measurement vs inference.** Automation acts only on deterministic measurements (rate limits, Turnstile, OTP failure counts). Inference signals (behavioural classification) produce flags for humans — never automatic action. No IP-level enforcement on authenticated routes, ever.
 - **Multi-tenancy.** Every new domain table carries `organisation_id` + RLS (Q20 reversed old decision 6.3 single-org).
-- ~~**Frontend freeze.**~~ **LIFTED for S-Organiser, 2026-08-01** (Ivan's M2 unfreeze scope call — the roadmap's "M2 unfreeze scope call" Ivan-critical item). Plan + admission checklist + staging: `docs/plans/2026-08-01-m2-frontend-unfreeze.md`. **Still off-limits, each for its OWN reason and not because of the freeze:** practitioner compliance math (Q26 + Milestone C gated — the evaluator half of M2 is untouched), the practitioner app / S-Attendee (post-M4), evidence locker + share-and-verify (B6, planned S5), multi-track scheduling (needs a deliberate data-model decision, rule 13). Adopting a design token's *value* without its *role* is how the first live pass broke WCAG AA on every CTA — read the plan's Stage 1 findings before touching the palette.
+- **Frontend (S-Organiser) is open** (Ivan's M2 unfreeze scope call, 2026-08-01). Plan + admission checklist + staging: `docs/plans/2026-08-01-m2-frontend-unfreeze.md`. **Still off-limits, each for its OWN reason and not because of the freeze:** practitioner compliance math (Q26 + Milestone C gated — the evaluator half of M2 is untouched), the practitioner app / S-Attendee (post-M4), evidence locker + share-and-verify (B6, planned S5), multi-track scheduling (needs a deliberate data-model decision, rule 13). Adopting a design token's *value* without its *role* is how the first live pass broke WCAG AA on every CTA — read the plan's Stage 1 findings before touching the palette.
 - **Block architecture guardrail (2026-07-11).** Every new feature/table/module must slot into the block map in `docs/architecture/BLOCK-ARCHITECTURE.md` (kernel K1–K3 / domain blocks B1–B8 / surfaces) and pass its new-work admission checklist before any code. Work that doesn't fit a block is a flagged decision first, not code. Kernel changes are constitutional (Decisions Log + Ivan sign-off).
 
 ## Source of truth — read the Obsidian vault first
@@ -125,16 +125,9 @@ Both predate the 2026-07-03 pivot. For the live plan, read `docs/plans/STAGES.md
 
 When executing a phase, follow its plan task-by-task. Per `~/.claude/CLAUDE.md`'s skill-scoping rule, `superpowers:*` (including `executing-plans` and `subagent-driven-development`) is reserved for new-project planning — do not invoke it by default for ongoing Eventar work; reach for it only if this task is genuinely new-project-scale or Ivan names it.
 
-## Pre-deploy gates — ALL CLOSED (kept for the record)
+## Deploy status
 
-The four pre-public-deploy gates are resolved; retained so they aren't re-litigated:
-
-1. ✅ `/checkin/confirm` PII enumeration oracle — name dropped + rate-limited (`7c5bcbd`, `20ac68f`).
-2. ✅ CSPRNG registration codes — `crypto.randomInt()`, widened to 6 chars (`659eee0`).
-3. ✅ Host-header spoofing on QR origin — `NEXT_PUBLIC_SITE_URL` via `lib/origin.ts` (`561d2cb`).
-4. ✅ Migration history drift — reconciled 26/26 local↔remote (`8c8e7d9`, 2026-07-04).
-
-Deploy status post-pivot: old Phase 8 (workshop-MVP deploy) is **PAUSED** — needs an explicit user go decision; never deploy by momentum. The CPD deploy path is **Stage 8** (`docs/plans/STAGES.md`). Live Supabase project is Seoul (`ap-northeast-2`); canonical prod will be a fresh **Singapore (`ap-southeast-1`)** project, **still unprovisioned** — an open Stage-8 precondition, not something already done. Until 2026-08-10 this sentence said "Milestone M4" (which translates to Stage **12**) and "provisioned at Sprint 1 start" (Stage 1, shipped 2026-07-04) — both halves wrong, in opposite directions. Its blocking precondition, a green replay-from-zero, was closed 2026-08-10 (`d60b596`).
+Deploy status post-pivot: old Phase 8 (workshop-MVP deploy) is **PAUSED** — needs an explicit user go decision; never deploy by momentum. The CPD deploy path is **Stage 8** (`docs/plans/STAGES.md`). Live Supabase project is Seoul (`ap-northeast-2`); canonical prod will be a fresh **Singapore (`ap-southeast-1`)** project, **still unprovisioned** — an open Stage-8 precondition, not something already done. Its blocking precondition, a green replay-from-zero, was closed 2026-08-10 (`d60b596`).
 
 ---
 
@@ -187,6 +180,6 @@ The user-global rules in `~/.claude/CLAUDE.md` (skill-library-first, phase-compl
 
 - **Static gates** for the phase-completion-protocol means: `pnpm exec tsc --noEmit && pnpm exec eslint . && pnpm exec vitest run && pnpm exec next build`. The vitest count + next.js route count are the running invariants; check the latest phase note for the current expected numbers.
 - **⚠️ `.env.local` points at the Seoul production project**, not a local stack. `pnpm test:rls` and anything in `tests/cpd/` therefore write to production — the latter posts real, permanently-undeletable `credit_ledger` rows. Point `.env.local` at the local stack (or use `scripts/demo/dev-local.sh`, port 3100, which derives local env vars live from `supabase status`) before running either. `pnpm dev` is the Seoul-pointed server; never assume a "the dev server" reference means local.
-- **Backtest** for mutation surfaces means executing the Server Action and querying the row back. **CLI `supabase db push --linked` works** — corrected 2026-08-04, after this file had claimed for a month that it was "blocked by migration history drift". The drift was reconciled in July; six migrations were pushed cleanly that day. Prefer it over MCP `apply_migration`, which assigns its own version from server time and forces a local rename afterwards, and which does NOT wrap a migration in a transaction the way `db push` does (a raw `psql -f` leaves a half-applied migration behind when a trailing assertion fails).
-- **Do not assume a dev server is on port 3000.** This file previously asserted one always is; on 2026-08-04 nothing was listening there and the running server was on **:3200**, which sent a review agent chasing a phantom outage. Check with `lsof -nP -iTCP -sTCP:LISTEN | grep -E ':(3000|3100|3200) '` before using a port, and still never start a second server in the same project directory — Next 16 allows one per directory.
+- **Backtest** for mutation surfaces means executing the Server Action and querying the row back. **CLI `supabase db push --linked` works** (migration history is reconciled). Prefer it over MCP `apply_migration`, which assigns its own version from server time and forces a local rename afterwards, and which does NOT wrap a migration in a transaction the way `db push` does (a raw `psql -f` leaves a half-applied migration behind when a trailing assertion fails).
+- **Do not assume a dev server is on port 3000.** The dev server may be on :3000, :3100 or :3200. Check with `lsof -nP -iTCP -sTCP:LISTEN | grep -E ':(3000|3100|3200) '` before using a port, and still never start a second server in the same project directory — Next 16 allows one per directory.
 - **Vault note and handoff doc** are the "summary docs" the protocol says must come AFTER the three checks. Vault notes go to `/Users/ivan/Desktop/Eventar/20 — Roadmap/Phase X — *.md`; handoffs go to `docs/plans/handoff_DDMMYYYY.md`.
