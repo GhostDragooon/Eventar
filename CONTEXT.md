@@ -104,3 +104,21 @@ _Avoid_: departure scan, sign-out
 **Minutes attended**:
 Measured presence between check-in and check-out. Distinct from the event's scheduled length and from the hours finally credited.
 _Avoid_: duration, attendance time, time present
+
+### People's data and their requests
+
+**Platform operator**:
+Eventar's own staff, as opposed to an organisation's staff or an accrediting body's. They can act on any organisation's records and any person's account, and they are the only people who may erase a person.
+_Avoid_: admin, super-admin, support
+
+**Linked registration**:
+A registration the person has attached to their own Eventar account. An organisation can always see the registrations made at its events, but only the person can link one to their account (by registering while signed in, or by claiming past events). A registration made as a guest, by an organiser on someone's behalf, or from an import is not linked until the person claims it. A linked registration is what ties a person to an organisation when that organisation handles their requests.
+_Avoid_: matched registration, verified attendee
+
+**Data subject request**:
+A person's request to Eventar about their own data: access, correction, portability, restriction, objection or erasure. It has a due date, a resolver and a recorded outcome. An organisation's admin may handle the requests of people with a linked registration at its events; the platform operator may handle any.
+_Avoid_: DSR ticket, GDPR request, deletion request
+
+**Pseudonymise**:
+Replace a person's name on their profile with an anonymous label and mark the profile as erased. This is the only erasure Eventar performs today, and it is shallow: the person's sign-in, contact details, professional profile, licences and registrations remain. Only the platform operator can do it.
+_Avoid_: delete, anonymise, scrub

@@ -1,11 +1,15 @@
 // Sprint 2 / Task 7 — transition_dsr RLS + audit probes against the live
 // dev project, as real JWTs.
 //
-// This is also the first automated regression coverage for
-// app_private.require_active_staff (Task 2): app_private isn't
-// PostgREST-exposed, so that gate could only be verified manually via raw
-// SQL until transition_dsr (which calls it) shipped. Test its role-list
-// filtering thoroughly, not just a single happy path.
+// It was also the first automated coverage of app_private.require_active_staff
+// (Task 2), because transition_dsr called it. Since 2026-10-10 transition_dsr
+// authorises through app_private.staff_for_subject instead (role AND relation: an
+// organiser_admin may only move requests of a subject registered at an event of their
+// own organisation; dsr_org_scope.rls.test.ts covers the cross-organisation refusals),
+// so this file covers the role list of THAT gate. require_active_staff is still
+// exercised by the licence, credit and staff-role functions. The organiser_admin
+// cases below use a subject, `nonStaff`, who has a registration at one of
+// managerStaff's organisation's events.
 //
 // Gated: only runs under `pnpm test:rls` (RLS_TESTS=1).
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
@@ -26,6 +30,7 @@ describe.skipIf(!process.env.RLS_TESTS)('transition_dsr RLS + audit', () => {
   let organizerStaff: TestUser;
   const dsrIds: string[] = [];
   const staffEmails: string[] = [];
+  let eventId: string | undefined;
 
   async function makeStaffFixture(
     localPart: string,
@@ -64,11 +69,42 @@ describe.skipIf(!process.env.RLS_TESTS)('transition_dsr RLS + audit', () => {
     managerStaff = await makeStaffFixture('dsr-manager', 'organiser_admin');
     eventarStaff = await makeStaffFixture('dsr-eventarstaff', 'eventar_staff');
     organizerStaff = await makeStaffFixture('dsr-organizer', 'organiser_member');
+
+    // Relate nonStaff to managerStaff's organisation (see the header).
+    const mgr = await admin.from('staff').select('id').eq('email', managerStaff.email).single();
+    if (mgr.error || !mgr.data) throw new Error(`manager staff lookup: ${mgr.error?.message}`);
+    const ev = await admin
+      .from('events')
+      .insert({
+        title: 'DSR audited fixture — DELETE ME',
+        start_time: new Date(Date.now() + 3_600_000).toISOString(),
+        end_time: new Date(Date.now() + 7_200_000).toISOString(),
+        timezone: 'Asia/Hong_Kong',
+        created_by: mgr.data.id,
+        venue_name: 'V', city: 'HK', country: 'HK', latitude: 22.3, longitude: 114.2,
+        status: 'published',
+      })
+      .select('id')
+      .single();
+    if (ev.error || !ev.data) throw new Error(`event fixture: ${ev.error?.message}`);
+    eventId = ev.data.id as string;
+    const reg = await admin.from('registrations').insert({
+      event_id: eventId,
+      user_id: nonStaff.id,
+      email: nonStaff.email,
+      full_name: 'DSR audited subject',
+      registration_code: `WK-DA${String(Date.now()).slice(-6)}`,
+    });
+    if (reg.error) throw new Error(`registration fixture: ${reg.error.message}`);
   }, 60_000);
 
   afterAll(async () => {
     if (dsrIds.length > 0) {
       await mustDelete(admin.from('data_subject_requests').delete().in('id', dsrIds), 'data_subject_requests fixture');
+    }
+    if (eventId) {
+      await mustDelete(admin.from('registrations').delete().eq('event_id', eventId), 'registrations fixture');
+      await mustDelete(admin.from('events').delete().eq('id', eventId), 'events fixture');
     }
     for (const email of staffEmails) {
       await mustDelete(admin.from('staff').delete().eq('email', email), `staff ${email}`);
@@ -78,7 +114,7 @@ describe.skipIf(!process.env.RLS_TESTS)('transition_dsr RLS + audit', () => {
     }
   }, 60_000);
 
-  // ---- 1. non-staff caller is rejected (proves require_active_staff denies) ----
+  // ---- 1. non-staff caller is rejected (staff_for_subject finds no staff row) ----
   it('non-staff caller gets 42501', async () => {
     const dsrId = await makeDsrFixture(nonStaff.id);
     const { data, error } = await nonStaff.client.rpc('transition_dsr', {
@@ -183,8 +219,11 @@ describe.skipIf(!process.env.RLS_TESTS)('transition_dsr RLS + audit', () => {
   });
 
   // ---- 6. non-existent DSR id is rejected (distinct from gate/status errors) ----
+  // Called as eventar_staff: an organiser_admin cannot reach this error, because an id that
+  // resolves to no subject is refused at the gate (42501) exactly like an unrelated one, so
+  // the answer reveals nothing about which ids exist (dsr_org_scope.rls.test.ts asserts that).
   it('transitioning a non-existent DSR id is rejected', async () => {
-    const { data, error } = await managerStaff.client.rpc('transition_dsr', {
+    const { data, error } = await eventarStaff.client.rpc('transition_dsr', {
       p_id: '00000000-0000-0000-0000-00000000dead',
       p_status: 'in_progress',
     });

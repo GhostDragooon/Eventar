@@ -27,12 +27,23 @@ grant usage, select on all sequences in schema public
 --                            + 20260709320000 re-grants service_role DELETE
 --   professional_profiles  — 20260829130000_professional_profiles_no_delete_from_authenticated.sql
 --                            (only DELETE is revoked; INSERT/UPDATE stay for RLS self-write)
+--   data_subject_requests  — 20261010000725_dsr_authority_scoped_to_subject_org.sql
+--                            (app roles cannot write it; authenticated keeps only a column-limited
+--                            INSERT so a person can file their own request; service_role keeps DML)
 revoke insert, update, delete on public.audit_events          from anon, authenticated, service_role;
 revoke insert, update, delete on public.credit_ledger         from anon, authenticated, service_role;
 revoke insert, update, delete on public.practitioner_licences from anon, authenticated, service_role;
 grant  delete                  on public.practitioner_licences to service_role;
 revoke delete                  on public.professional_profiles from anon, authenticated, service_role;
 grant  delete                  on public.professional_profiles to service_role;
+-- data_subject_requests: transition_dsr (audited) is the only way an app role changes a request.
+-- The blanket grant above re-granted full DML to anon and authenticated; take it back, then give
+-- authenticated back only the three columns a person chooses when filing their own request. The
+-- other columns (status, resolver_staff_id, resolved_at, due_at, submitted_at, id, resolution_notes)
+-- take their defaults, so nobody can file a request that is already completed or stamped with an
+-- operator's staff id. service_role keeps the blanket DML (the future console path).
+revoke insert, update, delete on public.data_subject_requests from anon, authenticated;
+grant  insert (subject_user_id, request_type, request_notes) on public.data_subject_requests to authenticated;
 -- staff.role is definer-only (set_staff_role, migration 20260716150855). The
 -- blanket grant above re-granted table-level UPDATE on staff, which would
 -- re-expose the role column locally — re-assert the revoke + non-role column

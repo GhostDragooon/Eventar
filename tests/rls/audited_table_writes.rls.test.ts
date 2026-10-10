@@ -12,6 +12,17 @@
 //                                    to all roles incl service_role), but
 //                                    service_role DELETE is deliberately RETAINED
 //                                    for cleanup/erasure (see 20260709320000).
+//   data_subject_requests         — LIFECYCLE (added 2026-10-10): no app role may
+//                                    UPDATE or DELETE (transition_dsr, audited, is the
+//                                    only way a request changes); the one direct
+//                                    INSERT is a person filing THEIR OWN request,
+//                                    limited to subject_user_id, request_type and
+//                                    request_notes; service_role RETAINS DML for the
+//                                    future console. Before 20261010000725 the table
+//                                    sat behind RLS alone and let a linked organiser
+//                                    close, backdate, re-attribute or delete a
+//                                    request, and let a person file one already
+//                                    completed and stamped with an operator's id.
 //   organisation_body_authorisations — REGISTRY: no app role may write at all;
 //                                    service_role RETAINS full DML as the
 //                                    seeding path until the Stage 10 approval
@@ -283,6 +294,118 @@ describe.skipIf(!process.env.RLS_TESTS)('audited-table write guard (service_role
       } finally {
         await admin.from('organisation_body_authorisations').delete().eq('body_id', body.id);
         await mustDelete(admin.from('accrediting_bodies').delete().eq('id', body.id), 'accrediting_bodies fixture');
+      }
+    }, 60_000);
+  });
+
+  // ---- LIFECYCLE: data_subject_requests ----
+  // RLS is ON for this table, so a denied INSERT can also surface as 42501 from a POLICY
+  // ("new row violates row-level security policy"). Every INSERT assertion below therefore also
+  // checks the message says "permission denied" (a table or column privilege), so a revoked
+  // grant that is silently replaced by an RLS denial still fails this test.
+  describe('data_subject_requests — lifecycle (no app-role UPDATE/DELETE, column-limited self-service INSERT, service_role DML retained)', () => {
+    const OPERATOR_ONLY_COLUMNS: Array<[string, unknown]> = [
+      ['id', BOGUS],
+      ['submitted_at', '2020-01-01T00:00:00Z'],
+      ['status', 'completed'],
+      ['resolver_staff_id', BOGUS],
+      ['resolved_at', '2026-01-01T00:00:00Z'],
+      ['due_at', '2099-01-01T00:00:00Z'],
+      ['resolution_notes', 'forged'],
+    ];
+
+    it('anon is denied INSERT, UPDATE and DELETE with a permission error', async () => {
+      const anon = createAnonClient();
+      const ins = await anon.from('data_subject_requests').insert({ subject_user_id: BOGUS, request_type: 'access' });
+      expect(ins.error?.code, 'anon INSERT').toBe(PERMISSION_DENIED);
+      expect(ins.error?.message, 'anon INSERT is a grant denial, not RLS').toMatch(/permission denied/i);
+      const upd = await anon.from('data_subject_requests').update({ status: 'completed' }).eq('id', BOGUS);
+      expect(upd.error?.code, 'anon UPDATE').toBe(PERMISSION_DENIED);
+      const del = await anon.from('data_subject_requests').delete().eq('id', BOGUS);
+      expect(del.error?.code, 'anon DELETE').toBe(PERMISSION_DENIED);
+    }, 30_000);
+
+    it('authenticated may file their own request with only the three columns a person chooses; every operator-only column is denied', async () => {
+      const user = await createTestUser(`guard-dsr-${Date.now()}`);
+      const created: string[] = [];
+      try {
+        const ok = await user.client
+          .from('data_subject_requests')
+          .insert({ subject_user_id: user.id, request_type: 'access', request_notes: 'guard test' })
+          .select('id, status, resolver_staff_id, resolved_at')
+          .single();
+        expect(ok.error, 'own request with the three allowed columns must succeed').toBeNull();
+        created.push(ok.data!.id as string);
+        // Defaults supplied the rest: it is a fresh pending request.
+        expect(ok.data).toMatchObject({ status: 'pending', resolver_staff_id: null, resolved_at: null });
+
+        for (const [column, value] of OPERATOR_ONLY_COLUMNS) {
+          const bad = await user.client
+            .from('data_subject_requests')
+            .insert({ subject_user_id: user.id, request_type: 'access', [column]: value });
+          expect(bad.error?.code, `INSERT with ${column}`).toBe(PERMISSION_DENIED);
+          expect(bad.error?.message, `INSERT with ${column} is a column-privilege denial, not RLS`).toMatch(/permission denied/i);
+        }
+        // Nothing but the one legitimate row exists for this user.
+        const { data: rows } = await admin.from('data_subject_requests').select('id').eq('subject_user_id', user.id);
+        expect(rows).toHaveLength(1);
+      } finally {
+        try {
+          if (created.length) {
+            await mustDelete(admin.from('data_subject_requests').delete().in('id', created), 'data_subject_requests');
+          }
+        } finally {
+          await deleteTestUser(user);
+        }
+      }
+    }, 60_000);
+
+    it('authenticated cannot UPDATE or DELETE even their own request (42501): transition_dsr is the only audited way', async () => {
+      const user = await createTestUser(`guard-dsr-ud-${Date.now()}`);
+      let id: string | undefined;
+      try {
+        const made = await admin
+          .from('data_subject_requests')
+          .insert({ subject_user_id: user.id, request_type: 'access' })
+          .select('id')
+          .single();
+        if (made.error || !made.data) throw new Error(`dsr fixture: ${made.error?.message}`);
+        id = made.data.id as string;
+
+        const upd = await user.client.from('data_subject_requests').update({ status: 'completed' }).eq('id', id);
+        expect(upd.error?.code, 'authenticated UPDATE').toBe(PERMISSION_DENIED);
+        const del = await user.client.from('data_subject_requests').delete().eq('id', id);
+        expect(del.error?.code, 'authenticated DELETE').toBe(PERMISSION_DENIED);
+
+        const { data: after } = await admin.from('data_subject_requests').select('status').eq('id', id).single();
+        expect(after?.status).toBe('pending');
+      } finally {
+        try {
+          if (id) await mustDelete(admin.from('data_subject_requests').delete().eq('id', id), 'data_subject_requests');
+        } finally {
+          await deleteTestUser(user);
+        }
+      }
+    }, 60_000);
+
+    it('service_role retains DML (positive round-trip): the console path', async () => {
+      const user = await createTestUser(`guard-dsr-sr-${Date.now()}`);
+      try {
+        const ins = await admin
+          .from('data_subject_requests')
+          .insert({ subject_user_id: user.id, request_type: 'access', status: 'in_progress' })
+          .select('id')
+          .single();
+        expect(ins.error, 'service_role INSERT must succeed').toBeNull();
+        const id = ins.data!.id as string;
+        const upd = await admin.from('data_subject_requests').update({ status: 'completed' }).eq('id', id);
+        expect(upd.error, 'service_role UPDATE must succeed').toBeNull();
+        const del = await admin.from('data_subject_requests').delete().eq('id', id);
+        expect(del.error, 'service_role DELETE must succeed').toBeNull();
+        const { data: gone } = await admin.from('data_subject_requests').select('id').eq('id', id);
+        expect(gone).toHaveLength(0);
+      } finally {
+        await deleteTestUser(user);
       }
     }, 60_000);
   });
