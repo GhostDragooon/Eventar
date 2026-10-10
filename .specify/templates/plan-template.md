@@ -42,6 +42,10 @@
 
 [Gates determined based on constitution file]
 
+Answer each Core Principle's **Plan-review check** from `.specify/memory/constitution.md` as PASS,
+N/A, or VIOLATION (a violation is recorded in Complexity Tracking), citing the evidence (route,
+file, or migration).
+
 ## Project Structure
 
 ### Documentation (this feature)

@@ -158,6 +158,17 @@ Examples of foundational tasks (adjust based on your project):
 - [ ] TXXX Security hardening
 - [ ] TXXX Run quickstart.md validation
 
+**Constitution-driven tasks (include when the plan touches the area):**
+
+- [ ] TXXX Database change: RLS policies, grant revokes for every role including `service_role`,
+      a `42501` negative test, an audited-writes matrix row, a `has_table_privilege` check, and the
+      audit insert as the last statement before commit
+- [ ] TXXX Server Action: `requireStaff()` first; form + Zod + DB-constraint validation;
+      `email_log` row before any send
+- [ ] TXXX UI: tokens only, `pnpm check:ui-colours` and `pnpm check:ui-primitives` with no new
+      violations, both themes reviewed
+- [ ] TXXX Next.js API use: read the matching guide in `node_modules/next/dist/docs/` first
+
 ---
 
 ## Dependencies & Execution Order
