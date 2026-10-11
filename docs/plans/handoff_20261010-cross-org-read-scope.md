@@ -1,5 +1,7 @@
 # Session handoff, 2026-10-10: cross-organisation reads closed. People's data and the audit log are readable by the person and the platform operator only; staff by their own organisation's admins; `is_manager()` is gone
 
+> **Superseded as the entry point (2026-10-11).** Open items, current state and the build plan are in [handoff_20261011-consolidated.md](handoff_20261011-consolidated.md). This file stays the evidence record; its state lines are stale: committed 2026-10-11 as `db4062b` (+ docs `66c243d`; not pushed to Seoul).
+
 Written after the phase-completion protocol (a dev-lens and a separate user-lens review, a backtest). Evidence tags: **[X]** executed, **[R]** read in code or the catalog, **[I]** inferred, not reproduced. Decision record: vault Decisions Log **Q43**. Follows `handoff_20261010-dsr-org-scope.md` (Q42), which registered this finding.
 
 ## 1. State: LOCAL ONLY, NOTHING COMMITTED OR PUSHED

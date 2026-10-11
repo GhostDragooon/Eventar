@@ -1,5 +1,7 @@
 # Session handoff, 2026-10-11: API roles no longer hold TRUNCATE or TRIGGER (LOCAL ONLY, NOTHING COMMITTED OR PUSHED)
 
+> **Superseded as the entry point (2026-10-11).** Open items, current state and the build plan are in [handoff_20261011-consolidated.md](handoff_20261011-consolidated.md). This file stays the evidence record; its state lines are stale: committed 2026-10-11 as `888b5be` (not pushed to Seoul).
+
 Written after the phase-completion protocol: one dev-lens and one user-lens review (separate agents) on the TRUNCATE-only version, then a backtest on the final state. Evidence tags: **[X]** executed here (local stack only, in transactions that were rolled back unless stated), **[R]** read in code, the catalog or `--help`, **[V]** vendor docs, **[I]** inferred, not reproduced.
 
 Origin: `handoff_20261010-cross-org-read-scope.md` §6 item 4 (the task chip "Revoke TRUNCATE on append-only audit tables"). This session is that chip; the item is answered here and there is nothing left to start or dismiss.

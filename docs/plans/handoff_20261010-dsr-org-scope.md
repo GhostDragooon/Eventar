@@ -1,5 +1,7 @@
 # Session handoff, 2026-10-10: erasure is platform-only, DSR handling is organisation-scoped, the DSR table is read-only for app roles
 
+> **Superseded as the entry point (2026-10-11).** Open items, current state and the build plan are in [handoff_20261011-consolidated.md](handoff_20261011-consolidated.md). This file stays the evidence record; its state lines are stale: committed 2026-10-11 as `44c86de` (+ docs `66c243d`; not pushed to Seoul).
+
 Written after the phase-completion protocol (two dev-lens and two user-lens reviews, a backtest). Evidence tags: **[X]** executed, **[R]** read in code or the catalog, **[I]** inferred, not reproduced. Decision record: vault Decisions Log **Q42**.
 
 ## 1. State: LOCAL ONLY, NOTHING COMMITTED OR PUSHED

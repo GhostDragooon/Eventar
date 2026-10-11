@@ -1,5 +1,7 @@
 # Handoff — 2026-10-09 — Cross-organisation reads on staff pages, and `get_org_participants`
 
+> **Superseded as the entry point (2026-10-11).** Open items, current state and the build plan are in [handoff_20261011-consolidated.md](handoff_20261011-consolidated.md). This file stays the evidence record; its state lines are stale: its migration `20261009011823` is committed (`c8a0d77`) but not pushed to Seoul.
+
 Request: a read-only review (2026-10-01, at `d66daa8`) flagged, from code reading only, that the Check-in and Reports pickers list other organisations' events and that `/events/[id]/analytics` has no `canManageEvent` gate. Per Rule 14 this session established validity and extent first, then fixed.
 
 Evidence tags: **[X]** executed against the LOCAL stack · **[R]** read in code/catalog · **[I]** inferred. Seoul (production) was not reachable, see §4.
