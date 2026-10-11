@@ -36,8 +36,15 @@
       "input_tokens": 795798,
       "output_tokens": 0,
       "files": 376
+    },
+    {
+      "date": "2026-10-11T04:49:59.739520+00:00",
+      "input_tokens": 624983,
+      "output_tokens": 0,
+      "files": 252,
+      "note": "subagent totals for chunks 1 and 3; chunk 2 usage unknown (its agent hit the account usage limit after writing its file); in/out not split"
     }
   ],
-  "total_input_tokens": 1835405,
+  "total_input_tokens": 2460388,
   "total_output_tokens": 0
 }
