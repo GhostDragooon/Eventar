@@ -55,8 +55,8 @@ Session: "System improvement" (2026-10-14 → 15). Covers four pieces of work:
 
 ### Execute (only Ivan can, in order)
 
-1. Glance at the two dashboard files someone else changed in the main checkout at 00:42: `app/dashboard/page.tsx` and `components/dashboard/DashboardWorkstation.tsx`. The "events this week" metric now counts only open events. They are not in this session's commits.
-2. Nothing to push. `main` is ahead of `origin`, and pushing is your call.
+1. Nothing to push from this session. `main` is ahead of `origin`, and pushing is your call.
+2. Your own uncommitted edits are untouched: `.mcp.json` and `AGENTS.md`. Another session's brief edit to the dashboard "events this week" metric (00:42) was reverted by its owner before these commits.
 
 ### Queued for Claude
 

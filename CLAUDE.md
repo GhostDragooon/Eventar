@@ -105,7 +105,7 @@ Before implementing any feature, **read the relevant vault notes**:
 | Where files live, naming, route groups | `10 — Architecture/Repo Structure.md` |
 | What we're building next | `20 — Roadmap/Phased Roadmap.md`, `20 — Roadmap/Phase N — *.md` |
 | Library choices + alternatives considered | `30 — Reference/Stack.md` |
-| **ANY frontend work** — colour, tokens, components, layout, motion, or a design review | ==**vault `30 — Reference/Frontend Design Standard.md` FIRST**== (locked 2026-08-09, Decisions Log **Q32**). It is the authority and supersedes `Design Language.md` on colour doctrine, wordmark and navigation — that older note is still marked `locked` and is wrong on three of its four contested points. Then `docs/plans/2026-07-12-organiser-ia-spec.md` for staff IA. Skills: `design-system-libraries` (tokens), `gsap-*`, `emil-design-eng`, `emilkowalski-motion`, `web-design-guidelines`, `impeccable-design-polish`, `redesign-existing-projects`, `minimalist-ui`, `industrial-brutalist-ui` — all global under `~/.claude/skills/` |
+| **ANY frontend work** — colour, tokens, components, layout, motion, or a design review | ==**vault `30 — Reference/Frontend Design Standard.md` FIRST**== (locked 2026-08-09, Decisions Log **Q32**). It is the authority and supersedes `Design Language.md` on colour doctrine, wordmark and navigation — that older note is still marked `locked` and is wrong on three of its four contested points. Then `docs/plans/2026-07-12-organiser-ia-spec.md` for staff IA. Skills: for design decisions only, the locked pipeline in `~/.claude/CLAUDE.md` § Frontend. Extras come via `frontend-catalog`, and tokens via `design-system-libraries`. |
 | Env vars, key rotation | `30 — Reference/Credentials.md` |
 | "Can we just add X?" — check if it's deferred | `30 — Reference/Out of Scope.md` |
 | CPD domain vocabulary — body, track, licence, point vs hour, FCAA, cycle | `CONTEXT.md` (glossary, keep implementation detail out of it) |
@@ -179,7 +179,17 @@ If a previous Claude session worked on **CENA** (`/Users/ivan/Desktop/cena`), th
 The user-global rules in `~/.claude/CLAUDE.md` (skill-library-first, phase-completion-protocol) apply here. Eventar-specific concretions:
 
 - **Static gates** for the phase-completion-protocol means: `pnpm exec tsc --noEmit && pnpm exec eslint . && pnpm exec vitest run && pnpm exec next build`. The vitest count + next.js route count are the running invariants; check the latest phase note for the current expected numbers.
-- **⚠️ `.env.local` points at the Seoul production project**, not a local stack. `pnpm test:rls` and anything in `tests/cpd/` therefore write to production — the latter posts real, permanently-undeletable `credit_ledger` rows. Point `.env.local` at the local stack (or use `scripts/demo/dev-local.sh`, port 3100, which derives local env vars live from `supabase status`) before running either. `pnpm dev` is the Seoul-pointed server; never assume a "the dev server" reference means local.
-- **Backtest** for mutation surfaces means executing the Server Action and querying the row back. **CLI `supabase db push --linked` works** (migration history is reconciled). Prefer it over MCP `apply_migration`, which assigns its own version from server time and forces a local rename afterwards, and which does NOT wrap a migration in a transaction the way `db push` does (a raw `psql -f` leaves a half-applied migration behind when a trailing assertion fails).
+- **⚠️ Local stack only.** `.env.local` points at the Seoul **production** project. Never read or edit it, and never use the Supabase MCP tools, which also reach Seoul. Work against the local stack:
+  - DB: `postgresql://postgres:postgres@127.0.0.1:54322/postgres` via `/opt/homebrew/opt/libpq/bin/psql`.
+  - Test env: from `supabase status -o env`.
+  - App: :3100 via `scripts/demo/dev-local.sh`, which derives its env live from `supabase status`.
+  - Migrations: `supabase migration up --local`.
+
+  `pnpm dev` (:3000) is the Seoul-pointed server. Running `pnpm test:rls` or `tests/cpd/` against it posts real, permanently-undeletable `credit_ledger` rows. Never run `supabase db push` or `db reset`. Never `git push` without Ivan's explicit go. Other sessions (Claude and Codex) share this tree and DB: check `ListAgents` and `git status` first, and stage only your own paths.
+- **Backtest** for mutation surfaces means executing the Server Action on :3100 and querying the row back from the local DB (recipe: memory `eventar-backtest-recipe`). Hosted-project migrations are Stage 8 work and need Ivan's go. When he gives it, `supabase db push --linked` is the route. Migration history is reconciled, and it wraps each migration in a transaction. MCP `apply_migration` does neither: it assigns its own version from server time, which forces a local rename. A raw `psql -f` leaves a half-applied migration behind when a trailing assertion fails.
 - **Do not assume a dev server is on port 3000.** The dev server may be on :3000, :3100 or :3200. Check with `lsof -nP -iTCP -sTCP:LISTEN | grep -E ':(3000|3100|3200) '` before using a port, and still never start a second server in the same project directory — Next 16 allows one per directory.
-- **Vault note and handoff doc** are the "summary docs" the protocol says must come AFTER the three checks. Vault notes go to `/Users/ivan/Desktop/Eventar/20 — Roadmap/Phase X — *.md`; handoffs go to `docs/plans/handoff_DDMMYYYY.md`.
+- **Vault note and handoff doc** are the "summary docs" the protocol says must come AFTER the three checks. Vault notes go to `/Users/ivan/Desktop/Eventar/20 — Roadmap/Phase X — *.md`; handoffs go to `docs/plans/handoff_YYYYMMDD-<slug>.md`, linked from `docs/plans/PROJECT_STATE.md`. Every handoff opens with **§0 Ivan's action list**, even when he only says "handoff":
+  - **Decide:** recommendation first.
+  - **Execute:** what only Ivan can do, in order.
+  - **Queued for Claude.**
+  - **Other sessions.**
