@@ -14,28 +14,49 @@ function fmtTime(iso: string, tz: string): string {
   return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZoneName: 'short', timeZone: tz }).format(new Date(iso));
 }
 
+// 'a, b, c' -> 'a' | 'b' | 'c'. A string literal of plain columns separated by
+// ', ' only: no embeds, aliases or casts. A non-literal string yields no columns,
+// so every property access fails to compile instead of typing as any.
+type Columns<S extends string> = string extends S
+  ? never
+  : S extends `${infer Head}, ${infer Rest}` ? Head | Columns<Rest> : S;
+
+// The caller's own organisation's events, for every staff list: the
+// Programme/Manage dashboards and the /checkin and /analytics pickers.
+// events_public_read_published (RLS) legitimately lets any authenticated —
+// or anon — caller read any PUBLISHED event, for the public discovery
+// pages. These lists have no such purpose and must show only the caller's
+// organisation's events. Relying on RLS alone mixed other orgs' published
+// events into the caller's own event list — RLS answers "can this role read
+// this row at all" (yes, it's public), not "does this page's business logic
+// want this row." Same eventar_staff exception as canManageEvent().
+export function ownEvents<Cols extends string>(
+  supabase: SupabaseClient,
+  staff: Pick<Staff, 'role' | 'organisation_id'>,
+  cols: Cols,
+) {
+  // The row type is spelled out rather than left to supabase-js's select
+  // parser: incremental tsc (the tsc gate, next build) ran out of memory
+  // printing the parser's type for this exported generic. Same shape the
+  // parser gives on this untyped client: one `any` per selected column.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query = supabase.from('events').select<Cols, { [K in Columns<Cols>]: any }>(cols);
+  if (staff.role !== 'eventar_staff') query = query.eq('organisation_id', staff.organisation_id);
+  return query;
+}
+
 export async function fetchDecoratedEvents(
   supabase: SupabaseClient,
   nowMs: number,
   staff: Pick<Staff, 'role' | 'organisation_id'>,
 ): Promise<{ events: ProgrammeEvent[]; registered7d: number; checkedInToday: number }> {
-  // events_public_read_published (RLS) legitimately lets any authenticated —
-  // or anon — caller read any PUBLISHED event, for the public discovery
-  // pages. This query has no such purpose: it backs the organiser's own
-  // Programme/Manage dashboards, which must show only that organisation's
-  // events. Relying on RLS alone here mixed other orgs' published events
-  // into the caller's own event list — RLS answers "can this role read this
-  // row at all" (yes, it's public), not "does this page's business logic
-  // want this row." Same eventar_staff exception as canManageEvent().
-  let query = supabase
-    .from('events')
-    .select('id, title, description, start_time, end_time, timezone, status, venue_name, max_attendees, registration_close_at, registration_open_at, created_by, category, deleted_at, format, hero_image_url, city, organized_by')
+  const { data: events, error: eventsErr } = await ownEvents(
+    supabase,
+    staff,
+    'id, title, description, start_time, end_time, timezone, status, venue_name, max_attendees, registration_close_at, registration_open_at, created_by, category, deleted_at, format, hero_image_url, city, organized_by',
+  )
     .order('start_time', { ascending: false })
     .limit(300);
-  if (staff.role !== 'eventar_staff') {
-    query = query.eq('organisation_id', staff.organisation_id);
-  }
-  const { data: events, error: eventsErr } = await query;
   if (eventsErr) throw eventsErr;
 
   const eventIds = (events ?? []).map((e) => e.id);

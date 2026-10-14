@@ -35,7 +35,8 @@ function makeQueryMock(rows: unknown[]) {
   return { builder, calls };
 }
 
-import { fetchDecoratedEvents } from './data';
+import { fakeSupabase } from '@/tests/helpers/staffPageFakes';
+import { fetchDecoratedEvents, ownEvents } from './data';
 
 describe('fetchDecoratedEvents — org scoping (regression, 2026-09-17 cross-org leak)', () => {
   it('filters by organisation_id for a non-eventar_staff caller', async () => {
@@ -62,5 +63,35 @@ describe('fetchDecoratedEvents — org scoping (regression, 2026-09-17 cross-org
     });
 
     expect(calls.some((c) => c.method === 'eq' && c.args[0] === 'organisation_id')).toBe(false);
+  });
+});
+
+// ownEvents is the one place the scope rule lives; /checkin, /analytics and the
+// dashboards all list through it. fakeSupabase APPLIES the eq filter, so this asserts
+// which rows come back, not which methods were called.
+describe('ownEvents — the scope rule every staff event list goes through', () => {
+  const tables = {
+    events: [
+      { id: 'ev-a', organisation_id: 'org-a' },
+      { id: 'ev-b', organisation_id: 'org-b' },
+    ],
+  };
+
+  it("returns only the caller's own organisation's events for a non-eventar_staff role", async () => {
+    for (const role of ['organiser_admin', 'organiser_member', 'body_admin', 'auditor'] as const) {
+      const { data, error } = await ownEvents(fakeSupabase(tables) as never, { role, organisation_id: 'org-a' }, 'id');
+      expect(error, role).toBeNull();
+      expect(data, role).toEqual([{ id: 'ev-a' }]);
+    }
+  });
+
+  it('returns every organisation for eventar_staff', async () => {
+    const { data, error } = await ownEvents(
+      fakeSupabase(tables) as never,
+      { role: 'eventar_staff', organisation_id: 'org-a' },
+      'id',
+    );
+    expect(error).toBeNull();
+    expect(data).toEqual([{ id: 'ev-a' }, { id: 'ev-b' }]);
   });
 });

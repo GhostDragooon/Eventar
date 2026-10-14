@@ -5,6 +5,7 @@ import { supabaseServer } from '@/lib/supabase/server';
 import { StaffShell } from '@/components/shell/StaffShell';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 import { formatInTz } from '@/lib/tz';
+import { ownEvents } from '@/app/dashboard/data';
 
 export const metadata = {
   title: 'Analytics',
@@ -27,19 +28,15 @@ export default async function AnalyticsIndexPage() {
   }
 
   const supabase = await supabaseServer();
-  // RLS lets any signed-in session read every organisation's PUBLISHED events, so
-  // scope to the caller's own, like app/dashboard/data.ts (eventar_staff sees all).
-  let eventsQuery = supabase
-    .from('events')
-    .select('id, title, start_time, end_time, timezone, status, venue_name, registration_close_at, registration_open_at, deleted_at')
+  const { data: events, error: eventsErr } = await ownEvents(
+    supabase,
+    staff,
+    'id, title, start_time, end_time, timezone, status, venue_name, registration_close_at, registration_open_at, deleted_at',
+  )
     .is('deleted_at', null)
     .in('status', ['published', 'completed'])
     .order('start_time', { ascending: false })
     .limit(100);
-  if (staff.role !== 'eventar_staff') {
-    eventsQuery = eventsQuery.eq('organisation_id', staff.organisation_id);
-  }
-  const { data: events, error: eventsErr } = await eventsQuery;
   if (eventsErr) throw eventsErr;
 
   // eslint-disable-next-line react-hooks/purity

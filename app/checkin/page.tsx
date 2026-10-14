@@ -5,6 +5,7 @@ import { supabaseServer } from '@/lib/supabase/server';
 import { StaffShell } from '@/components/shell/StaffShell';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 import { formatInTz } from '@/lib/tz';
+import { ownEvents } from '@/app/dashboard/data';
 
 export const metadata = {
   title: 'Check-in',
@@ -33,19 +34,15 @@ export default async function CheckinIndexPage() {
   // load, on the screen an operator opens to find the door they are running. A
   // discarded registrations error was worse: every event rendered "0 / 0
   // checked in", a confidently wrong count rather than an absent one.
-  // RLS lets any signed-in session read every organisation's PUBLISHED events, so
-  // scope to the caller's own, like app/dashboard/data.ts (eventar_staff sees all).
-  let eventsQuery = supabase
-    .from('events')
-    .select('id, title, start_time, end_time, timezone, status, venue_name, registration_close_at, registration_open_at, deleted_at')
+  const { data: events, error: eventsErr } = await ownEvents(
+    supabase,
+    staff,
+    'id, title, start_time, end_time, timezone, status, venue_name, registration_close_at, registration_open_at, deleted_at',
+  )
     .is('deleted_at', null)
     .eq('status', 'published')
     .order('start_time', { ascending: true })
     .limit(100);
-  if (staff.role !== 'eventar_staff') {
-    eventsQuery = eventsQuery.eq('organisation_id', staff.organisation_id);
-  }
-  const { data: events, error: eventsErr } = await eventsQuery;
   if (eventsErr) throw eventsErr;
 
   // eslint-disable-next-line react-hooks/purity
