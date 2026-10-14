@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { registerForEvent } from '@/app/(public)/events/[id]/actions';
 import type { EmailDelivery } from '@/app/(public)/events/[id]/schema';
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
-import { DevEmailStubStrip } from '@/components/dev/DevEmailStubBanner';
+import { DevEmailStubStrip } from '@/components/dev/DevEmailStubStrip';
 
 type Props = {
   eventId: string;

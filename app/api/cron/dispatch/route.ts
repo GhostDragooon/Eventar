@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { CHECKIN_OPEN_MINUTES } from '@/lib/lifecycle/eventLifecycle';
 import { selectDue, SURVEY_GRACE_HOURS, type DispatchCandidate } from '@/lib/cron/dispatchDue';
 import {
+  emailLive,
   zero,
   sendReminderToRegistrants,
   sendSurveyInviteToAttendees,
@@ -254,7 +255,7 @@ async function dispatch(req: NextRequest) {
     now: now.toISOString(),
     // Without this an all-green local run reads as "mail delivered" when the
     // stub swallowed every message. `queued` counts are stub writes, not sends.
-    delivery: process.env.RESEND_API_KEY ? 'live' : 'stubbed',
+    delivery: emailLive() ? 'live' : 'stubbed',
     scanned: candidates.length,
     dispatched,
     morePending: due.length > batch.length,

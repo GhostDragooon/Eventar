@@ -11,6 +11,7 @@ import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventL
 import { requireStaff, NotAuthorizedError, canManageEvent, isStaffSession } from '@/lib/auth';
 import { getUnlinkedRegistrationCount } from '@/app/account/actions';
 import { isAccountComplete } from '@/lib/accountCompleteness';
+import { emailLive } from '@/lib/email/eventEmails';
 
 export const dynamic = 'force-dynamic';
 
@@ -338,7 +339,7 @@ export default async function PublicEventPage({
           // Server-side env probe → boolean. The success block uses this to
           // decide whether to render the "development stub" strip. Boolean-only
           // so the key value itself never reaches the client (rule 10).
-          deliveryLive={Boolean(process.env.RESEND_API_KEY)}
+          deliveryLive={emailLive()}
           defaultName={signedInName ?? undefined}
           defaultEmail={signedInEmail ?? undefined}
           signInHref={signInHref ?? undefined}

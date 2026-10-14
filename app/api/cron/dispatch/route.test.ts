@@ -8,7 +8,9 @@ const { mockSendReminder, mockSendSurvey } = vi.hoisted(() => ({
   mockSendReminder: vi.fn(),
   mockSendSurvey: vi.fn(),
 }));
-vi.mock('@/lib/email/eventEmails', () => ({
+vi.mock('@/lib/email/eventEmails', async (importOriginal) => ({
+  // The real switch, so the `delivery` tests below exercise it, not a copy.
+  emailLive: (await importOriginal<typeof import('@/lib/email/eventEmails')>()).emailLive,
   sendReminderToRegistrants: mockSendReminder,
   sendSurveyInviteToAttendees: mockSendSurvey,
   // The route builds its whole-event-throw result from the real zero(), so the

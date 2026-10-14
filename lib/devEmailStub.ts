@@ -1,19 +1,17 @@
 // ⚠️ DEV STUB — testing/dev convenience only.
 //
-// REMOVE THIS FILE once RESEND_API_KEY is set in .env.local:
-//   See docs/plans/2026-06-04-phase-7-resend-design.md §"Removal protocol"
+// REMOVE THIS FILE once RESEND_API_KEY is set in every environment that sends.
 //
-// No grep hunt required. The removal is a localized operation:
+// No grep hunt required. The stub-vs-real switch exists exactly once —
+// `emailLive()` + `sendEmail` in lib/email/eventEmails.ts — and every send path
+// and delivery reader imports it from there. Removal is:
 //   1. delete this file + its .test.ts
-//   2. drop the `sendEmailStub` import in app/(public)/events/[id]/actions.ts
-//   3. in app/(public)/events/[id]/actions.ts:
-//        - delete the env-switch line `const sendEmail = process.env.RESEND_API_KEY ? ... ;`
-//        - either rename `sendEmailReal` → `sendEmail` at the import site,
-//          or change `import { sendEmail as sendEmailReal } ...` to
-//          `import { sendEmail } from '@/lib/resend';`
-//        - delete the `else if ('skipped' in sendResult)` branch
-//          (TypeScript will flag it as dead code after the type narrows)
-//   4. drop the "uses stub" test case in actions.test.ts
+//   2. delete the one switch's stub branch (and its import) in
+//      lib/email/eventEmails.ts
+// Then drop the stub cases from the tests that mock this module; the callers'
+// `'skipped' in result` branches become dead code and can go too.
+// Supersedes the list in docs/plans/2026-06-04-phase-7-resend-design.md
+// §"Removal protocol", which predates the consolidation.
 
 import 'server-only';
 import type { SendEmailResult, EmailAttachment } from './resend';

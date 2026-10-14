@@ -8,6 +8,7 @@ import { deriveSpeakerNames, labelForBlockKind, type AgendaTopic } from '@/lib/a
 import RegisterCard from '@/components/RegisterCard';
 import PrintPosterButton from '@/components/PrintPosterButton';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
+import { emailLive } from '@/lib/email/eventEmails';
 
 export const dynamic = 'force-dynamic';
 
@@ -327,7 +328,7 @@ export default async function EventPosterPage({
               // Same env probe the public event page uses — a scannable poster
               // routes people at the physical event page's register surface,
               // so the honesty branches must match.
-              deliveryLive={Boolean(process.env.RESEND_API_KEY)}
+              deliveryLive={emailLive()}
             />
           </div>
 
