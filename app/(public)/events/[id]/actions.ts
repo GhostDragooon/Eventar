@@ -11,11 +11,8 @@ import { registrationInputSchema, type RegisterResult, type EmailDelivery } from
 import { generateRegistrationCode } from '@/lib/registrationCode';
 import { getStaffSessionState } from '@/lib/auth';
 import { CHECKIN_OPEN_MINUTES } from '@/lib/lifecycle/eventLifecycle';
-// TEMP: dual import while RESEND_API_KEY is being set up.
-// REMOVE both lines + the env-switch below once the key is in .env.local.
-// See docs/plans/2026-06-04-phase-7-resend-design.md §"Removal protocol".
-import { sendEmail as sendEmailReal } from '@/lib/resend';
-import { sendEmail as sendEmailStub } from '@/lib/devEmailStub';
+// The one stub-vs-real switch (lib/devEmailStub.ts has the removal protocol).
+import { sendEmail } from '@/lib/email/eventEmails';
 import { renderConfirmationEmail } from '@/emails/confirmation';
 import { googleCalendarUrl, outlookCalendarUrl } from '@/lib/calendarLinks';
 import { getRequestOrigin } from '@/lib/origin';
@@ -270,9 +267,6 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
   }
 
   // Step 6 — render template + dispatch via the facade.
-  // TEMP: env switch picks devEmailStub when RESEND_API_KEY unset. See design doc.
-  const sendEmail = process.env.RESEND_API_KEY ? sendEmailReal : sendEmailStub;
-
   const origin = await getRequestOrigin();
   const eventVenue = event.venue_address ? `${event.venue_name}, ${event.venue_address}` : event.venue_name;
   const eventUrl = `${origin}/events/${event.id}`;

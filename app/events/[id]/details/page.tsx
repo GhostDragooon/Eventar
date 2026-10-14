@@ -30,6 +30,7 @@ import { CollegeExportButton } from './CollegeExportButton';
 import { LiveScoreboard } from '@/components/details/LiveScoreboard';
 import { StickyLiveBar } from '@/components/details/StickyLiveBar';
 import { deriveAccreditationCell } from './accreditationCell';
+import { emailLive } from '@/lib/email/eventEmails';
 
 export const metadata = {
   title: 'Event Manager',
@@ -508,10 +509,10 @@ export default async function EventDetailsPage({
           // The pass goes out when check-in opens; before that, "not sent" is
           // expected rather than a problem worth flagging.
           windowOpen={lifecycle === 'live' || lifecycle === 'completed'}
-          // Same env switch the send core uses to pick devEmailStub. Without
+          // The send core's own switch (emailLive). Without
           // it every local run reports the whole roster as pass-less, because
           // the stub leaves rows 'queued' by design.
-          deliveryLive={Boolean(process.env.RESEND_API_KEY)}
+          deliveryLive={emailLive()}
         />
       )}
 
@@ -521,7 +522,7 @@ export default async function EventDetailsPage({
       {canSeeConfirmationsSent && (
         <EmailDeliveryStrip
           rows={deliveryAggRows}
-          deliveryLive={Boolean(process.env.RESEND_API_KEY)}
+          deliveryLive={emailLive()}
         />
       )}
 

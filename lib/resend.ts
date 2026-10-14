@@ -34,8 +34,10 @@ const DEFAULT_FROM = 'Eventar <onboarding@resend.dev>';
  * a custom domain is verified on Resend.
  *
  * Returns a tagged union. Never throws on Resend-side errors (those become
- * { error }); throws only on missing env config (production misconfig
- * must surface — CLAUDE.md Rule 12).
+ * { error }); throws only on missing env config. App code reaches this only
+ * through the switch in lib/email/eventEmails.ts, which never calls it without
+ * the key — a production misconfig surfaces there as a send error (Rule 12).
+ * The throw guards a direct caller.
  *
  * No PII in returned error: the recipient address goes to Resend
  * (necessarily) but is never echoed back into the result or logged here.

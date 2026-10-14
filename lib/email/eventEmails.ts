@@ -5,12 +5,39 @@ import { firstName } from '@/lib/name';
 import { buildCheckinQrPng } from '@/lib/checkinQr';
 import { renderReminderEmail } from '@/emails/reminder';
 import { renderSurveyInviteEmail } from '@/emails/surveyInvite';
-// TEMP: dual import while RESEND_API_KEY is being set up. Removed alongside the
-// other stub call sites once the key lands — see the Phase 7 removal protocol.
 import { sendEmail as sendEmailReal } from '@/lib/resend';
-import { sendEmail as sendEmailStub } from '@/lib/devEmailStub';
+import { sendEmail as sendEmailStub, type StubSendEmailResult } from '@/lib/devEmailStub';
 import type { EmailAttachment } from '@/lib/resend';
 import { MAX_SEND_ATTEMPTS } from '@/lib/email/sendPolicy';
+
+/**
+ * THE stub-vs-real email switch — the only place it is decided. Every send
+ * path imports `sendEmail` below, and every "is mail really going out?" reader
+ * (delivery strips, the dev banner, the cron response) imports this. Presence
+ * only, never the key value (rule 10). Read per call, so tests can flip the env.
+ */
+export function emailLive(): boolean {
+  return Boolean(process.env.RESEND_API_KEY);
+}
+
+/**
+ * Real send when the key is set; otherwise the dev stub — except in
+ * production, where a missing key is a misconfiguration, not a convenience. It
+ * returns a send error there instead of stubbing, so callers record the row
+ * `failed` (retried once the key is set) and report it, rather than parking it
+ * in `queued`, which is terminal and reads as fine (rule 12). Same
+ * `NODE_ENV === 'production'` signal as lib/reviewMode.ts and lib/origin.ts.
+ */
+export async function sendEmail(opts: Parameters<typeof sendEmailReal>[0]): Promise<StubSendEmailResult> {
+  if (emailLive()) return sendEmailReal(opts);
+  if (process.env.NODE_ENV === 'production') {
+    console.error('[sendEmail] RESEND_API_KEY is unset in production — email NOT sent');
+    return {
+      error: { code: 'resend_not_configured', message: 'RESEND_API_KEY is unset in production' },
+    };
+  }
+  return sendEmailStub(opts);
+}
 
 /**
  * The session-less core of the reminder + survey sends.
@@ -148,8 +175,6 @@ async function runBulkSend(
   { manual = false }: SendOptions = {},
 ): Promise<SendResult> {
   const admin = supabaseAdmin();
-  // TEMP: env switch picks devEmailStub when RESEND_API_KEY unset (Phase 7).
-  const sendEmail = process.env.RESEND_API_KEY ? sendEmailReal : sendEmailStub;
 
   // One read serving two purposes: the scheduler's retry budget, and knowing
   // WHAT a later 23505 collided with. It runs on the manual path too — not for
