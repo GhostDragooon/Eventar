@@ -143,7 +143,11 @@ export async function updateMyAccount(
     windowMs: 60_000,
     max: 30,
   });
-  if (!rl.allowed) return { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+  if (!rl.allowed) {
+    return rl.sessionRevoked
+      ? { ok: false, error: 'session_revoked' }
+      : { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+  }
 
   const parsed = accountUpdateSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: 'invalid_input', issues: parsed.error.issues };
@@ -188,7 +192,11 @@ export async function updateMyProfessionalProfile(
     windowMs: 60_000,
     max: 30,
   });
-  if (!rl.allowed) return { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+  if (!rl.allowed) {
+    return rl.sessionRevoked
+      ? { ok: false, error: 'session_revoked' }
+      : { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+  }
 
   const parsed = professionalProfileUpdateSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: 'invalid_input', issues: parsed.error.issues };
@@ -256,8 +264,15 @@ export async function getUnlinkedRegistrationCount(): Promise<AccountActionResul
   const rl = await rateLimitBySession('account.unlinked_count', auth.userId, {
     windowMs: 60_000,
     max: 30,
+    // Runs on every account page render: a fast reload must not count toward
+    // the §4 sign-out (Q45 clarification, 2026-10-14).
+    abuseTier: false,
   });
-  if (!rl.allowed) return { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+  if (!rl.allowed) {
+    return rl.sessionRevoked
+      ? { ok: false, error: 'session_revoked' }
+      : { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+  }
 
   // Normalize the auth-side email the same way `registrations_lowercase_email`
   // (migration 20260520010000) normalizes on write, and the way the RPC's
@@ -344,7 +359,11 @@ export async function claimMyRegistrations(): Promise<AccountActionResult<{ clai
     windowMs: 60_000,
     max: 6,
   });
-  if (!rl.allowed) return { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+  if (!rl.allowed) {
+    return rl.sessionRevoked
+      ? { ok: false, error: 'session_revoked' }
+      : { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+  }
 
   const supabase = await supabaseServer();
   const { data, error } = await supabase.rpc('claim_registrations_for_user');
@@ -611,7 +630,11 @@ export async function resendVerificationEmail(): Promise<AccountActionResult<{ s
     windowMs: 60_000,
     max: 3,
   });
-  if (!rl.allowed) return { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+  if (!rl.allowed) {
+    return rl.sessionRevoked
+      ? { ok: false, error: 'session_revoked' }
+      : { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+  }
 
   // Same emailRedirectTo posture as the walk-in flow: land the confirming
   // click on /account so the user sees "your email is now verified" instead
@@ -675,7 +698,11 @@ export async function changeEmail(
     windowMs: 60_000,
     max: 3,
   });
-  if (!rl.allowed) return { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+  if (!rl.allowed) {
+    return rl.sessionRevoked
+      ? { ok: false, error: 'session_revoked' }
+      : { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+  }
 
   // Local Zod-lite: the change-email flow only takes one field and we do not
   // want to import the whole `email` shape from a shared schema for one call.
@@ -740,7 +767,11 @@ export async function declareMyLicence(
     windowMs: 60_000,
     max: 10,
   });
-  if (!rl.allowed) return { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+  if (!rl.allowed) {
+    return rl.sessionRevoked
+      ? { ok: false, error: 'session_revoked' }
+      : { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+  }
 
   const parsed = licenceDeclareSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: 'invalid_input', issues: parsed.error.issues };
@@ -814,7 +845,11 @@ export async function uploadAvatar(
     windowMs: 60_000,
     max: 10,
   });
-  if (!rl.allowed) return { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+  if (!rl.allowed) {
+    return rl.sessionRevoked
+      ? { ok: false, error: 'session_revoked' }
+      : { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+  }
 
   const file = formData.get('file');
   if (!(file instanceof File) || file.size === 0) {
@@ -884,7 +919,11 @@ export async function addMyAppointment(
   if (!auth.ok) return { ok: false, error: auth.error };
 
   const rl = await rateLimitBySession('account.appointments.add', auth.userId, { windowMs: 60_000, max: 20 });
-  if (!rl.allowed) return { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+  if (!rl.allowed) {
+    return rl.sessionRevoked
+      ? { ok: false, error: 'session_revoked' }
+      : { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+  }
 
   const parsed = appointmentCreateSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: 'invalid_input', issues: parsed.error.issues };
@@ -955,7 +994,11 @@ export async function addMySocietyMembership(
   if (!auth.ok) return { ok: false, error: auth.error };
 
   const rl = await rateLimitBySession('account.societies.add', auth.userId, { windowMs: 60_000, max: 20 });
-  if (!rl.allowed) return { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+  if (!rl.allowed) {
+    return rl.sessionRevoked
+      ? { ok: false, error: 'session_revoked' }
+      : { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+  }
 
   const parsed = societyMembershipCreateSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: 'invalid_input', issues: parsed.error.issues };

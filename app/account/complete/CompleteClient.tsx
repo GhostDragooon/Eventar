@@ -21,6 +21,7 @@ import {
 import { acceptRequiredConsents } from './actions';
 import type { AccountView, AccreditingBodyView, LicenceRowView, ProfessionalProfileView } from '../schema';
 import type { ControlledListOption } from './schema';
+import { isSignedOutError, signedOutCopy } from '../signedOutCopy';
 
 type Status =
   | null
@@ -125,7 +126,9 @@ export function CompleteClient({
         setConsentStatus({
           kind: 'error',
           message:
-            result.error === 'rate_limited'
+            isSignedOutError(result.error)
+              ? signedOutCopy(result.error)
+              : result.error === 'rate_limited'
               ? 'Too many attempts in a short window. Please wait a moment.'
               : 'Could not record your consent right now. Please try again.',
         });
@@ -149,7 +152,9 @@ export function CompleteClient({
         setIdentityStatus({
           kind: 'error',
           message:
-            result.error === 'rate_limited'
+            isSignedOutError(result.error)
+              ? signedOutCopy(result.error)
+              : result.error === 'rate_limited'
               ? 'Too many updates in a short window. Please wait a moment.'
               : 'Some fields need attention. Please check and try again.',
         });
@@ -176,7 +181,9 @@ export function CompleteClient({
         setProfileStatus({
           kind: 'error',
           message:
-            result.error === 'rate_limited'
+            isSignedOutError(result.error)
+              ? signedOutCopy(result.error)
+              : result.error === 'rate_limited'
               ? 'Too many updates in a short window. Please wait a moment.'
               : 'Some fields need attention. Please check and try again.',
         });
@@ -214,7 +221,9 @@ export function CompleteClient({
         setLicenceStatus({
           kind: 'error',
           message:
-            result.error === 'already_declared'
+            isSignedOutError(result.error)
+              ? signedOutCopy(result.error)
+              : result.error === 'already_declared'
               ? "You've already declared this licence number at that body."
               : result.error === 'body_inactive'
                 ? "That body isn't accepting new licences right now."
@@ -241,7 +250,9 @@ export function CompleteClient({
         setAvatarStatus({
           kind: 'error',
           message:
-            result.error === 'invalid_input'
+            isSignedOutError(result.error)
+              ? signedOutCopy(result.error)
+              : result.error === 'invalid_input'
               ? 'That file is too large or not a supported image type (JPEG, PNG, or WebP, up to 5MB).'
               : result.error === 'rate_limited'
                 ? 'Too many attempts in a short window. Please wait a moment.'

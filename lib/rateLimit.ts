@@ -1,10 +1,15 @@
 import 'server-only';
 import { headers } from 'next/headers';
+import { unstable_rethrow } from 'next/navigation';
 import { supabaseAdmin } from './supabase/admin';
 
 export type RateLimitResult =
   | { allowed: true; remaining: number; resetAt: Date }
-  | { allowed: false; retryAfterMs: number };
+  // firstRejection: this call is the first one over the limit in its window.
+  // sessionRevoked: this rejection was the 3rd abuse hit and signed the caller
+  // out everywhere (set by rateLimitBySession only), so the action must say
+  // so instead of "please wait".
+  | { allowed: false; retryAfterMs: number; firstRejection: boolean; sessionRevoked?: true };
 
 /**
  * Pure helper exported for unit testing. Parses an X-Forwarded-For value
@@ -85,7 +90,13 @@ export async function rateLimit(
 
   const result = data as { allowed: boolean; count: number };
   if (!result.allowed) {
-    return { allowed: false, retryAfterMs: winStart + opts.windowMs - nowMs };
+    // rate_limit_check counts every call, rejected ones included, so the first
+    // rejection in a window is exactly count == max + 1.
+    return {
+      allowed: false,
+      retryAfterMs: winStart + opts.windowMs - nowMs,
+      firstRejection: result.count === opts.max + 1,
+    };
   }
   return {
     allowed: true,
@@ -117,16 +128,42 @@ export function composeRateKey(scope: string, discriminator: string): string {
 }
 
 /**
- * Rate-limit by the caller's Supabase session (access-token-derived id).
- * Used by the §4 authenticated abuse tier. `sessionId` is derived server-side
- * from the authenticated session — never from client input.
+ * Rate-limit an authenticated caller, keyed by a server-derived id (the auth
+ * user id, or staff.id) — never by client input. Every authenticated limiter
+ * routes through here, so the §4 abuse tier (Decisions Log Item 11) is wired
+ * here once: the first rejection in each window counts one abuse hit, and 3
+ * hits in 60 min revoke the caller's sessions (lib/abuseTier.ts).
+ *
+ * Pass `abuseTier: false` for read-only / page-render limiters: they still
+ * rate-limit, but a fast reload must never count toward a sign-out (Ivan,
+ * 2026-10-14, Q45 clarification).
  */
 export async function rateLimitBySession(
   scope: string,
   sessionId: string,
-  opts: { windowMs: number; max: number },
+  opts: { windowMs: number; max: number; abuseTier?: false },
 ): Promise<RateLimitResult> {
-  return rateLimit(composeRateKey(scope, sessionId), opts);
+  const result = await rateLimit(composeRateKey(scope, sessionId), opts);
+  if (!result.allowed && result.firstRejection && opts.abuseTier !== false) {
+    // Dynamic import: abuseTier imports this module (rateLimitByUser).
+    try {
+      const { recordAbuseHitAndMaybeRevoke } = await import('./abuseTier');
+      const { revoked } = await recordAbuseHitAndMaybeRevoke();
+      if (revoked) return { ...result, sessionRevoked: true };
+    } catch (e) {
+      // Let Next control-flow errors (redirect, notFound, dynamic usage) through.
+      unstable_rethrow(e);
+      // Fail visible but keep the rejection: an abuse-tier outage must not
+      // turn a rate-limited request into a 500 (same fail-open stance as
+      // rateLimit above).
+      // code + name only, never the message: an auth error message can carry
+      // an email (Rule 10).
+      console.error('[rateLimit] abuse tier failed', {
+        scope, code: (e as { code?: string }).code, name: (e as Error).name,
+      });
+    }
+  }
+  return result;
 }
 
 /** Rate-limit by user id (broader than session — all of a user's activity). */

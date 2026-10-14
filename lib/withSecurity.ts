@@ -13,7 +13,7 @@ export const RLS_SILENT_FAIL = Symbol('RLS_SILENT_FAIL');
 
 export type ActionResult<T> =
   | { ok: true; data: T }
-  | { ok: false; error: 'not_authorized' | 'rate_limited' | 'invalid_input' | 'not_found_or_forbidden'; retryAfterMs?: number; issues?: z.ZodIssue[] };
+  | { ok: false; error: 'not_authorized' | 'rate_limited' | 'session_revoked' | 'invalid_input' | 'not_found_or_forbidden'; retryAfterMs?: number; issues?: z.ZodIssue[] };
 
 export function withSecurity<I, T>(
   handler: (input: I, ctx: SecurityCtx) => Promise<T | typeof RLS_SILENT_FAIL>,
@@ -43,7 +43,13 @@ export function withSecurity<I, T>(
     const rl = await rateLimitBySession(opts.rateLimit.scope, staff.id, {
       windowMs: opts.rateLimit.windowMs, max: opts.rateLimit.max,
     });
-    if (!rl.allowed) return { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+    if (!rl.allowed) {
+      // The 3rd §4 abuse hit signed the caller out everywhere: say so, not
+      // "please wait" (Q45, 2026-10-14).
+      return rl.sessionRevoked
+        ? { ok: false, error: 'session_revoked' }
+        : { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+    }
 
     // 3. Validate input.
     const parsed = opts.input.safeParse(raw);

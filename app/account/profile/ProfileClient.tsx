@@ -29,6 +29,7 @@ import type {
   SocietyMembershipView,
 } from '../schema';
 import type { ControlledListOption } from '../complete/schema';
+import { isSignedOutError, signedOutCopy } from '../signedOutCopy';
 
 type Status =
   | null
@@ -141,7 +142,9 @@ export function ProfileClient({
         setApptStatus({
           kind: 'error',
           message:
-            result.error === 'rate_limited'
+            isSignedOutError(result.error)
+              ? signedOutCopy(result.error)
+              : result.error === 'rate_limited'
               ? 'Too many attempts in a short window. Please wait a moment.'
               : 'Fill both fields — institution and title.',
         });
@@ -173,7 +176,9 @@ export function ProfileClient({
         setSocietyStatus({
           kind: 'error',
           message:
-            result.error === 'already_declared'
+            isSignedOutError(result.error)
+              ? signedOutCopy(result.error)
+              : result.error === 'already_declared'
               ? "You've already added this society."
               : result.error === 'rate_limited'
                 ? 'Too many attempts in a short window. Please wait a moment.'
@@ -239,7 +244,9 @@ export function ProfileClient({
         setLicenceStatus({
           kind: 'error',
           message:
-            result.error === 'already_declared'
+            isSignedOutError(result.error)
+              ? signedOutCopy(result.error)
+              : result.error === 'already_declared'
               ? "You've already declared this licence number at that body."
               : result.error === 'body_inactive'
                 ? "That body isn't accepting new licences right now."
@@ -290,7 +297,9 @@ export function ProfileClient({
         setStatus({
           kind: 'error',
           message:
-            result.error === 'rate_limited'
+            isSignedOutError(result.error)
+              ? signedOutCopy(result.error)
+              : result.error === 'rate_limited'
               ? 'Too many updates in a short window. Please wait a moment.'
               : result.error === 'invalid_input'
               ? 'Some fields need attention. Blank values must contain something other than whitespace.'

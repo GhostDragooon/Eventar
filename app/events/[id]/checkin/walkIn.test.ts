@@ -3,7 +3,11 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 vi.mock('server-only', () => ({}));
 
 const mockRequireStaff = vi.fn();
+const { MockNotAuthorizedError } = vi.hoisted(() => ({
+  MockNotAuthorizedError: class NotAuthorizedError extends Error {},
+}));
 vi.mock('@/lib/auth', () => ({
+  NotAuthorizedError: MockNotAuthorizedError,
   requireStaff: (...args: unknown[]) => mockRequireStaff(...args),
   canManageEvent: (event: { organisation_id: string | null }, staff: { role: string; organisation_id?: string }) => {
     if (staff.role === 'eventar_staff') return true;
@@ -111,6 +115,20 @@ beforeEach(() => {
 });
 
 describe('walkInRegisterAndCheckIn', () => {
+  // Q45, 2026-10-14: a server-side sign-out mid-event must come back as a
+  // message, not a throw that froze the dialog on "Registering…".
+  const SIGNED_OUT = "You've been signed out. This walk-in was not saved. Reload and sign in again.";
+
+  it('signed out (session ended server-side): returns the signed-out message instead of throwing', async () => {
+    mockRequireStaff.mockRejectedValueOnce(new MockNotAuthorizedError('no session'));
+    await expect(walkInRegisterAndCheckIn(validInput)).resolves.toEqual({ error: SIGNED_OUT });
+  });
+
+  it('the rejection that signed the organiser out says so, not "please wait"', async () => {
+    mockRateLimitBySession.mockResolvedValueOnce({ allowed: false, retryAfterMs: 1000, firstRejection: true, sessionRevoked: true });
+    await expect(walkInRegisterAndCheckIn(validInput)).resolves.toEqual({ error: SIGNED_OUT });
+  });
+
   it('happy path: registers + checks in', async () => {
     mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...LIVE_TIMES });
     mockRegInsert({ id: 'reg-1', registration_code: 'WK-TEST1' });

@@ -22,6 +22,7 @@ import { supabaseBrowser } from '@/lib/supabase/browser';
 import { changeEmail, claimMyRegistrations, resendVerificationEmail, updateMyAccount } from './actions';
 import { claimErrorCopy } from './claimErrorCopy';
 import type { AccountView, ProfessionalProfileView } from './schema';
+import { isSignedOutError, signedOutCopy } from './signedOutCopy';
 
 type Status =
   | null
@@ -115,7 +116,9 @@ export function AccountClient({
         setEmailChangeStatus({
           kind: 'error',
           message:
-            result.error === 'invalid_email'
+            isSignedOutError(result.error)
+              ? signedOutCopy(result.error)
+              : result.error === 'invalid_email'
               ? 'That doesn’t look like a valid email address.'
               : result.error === 'same_email'
                 ? 'That’s already your email.'
@@ -142,7 +145,9 @@ export function AccountClient({
         setResendStatus({
           kind: 'error',
           message:
-            result.error === 'already_confirmed'
+            isSignedOutError(result.error)
+              ? signedOutCopy(result.error)
+              : result.error === 'already_confirmed'
               ? 'Your email is already verified — no need to resend.'
               : result.error === 'rate_limited'
                 ? 'Too many attempts in a short window. Please wait a moment.'
@@ -199,7 +204,9 @@ export function AccountClient({
         setStatus({
           kind: 'error',
           message:
-            result.error === 'rate_limited'
+            isSignedOutError(result.error)
+              ? signedOutCopy(result.error)
+              : result.error === 'rate_limited'
               ? 'Too many updates in a short window. Please wait a moment.'
               : result.error === 'invalid_input'
               ? 'Some fields need attention. Please check and try again.'

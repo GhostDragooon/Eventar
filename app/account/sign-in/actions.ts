@@ -8,7 +8,7 @@
 // is their record, not the settings page.)
 //
 // Plan §7.4 + Q1 (2026-08-30 Stage C decision): separate /account/sign-in
-// page using requestAttendeeOtp / signInWithOtp is the attendee door
+// page using signInWithOtp is the attendee door
 // (register-as-guest still works via the public event form; account +
 // claim + profile is a different door).
 

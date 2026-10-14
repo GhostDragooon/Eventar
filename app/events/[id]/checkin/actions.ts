@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { requireStaff, canManageEvent } from '@/lib/auth';
+import { requireStaff, canManageEvent, NotAuthorizedError, type Staff } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { isValidRegistrationCode, generateRegistrationCode } from '@/lib/registrationCode';
@@ -222,6 +222,8 @@ const walkInSchema = z.object({
  * immediately. Skips the registration window check (the person is physically
  * present) and skips the confirmation email (they're at the desk).
  */
+const WALKIN_SIGNED_OUT = "You've been signed out. This walk-in was not saved. Reload and sign in again.";
+
 export async function walkInRegisterAndCheckIn(input: {
   eventId: string;
   fullName: string;
@@ -231,7 +233,16 @@ export async function walkInRegisterAndCheckIn(input: {
   | { error: string }
 > {
   const supabase = await supabaseServer();
-  const staff = await requireStaff(supabase);
+  let staff: Staff;
+  try {
+    staff = await requireStaff(supabase);
+  } catch (e) {
+    // A server-side sign-out (the §4 abuse tier, or another device) lands here
+    // mid-event. Say so instead of throwing into a dialog that then freezes
+    // on "Registering…" (user-lens, 2026-10-14).
+    if (e instanceof NotAuthorizedError) return { error: WALKIN_SIGNED_OUT };
+    throw e;
+  }
 
   const parsed = walkInSchema.safeParse(input);
   if (!parsed.success) {
@@ -240,7 +251,9 @@ export async function walkInRegisterAndCheckIn(input: {
   const { eventId, fullName, email } = parsed.data;
 
   const limit = await rateLimitBySession('staff.walkin', staff.id, { windowMs: 60_000, max: 60 });
-  if (!limit.allowed) return { error: 'Too many walk-in attempts. Please wait a moment.' };
+  if (!limit.allowed) {
+    return { error: limit.sessionRevoked ? WALKIN_SIGNED_OUT : 'Too many walk-in attempts. Please wait a moment.' };
+  }
 
   const admin = supabaseAdmin();
 

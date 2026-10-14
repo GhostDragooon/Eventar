@@ -19,7 +19,7 @@ import { SiteShell } from '@/components/shell/SiteShell';
 import { MagicLinkSignInForm } from '@/components/auth/MagicLinkSignInForm';
 import { resolveAuthError } from '@/components/auth/auth-error-messages';
 import { safeNextPath } from '@/lib/authDoor';
-import { supabaseBrowser } from '@/lib/supabase/browser';
+import { checkDoorSession } from '@/lib/doorSession';
 
 export default function AttendeeSignUpPage() {
   return (
@@ -55,18 +55,20 @@ function AttendeeSignUpForm() {
   // account again. See that page's comment for the full reasoning (client-
   // side check, form held out of the render tree until it resolves).
   const [sessionKnown, setSessionKnown] = useState(() => Boolean(urlErrorCode));
+  const [endedErr, setEndedErr] = useState<string | null>(null);
   useEffect(() => {
     if (urlErrorCode) return;
     let cancelled = false;
     (async () => {
-      // eslint-disable-next-line no-restricted-syntax -- no-session collapses to "show the form"
-      const { data } = await supabaseBrowser().auth.getSession();
+      // Server-verified, not a bare cookie read: see lib/doorSession.ts.
+      const session = await checkDoorSession();
       if (cancelled) return;
-      if (data.session) {
+      if (session === 'signed_in') {
         router.replace(next ?? '/account/record');
-      } else {
-        setSessionKnown(true);
+        return;
       }
+      if (session === 'ended') setEndedErr(resolveAuthError('session_ended', 'attendee'));
+      setSessionKnown(true);
     })();
     return () => {
       cancelled = true;
@@ -98,7 +100,7 @@ function AttendeeSignUpForm() {
       </p>
       <MagicLinkSignInForm
         submitMagicLink={sendAttendeeMagicLink}
-        initialError={urlErr}
+        initialError={urlErr ?? endedErr}
         placeholder="you@example.com"
         submitLabel="Send sign-up link"
         next={next}

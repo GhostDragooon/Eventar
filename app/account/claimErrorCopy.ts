@@ -8,10 +8,13 @@
 // file would compile silently and fall through to the generic message,
 // defeating H4's whole point. Now TS catches missing cases; runtime `default:`
 // still covers a truly-unknown error with a generic sentence.
+import { signedOutCopy } from './signedOutCopy';
+
 export type ClaimActionError =
   | 'email_unverified'
   | 'rate_limited'
   | 'not_authorized'
+  | 'session_revoked'
   | 'db_error';
 
 export function claimErrorCopy(error: ClaimActionError | string): string {
@@ -22,6 +25,8 @@ export function claimErrorCopy(error: ClaimActionError | string): string {
       return 'Too many attempts in a short window. Please wait a moment.';
     case 'not_authorized':
       return 'You need to sign in first.';
+    case 'session_revoked':
+      return signedOutCopy('session_revoked');
     default:
       return 'Could not link right now. Please try again.';
   }

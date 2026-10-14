@@ -30,6 +30,11 @@ const AUTH_ERROR_MESSAGES_ATTENDEE: Readonly<Record<string, string>> = {
   not_authorized: 'This email is not recognised. Sign up first by registering for an event.',
   unavailable:
     'We could not verify your account just now. This is on our side — please try again in a moment.',
+  // Set by /account/sign-in itself, never by a URL: the browser still held a
+  // session the server had already ended (abuse-tier revoke, sign-out on
+  // another device, expiry). Q45, 2026-10-14.
+  session_ended:
+    'Your previous session has ended (for example, for your security after repeated rapid attempts, or after signing out on another device). Sign in again to continue.',
 };
 
 /** @deprecated Prefer `resolveAuthError(code, audience)`. Kept for callers that predate the audience param. */

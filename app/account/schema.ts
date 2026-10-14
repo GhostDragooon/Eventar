@@ -282,6 +282,8 @@ export type AccountActionError =
   | 'not_authorized'
   | 'email_unverified'
   | 'rate_limited'
+  // The rejection was the 3rd §4 abuse hit and signed the user out everywhere (Q45).
+  | 'session_revoked'
   | 'invalid_input'
   | 'not_found'
   | 'db_error'

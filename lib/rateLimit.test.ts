@@ -1,9 +1,18 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 // rateLimit.ts has `import 'server-only'` which throws in non-server contexts.
 // Same neutralisation pattern as auth.test.ts.
 vi.mock('server-only', () => ({}));
 
-import { composeRateKey, parseClientIp, windowStartMs } from './rateLimit';
+const { mockRpc, mockRecordAbuseHit } = vi.hoisted(() => ({
+  mockRpc: vi.fn(),
+  mockRecordAbuseHit: vi.fn(),
+}));
+vi.mock('next/headers', () => ({ headers: async () => new Headers() }));
+vi.mock('./supabase/admin', () => ({ supabaseAdmin: () => ({ rpc: mockRpc }) }));
+// rateLimitBySession imports this dynamically; vi.mock covers dynamic imports.
+vi.mock('./abuseTier', () => ({ recordAbuseHitAndMaybeRevoke: mockRecordAbuseHit }));
+
+import { composeRateKey, parseClientIp, rateLimit, rateLimitBySession, windowStartMs } from './rateLimit';
 
 describe('parseClientIp', () => {
   it('returns the first IP from x-forwarded-for', () => {
@@ -61,5 +70,75 @@ describe('composeRateKey', () => {
 
   it('rateLimitByUser composes scope:user key', () => {
     expect(composeRateKey('sessionAbuse', 'user_123')).toBe('sessionAbuse:user_123');
+  });
+});
+
+// rate_limit_check counts every call, rejected ones included, and allows while
+// count <= max. So with max 5, count 6 is the first rejection in the window.
+const OPTS = { windowMs: 60_000, max: 5 };
+const checkReturns = (count: number) =>
+  mockRpc.mockResolvedValueOnce({ data: { allowed: count <= OPTS.max, count }, error: null });
+
+describe('rateLimit firstRejection', () => {
+  beforeEach(() => mockRpc.mockReset());
+
+  it('marks only the first call over the limit (count == max + 1)', async () => {
+    checkReturns(6);
+    expect(await rateLimit('k', OPTS)).toMatchObject({ allowed: false, firstRejection: true });
+    checkReturns(7);
+    expect(await rateLimit('k', OPTS)).toMatchObject({ allowed: false, firstRejection: false });
+  });
+});
+
+describe('rateLimitBySession → §4 abuse tier (Decisions Log Item 11)', () => {
+  beforeEach(() => {
+    mockRpc.mockReset();
+    mockRecordAbuseHit.mockReset();
+  });
+
+  it('records one abuse hit on the first rejection in a window', async () => {
+    checkReturns(6);
+    mockRecordAbuseHit.mockResolvedValueOnce({ revoked: false });
+    const r = await rateLimitBySession('account.update', 'user-1', OPTS);
+    expect(r.allowed).toBe(false);
+    expect(mockRecordAbuseHit).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports sessionRevoked when the hit signed the user out, so the action can say so', async () => {
+    checkReturns(6);
+    mockRecordAbuseHit.mockResolvedValueOnce({ revoked: true });
+    const r = await rateLimitBySession('account.update', 'user-1', OPTS);
+    expect(r).toMatchObject({ allowed: false, sessionRevoked: true });
+  });
+
+  it('abuseTier: false (read / page-render limiters) still rate-limits but never feeds the tier', async () => {
+    checkReturns(6);
+    const r = await rateLimitBySession('account.unlinked_count', 'user-1', { ...OPTS, abuseTier: false });
+    expect(r.allowed).toBe(false);
+    expect(mockRecordAbuseHit).not.toHaveBeenCalled();
+  });
+
+  it('does not record a hit for allowed calls or for later rejections (UI retries do not stack)', async () => {
+    checkReturns(1);
+    await rateLimitBySession('account.update', 'user-1', OPTS);
+    checkReturns(7);
+    await rateLimitBySession('account.update', 'user-1', OPTS);
+    expect(mockRecordAbuseHit).not.toHaveBeenCalled();
+  });
+
+  it('an abuse-tier failure is logged and the rejection still returns (no 500)', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    checkReturns(6);
+    mockRecordAbuseHit.mockRejectedValueOnce(new Error('boom'));
+    const r = await rateLimitBySession('account.update', 'user-1', OPTS);
+    expect(r).toMatchObject({ allowed: false, firstRejection: true });
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '[rateLimit] abuse tier failed',
+      expect.objectContaining({ scope: 'account.update', name: 'Error' }),
+    );
+    expect(consoleErrorSpy).not.toHaveBeenCalledWith(
+      expect.anything(), expect.objectContaining({ message: expect.anything() }),
+    );
+    consoleErrorSpy.mockRestore();
   });
 });

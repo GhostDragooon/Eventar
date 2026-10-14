@@ -481,8 +481,16 @@ function WalkInDialog({
     e.preventDefault();
     setError(null);
     setSubmitting(true);
-    const res = await walkInRegisterAndCheckIn({ eventId, fullName: name, email });
-    setSubmitting(false);
+    let res: Awaited<ReturnType<typeof walkInRegisterAndCheckIn>>;
+    try {
+      res = await walkInRegisterAndCheckIn({ eventId, fullName: name, email });
+    } catch {
+      // Never leave the button stuck on "Registering…" (user-lens, 2026-10-14).
+      setError('Could not register this walk-in. Nothing was saved. Please try again.');
+      return;
+    } finally {
+      setSubmitting(false);
+    }
     if ('error' in res) {
       setError(res.error);
       return;

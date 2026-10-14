@@ -46,7 +46,11 @@ export async function acceptRequiredConsents(): Promise<AccountActionResult<{ ac
     windowMs: 60_000,
     max: 10,
   });
-  if (!rl.allowed) return { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+  if (!rl.allowed) {
+    return rl.sessionRevoked
+      ? { ok: false, error: 'session_revoked' }
+      : { ok: false, error: 'rate_limited', retryAfterMs: rl.retryAfterMs };
+  }
 
   const supabase = await supabaseServer();
   const { error: tosError } = await supabase.rpc('grant_consent', {

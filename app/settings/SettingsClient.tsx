@@ -8,6 +8,7 @@ import { supabaseBrowser } from '@/lib/supabase/browser';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { changeEmail } from '@/app/account/actions';
+import { isSignedOutError, signedOutCopy } from '@/app/account/signedOutCopy';
 
 // SSR snapshot: localStorage doesn't exist on the server, so the initial
 // render uses the defaults. The FOUC script in app/layout.tsx has already
@@ -141,7 +142,9 @@ function ChangeEmailForm({ currentEmail }: { currentEmail: string }) {
         setStatus({
           kind: 'error',
           message:
-            result.error === 'invalid_email'
+            isSignedOutError(result.error)
+              ? signedOutCopy(result.error)
+              : result.error === 'invalid_email'
               ? 'That doesn’t look like a valid email address.'
               : result.error === 'same_email'
                 ? 'That’s already your email.'
