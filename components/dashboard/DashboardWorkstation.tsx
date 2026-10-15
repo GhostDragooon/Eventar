@@ -457,7 +457,7 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
         <PulseChip label="Registered (open)" value={metrics.openRegistered} foot={metrics.registered7d > 0 ? `+${metrics.registered7d} in 7 days` : 'no change in 7 days'} />
         <PulseChip label="Checked in today" value={metrics.checkedInToday} foot={metrics.captureRate != null ? `${metrics.captureRate}% capture rate` : 'no attendance yet'} />
         <PulseChip label="Credits issued" value={metrics.creditsIssued} foot={metrics.creditsBlocked > 0 ? `${metrics.creditsBlocked} blocked` : 'none blocked'} warn={metrics.creditsBlocked > 0} />
-        <PulseChip label="Events this week" value={metrics.eventsThisWeek} foot={metrics.liveNow > 0 ? `${metrics.liveNow} live now` : `${metrics.closingSoon} closing in 7 days`} live={metrics.liveNow > 0} />
+        <PulseChip label="Next 7 days" value={metrics.eventsThisWeek} foot={metrics.liveNow > 0 ? `${metrics.liveNow} live now` : `${metrics.closingSoon} registration deadline${metrics.closingSoon === 1 ? '' : 's'} in 7 days`} live={metrics.liveNow > 0} />
       </div>
 
       {/* 5 · Manage all events CTA */}

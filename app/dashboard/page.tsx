@@ -94,7 +94,7 @@ export default async function DashboardPage() {
   const metrics: DashboardMetrics = {
     openRegistered: decorated.filter(isOpen).reduce((s, d) => s + d.registered, 0),
     registered7d,
-    eventsThisWeek: decorated.filter((d) => !d.deleted && d.startMs >= nowMs && d.startMs <= nowMs + 7 * DAY_MS).length,
+    eventsThisWeek: decorated.filter((d) => isOpen(d) && d.startMs <= nowMs + 7 * DAY_MS).length,
     closingSoon: decorated.filter((d) => isOpen(d) && d.closesInDays != null && d.closesInDays <= 7).length,
     checkedInToday,
     captureRate: runRegistered > 0 ? Math.round((runAttended / runRegistered) * 100) : null,
