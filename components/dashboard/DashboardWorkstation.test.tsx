@@ -157,6 +157,49 @@ describe('DashboardWorkstation — programme home', () => {
     expect(agenda().queryByText('Draft Event')).toBeNull();
   });
 
+  it('a filter with no match and nothing hidden shows no Manage pointer', () => {
+    renderBoard([event({ id: 'keep', title: 'Keep Me' })]);
+    fireEvent.click(screen.getByRole('button', { name: 'Search events' }));
+    fireEvent.change(screen.getByLabelText('Search your programme'), { target: { value: 'nothing like this' } });
+    expect(agenda().getByText('No events match this filter.')).toBeInTheDocument();
+    expect(agenda().queryByRole('link', { name: 'Manage' })).toBeNull();
+  });
+
+  it('says the filter matched nothing, not "no upcoming events", when a search finds nothing', () => {
+    renderBoard([event({ id: 'keep', title: 'Keep Me' }), event({ id: 'gone', title: 'Gone Event', lifecycle: 'cancelled' })]);
+    fireEvent.click(screen.getByRole('button', { name: 'Search events' }));
+    fireEvent.change(screen.getByLabelText('Search your programme'), { target: { value: 'nothing like this' } });
+    expect(agenda().getByText('No events match this filter.')).toBeInTheDocument();
+    expect(agenda().getByRole('link', { name: 'Manage' })).toHaveAttribute('href', '/dashboard/manage');
+    expect(agenda().queryByText(/No upcoming events/)).toBeNull();
+    expect(agenda().queryByRole('link', { name: /create/i })).toBeNull();
+  });
+
+  it('points to Manage when the only upcoming events are cancelled or draft', () => {
+    renderBoard([
+      event({ id: 'c1', title: 'Cancelled Soon', lifecycle: 'cancelled' }),
+      event({ id: 'd1', title: 'Draft Soon', lifecycle: 'drafted' }),
+    ]);
+    expect(agenda().getByText('No upcoming events. Create one to start your programme.')).toBeInTheDocument();
+    expect(agenda().getByRole('link', { name: 'Manage' })).toHaveAttribute('href', '/dashboard/manage');
+  });
+
+  it('shows no Manage pointer when nothing is hidden', () => {
+    renderBoard([event({ id: 'p1', title: 'Past One', lifecycle: 'completed', startMs: NOW - 48 * HOUR })]);
+    expect(agenda().getByText('No upcoming events. Create one to start your programme.')).toBeInTheDocument();
+    expect(agenda().queryByRole('link', { name: 'Manage' })).toBeNull();
+  });
+
+  it('excludes cancelled events from the programme agenda, upcoming and past', () => {
+    renderBoard([
+      event({ id: 'c1', title: 'Cancelled Soon', lifecycle: 'cancelled' }),
+      event({ id: 'c2', title: 'Cancelled Before', lifecycle: 'cancelled', startMs: NOW - 48 * HOUR }),
+    ]);
+    expect(agenda().queryByText('Cancelled Soon')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /^past$/i }));
+    expect(agenda().queryByText('Cancelled Before')).toBeNull();
+  });
+
   it('renders a "Manage all events" CTA linking to /dashboard/manage', () => {
     renderBoard([event({})]);
     expect(screen.getByRole('link', { name: /manage all events/i })).toHaveAttribute('href', '/dashboard/manage');

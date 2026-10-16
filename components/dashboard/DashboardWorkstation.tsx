@@ -145,9 +145,11 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
   const todayKey = hkDateKey(nowMs);
 
   const agendaEligible = useMemo(
-    () => events.filter((e) => !e.deleted && e.lifecycle !== 'drafted'),
+    () => events.filter((e) => !e.deleted && e.lifecycle !== 'drafted' && e.lifecycle !== 'cancelled'),
     [events],
   );
+  // Cancelled and draft events live on Manage; the empty states point there when any exist.
+  const hasHiddenEvents = events.some((e) => !e.deleted && (e.lifecycle === 'cancelled' || e.lifecycle === 'drafted'));
 
   const formatCounts = useMemo(() => {
     const counts = new Map<EventFormat, number>();
@@ -348,10 +350,15 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
                 cta
               />
             ) : dateGroups.length === 0 ? (
-              <EmptyAgenda
-                text={segment === 'upcoming' ? 'No upcoming events. Create one to start your programme.' : 'No past events yet.'}
-                cta={segment === 'upcoming'}
-              />
+              agendaQuery.trim() || activeFormat || selectedDay ? (
+                <EmptyAgenda text="No events match this filter." cta={false} hint={hasHiddenEvents} />
+              ) : (
+                <EmptyAgenda
+                  text={segment === 'upcoming' ? 'No upcoming events. Create one to start your programme.' : 'No past events yet.'}
+                  cta={segment === 'upcoming'}
+                  hint={hasHiddenEvents}
+                />
+              )
             ) : (
               dateGroups.map(([key, dayEvents]) => {
                 const { day, dow } = hkDateHeader(dayEvents[0].startMs);
@@ -472,10 +479,16 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
   );
 }
 
-function EmptyAgenda({ text, cta }: { text: string; cta: boolean }) {
+function EmptyAgenda({ text, cta, hint = false }: { text: string; cta: boolean; hint?: boolean }) {
   return (
     <div className="rounded-[16px] border border-outline-variant bg-surface p-xl text-center">
       <p className="text-body-md text-on-surface-variant">{text}</p>
+      {hint && (
+        <p className="mt-xs text-body-md text-on-surface-variant">
+          Cancelled and draft events are listed in{' '}
+          <Link href="/dashboard/manage" className="font-semibold text-[color:var(--on-primary-container)] hover:underline">Manage</Link>.
+        </p>
+      )}
       {cta && (
         <Link href="/events/new" className="inline-flex items-center gap-sm mt-md bg-primary text-on-primary font-label-md text-label-md rounded-full py-sm px-lg hover:opacity-90 transition-opacity">
           <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>add</span>Create event
