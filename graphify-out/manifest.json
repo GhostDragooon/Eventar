@@ -120,9 +120,9 @@
     "semantic_hash": "9f89d8c31b43a4c9fc62ca9d6286550c"
   },
   "app/dashboard/page.tsx": {
-    "mtime": 1791996208.857483,
-    "ast_hash": "289df70725bf2a7938cb2e79fc4477fc",
-    "semantic_hash": "289df70725bf2a7938cb2e79fc4477fc"
+    "mtime": 1792034778.5453513,
+    "ast_hash": "df4c24313d528b6d3c364a7399d918ec",
+    "semantic_hash": "df4c24313d528b6d3c364a7399d918ec"
   },
   "app/error.tsx": {
     "mtime": 1791672924.0100641,
@@ -135,9 +135,9 @@
     "semantic_hash": "9d8486e14b0c2bd323ec49912497482e"
   },
   "app/events/[id]/checkin/RosterClient.tsx": {
-    "mtime": 1791995734.9795835,
-    "ast_hash": "ca76a178a7ddb56c4bc1e4cad04ef7ac",
-    "semantic_hash": "ca76a178a7ddb56c4bc1e4cad04ef7ac"
+    "mtime": 1792118462.651335,
+    "ast_hash": "d4bb01bf1f9294e892ca1c7f4b2a9229",
+    "semantic_hash": "d4bb01bf1f9294e892ca1c7f4b2a9229"
   },
   "app/events/[id]/checkin/ScanAndManual.tsx": {
     "mtime": 1787760772.4870675,
@@ -155,9 +155,9 @@
     "semantic_hash": "53bf0acd2687f6b0483c742e5c24b2c4"
   },
   "app/events/[id]/checkin/actions.ts": {
-    "mtime": 1791995734.9786468,
-    "ast_hash": "8a46e7726bd1b543f35492859047e760",
-    "semantic_hash": "8a46e7726bd1b543f35492859047e760"
+    "mtime": 1792118265.9327536,
+    "ast_hash": "ef628e712d2e7732a03e65ed3ce0ff5a",
+    "semantic_hash": "ef628e712d2e7732a03e65ed3ce0ff5a"
   },
   "app/events/[id]/checkin/page.tsx": {
     "mtime": 1791510367.6206605,
@@ -395,9 +395,9 @@
     "semantic_hash": "638fd249c10e86c4987ed48eacb50a3c"
   },
   "components/dashboard/DashboardWorkstation.tsx": {
-    "mtime": 1791996208.865981,
-    "ast_hash": "b7a3443c86be15a9d958cf897ad1b7d9",
-    "semantic_hash": "b7a3443c86be15a9d958cf897ad1b7d9"
+    "mtime": 1792034778.5458953,
+    "ast_hash": "9ceaa0b691086a20bc8fddf4eaf65539",
+    "semantic_hash": "9ceaa0b691086a20bc8fddf4eaf65539"
   },
   "components/details/AttendanceSection.test.tsx": {
     "mtime": 1786188883.0703325,
@@ -2050,9 +2050,9 @@
     "semantic_hash": "2b0881ddb3ad42efffc5dd8623e16f7f"
   },
   "app/events/[id]/checkin/actions.test.ts": {
-    "mtime": 1788027312.137078,
-    "ast_hash": "9753bb51ce2a489eeb4d8490d1ff3772",
-    "semantic_hash": "9753bb51ce2a489eeb4d8490d1ff3772"
+    "mtime": 1792035079.3682046,
+    "ast_hash": "884a9a0478bdfcf80e9e899f8d6108aa",
+    "semantic_hash": "884a9a0478bdfcf80e9e899f8d6108aa"
   },
   "app/events/[id]/details/cpdActions.test.ts": {
     "mtime": 1791476034.4445527,
@@ -4780,9 +4780,9 @@
     "semantic_hash": "bffb187cee6ed2fb68faedfa40b36485"
   },
   ".claude/autoharness/last_run.json": {
-    "mtime": 1791996325.2424884,
-    "ast_hash": "21862efb5d8e72911340593fad16521f",
-    "semantic_hash": "21862efb5d8e72911340593fad16521f"
+    "mtime": 1792034863.6940064,
+    "ast_hash": "8b5229401fc385562ee637f23fca83fc",
+    "semantic_hash": "8b5229401fc385562ee637f23fca83fc"
   },
   ".claude/autoharness/runs/0ef0a11a-751b-4a2d-a7d2-04c049849faa-102.json": {
     "mtime": 1791974673.9047387,
@@ -4845,24 +4845,24 @@
     "semantic_hash": "dd66d99902d1de45a5d0642ecba22830"
   },
   ".claude/skills/eventar-live-verify-worktree/.sidecar.json": {
-    "mtime": 1791996325.2419739,
-    "ast_hash": "e6b55f9e21785d5a969d15569e1a6941",
-    "semantic_hash": "e6b55f9e21785d5a969d15569e1a6941"
+    "mtime": 1792035102.4368694,
+    "ast_hash": "bad506d102483262e83d170d4409845d",
+    "semantic_hash": "bad506d102483262e83d170d4409845d"
   },
   ".claude/skills/eventar-org-scoped-event-lists/.sidecar.json": {
-    "mtime": 1791996325.238341,
-    "ast_hash": "c85f4ce3c91fa276a3b1604fb26f1bd6",
-    "semantic_hash": "c85f4ce3c91fa276a3b1604fb26f1bd6"
+    "mtime": 1792034863.6912546,
+    "ast_hash": "915d56792fcac092567a224d7dcc7edf",
+    "semantic_hash": "915d56792fcac092567a224d7dcc7edf"
   },
   ".claude/skills/eventar-rate-limit-abuse-tier/.sidecar.json": {
-    "mtime": 1791995906.136231,
-    "ast_hash": "7b5a2a363494f8c64990a726429db800",
-    "semantic_hash": "7b5a2a363494f8c64990a726429db800"
+    "mtime": 1792028851.4998696,
+    "ast_hash": "094984143f910774e2d734cde35a648f",
+    "semantic_hash": "094984143f910774e2d734cde35a648f"
   },
   ".claude/skills/eventar-static-gates/.sidecar.json": {
-    "mtime": 1791996325.2362354,
-    "ast_hash": "35557ed18759a6f782835e99ceb6ae3a",
-    "semantic_hash": "35557ed18759a6f782835e99ceb6ae3a"
+    "mtime": 1792035092.4650064,
+    "ast_hash": "12eab575d4d4648ee212e80aa225988f",
+    "semantic_hash": "12eab575d4d4648ee212e80aa225988f"
   },
   ".claude/skills/eventar-ui-port-library/.sidecar.json": {
     "mtime": 1791996025.5976949,
@@ -4885,9 +4885,9 @@
     "semantic_hash": "3bc0b00e95833d6febf75f8f7875eaf8"
   },
   "lib/doorSession.ts": {
-    "mtime": 1791995378.7298648,
-    "ast_hash": "de5c140a6736d09d506bc23bdfcd82be",
-    "semantic_hash": "de5c140a6736d09d506bc23bdfcd82be"
+    "mtime": 1792118437.554177,
+    "ast_hash": "f729ffc322e1faf19805a89df4bce54e",
+    "semantic_hash": "f729ffc322e1faf19805a89df4bce54e"
   },
   "supabase/snippets/Untitled query 835.sql": {
     "mtime": 1790258295.694158,
@@ -4945,9 +4945,9 @@
     "semantic_hash": "3e754a9752b222ba9119deff190376e9"
   },
   ".claude/skills/eventar-live-verify-worktree/SKILL.md": {
-    "mtime": 1791996325.2416897,
-    "ast_hash": "4d5109484f91eadf5e5f7451f4497ebc",
-    "semantic_hash": "4d5109484f91eadf5e5f7451f4497ebc"
+    "mtime": 1792028851.5016177,
+    "ast_hash": "2fae7ef138fe22abf6669ce243081351",
+    "semantic_hash": "2fae7ef138fe22abf6669ce243081351"
   },
   ".claude/skills/eventar-live-verify-worktree/references/evidence-b6acb14b.md": {
     "mtime": 1791996325.2415435,
@@ -4960,9 +4960,9 @@
     "semantic_hash": "70d6b6c28ef78138a387662037b33d04"
   },
   ".claude/skills/eventar-org-scoped-event-lists/SKILL.md": {
-    "mtime": 1791996325.2379544,
-    "ast_hash": "df6d8c1a94b0bb511f077c078f6d3c16",
-    "semantic_hash": "df6d8c1a94b0bb511f077c078f6d3c16"
+    "mtime": 1792034863.690489,
+    "ast_hash": "2f456bb182f54e46d9b9057450e7ac59",
+    "semantic_hash": "2f456bb182f54e46d9b9057450e7ac59"
   },
   ".claude/skills/eventar-org-scoped-event-lists/references/evidence-21ead823.md": {
     "mtime": 1791975957.0547454,
@@ -4975,9 +4975,9 @@
     "semantic_hash": "aa77656f3a0f2b956e03a3def4abd181"
   },
   ".claude/skills/eventar-rate-limit-abuse-tier/SKILL.md": {
-    "mtime": 1791995906.1349635,
-    "ast_hash": "2f715d6d79479bea131423877eccdd29",
-    "semantic_hash": "2f715d6d79479bea131423877eccdd29"
+    "mtime": 1792028851.4992766,
+    "ast_hash": "674bf70fe2780cc823ef99ab2e608003",
+    "semantic_hash": "674bf70fe2780cc823ef99ab2e608003"
   },
   ".claude/skills/eventar-rate-limit-abuse-tier/references/backtest-facts.md": {
     "mtime": 1791976386.7617075,
@@ -4995,9 +4995,9 @@
     "semantic_hash": "45b5025a3ec17bc5567985bc4c7d38f8"
   },
   ".claude/skills/eventar-static-gates/SKILL.md": {
-    "mtime": 1791996325.235072,
-    "ast_hash": "e02a191580d62543aba51f89432e8114",
-    "semantic_hash": "e02a191580d62543aba51f89432e8114"
+    "mtime": 1792034863.6871176,
+    "ast_hash": "a5e97958289e079c6be1f79ac8022638",
+    "semantic_hash": "a5e97958289e079c6be1f79ac8022638"
   },
   ".claude/skills/eventar-static-gates/references/evidence-4dfdd182.md": {
     "mtime": 1791996325.2348273,
@@ -5068,5 +5068,55 @@
     "mtime": 1791996304.265157,
     "ast_hash": "8de39dadadf041d0f00c3326bd7e9fa4",
     "semantic_hash": "8de39dadadf041d0f00c3326bd7e9fa4"
+  },
+  ".claude/autoharness/runs/1e5cd4c6-a2bf-4bc7-9eb0-00374c3fb747-104.json": {
+    "mtime": 1792028851.504711,
+    "ast_hash": "eb541f58cb9ae40962cfd2d396e8ed2a",
+    "semantic_hash": "eb541f58cb9ae40962cfd2d396e8ed2a"
+  },
+  ".claude/autoharness/runs/c3cd383f-c35b-4f7b-b022-0ef5b78d5f8c-45.json": {
+    "mtime": 1792034863.6937485,
+    "ast_hash": "aed20b1493e55b127632b15f43514292",
+    "semantic_hash": "aed20b1493e55b127632b15f43514292"
+  },
+  ".claude/skills/eventar-graph-refresh/.sidecar.json": {
+    "mtime": 1792118760.7952244,
+    "ast_hash": "ffbb9de760644e2a175b009efb024c46",
+    "semantic_hash": "ffbb9de760644e2a175b009efb024c46"
+  },
+  "lib/doorSession.test.ts": {
+    "mtime": 1792118506.239764,
+    "ast_hash": "4e8b04e795142a643042a93281224ee9",
+    "semantic_hash": "4e8b04e795142a643042a93281224ee9"
+  },
+  ".claude/skills/eventar-graph-refresh/SKILL.md": {
+    "mtime": 1792028851.5041742,
+    "ast_hash": "d2032806eca8262722bca59f2794830b",
+    "semantic_hash": "d2032806eca8262722bca59f2794830b"
+  },
+  ".claude/skills/eventar-graph-refresh/references/evidence-f5ab6aaa.md": {
+    "mtime": 1792028851.5039191,
+    "ast_hash": "261fbb6b662433c8babc4da306cdae70",
+    "semantic_hash": "261fbb6b662433c8babc4da306cdae70"
+  },
+  ".claude/skills/eventar-live-verify-worktree/references/evidence-9e97dc73.md": {
+    "mtime": 1792028851.5014374,
+    "ast_hash": "cbbd3814117936481563044f6a01de58",
+    "semantic_hash": "cbbd3814117936481563044f6a01de58"
+  },
+  ".claude/skills/eventar-org-scoped-event-lists/references/evidence-a3247da4.md": {
+    "mtime": 1792034863.6902626,
+    "ast_hash": "ce500149d40ec1d52979b828171b39f0",
+    "semantic_hash": "ce500149d40ec1d52979b828171b39f0"
+  },
+  ".claude/skills/eventar-rate-limit-abuse-tier/references/evidence-0e58c70f.md": {
+    "mtime": 1792028851.4990761,
+    "ast_hash": "200782fe248d88831a766abbaac54358",
+    "semantic_hash": "200782fe248d88831a766abbaac54358"
+  },
+  ".claude/skills/eventar-static-gates/references/evidence-557e78eb.md": {
+    "mtime": 1792034863.6863284,
+    "ast_hash": "71ee6b5182938e431d7a5b15c06a9481",
+    "semantic_hash": "71ee6b5182938e431d7a5b15c06a9481"
   }
 }
