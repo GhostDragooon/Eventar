@@ -93,6 +93,23 @@ function summariseCredit(outcomes: AwardOutcome[]): CreditSummary {
   };
 }
 
+const CHECKIN_SIGNED_OUT = "You've been signed out. This check-in was not saved. Sign in again to continue.";
+
+/**
+ * requireStaff(), but a server-side sign-out (the §4 abuse tier, or "sign out
+ * everywhere" on another device) comes back as null instead of a throw. The
+ * door actions return a message for it; a throw froze the door UI mid-event
+ * (user-lens, 2026-10-14). Any other error still throws.
+ */
+async function staffOrSignedOut(supabase: Awaited<ReturnType<typeof supabaseServer>>): Promise<Staff | null> {
+  try {
+    return await requireStaff(supabase);
+  } catch (e) {
+    if (e instanceof NotAuthorizedError) return null;
+    throw e;
+  }
+}
+
 /**
  * Mark a registrant as attended by their registration_code.
  *
@@ -132,7 +149,8 @@ export async function markAttended(
   | { error: string; alreadyAttendedAt?: string }
 > {
   const supabase = await supabaseServer();
-  const staff = await requireStaff(supabase);
+  const staff = await staffOrSignedOut(supabase);
+  if (!staff) return { error: CHECKIN_SIGNED_OUT };
   if (!isValidRegistrationCode(code)) return { error: 'Invalid code format.' };
 
   // p_actor_override: inert for a real session, makes this callable under
@@ -233,16 +251,8 @@ export async function walkInRegisterAndCheckIn(input: {
   | { error: string }
 > {
   const supabase = await supabaseServer();
-  let staff: Staff;
-  try {
-    staff = await requireStaff(supabase);
-  } catch (e) {
-    // A server-side sign-out (the §4 abuse tier, or another device) lands here
-    // mid-event. Say so instead of throwing into a dialog that then freezes
-    // on "Registering…" (user-lens, 2026-10-14).
-    if (e instanceof NotAuthorizedError) return { error: WALKIN_SIGNED_OUT };
-    throw e;
-  }
+  const staff = await staffOrSignedOut(supabase);
+  if (!staff) return { error: WALKIN_SIGNED_OUT };
 
   const parsed = walkInSchema.safeParse(input);
   if (!parsed.success) {

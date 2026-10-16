@@ -13,7 +13,11 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 
+const { MockNotAuthorizedError } = vi.hoisted(() => ({
+  MockNotAuthorizedError: class NotAuthorizedError extends Error {},
+}));
 vi.mock('@/lib/auth', () => ({
+  NotAuthorizedError: MockNotAuthorizedError,
   requireStaff: vi.fn(async () => ({
     id: 'staff-1',
     email: 'operator@example.test',
@@ -66,6 +70,7 @@ vi.mock('@/lib/cpd/awardAttendanceCredit', () => ({
 }));
 
 import { markAttended } from './actions';
+import { requireStaff } from '@/lib/auth';
 
 const SUCCESS_BASE = {
   ok: true as const,
@@ -141,5 +146,22 @@ describe('markAttended — attendance stays authoritative when credit fails', ()
       expect.anything(),
       expect.objectContaining({ actorId: 'auth-user-1' }),
     );
+  });
+});
+
+// Decision 1 (Ivan, 2026-10-15): a server-side sign-out mid-event (the §4 abuse
+// tier, or another device) must come back as a message. It used to throw, which
+// froze the manual-code dialog and made QR scans and row buttons do nothing.
+describe('markAttended — signed out mid-event', () => {
+  it('returns the signed-out message instead of throwing', async () => {
+    vi.mocked(requireStaff).mockRejectedValueOnce(new MockNotAuthorizedError('no session'));
+    await expect(markAttended('ABC-1234', 'qr')).resolves.toEqual({
+      error: "You've been signed out. This check-in was not saved. Sign in again to continue.",
+    });
+  });
+
+  it('any other failure still throws (not masked as signed out)', async () => {
+    vi.mocked(requireStaff).mockRejectedValueOnce(new Error('staff read failed'));
+    await expect(markAttended('ABC-1234', 'qr')).rejects.toThrow('staff read failed');
   });
 });

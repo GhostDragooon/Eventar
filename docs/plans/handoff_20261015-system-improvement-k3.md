@@ -10,7 +10,11 @@ Session: "System improvement" (2026-10-14 → 15). Covers four pieces of work:
 
 ### Decide (recommendation first)
 
-1. **Door check-in freezes after a sign-out** (round-2 user-lens, MAJOR; verified by reading).
+1. ~~**Door check-in freezes after a sign-out**~~ ✅ **DONE 2026-10-15 (Ivan: "1 yes").** `markAttended` now returns "You've been signed out. This check-in was not saved. Sign in again to continue." through a shared `staffOrSignedOut()` helper. `handleMark` (QR scan, manual dialog, row button) and `toggleRole` can no longer stick. Both reviews then found that `proxy.ts` redirects an ended session's server-action POST to `/login` before the action runs, so the server message never shows. Ivan chose option A:
+  - On a failure, the door asks the auth server (`checkDoorSession`, which now returns `'unknown'` for a network failure). A dead session shows "You've been signed out. This check-in / walk-in was not saved." with a **Sign in** link to `/login?next=<door>`.
+  - Any other failure keeps a retryable message.
+  - Error toasts stay up for 8 s.
+  - **Not live-verified:** ports :3100/:3200 were held by peer sessions in review mode. Logic is covered by unit tests, the proxy hop by code reading, and the `/login` hop by curl (`x-nextjs-action-not-found`). First live check: sign out globally mid-door on the local stack. Original finding: (round-2 user-lens, MAJOR; verified by reading).
    - **What happens:** after any server-side sign-out, the QR scan, the manual-code dialog and "Mark attended" freeze or do nothing. The same applies to the role toggles (inferred). This bug predates K3, but the tier now makes it reachable mid-event.
    - **Why:** `markAttended` (`app/events/[id]/checkin/actions.ts:135`) does not catch `NotAuthorizedError`, and `ManualCodeDialog.submit` / `handleMark` have no try/finally.
    - **Recommend:** the walk-in fix pattern, about 3 files.
@@ -57,6 +61,8 @@ Session: "System improvement" (2026-10-14 → 15). Covers four pieces of work:
 
 1. Nothing to push from this session. `main` is ahead of `origin`, and pushing is your call.
 2. Your own uncommitted edits are untouched: `.mcp.json` and `AGENTS.md`. Another session's brief edit to the dashboard "events this week" metric (00:42) was reverted by its owner before these commits.
+
+**Next (Ivan, 2026-10-15): close the system improvement and move on to the MVP execution plan** (`docs/plans/2026-10-11-mvp-execution-plan.md`). Decisions 2–9 stay open here and are not blocking.
 
 ### Queued for Claude
 

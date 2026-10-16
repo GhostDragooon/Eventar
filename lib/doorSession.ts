@@ -1,6 +1,6 @@
 import { supabaseBrowser } from '@/lib/supabase/browser';
 
-export type DoorSession = 'signed_in' | 'signed_out' | 'ended';
+export type DoorSession = 'signed_in' | 'signed_out' | 'ended' | 'unknown';
 
 /**
  * What the attendee doors (/account/sign-in, /account/sign-up) need to know
@@ -12,7 +12,8 @@ export type DoorSession = 'signed_in' | 'signed_out' | 'ended';
  * pages, which verify, kept bouncing back (verified live 2026-10-14, Q45).
  * So a cookie session is confirmed with the server first. 'ended' means the
  * server rejected it: the dead cookie is cleared so the form can work. A
- * network failure is not proof the session is dead, so it is left alone.
+ * network failure is not proof the session is dead, so it is left alone and
+ * reported as 'unknown' (the door at check-in must not call that a sign-out).
  */
 export async function checkDoorSession(): Promise<DoorSession> {
   const sb = supabaseBrowser();
@@ -26,5 +27,5 @@ export async function checkDoorSession(): Promise<DoorSession> {
     await sb.auth.signOut({ scope: 'local' });
     return 'ended';
   }
-  return 'signed_out';
+  return 'unknown';
 }

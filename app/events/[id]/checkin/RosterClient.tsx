@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/browser';
+import { checkDoorSession } from '@/lib/doorSession';
 import { formatInTz } from '@/lib/tz';
 import { isValidRegistrationCode } from '@/lib/registrationCode';
 import { humanizeCameraError } from '@/lib/cameraError';
@@ -23,7 +24,22 @@ type RosterRow = {
   check_in_method: 'qr' | 'manual' | null;
 };
 
-type Toast = { kind: 'ok' | 'err'; message: string };
+type Toast = { kind: 'ok' | 'err'; message: string; signInHref?: string };
+
+// proxy.ts turns an ended session into a redirect before a door action runs,
+// so the action fails with a generic error and never reaches its own
+// "signed out" branch. Ask the auth server which case it was (Ivan, 2026-10-15).
+async function sessionEnded(): Promise<boolean> {
+  try {
+    const s = await checkDoorSession();
+    return s === 'ended' || s === 'signed_out';
+  } catch {
+    return false;
+  }
+}
+const doorSignIn = (eventId: string) =>
+  `/login?next=${encodeURIComponent(`/events/${eventId}/checkin`)}`;
+const isSignedOutMessage = (m: string) => m.startsWith("You've been signed out");
 
 // What each eligibility value means AT THE DOOR. Only the exceptions appear —
 // 'eligible' and 'not_cpd' render nothing, because a marker on every row of a
@@ -127,7 +143,8 @@ export default function RosterClient({
 
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(() => setToast(null), 3000);
+    // Errors stay up long enough to read while serving a queue.
+    const t = setTimeout(() => setToast(null), toast.kind === 'err' ? 8000 : 3000);
     return () => clearTimeout(t);
   }, [toast]);
 
@@ -154,13 +171,25 @@ export default function RosterClient({
     code: string,
     method: 'qr' | 'manual',
   ): Promise<{ ok: true; name: string } | { error: string }> {
-    const res = await markAttended(code, method);
+    let res: Awaited<ReturnType<typeof markAttended>>;
+    try {
+      res = await markAttended(code, method);
+    } catch {
+      // QR, manual dialog and row button all land here: never a silent dead
+      // end. A retry is safe: a repeat comes back as "already attended".
+      const ended = await sessionEnded();
+      const message = ended
+        ? "You've been signed out. This check-in was not saved."
+        : "Could not confirm this check-in. Try the code again; a repeat won't check them in twice.";
+      setToast({ kind: 'err', message, signInHref: ended ? doorSignIn(eventId) : undefined });
+      return { error: message };
+    }
     if ('error' in res) {
       const suffix = res.alreadyAttendedAt
         ? ` at ${formatInTz(res.alreadyAttendedAt, eventTimezone)}`
         : '';
       const message = `${res.error.replace(/\.$/, '')}${suffix}.`;
-      setToast({ kind: 'err', message });
+      setToast({ kind: 'err', message, signInHref: isSignedOutMessage(res.error) ? doorSignIn(eventId) : undefined });
       return { error: message };
     }
     const creditLines = res.credit?.lines?.length ? ` \u00b7 ${res.credit.lines.join(' \u00b7 ')}` : '';
@@ -176,16 +205,25 @@ export default function RosterClient({
     const key = `${registrationId}:${role}`;
     setPendingRoleKeys((prev) => new Set(prev).add(key));
     startTransition(async () => {
-      const res = has
-        ? await removeRegistrationRole({ registrationId, eventId, roleCode: role })
-        : await setRegistrationRole({ registrationId, eventId, roleCode: role });
-      setPendingRoleKeys((prev) => {
-        const next = new Set(prev);
-        next.delete(key);
-        return next;
-      });
+      let res: Awaited<ReturnType<typeof setRegistrationRole>>;
+      let ended = false;
+      try {
+        res = has
+          ? await removeRegistrationRole({ registrationId, eventId, roleCode: role })
+          : await setRegistrationRole({ registrationId, eventId, roleCode: role });
+      } catch {
+        ended = await sessionEnded();
+        res = { error: ended ? "You've been signed out. The role was not changed." : 'Could not update the role. Please try again.' };
+      } finally {
+        // Never leave the toggle stuck pending.
+        setPendingRoleKeys((prev) => {
+          const next = new Set(prev);
+          next.delete(key);
+          return next;
+        });
+      }
       if ('error' in res) {
-        setToast({ kind: 'err', message: res.error });
+        setToast({ kind: 'err', message: res.error, signInHref: ended ? doorSignIn(eventId) : undefined });
         return;
       }
       setRoleState((prev) => {
@@ -316,6 +354,14 @@ export default function RosterClient({
           }
         >
           {toast.message}
+          {toast.signInHref && (
+            <>
+              {' '}
+              <a href={toast.signInHref} className="underline font-semibold">
+                Sign in
+              </a>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -469,6 +515,7 @@ function WalkInDialog({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [signInHref, setSignInHref] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   // The server action enforces this too (it's the source of truth) — this
@@ -480,19 +527,25 @@ function WalkInDialog({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setSignInHref(null);
     setSubmitting(true);
     let res: Awaited<ReturnType<typeof walkInRegisterAndCheckIn>>;
     try {
       res = await walkInRegisterAndCheckIn({ eventId, fullName: name, email });
     } catch {
       // Never leave the button stuck on "Registering…" (user-lens, 2026-10-14).
-      setError('Could not register this walk-in. Nothing was saved. Please try again.');
+      // The insert may have landed before the response was lost, so never
+      // claim "nothing was saved"; a retry of a saved walk-in says so.
+      const ended = await sessionEnded();
+      setError(ended ? "You've been signed out. This walk-in was not saved." : 'Could not confirm this walk-in. Check the roster before trying again.');
+      setSignInHref(ended ? doorSignIn(eventId) : null);
       return;
     } finally {
       setSubmitting(false);
     }
     if ('error' in res) {
       setError(res.error);
+      setSignInHref(isSignedOutMessage(res.error) ? doorSignIn(eventId) : null);
       return;
     }
     onSuccess(res.registration.full_name, res.credit?.lines);
@@ -526,7 +579,19 @@ function WalkInDialog({
           onChange={e => setEmail(e.target.value)}
           className="px-md py-sm bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
         />
-        {error && <p className="font-body-md text-body-md text-error">{error}</p>}
+        {error && (
+          <p className="font-body-md text-body-md text-error">
+            {error}
+            {signInHref && (
+              <>
+                {' '}
+                <a href={signInHref} className="underline font-semibold">
+                  Sign in
+                </a>
+              </>
+            )}
+          </p>
+        )}
         <Button
           type="submit"
           disabled={submitting || closedMessage != null}
