@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState, useTransition } from 'react';
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
 import { softDeleteEvents, restoreEvents, cancelEvents } from '@/app/dashboard/actions';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -58,6 +58,8 @@ export type ManageWorkstationProps = {
   events: ProgrammeEvent[];
 };
 
+const UNDO_SECONDS = 7;
+
 export function ManageWorkstation({ events }: ManageWorkstationProps) {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortKey>('soonest');
@@ -73,6 +75,10 @@ export function ManageWorkstation({ events }: ManageWorkstationProps) {
     confirmLabel: string;
     tone: 'primary' | 'danger';
   }>(null);
+  // Cancel is one-way in the database, so its undo delays the write instead:
+  // nothing is sent until the countdown ends or the organiser clicks Done.
+  // left === 0 means the write has been sent.
+  const [undo, setUndo] = useState<null | { ids: string[]; left: number }>(null);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { all: 0, deleted: 0 };
@@ -122,6 +128,7 @@ export function ManageWorkstation({ events }: ManageWorkstationProps) {
         : kind === 'cancel' ? await cancelEvents(ids)
         : await restoreEvents(ids);
       setConfirm(null);
+      setUndo(null);
       if ('error' in res) {
         toast('error', res.error);
         return;
@@ -143,9 +150,87 @@ export function ManageWorkstation({ events }: ManageWorkstationProps) {
     });
   }
 
+  const counting = undo != null && undo.left > 0;
+  // While counting, every other bulk/card action is locked: a second action
+  // would close this dialog (execute clears undo) and drop the cancel.
+  const busy = pending || counting;
+
+  // Set synchronously at send time: a tick and a visibility change can both
+  // fire before React re-renders, so rendered `undo.left` is too late a marker.
+  const sent = useRef(false);
+  // Done sits where the first dialog's confirm button was: a double-click
+  // there must not skip the undo window.
+  const openedAt = useRef(0);
+
+  function commitCancel() {
+    if (!undo || sent.current) return;
+    sent.current = true;
+    setUndo({ ...undo, left: 0 });
+    execute('cancel', undo.ids);
+  }
+
+  function undoCancel() {
+    if (!counting || sent.current) return;
+    setUndo(null);
+    toast('neutral', 'Undone. Nothing was cancelled.');
+  }
+
+  const onTick = useEffectEvent(() => {
+    if (sent.current) return;
+    if (undo && undo.left > 1) setUndo({ ...undo, left: undo.left - 1 });
+    else commitCancel();
+  });
+  useEffect(() => {
+    if (!undo || undo.left === 0) return;
+    const t = setTimeout(onTick, 1000);
+    return () => clearTimeout(t);
+  }, [undo]);
+
+  // While counting down: a hidden page (phone locked, tab switched, iOS where
+  // beforeunload never prompts) sends at once rather than risk a paused timer;
+  // closing the tab gets the browser's leave-page warning.
+  const onHidden = useEffectEvent(() => {
+    if (document.hidden) commitCancel();
+  });
+  useEffect(() => {
+    if (!counting) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    const hidden = () => onHidden();
+    window.addEventListener('beforeunload', warn);
+    document.addEventListener('visibilitychange', hidden);
+    return () => {
+      window.removeEventListener('beforeunload', warn);
+      document.removeEventListener('visibilitychange', hidden);
+    };
+  }, [counting]);
+
+  // Leaving the page through in-app navigation mid-countdown sends the cancel
+  // (the toast provider sits in the root layout, so a failure still shows).
+  const sendIfUnsent = useEffectEvent(() => {
+    if (!undo || sent.current) return;
+    sent.current = true;
+    void cancelEvents(undo.ids).then(
+      (r) => {
+        if ('error' in r) toast('error', r.error);
+        else toast('success', `${r.count} event${r.count === 1 ? '' : 's'} cancelled.`);
+      },
+      () => toast('error', 'Could not cancel the selected events.'),
+    );
+  });
+  useEffect(() => () => sendIfUnsent(), []);
+
   function runBulk(kind: 'archive' | 'cancel' | 'restore') {
-    const ids = [...selected];
+    let ids = [...selected];
     if (ids.length === 0) return;
+    if (kind === 'cancel') {
+      // The RPC skips already-cancelled rows; count only the ones it will change.
+      const off = new Set(events.filter((e) => e.lifecycle === 'cancelled').map((e) => e.id));
+      ids = ids.filter((id) => !off.has(id));
+      if (ids.length === 0) {
+        toast('neutral', 'The selected events are already cancelled.');
+        return;
+      }
+    }
     if (kind === 'restore') {
       execute('restore', ids);
       return;
@@ -161,7 +246,7 @@ export function ManageWorkstation({ events }: ManageWorkstationProps) {
         : {
             kind, ids, tone: 'danger', confirmLabel: `Cancel ${n} event${n === 1 ? '' : 's'}`,
             title: `Cancel ${n} event${n === 1 ? '' : 's'}?`,
-            body: 'Registrants keep their records, but the events are marked cancelled on every surface.',
+            body: 'Registrants keep their records. The events move to the Cancelled tab.',
           },
     );
   }
@@ -256,20 +341,22 @@ export function ManageWorkstation({ events }: ManageWorkstationProps) {
               <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>download</span>Export CSV
             </Button>
             {inBin ? (
-              <Button type="button" variant="outline" onClick={() => runBulk('restore')} disabled={pending} className="gap-xs px-md py-sm font-label-md text-label-md">
+              <Button type="button" variant="outline" onClick={() => runBulk('restore')} disabled={busy} className="gap-xs px-md py-sm font-label-md text-label-md">
                 <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>restore_from_trash</span>Restore
               </Button>
             ) : (
               <>
-                <Button type="button" variant="outline" onClick={() => runBulk('archive')} disabled={pending} className="gap-xs px-md py-sm font-label-md text-label-md">
+                <Button type="button" variant="outline" onClick={() => runBulk('archive')} disabled={busy} className="gap-xs px-md py-sm font-label-md text-label-md">
                   <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>delete</span>Delete
                 </Button>
-                <Button type="button" variant="destructive" onClick={() => runBulk('cancel')} disabled={pending} className="gap-xs px-md py-sm font-label-md text-label-md">
-                  <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>block</span>Cancel
-                </Button>
+                {filter !== 'cancelled' && (
+                  <Button type="button" variant="destructive" onClick={() => runBulk('cancel')} disabled={busy} className="gap-xs px-md py-sm font-label-md text-label-md">
+                    <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>block</span>Cancel
+                  </Button>
+                )}
               </>
             )}
-            <Button type="button" variant="ghost" onClick={() => setSelected(new Set())} disabled={pending} className="px-md py-sm font-label-md text-label-md text-on-surface-variant hover:text-on-surface">Clear</Button>
+            <Button type="button" variant="ghost" onClick={() => setSelected(new Set())} disabled={busy} className="px-md py-sm font-label-md text-label-md text-on-surface-variant hover:text-on-surface">Clear</Button>
           </div>
         </div>
       )}
@@ -287,7 +374,7 @@ export function ManageWorkstation({ events }: ManageWorkstationProps) {
         </div>
       ) : (
         <ul className="flex flex-col gap-sm">
-          {visible.map((e) => <ManageEventCard key={e.id} e={e} selected={selected.has(e.id)} onToggle={() => toggle(e.id)} onDelete={() => deleteOne(e)} inBin={inBin} onRestore={() => execute('restore', [e.id])} pending={pending} />)}
+          {visible.map((e) => <ManageEventCard key={e.id} e={e} selected={selected.has(e.id)} onToggle={() => toggle(e.id)} onDelete={() => deleteOne(e)} inBin={inBin} onRestore={() => execute('restore', [e.id])} pending={busy} />)}
         </ul>
       )}
 
@@ -296,10 +383,30 @@ export function ManageWorkstation({ events }: ManageWorkstationProps) {
         title={confirm?.title ?? ''}
         body={confirm?.body ?? ''}
         confirmLabel={confirm?.confirmLabel ?? ''}
+        cancelLabel={confirm?.kind === 'cancel' ? 'Keep events' : undefined}
         tone={confirm?.tone ?? 'primary'}
         pending={pending}
-        onConfirm={() => confirm && execute(confirm.kind, confirm.ids)}
+        onConfirm={() => {
+          if (!confirm) return;
+          if (confirm.kind !== 'cancel') return execute(confirm.kind, confirm.ids);
+          setConfirm(null);
+          sent.current = false;
+          openedAt.current = Date.now();
+          setUndo({ ids: confirm.ids, left: UNDO_SECONDS });
+        }}
         onCancel={() => setConfirm(null)}
+      />
+
+      <ConfirmDialog
+        open={undo != null}
+        title="Moved to the Cancelled tab"
+        body={`Registrants keep their records. You have ${UNDO_SECONDS} seconds to undo.`}
+        confirmLabel="Done"
+        cancelLabel={undo?.left ? `Undo (${undo.left})` : 'Undo'}
+        backdropCancels={false}
+        pending={pending}
+        onConfirm={() => { if (Date.now() - openedAt.current >= 500) commitCancel(); }}
+        onCancel={undoCancel}
       />
     </>
   );

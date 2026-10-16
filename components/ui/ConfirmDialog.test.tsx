@@ -64,4 +64,29 @@ describe('ConfirmDialog', () => {
     expect(getByRole('button', { name: 'Working…' })).toBeDisabled();
     expect(getByRole('button', { name: 'Cancel' })).toBeDisabled();
   });
+
+  it('describes the dialog with its body for screen readers', () => {
+    const { getByRole } = render(<ConfirmDialog {...baseProps} />);
+    const bodyId = getByRole('dialog').getAttribute('aria-describedby');
+    expect(bodyId && document.getElementById(bodyId)?.textContent).toBe('They move to the Deleted bucket.');
+  });
+
+  it('backdropCancels={false} makes a backdrop click do nothing', () => {
+    const onCancel = vi.fn();
+    const { getByRole } = render(<ConfirmDialog {...baseProps} onCancel={onCancel} backdropCancels={false} />);
+    fireEvent.click(getByRole('dialog').firstElementChild!);
+    expect(onCancel).not.toHaveBeenCalled();
+  });
+
+  it('labels the secondary action with cancelLabel', () => {
+    const { getByRole } = render(<ConfirmDialog {...baseProps} cancelLabel="Undo (7)" />);
+    expect(getByRole('button', { name: 'Undo (7)' })).toBeInTheDocument();
+  });
+
+  it('a re-render with new handlers does not pull focus back to the confirm action', () => {
+    const { getByRole, rerender } = render(<ConfirmDialog {...baseProps} cancelLabel="Undo (7)" />);
+    getByRole('button', { name: 'Undo (7)' }).focus();
+    rerender(<ConfirmDialog {...baseProps} cancelLabel="Undo (6)" onCancel={vi.fn()} />);
+    expect(document.activeElement).toBe(getByRole('button', { name: 'Undo (6)' }));
+  });
 });

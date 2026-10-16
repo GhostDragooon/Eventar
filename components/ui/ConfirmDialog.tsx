@@ -10,6 +10,8 @@ export function ConfirmDialog({
   title,
   body,
   confirmLabel,
+  cancelLabel = 'Cancel',
+  backdropCancels = true,
   tone = 'primary',
   pending = false,
   onConfirm,
@@ -19,6 +21,8 @@ export function ConfirmDialog({
   title: string;
   body: string;
   confirmLabel: string;
+  cancelLabel?: string;
+  backdropCancels?: boolean;
   tone?: 'primary' | 'danger';
   pending?: boolean;
   onConfirm: () => void;
@@ -26,9 +30,14 @@ export function ConfirmDialog({
 }) {
   const confirmRef = useRef<HTMLButtonElement>(null);
 
+  // Focus on open only: a caller that re-renders while open (a ticking
+  // countdown label) must not pull focus back off the button the user is on.
+  useEffect(() => {
+    if (open) confirmRef.current?.focus();
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
-    confirmRef.current?.focus();
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onCancel();
     }
@@ -44,16 +53,17 @@ export function ConfirmDialog({
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-dialog-title"
+      aria-describedby="confirm-dialog-body"
     >
       {/* Scrim — strong enough to isolate the dialog. Backdrop click cancels;
           it is NOT a named button (a second "Cancel" in the a11y tree reads
           as a duplicate) — keyboard users have Escape + the real Cancel. */}
-      <div aria-hidden onClick={onCancel} className="absolute inset-0 bg-black/50" />
+      <div aria-hidden onClick={backdropCancels ? onCancel : undefined} className="absolute inset-0 bg-black/50" />
       <div className="relative w-full max-w-[420px] rounded-[16px] bg-surface-container-lowest border border-outline-variant shadow-xl p-lg">
         <h2 id="confirm-dialog-title" className="text-[calc(18px*var(--text-scale))] font-bold tracking-[-0.01em] text-on-surface mb-xs">
           {title}
         </h2>
-        <p className="font-body-md text-body-md text-on-surface-variant mb-lg">{body}</p>
+        <p id="confirm-dialog-body" className="font-body-md text-body-md text-on-surface-variant mb-lg">{body}</p>
         <div className="flex justify-end gap-sm">
           <button
             type="button"
@@ -61,7 +71,7 @@ export function ConfirmDialog({
             disabled={pending}
             className="min-h-11 px-lg py-sm rounded-lg border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50"
           >
-            Cancel
+            {cancelLabel}
           </button>
           <button
             ref={confirmRef}
