@@ -379,3 +379,38 @@ Two fresh user-lens agents, one per persona, on `:3100` with review mode off, lo
 ## 10. Change log
 
 - 2026-10-11: created from the consolidated handoff, Ivan's revised MVP definition and a code check of each requirement (§2).
+- 2026-10-17: §11 added. It holds every follow-up from the 2026-10-14/16 system-improvement session, which Ivan closed: "leave all the followup in the MVP plan".
+
+## 11. Carried in from the 2026-10-14/16 session (follow-ups, none blocking)
+
+Source: `docs/plans/handoff_20261015-system-improvement-k3.md`, which has the full evidence. Already shipped on `main` and not pushed: K3 abuse tier (`09a3c53`, Q45), sandbox gate (`de08711`), door check-in after sign-out (`8aacacc`).
+
+**Executor note:** Codex is out of quota until 2026-11-01 17:47 (verified 2026-10-16). Every CX card needs another executor until then, or waits.
+
+**Open decisions (Ivan; frontend items need a before → after per the standing review rule):**
+1. `/login` tells an organiser whose session was ended "This is on our side, try again". Recommend using `lib/doorSession.ts` there too, with an organiser `session_ended` line.
+2. Copy accuracy:
+   - "You're signed out" is shown for a staff session or an auth outage.
+   - Walk-in shows "signed out" to suspended staff.
+   - The claim flow says "sign in first".
+   - Walk-in shows "signed out" without the revoke reason.
+3. `doorSession` hardening:
+   - 429 currently counts as an ended session.
+   - The `signOut` result is not checked.
+   - Neither door wraps the check in try/catch.
+4. Account forms: no "Sign in again" link after a signed-out message. Profile's delete buttons drop a row on screen even when the action fails.
+5. 15 staff action files have no rate limiter, so no §4 abuse tier. Q45's "all authenticated routes" is unmet (`docs/DEFERRED.md`).
+6. `/dev-preview-uiport/breadcrumb-compare` can bypass the production gate with a crafted RSC request (static markup). Options: accept, gate the page, or delete that one page.
+7. UI-port library: rule the per-row proposal on branch `claude/epic-cannon-6eafe9`, commit `b15a8fe` (35 keep, 9 replace, 4 delete, 2 for Ivan).
+8. Small UI issues:
+   - The 404 page marks "Home" as the current page.
+   - `/login` "Contact an admin" is styled as a link but is plain text.
+   - The `/pricing` title says "Eventar" twice.
+
+**Unmerged branches (review, then merge or drop):**
+- `claude/gifted-proskuriakova-e08a91` `3b7742f`: one `ownEvents()` loader.
+- `claude/competent-shannon-e8517e` `d746d6c`: one email stub switch, which makes a missing key in production a send error. Confirm that was Ivan's call.
+
+**Verification still owed:**
+- A live door check after a global sign-out on the local stack. Unit tests cover the logic, but peer sessions held the ports.
+- The next graph refresh must semantically re-extract `PROJECT_STATE.md` and the 2026-10-15 handoff. They were deliberately left out of the manifest.

@@ -62,7 +62,7 @@ Session: "System improvement" (2026-10-14 → 15). Covers four pieces of work:
 1. Nothing to push from this session. `main` is ahead of `origin`, and pushing is your call.
 2. Your own uncommitted edits are untouched: `.mcp.json` and `AGENTS.md`. Another session's brief edit to the dashboard "events this week" metric (00:42) was reverted by its owner before these commits.
 
-**Next (Ivan, 2026-10-15): close the system improvement and move on to the MVP execution plan** (`docs/plans/2026-10-11-mvp-execution-plan.md`). Decisions 2–9 stay open here and are not blocking.
+**Closed 2026-10-17 (Ivan): every open item above moved to the MVP plan, `docs/plans/2026-10-11-mvp-execution-plan.md` §11.** That is now the single list; this handoff keeps the evidence.
 
 ### Queued for Claude
 
