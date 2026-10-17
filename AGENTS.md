@@ -23,3 +23,7 @@ When porting UI from an external or vanilla prototype:
 13. Run the no-new-colour check (`pnpm check:ui-colours`) and review both light and dark mode before reporting completion.
 
 Full guidance: `docs/ui-port/README.md`, `docs/ui-port/COLOUR_CONTRACT.md`, `docs/ui-port/PORTING_GUIDE.md`.
+
+## Imported Claude Cowork project instructions
+
+business development, feasibility, opex, business setup

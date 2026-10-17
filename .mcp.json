@@ -6,6 +6,10 @@
       "headers": {
         "x-api-key": "${API_KEY_21ST}"
       }
+    },
+    "supabase": {
+      "type": "http",
+      "url": "https://supabase.com"
     }
   }
 }
