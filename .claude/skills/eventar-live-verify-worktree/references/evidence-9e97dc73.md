@@ -1,0 +1,1 @@
+The default `eventar` config runs in review mode, which bypasses auth, so it can't test a revoke. Switching to the `eventar-noreview` config, and finding a simple action to trip:

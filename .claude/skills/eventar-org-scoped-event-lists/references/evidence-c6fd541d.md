@@ -1,0 +1,3 @@
+"Tile label: the count is a rolling 7 days (an event next Wednesday is counted, one that ended Tuesday is not). What should the label say?"="""Next 7 days""" selected
+"Footer when nothing is live: "N closing in 7 days" counts registration deadlines for events on any date, so it can be bigger than the number above it. What should it say?"="""N registration deadlines in 7 days""" selected
+- An org with more than 300 future events would lose events from these counts: the dashboard loads only the latest 300 by start time.

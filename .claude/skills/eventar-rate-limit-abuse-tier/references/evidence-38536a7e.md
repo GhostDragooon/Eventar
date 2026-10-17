@@ -1,0 +1,1 @@
+Verified live: after a server-side sign-out, /account and /account/sign-in redirected to each other forever, over 283 requests, because the door trusted the cookie. Both attendee doors now confirm the session with the server, clear a dead cookie, and say "Your previous session has ended" (`lib/doorSession.ts`).
