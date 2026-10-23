@@ -17,6 +17,7 @@ vi.mock('@/lib/supabase/admin', () => ({ supabaseAdmin: () => 'admin-client-mark
 
 import { afterEach, describe, expect, it } from 'vitest';
 import { AuthRetryableFetchError, AuthSessionMissingError } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import { requireStaff, NotAuthorizedError, getStaffSessionState, isStaffSession, canPublishEvents, canSetAccreditation } from './auth';
 
 // Fabricate a minimal supabase client shape that requireStaff depends on.
@@ -25,7 +26,7 @@ import { requireStaff, NotAuthorizedError, getStaffSessionState, isStaffSession,
 // removes a .eq(...) call from requireStaff is caught here rather than
 // silently passing regardless of the filter.
 function mockClient({ user, staffRow, userError = null, staffError = null }: {
-  user: { email: string } | null;
+  user: { email: string; id?: string } | null;
   staffRow: { id: string; email: string; role: 'organizer' | 'manager'; full_name: string | null; status: string } | null;
   userError?: Error | null;
   staffError?: { code: string; message: string } | null;
@@ -256,3 +257,73 @@ describe('canSetAccreditation', () => {
     expect(canSetAccreditation(role)).toBe(expected);
   });
 });
+
+// CX-07: one email in two organisations makes .maybeSingle() fail with PGRST116. Both reads must say so in the
+// log (UUID and code only). Two active rows prove the person IS staff, so the session state says 'staff' (shells
+// show organiser chrome, /account/* redirects to /dashboard where the proxy explains, practitioner writes answer
+// not_authorized); every consumer uses 'staff' only to deny or to frame, never to grant. requireStaff keeps
+// throwing the database error, never a NotAuthorizedError (pages turn that into a false "your email is not on
+// the staff list").
+describe('a staff email that matches two active rows (PGRST116)', () => {
+  const activeStaff = { id: 's-1', email: 'org@x.com', role: 'organizer' as const, full_name: 'Org', status: 'active' };
+  const twoRows = { code: 'PGRST116', message: 'JSON object requested, multiple (or no) rows returned' };
+
+  // A failed assertion above a test's own mockRestore() would leave the console spy on for the next test.
+  afterEach(() => vi.restoreAllMocks());
+
+  it("getStaffSessionState logs it without the email and says 'staff', not 'unknown'", async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const c = mockClient({ user: { email: 'org@x.com', id: 'user-uuid-2' }, staffRow: activeStaff, staffError: twoRows });
+    expect(await getStaffSessionState(c)).toBe('staff');
+    expect(log).toHaveBeenCalledTimes(1);
+    const logged = JSON.stringify(log.mock.calls[0]);
+    expect(logged).toContain('user-uuid-2');
+    expect(logged).toContain('PGRST116');
+    expect(logged).not.toContain('org@x.com');
+    expect(await isStaffSession(c)).toBe(true);
+    log.mockRestore();
+  });
+
+  it('requireStaff logs it, and throws the database error rather than NotAuthorizedError', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const c = mockClient({ user: { email: 'org@x.com', id: 'user-uuid-2' }, staffRow: activeStaff, staffError: twoRows });
+    const err = await requireStaff(c).catch((e) => e);
+    expect(err).toBe(twoRows);
+    expect(err).not.toBeInstanceOf(NotAuthorizedError);
+    expect(log).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(log.mock.calls[0])).not.toContain('org@x.com');
+    log.mockRestore();
+  });
+
+  it('other staff-read failures are not logged as this case', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const c = mockClient({ user: { email: 'org@x.com', id: 'user-uuid-2' }, staffRow: activeStaff, staffError: { code: '57014', message: 'timeout' } });
+    expect(await getStaffSessionState(c)).toBe('unknown');
+    expect(log).not.toHaveBeenCalled();
+    log.mockRestore();
+  });
+
+  it('requireStaff does not log other failures as this case, and re-throws them unchanged', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const timeout = { code: '57014', message: 'timeout' };
+    const c = mockClient({ user: { email: 'org@x.com', id: 'user-uuid-2' }, staffRow: activeStaff, staffError: timeout });
+    expect(await requireStaff(c).catch((e) => e)).toBe(timeout);
+    expect(log).not.toHaveBeenCalled();
+    log.mockRestore();
+  });
+
+  // The branches above key on a vendor string that the mock injects. This one asks the real client what two rows
+  // produce, so a supabase-js upgrade that renames the code fails here instead of silently killing the branch.
+  it('the real client reports PGRST116 for two rows (what the branches key on)', async () => {
+    const twoRowsResponse = async () =>
+      new Response(JSON.stringify([{ id: 'a' }, { id: 'b' }]), { status: 200, headers: { 'content-type': 'application/json' } });
+    const client = createClient('http://127.0.0.1:54321', 'anon-key', {
+      global: { fetch: twoRowsResponse },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data, error } = await client.from('staff').select('id').eq('email', 'x').eq('status', 'active').maybeSingle();
+    expect(data).toBeNull();
+    expect(error?.code).toBe('PGRST116');
+  });
+});
+

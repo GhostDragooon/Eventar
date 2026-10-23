@@ -99,6 +99,12 @@ export async function proxy(req: NextRequest) {
   // simply retry once the read recovered (rule 12). Still fails closed: no
   // staff route is served, but the session survives and the copy is honest.
   if (staffErr) {
+    // PGRST116: .maybeSingle() matched two active rows, i.e. one email in two organisations. A data fact, not
+    // an outage: log who and why (UUID and code only, rule 10) and say so instead of "try again" (CX-07).
+    if (staffErr.code === 'PGRST116') {
+      console.error('[proxy] staff email matches more than one active row', { userId: user.id, code: staffErr.code });
+      return redirectWithCookies(new URL('/login?error=multiple_organisations', req.url));
+    }
     return redirectWithCookies(new URL('/login?error=unavailable', req.url));
   }
 

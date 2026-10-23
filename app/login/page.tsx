@@ -122,9 +122,8 @@ function LoginForm() {
   // again could loop, so the form renders at once with that error.
   // `not_organiser` is proxy.ts's "signed in, no active staff row" bounce and
   // is exactly the case that needs the check (it carries the panel).
-  const [view, setView] = useState<View>(() =>
-    urlErrorCode && urlErrorCode !== 'not_organiser' ? { kind: 'form' } : { kind: 'checking' },
-  );
+  const skipsCheck = Boolean(urlErrorCode && urlErrorCode !== 'not_organiser');
+  const [view, setView] = useState<View>(() => (skipsCheck ? { kind: 'form' } : { kind: 'checking' }));
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [focusHeading, setFocusHeading] = useState(false);
   // After "Sign out and use another email" the URL still says ?error=not_organiser,
@@ -133,7 +132,10 @@ function LoginForm() {
   const [signedOutHere, setSignedOutHere] = useState(false);
 
   useEffect(() => {
-    if (view.kind !== 'checking') return;
+    // skipsCheck is read live, not only at mount: this component stays mounted when its own redirect to /dashboard
+    // is bounced back here by proxy.ts with ?error=multiple_organisations (CX-07), and then the check must neither
+    // run again nor leave the page on "Loading…".
+    if (view.kind !== 'checking' || skipsCheck) return;
     let cancelled = false;
     (async () => {
       let session: { user: { email?: string | null } } | null = null;
@@ -184,7 +186,7 @@ function LoginForm() {
     return () => {
       cancelled = true;
     };
-  }, [view.kind, router, next, isInvite]);
+  }, [view.kind, skipsCheck, router, next, isInvite]);
 
   // After "Sign out and use another email" the panel the user just pressed a
   // button in disappears; put focus on the new heading rather than <body>.
@@ -192,7 +194,7 @@ function LoginForm() {
     if (focusHeading) headingRef.current?.focus();
   }, [focusHeading]);
 
-  if (view.kind === 'checking') return <LoginShell />;
+  if (view.kind === 'checking' && !skipsCheck) return <LoginShell />;
 
   if (view.kind === 'practitioner') {
     return (
@@ -231,7 +233,7 @@ function LoginForm() {
 
       <MagicLinkSignInForm
         submitMagicLink={sendMagicLink}
-        initialError={view.checkFailed ? resolveAuthError('unavailable') : signedOutHere ? null : urlErr}
+        initialError={view.kind === 'form' && view.checkFailed ? resolveAuthError('unavailable') : signedOutHere ? null : urlErr}
         next={next}
         audience={isInvite ? 'invitee' : 'organizer'}
       />

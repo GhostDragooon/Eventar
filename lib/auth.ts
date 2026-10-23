@@ -11,6 +11,12 @@ export type Staff = {
   organisation_id: string | null;
 };
 
+// `staff` allows one email in two organisations (UNIQUE (email, organisation_id)); .maybeSingle() then fails with
+// PGRST116. UUID and code only: never the email (rule 10).
+function logMultipleStaffRows(userId: string | undefined, code: string) {
+  console.error('[auth] staff email matches more than one active row', { userId, code });
+}
+
 export class NotAuthorizedError extends Error {
   constructor(message = 'not authorized') {
     super(message);
@@ -83,7 +89,15 @@ export async function getStaffSessionState(
     .eq('email', email)
     .eq('status', 'active')
     .maybeSingle();
-  if (staffErr) return 'unknown';
+  if (staffErr) {
+    // One email in two organisations (PGRST116): two active rows prove the person is staff, so say 'staff' and
+    // say why in the log. Every consumer uses 'staff' only to deny or to frame, never to grant (CX-07).
+    if (staffErr.code === 'PGRST116') {
+      logMultipleStaffRows(userRes?.user?.id, staffErr.code);
+      return 'staff';
+    }
+    return 'unknown';
+  }
   return staff != null ? 'staff' : 'not_staff';
 }
 
@@ -148,7 +162,10 @@ export async function requireStaff(client?: SupabaseClient): Promise<Staff> {
   // staff list" — a false accusation against a real staff member (rule 12).
   // Throwing the underlying error still fails closed (no access is granted);
   // it just stops lying about why.
-  if (staffErr) throw staffErr;
+  if (staffErr) {
+    if (staffErr.code === 'PGRST116') logMultipleStaffRows(userRes?.user?.id, staffErr.code);
+    throw staffErr;
+  }
   if (!staff) throw new NotAuthorizedError('email not in staff table');
   return staff as Staff;
 }

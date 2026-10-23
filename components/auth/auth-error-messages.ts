@@ -17,6 +17,10 @@ const AUTH_ERROR_MESSAGES_ORGANIZER: Readonly<Record<string, string>> = {
   not_authorized: 'Your email is not on the organizer list. Contact an admin to be added.',
   unavailable:
     'We could not check your organizer access just now. This is on our side — please try again in a moment.',
+  // `staff` allows one email in two organisations; the single-row read then fails (PGRST116) and proxy.ts
+  // sends the person here. Not a transient outage, so no "try again". Organiser door only (CX-07).
+  multiple_organisations:
+    "Your account belongs to more than one organisation, which isn't supported yet. Ask Eventar support.",
   // proxy.ts keeps the session of a signed-in non-organiser and sends them to
   // /login?error=not_organiser. With a session /login shows its practitioner
   // panel instead; this line is what a visitor with no session sees.

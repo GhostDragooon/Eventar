@@ -136,4 +136,28 @@ describe('proxy — branches that did not change', () => {
     expect(to.searchParams.get('error')).toBe('unavailable');
     expect(signOut).not.toHaveBeenCalled();
   });
+
+  // CX-07: one email in two organisations makes .maybeSingle() fail with PGRST116. That is a data fact, not an
+  // outage: say so, log who and why (UUID and code only, never the email), keep the session.
+  it('an email that matches two active staff rows gets /login?error=multiple_organisations, logged without PII, session kept', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    getUser.mockResolvedValue({ data: { user: { id: 'user-uuid-1', email: 'staff@example.com' } }, error: null });
+    stubStaffLookup({ data: null, error: { code: 'PGRST116', message: 'JSON object requested, multiple (or no) rows returned' } });
+    const to = location(await proxy(request('/dashboard')));
+    expect(to.pathname).toBe('/login');
+    expect(to.searchParams.get('error')).toBe('multiple_organisations');
+    expect(signOut).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledTimes(1);
+    const logged = JSON.stringify(log.mock.calls[0]);
+    expect(logged).toContain('user-uuid-1');
+    expect(logged).toContain('PGRST116');
+    expect(logged).not.toContain('staff@example.com');
+    log.mockRestore();
+  });
+
+  it('any other staff-read failure still reads as the transient outage', async () => {
+    getUser.mockResolvedValue({ data: { user: { id: 'user-uuid-1', email: 'staff@example.com' } }, error: null });
+    stubStaffLookup({ data: null, error: { code: 'PGRST301', message: 'JWT expired' } });
+    expect(location(await proxy(request('/dashboard'))).searchParams.get('error')).toBe('unavailable');
+  });
 });

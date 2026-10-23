@@ -49,3 +49,19 @@ describe('resolveAuthError', () => {
     expect(resolveAuthError('unavailable', 'attendee')).not.toMatch(/organizer access|staff access/i);
   });
 });
+
+// CX-07: `staff` allows one person in two organisations (UNIQUE (email, organisation_id)); the single-row read
+// then errors, and the organiser used to be told "try again in a moment" for ever.
+describe('multiple_organisations', () => {
+  it('says why, in organiser-door copy, and does not call it a transient outage', () => {
+    const msg = resolveAuthError('multiple_organisations');
+    expect(msg).toBe("Your account belongs to more than one organisation, which isn't supported yet. Ask Eventar support.");
+    expect(msg).not.toMatch(/try again|on our side|just now/i);
+    expect(msg).not.toContain('\u2014');
+  });
+
+  it('is organiser-door only: the attendee door never receives it and falls back to the generic line', () => {
+    expect(resolveAuthError('multiple_organisations', 'attendee')).toBe('Sign-in could not be completed. Request a new link below.');
+  });
+});
+

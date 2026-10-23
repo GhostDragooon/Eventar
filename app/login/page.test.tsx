@@ -273,7 +273,7 @@ describe('/login — ?error= codes', () => {
 
   // The attendee door's soft-loop guard, kept: an upstream failure means the
   // session check already ran once, so redirecting again could loop.
-  it.each(['unavailable', 'not_authorized', 'missing_code', 'exchange_failed'])(
+  it.each(['unavailable', 'not_authorized', 'missing_code', 'exchange_failed', 'multiple_organisations'])(
     '?error=%s renders the form with its message immediately and skips the session check',
     async (code) => {
       visit(`error=${code}`);
@@ -283,6 +283,32 @@ describe('/login — ?error= codes', () => {
       expect(router.replace).not.toHaveBeenCalled();
     },
   );
+
+  it('?error=multiple_organisations says what the organiser-door message says', () => {
+    visit('error=multiple_organisations');
+    expect(screen.getByRole('alert')).toHaveTextContent(/belongs to more than one organisation/i);
+  });
+
+  // CX-07: a person with two active staff rows counts as staff, so this page redirects them on; proxy.ts then
+  // bounces that redirect back here with ?error=multiple_organisations. It is the same mounted component, so the
+  // form must open on the new URL, neither sit on "Loading…" nor run the session check and redirect again.
+  it.each([
+    ['no ?next=', '', '/dashboard'],
+    ['a ?next= organiser route', 'next=%2Fevents%2Fnew', '/events/new'],
+  ])('a staff redirect bounced back with ?error=multiple_organisations (%s) opens the form with the message', async (_label, query, target) => {
+    sessionAs();
+    staff(true);
+    const { rerender } = visit(query);
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith(target));
+    expect(emailField()).not.toBeInTheDocument();
+
+    mockSearchParams = new URLSearchParams('error=multiple_organisations');
+    rerender(<LoginPage />);
+
+    expect(await screen.findByLabelText(/email address/i)).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent(/belongs to more than one organisation/i);
+    expect(router.replace).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('/login — failures fail visibly (rule 12)', () => {
