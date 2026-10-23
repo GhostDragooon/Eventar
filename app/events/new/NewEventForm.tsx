@@ -31,6 +31,9 @@ import { registrationWindow } from '@/lib/registrationWindow';
 import type { Venue } from '@/lib/venue';
 import { tzFromCoords } from '@/lib/tz';
 import { formatMinutes24h } from '@/components/event-form/DateTimeSection';
+import { PublishConfirmDialog } from '@/components/event-form/PublishConfirmDialog';
+import { markDraftSaved, resetDraftStatus, setDraftDirty } from '@/lib/draftDirty';
+import { publishFacts, type PublishFacts } from '@/lib/publishFacts';
 
 // `preview` is edit-mode only — same write path as `draft` (no status sent)
 // but Save & Preview opens the public page in a new tab after save resolves.
@@ -287,6 +290,12 @@ export default function NewEventForm(props: Props) {
   // form to the same values and the user has no way to tell their click
   // landed (the protocol's "did I do the right thing?" failure mode).
   const [savedAt, setSavedAt] = useState<Date | null>(null);
+  // What was on screen when that save went through. The "Saved." line below the buttons is true only while the
+  // form still matches it; one more keystroke makes it stale, and the banner above already says so.
+  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
+  // Create mode: the Publish confirm (UX-01 pick a1). Save draft never opens it. The facts it shows depend on
+  // "now", so they are worked out when it opens, and null means closed.
+  const [confirmFacts, setConfirmFacts] = useState<PublishFacts | null>(null);
 
   // Section refs for scroll-to-first-invalid. The linear layout exposes
   // every section at once, so the old "open the failing accordion" trick
@@ -322,7 +331,23 @@ export default function NewEventForm(props: Props) {
   // meaningless and the user has no expectation of seeing one.
   const venueTz = venue ? safeTzFromVenue(venue) : null;
 
-  function onSubmit(nextIntent: Intent) {
+  // Edit mode: is the form different from what was last saved? The Publish card and the saved banner sit
+  // outside this component and read the answer from lib/draftDirty. Every field the form submits is in here.
+  const snapshot = JSON.stringify([basics, venue, datetime, blocks, hostedBy, organizedBy, heroImageUrl, category, selfServe, regOpen, regClose]);
+  const snapshotRef = useRef(snapshot);
+  useEffect(() => {
+    snapshotRef.current = snapshot;
+  });
+  const baselineRef = useRef(snapshot);
+  const editEventId = props.mode === 'edit' ? props.eventId : null;
+  useEffect(() => {
+    if (editEventId) resetDraftStatus(editEventId);
+  }, [editEventId]);
+  useEffect(() => {
+    if (editEventId) setDraftDirty(editEventId, snapshot !== baselineRef.current);
+  }, [editEventId, snapshot]);
+
+  function onSubmit(nextIntent: Intent, confirmed = false) {
     setErr(null);
     setFieldErr(null);
     setSavedEventId(null);
@@ -352,10 +377,6 @@ export default function NewEventForm(props: Props) {
     }
     // Registration window: each bound needs BOTH date and time once touched;
     // when both bounds exist, close must be after open.
-    const encodeBound = (b: { date: string; minutes: number | null }): string | undefined =>
-      b.date && b.minutes != null
-        ? new Date(`${b.date}T${formatMinutes24h(b.minutes)}:00`).toISOString()
-        : undefined;
     const openIso = encodeBound(regOpen);
     const closeIso = encodeBound(regClose);
     const openPartial = (regOpen.date !== '') !== (regOpen.minutes != null);
@@ -378,6 +399,19 @@ export default function NewEventForm(props: Props) {
         invalid('cpd', cpdRef, 'Enter the CPD hours (more than 0, up to 24) for the accrediting body, or set it back to "Not accredited".');
         return;
       }
+    }
+    // Publishing is one-way for now, so the first click only asks; the confirm's own button sends it.
+    if (nextIntent === 'publish' && !confirmed) {
+      setConfirmFacts(
+        publishFacts({
+          // dateTimeValid (checked above) ensured the date and both times exist.
+          startIso: new Date(`${datetime.date}T${formatMinutes24h(datetime.startMinutes!)}:00`).toISOString(),
+          timezone: venueTz,
+          registrationOpenIso: openIso ?? null,
+          nowMs: Date.now(),
+        }),
+      );
+      return;
     }
     setIntent(nextIntent);
 
@@ -439,6 +473,7 @@ export default function NewEventForm(props: Props) {
     // narrowed inside this closure, so we don't re-narrow after the await.
     const previewUrl = props.mode === 'edit' ? `/events/${props.eventId}` : null;
     const openPreview = nextIntent === 'preview';
+    const submittedSnapshot = snapshot;
 
     start(async () => {
       const res = await props.submit(payload);
@@ -466,6 +501,11 @@ export default function NewEventForm(props: Props) {
         router.refresh();
         setIntent(null);
         setSavedAt(new Date());
+        setSavedSnapshot(submittedSnapshot);
+        // What was sent is the new baseline; anything typed while it was in flight is still unsaved.
+        baselineRef.current = submittedSnapshot;
+        if (snapshotRef.current === submittedSnapshot) markDraftSaved(props.eventId);
+        else setDraftDirty(props.eventId, true);
       }
     });
   }
@@ -824,6 +864,19 @@ export default function NewEventForm(props: Props) {
           Publish event makes the registration page live. Details cannot be edited after publishing yet, so check them first.
         </p>
       )}
+      {!isEdit && canPublish && confirmFacts && (
+        <PublishConfirmDialog
+          open
+          onOpenChange={() => setConfirmFacts(null)}
+          onConfirm={() => {
+            setConfirmFacts(null);
+            onSubmit('publish', true);
+          }}
+          pending={false}
+          title={basics.title}
+          facts={confirmFacts}
+        />
+      )}
 
       {err && (
         <p
@@ -846,7 +899,7 @@ export default function NewEventForm(props: Props) {
           Open the saved event
         </Link>
       )}
-      {savedAt && !err && (
+      {savedAt && !err && savedSnapshot === snapshot && (
         <p
           role="status"
           aria-live="polite"
@@ -991,6 +1044,13 @@ function ProgressStrip({
  * the Server Action, so any failure there is the surface that owns the
  * recovery, not this client-side hint.
  */
+// A registration bound is a date plus a time of day; both or neither. Local wall-clock to ISO, as the event's own pair.
+function encodeBound(b: { date: string; minutes: number | null }): string | undefined {
+  return b.date && b.minutes != null
+    ? new Date(`${b.date}T${formatMinutes24h(b.minutes)}:00`).toISOString()
+    : undefined;
+}
+
 function safeTzFromVenue(v: Venue): string | null {
   try {
     return tzFromCoords(v.latitude, v.longitude);

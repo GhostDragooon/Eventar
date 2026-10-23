@@ -65,7 +65,8 @@ describe('publishEvent', () => {
   it('explains when the event is no longer an active draft', async () => {
     rpc.mockResolvedValue({ data: null, error: { code: '22023', message: 'publish_event: only an active draft can be published' } });
     await expect(publishEvent(EVENT_ID)).resolves.toEqual({
-      error: "This event can't be published because it is no longer a current draft. It may have been cancelled or deleted. Check it in Manage.",
+      error: "This event can't be published because it is no longer a current draft. It may have been cancelled or deleted.",
+      stale: true,
     });
     // Plain words, not the database's vocabulary.
     expect(JSON.stringify(await publishEvent(EVENT_ID))).not.toMatch(/active draft/i);

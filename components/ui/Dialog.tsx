@@ -38,6 +38,7 @@ export function Dialog({
   children,
   footer,
   labelledById,
+  describedById,
   className,
   icon,
   iconTone = 'primary',
@@ -50,6 +51,8 @@ export function Dialog({
   footer?: ReactNode;
   /** Override the generated id when a caller needs to reference the title. */
   labelledById?: string;
+  /** id of the element holding the content a screen reader should hear with the title. */
+  describedById?: string;
   className?: string;
   /** material-symbols-outlined glyph name shown left of the title. */
   icon?: string;
@@ -58,6 +61,13 @@ export function Dialog({
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const titleId = labelledById ?? 'dialog-title';
+  // Callers pass inline callbacks, so the prop changes identity on every parent render. Read the latest one
+  // through a ref so the effect below runs when the dialog opens or closes and at no other time: re-running
+  // it moved focus off the control being pressed and replayed the open animation.
+  const onOpenChangeRef = useRef(onOpenChange);
+  useEffect(() => {
+    onOpenChangeRef.current = onOpenChange;
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -84,7 +94,7 @@ export function Dialog({
     function onKey(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         event.preventDefault();
-        onOpenChange(false);
+        onOpenChangeRef.current(false);
         return;
       }
 
@@ -116,7 +126,7 @@ export function Dialog({
       animation?.cancel();
       if (previous?.isConnected) previous.focus();
     };
-  }, [open, onOpenChange]);
+  }, [open]);
 
   if (!open) return null;
 
@@ -129,6 +139,7 @@ export function Dialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        aria-describedby={describedById}
         tabIndex={-1}
         className={cn(
           'relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-auto rounded-[20px] border border-outline-variant bg-surface-container-lowest p-lg shadow-xl',

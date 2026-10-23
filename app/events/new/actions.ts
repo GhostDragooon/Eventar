@@ -192,5 +192,6 @@ export async function createEvent(input: {
   }
 
   revalidatePath('/dashboard');
-  redirect(`/events/${data}/edit`);
+  // The flag is a one-time arrival signal the next page turns into a visible confirmation (D15), not state.
+  redirect(statusParse.data === 'published' ? `/events/${data}/details?published=1` : `/events/${data}/edit?saved=1`);
 }

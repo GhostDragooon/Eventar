@@ -10,6 +10,7 @@ import DownloadQrButton from '@/components/DownloadQrButton';
 import ExportRegistrantsButton from '@/components/ExportRegistrantsButton';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { CpdAccreditationSection } from '@/components/details/CpdAccreditationSection';
+import { DraftSavedBanner } from '@/components/event-form/DraftSavedBanner';
 import { MultiBodyAccreditationWizard, type WizardGroup, type WizardOccurrence } from '@/components/details/MultiBodyAccreditationWizard';
 import { isMultiBodyConfigured } from '@/lib/cpd/multiBodyShape';
 import { listAuthorisedBodies } from '@/lib/cpd/authorisedBodies';
@@ -30,8 +31,10 @@ export const metadata = {
 
 export default async function StaffEventEditPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ saved?: string }>;
 }) {
   let staff;
   try {
@@ -41,6 +44,7 @@ export default async function StaffEventEditPage({
     throw e;
   }
   const { id } = await params;
+  const { saved } = await searchParams;
 
   const supabase = await supabaseServer();
   const { data: event, error: eventErr } = await supabase
@@ -251,6 +255,9 @@ export default async function StaffEventEditPage({
           Non-draft: keep the existing read-only + ActionCards sidebar
           layout untouched. */}
       {event.status === 'draft' ? (
+        <>
+        {/* UX-01 pick c1: the draft is saved (this page is where Save draft lands), then Save changes later. */}
+        <DraftSavedBanner eventId={event.id} savedOnLoad={saved === '1'} canPublish={canPublish} />
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-grid-gutter items-start">
           <div className="lg:col-span-8 min-w-0">
             <DraftEditFormPanel event={event} blocks={blocks ?? []} />
@@ -263,6 +270,7 @@ export default async function StaffEventEditPage({
                 before the one-way step. Role-aware: a role that cannot publish
                 gets the reason in the heading, not a sales line above a missing
                 button. */}
+            <div id="publish-card">
             <ActionCard
               icon="publish"
               title={canPublish ? 'Ready to publish?' : 'Publishing needs an organiser admin'}
@@ -272,10 +280,19 @@ export default async function StaffEventEditPage({
                   : "Your role can't publish events."
               }
             >
-              <PublishDraftButton eventId={event.id} canPublish={canPublish} />
+              <PublishDraftButton
+                eventId={event.id}
+                canPublish={canPublish}
+                title={event.title}
+                startIso={event.start_time}
+                timezone={event.timezone}
+                registrationOpenIso={event.registration_open_at}
+              />
             </ActionCard>
+            </div>
           </aside>
         </div>
+        </>
       ) : (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-grid-gutter">
         {/* Left (8 cols): event content */}
@@ -462,13 +479,9 @@ export default async function StaffEventEditPage({
  * updateEvent server action (which the form receives as a `submit` prop so
  * the form itself stays free of action-routing logic).
  *
- * Publish remains accessible from the read-only/non-draft side of this same
- * page once the user clicks "Save changes" — the form deliberately does NOT
- * send `status` (per updateAction.ts), so saving the form leaves the event
- * in draft. Lifecycle (publish) lives on the existing ActionCard surface for
- * non-draft views; for draft-state the user reaches publish via the dashboard
- * publish action (a follow-up D.3b will surface a "Save & publish" button
- * here on the form itself).
+ * Publishing is not on this form: the Publish card beside it (PublishDraftButton) publishes the last SAVED
+ * version after a confirm, and refuses while the form has unsaved changes. Saving the form never changes the
+ * event's status (updateAction.ts sends none), so a saved draft stays a draft.
  */
 function DraftEditFormPanel({
   event,

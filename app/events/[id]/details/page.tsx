@@ -17,6 +17,9 @@ import { FeedbackSection } from '@/components/details/FeedbackSection';
 import { listAuthorisedBodies } from '@/lib/cpd/authorisedBodies';
 import { isMultiBodyConfigured } from '@/lib/cpd/multiBodyShape';
 import { CpdAccreditationSection } from '@/components/details/CpdAccreditationSection';
+import { PublishedNextSteps } from '@/components/details/PublishedNextSteps';
+import { publishFacts } from '@/lib/publishFacts';
+import { getRequestOrigin } from '@/lib/origin';
 import { MultiBodyAccreditationWizard, type WizardGroup, type WizardOccurrence } from '@/components/details/MultiBodyAccreditationWizard';
 import { PassDeliveryPanel } from '@/components/details/PassDeliveryPanel';
 import { EmailDeliveryStrip, type EmailDeliveryRow } from '@/components/details/EmailDeliveryStrip';
@@ -37,12 +40,19 @@ function fmtHM(iso: string, tz: string): string {
   return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz }).format(new Date(iso));
 }
 
-export default async function EventDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EventDetailsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ published?: string }>;
+}) {
   let staff;
   try { staff = await requireStaff(); }
   catch (e) { if (e instanceof NotAuthorizedError) redirect('/login'); throw e; }
 
   const { id } = await params;
+  const { published } = await searchParams;
   const supabase = await supabaseServer();
   // email_log is RLS-locked to service role (init_email_log.sql) — staff reads
   // for the G6 "sent" count must go through supabaseAdmin().
@@ -377,6 +387,16 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
         </div>
         <ActionToolbar eventId={event.id} lifecycle={lifecycle} />
       </header>
+
+      {/* Where Publish lands (UX-01 pick a1): `?published=1` is the one-time arrival signal, and only an event that
+          really is published can show it. */}
+      {published === '1' && event.status === 'published' && (
+        <PublishedNextSteps
+          eventId={event.id}
+          origin={await getRequestOrigin()}
+          checkinOpens={publishFacts({ startIso: event.start_time, timezone: event.timezone, registrationOpenIso: event.registration_open_at, nowMs }).checkinOpens}
+        />
+      )}
 
       {/* "One glance = is this event ready to run" (IA spec). */}
       <ReadinessStrip cells={readiness} />

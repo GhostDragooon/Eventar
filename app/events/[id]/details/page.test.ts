@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
+vi.mock('@/lib/origin', () => ({ getRequestOrigin: async () => 'https://events.example.test' }));
 
 const h = vi.hoisted(() => ({
   staff: {} as Record<string, unknown>,
@@ -25,11 +26,13 @@ vi.mock('@/lib/supabase/admin', async () => {
 
 import { NOW, eventRow, settle, textOf } from '@/tests/helpers/staffPageFakes';
 import EventDetailsPage from './page';
+import { PublishedNextSteps } from '@/components/details/PublishedNextSteps';
 
 const staff = (role: string, organisation_id: string) => ({
   id: 'staff-1', email: 'staff@example.test', role, full_name: null, organisation_id,
 });
-const open = (id: string) => settle(() => EventDetailsPage({ params: Promise.resolve({ id }) }));
+const open = (id: string, searchParams: { published?: string } = {}) =>
+  settle(() => EventDetailsPage({ params: Promise.resolve({ id }), searchParams: Promise.resolve(searchParams) }));
 
 // A published event of org B: readable by any session (events_public_read_published),
 // and this page also renders admin-client values (credits issued, the organisation's
@@ -65,5 +68,57 @@ describe('/events/[id]/details — Event Manager', () => {
   it('is a 404 for an event that does not exist', async () => {
     h.staff = staff('organiser_admin', 'org-a');
     expect(await open('no-such-event')).toEqual({ kind: 'notFound' });
+  });
+});
+
+// UX-01 pick a1: Publish lands here with `?published=1`. Only an event that really is published may show it.
+function findAll(node: unknown, type: unknown, found: { props: Record<string, unknown> }[] = []) {
+  if (Array.isArray(node)) node.forEach((n) => findAll(n, type, found));
+  else if (node && typeof node === 'object') {
+    const el = node as { type?: unknown; props?: { children?: unknown } & Record<string, unknown> };
+    if (el.type === type) found.push(el as { props: Record<string, unknown> });
+    findAll(el.props?.children, type, found);
+  }
+  return found;
+}
+
+describe('/events/[id]/details: the Published next steps card', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(NOW);
+    h.staff = staff('organiser_admin', 'org-b');
+  });
+  afterEach(() => vi.useRealTimers());
+
+  async function cardsFor(row: ReturnType<typeof eventRow>, searchParams: { published?: string }) {
+    h.tables = { events: [row] };
+    const out = await open(row.id as string, searchParams);
+    expect(out.kind).toBe('render');
+    return out.kind === 'render' ? findAll(out.tree, PublishedNextSteps) : [];
+  }
+
+  const inHours = (h: number) => new Date(+NOW + h * 3_600_000).toISOString();
+
+  it('shows after publishing, with the event id, the canonical origin and when check-in opens', async () => {
+    const cards = await cardsFor(
+      eventRow({ id: 'ev-p', organisation_id: 'org-b', status: 'published', start_time: inHours(3), end_time: inHours(6) }),
+      { published: '1' },
+    );
+    expect(cards).toHaveLength(1);
+    expect(cards[0].props).toMatchObject({ eventId: 'ev-p', origin: 'https://events.example.test' });
+    expect(String(cards[0].props.checkinOpens)).toMatch(/^Check-in opens at .*60 minutes before the start\.$/);
+  });
+
+  it('says check-in is already open when the event has started', async () => {
+    const cards = await cardsFor(eventRow({ id: 'ev-p', organisation_id: 'org-b', status: 'published' }), { published: '1' });
+    expect(cards[0].props.checkinOpens).toBe('Check-in is open now.');
+  });
+
+  it('does not show on an ordinary visit', async () => {
+    expect(await cardsFor(eventRow({ id: 'ev-p', organisation_id: 'org-b', status: 'published' }), {})).toHaveLength(0);
+  });
+
+  it('does not show for a draft even with the flag: it would say "live" about an event that is not', async () => {
+    expect(await cardsFor(eventRow({ id: 'ev-d', organisation_id: 'org-b', status: 'draft' }), { published: '1' })).toHaveLength(0);
   });
 });

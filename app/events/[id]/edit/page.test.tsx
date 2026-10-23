@@ -38,6 +38,7 @@ const eventRow = {
   max_attendees: null,
   created_by: 'staff-1',
   organisation_id: 'org-1',
+  registration_open_at: null,
 };
 
 // A chainable stand-in for the query builder. Every method returns the chain; awaiting
@@ -62,6 +63,7 @@ vi.mock('./updateAction', () => ({ updateEvent: vi.fn() }));
 
 import { describe, expect, it } from 'vitest';
 import PublishDraftButton from './PublishDraftButton';
+import { DraftSavedBanner } from '@/components/event-form/DraftSavedBanner';
 import { CpdAccreditationSection } from '@/components/details/CpdAccreditationSection';
 import StaffEventEditPage from './page';
 
@@ -76,9 +78,9 @@ function findAll(node: ReactNode, type: unknown, found: ReactElement[] = []): Re
   return found;
 }
 
-async function draftTree(role: Role) {
+async function draftTree(role: Role, saved?: string) {
   mockRole = role;
-  return StaffEventEditPage({ params: Promise.resolve({ id: 'event-1' }) });
+  return StaffEventEditPage({ params: Promise.resolve({ id: 'event-1' }), searchParams: Promise.resolve(saved ? { saved } : {}) });
 }
 
 // The card that wraps the Publish control: the nearest element carrying a `title` and a
@@ -157,5 +159,33 @@ describe('draft edit page hands the accreditation card what this role may do', (
     const cards = findAll(await draftTree(role), CpdAccreditationSection);
     expect(cards, 'exactly one accreditation card').toHaveLength(1);
     expect(cards[0].props).toMatchObject({ canSetAccreditation: canSet });
+  });
+});
+
+// UX-03: the confirm needs the event's own facts, and c1's banner needs to know the page was reached by Save draft.
+describe('draft edit page feeds the confirm and the saved banner', () => {
+  it('hands the Publish card the event title, start, timezone and registration open time', async () => {
+    const [card] = findAll(await draftTree('organiser_admin'), PublishDraftButton);
+    expect(card.props).toMatchObject({
+      title: 'Clinical Skills Day',
+      startIso: '2026-10-05T01:00:00.000Z',
+      timezone: 'Asia/Hong_Kong',
+      registrationOpenIso: null,
+    });
+  });
+
+  it.each([
+    [undefined, false],
+    ['1', true],
+    ['0', false],
+  ] as const)('?saved=%s: savedOnLoad %s', async (saved, expected) => {
+    const banners = findAll(await draftTree('organiser_admin', saved), DraftSavedBanner);
+    expect(banners, 'one saved banner on a draft').toHaveLength(1);
+    expect(banners[0].props).toMatchObject({ eventId: 'event-1', savedOnLoad: expected, canPublish: true });
+  });
+
+  it('tells the banner when this role cannot publish', async () => {
+    const [banner] = findAll(await draftTree('body_admin', '1'), DraftSavedBanner);
+    expect(banner.props).toMatchObject({ canPublish: false });
   });
 });

@@ -67,11 +67,17 @@ describe('createEvent — publishing', () => {
 
   it.each(['organiser_admin', 'organiser_member', 'eventar_staff'] as const)('%s publishing reaches the RPC with status published and the caller as creator', async (role) => {
     mockRole = role;
-    await expect(createEvent({ event, blocks: [], status: 'published' })).rejects.toThrow('NEXT_REDIRECT:/events/event-123/edit');
+    // Published lands on the details page in its Published, next steps state (UX-01 pick a1).
+    await expect(createEvent({ event, blocks: [], status: 'published' })).rejects.toThrow('NEXT_REDIRECT:/events/event-123/details?published=1');
     expect(rpc).toHaveBeenCalledWith(
       'create_event_with_blocks',
       expect.objectContaining({ event_input: expect.objectContaining({ status: 'published', created_by: 'staff-1' }) }),
     );
+  });
+
+  // A saved draft lands on its edit page, which says "Draft saved" (UX-01 pick c1).
+  it('saving a draft redirects to the draft page with the saved flag', async () => {
+    await expect(createEvent({ event, blocks: [], status: 'draft' })).rejects.toThrow('NEXT_REDIRECT:/events/event-123/edit?saved=1');
   });
 
   it('a read-only role can still save a DRAFT', async () => {
@@ -159,7 +165,7 @@ describe('createEvent: accreditation', () => {
   it.each(['organiser_admin', 'eventar_staff'] as const)('%s may set accreditation: the create runs, then set_event_cpd_config with the caller as actor', async (role) => {
     mockRole = role;
     rpc.mockResolvedValueOnce({ data: 'event-123', error: null }).mockResolvedValueOnce({ data: null, error: null });
-    await expect(createEvent({ event, blocks: [], status: 'draft', cpd: { bodyId: BODY, hours: 2 } })).rejects.toThrow('NEXT_REDIRECT:/events/event-123/edit');
+    await expect(createEvent({ event, blocks: [], status: 'draft', cpd: { bodyId: BODY, hours: 2 } })).rejects.toThrow('NEXT_REDIRECT:/events/event-123/edit?saved=1');
     expect(rpc.mock.calls.map((c) => c[0])).toEqual(['create_event_with_blocks', 'set_event_cpd_config']);
     expect(rpc).toHaveBeenLastCalledWith('set_event_cpd_config', {
       p_event_id: 'event-123',

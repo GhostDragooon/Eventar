@@ -91,4 +91,33 @@ describe('Dialog', () => {
     rerender(harness(false));
     expect(opener).toHaveFocus();
   });
+
+  // Callers pass inline callbacks, so the prop changes identity on every parent render (a pending flag, an
+  // error message). The effect that moves focus in and plays the open animation must not re-run for that:
+  // it pulled focus off the button being pressed and replayed the animation (review UX-03 M1).
+  it('keeps focus and does not replay the open animation when the parent re-renders with a new callback', () => {
+    const animate = vi.fn(() => ({ cancel: vi.fn() }));
+    HTMLElement.prototype.animate = animate as unknown as typeof HTMLElement.prototype.animate;
+    const ui = (cb: () => void) => (
+      <Dialog open onOpenChange={cb} title="Publish" footer={<button type="button">Confirm</button>} />
+    );
+    const { rerender } = render(ui(() => undefined));
+    const confirm = screen.getByRole('button', { name: 'Confirm' });
+    confirm.focus();
+    const playedAtOpen = animate.mock.calls.length;
+
+    rerender(ui(() => undefined));
+    expect(confirm).toHaveFocus();
+    expect(animate.mock.calls.length).toBe(playedAtOpen);
+  });
+
+  it('closes through the latest callback, not the one it had when it opened', () => {
+    const first = vi.fn();
+    const second = vi.fn();
+    const { rerender } = render(<Dialog open onOpenChange={first} title="Enter code" />);
+    rerender(<Dialog open onOpenChange={second} title="Enter code" />);
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(second).toHaveBeenCalledWith(false);
+    expect(first).not.toHaveBeenCalled();
+  });
 });

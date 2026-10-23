@@ -23,7 +23,8 @@ vi.mock('@/lib/nominatim', async (importOriginal) => ({
 }));
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, renderHook, screen, waitFor, within } from '@testing-library/react';
+import { resetDraftStatus, useDraftDirty, useDraftSaved } from '@/lib/draftDirty';
 import NewEventForm, { type InitialBlock } from './NewEventForm';
 import type { Venue } from '@/lib/venue';
 
@@ -842,6 +843,7 @@ describe('NewEventForm — create mode, publishing role and the saved-event link
     render(<NewEventForm {...createBase} submit={submit} />);
     await fillValidEvent();
     fireEvent.click(screen.getByRole('button', { name: /publish event/i }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Publish event' }));
 
     const link = await screen.findByRole('link', { name: /open the saved event/i });
     expect(link).toHaveAttribute('href', '/events/abc-123/edit');
@@ -993,5 +995,124 @@ describe('NewEventForm: the create buttons and notes, round 2', () => {
     fireEvent.click(pendingButton);
     expect(submit).toHaveBeenCalledTimes(1);
     finish({ ok: true });
+  });
+});
+
+// UX-01 pick a1: Publish asks first. Save draft does not.
+describe('NewEventForm: create mode, Publish confirms before it publishes', () => {
+  beforeEach(() => { Element.prototype.scrollIntoView = vi.fn(); });
+
+  it('opens a confirm instead of publishing, and publishes only when confirmed', async () => {
+    const submit = vi.fn(async (_payload: unknown) => ({ ok: true as const }));
+    render(<NewEventForm {...createBase} submit={submit} />);
+    await fillValidEvent();
+    fireEvent.click(screen.getByRole('button', { name: /publish event/i }));
+
+    const dialog = screen.getByRole('dialog', { name: 'Publish this event?' });
+    expect(dialog).toHaveTextContent('Test event');
+    expect(dialog).toHaveTextContent('Registration opens now.');
+    expect(dialog).toHaveTextContent(/Check-in opens .*60 minutes before the start/);
+    expect(submit).not.toHaveBeenCalled();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Publish event' }));
+    await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
+    expect(submit.mock.calls[0][0]).toMatchObject({ status: 'published' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('Keep editing closes the confirm and sends nothing', async () => {
+    const submit = okSubmit();
+    render(<NewEventForm {...createBase} submit={submit} />);
+    await fillValidEvent();
+    fireEvent.click(screen.getByRole('button', { name: /publish event/i }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Keep editing' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it('does not open the confirm while the form is invalid: it says what is missing instead', () => {
+    const submit = okSubmit();
+    render(<NewEventForm {...createBase} submit={submit} />);
+    fireEvent.click(screen.getByRole('button', { name: /publish event/i }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByText(/add the event basics/i)).toBeInTheDocument();
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it('Save draft saves straight away, with no confirm', async () => {
+    const submit = vi.fn(async (_payload: unknown) => ({ ok: true as const }));
+    render(<NewEventForm {...createBase} submit={submit} />);
+    await fillValidEvent();
+    fireEvent.click(screen.getByRole('button', { name: /save draft/i }));
+    await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
+    expect(submit.mock.calls[0][0]).toMatchObject({ status: 'draft' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+});
+
+// UX-03: the edit form tells the Publish card and the saved banner whether it holds unsaved changes.
+describe('NewEventForm: edit mode reports its state to the draft status store', () => {
+  const EVENT_ID = '11111111-2222-4333-8444-555555555555';
+  const editProps = { mode: 'edit' as const, eventId: EVENT_ID, initialEvent, initialBlocks };
+  beforeEach(() => resetDraftStatus(EVENT_ID));
+
+  it('is clean on arrival, dirty after a change, and saved after a successful Save changes', async () => {
+    const dirty = renderHook(() => useDraftDirty(EVENT_ID));
+    const saved = renderHook(() => useDraftSaved(EVENT_ID));
+    render(<NewEventForm {...editProps} submit={okSubmit()} />);
+    expect(dirty.result.current).toBe(false);
+
+    fireEvent.change(screen.getByDisplayValue('Internal Workshop'), { target: { value: 'Internal Workshop 2' } });
+    await waitFor(() => expect(dirty.result.current).toBe(true));
+    expect(saved.result.current).toBe(false);
+
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+    await waitFor(() => expect(saved.result.current).toBe(true));
+    expect(dirty.result.current).toBe(false);
+  });
+
+  it('stays dirty when the save fails', async () => {
+    const dirty = renderHook(() => useDraftDirty(EVENT_ID));
+    render(<NewEventForm {...editProps} submit={vi.fn(async () => ({ error: 'rpc blew up' }))} />);
+    fireEvent.change(screen.getByDisplayValue('Internal Workshop'), { target: { value: 'Changed' } });
+    await waitFor(() => expect(dirty.result.current).toBe(true));
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+    await screen.findByText(/rpc blew up/);
+    expect(dirty.result.current).toBe(true);
+  });
+
+  it('stays dirty when more is typed while the save is in flight', async () => {
+    const dirty = renderHook(() => useDraftDirty(EVENT_ID));
+    const saved = renderHook(() => useDraftSaved(EVENT_ID));
+    let finish!: (v: { ok: true }) => void;
+    const submit = vi.fn(() => new Promise<{ ok: true }>((resolve) => { finish = resolve; }));
+    render(<NewEventForm {...editProps} submit={submit} />);
+    fireEvent.change(screen.getByDisplayValue('Internal Workshop'), { target: { value: 'First' } });
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+    await waitFor(() => expect(submit).toHaveBeenCalledTimes(1));
+    fireEvent.change(screen.getByDisplayValue('First'), { target: { value: 'First and more' } });
+    await act(async () => finish({ ok: true }));
+    // What was sent is saved; what was typed after is not.
+    expect(saved.result.current).toBe(false);
+    expect(dirty.result.current).toBe(true);
+  });
+
+  it('goes clean again when the change is typed back out', async () => {
+    const dirty = renderHook(() => useDraftDirty(EVENT_ID));
+    render(<NewEventForm {...editProps} submit={okSubmit()} />);
+    const title = screen.getByDisplayValue('Internal Workshop');
+    fireEvent.change(title, { target: { value: 'X' } });
+    await waitFor(() => expect(dirty.result.current).toBe(true));
+    fireEvent.change(title, { target: { value: 'Internal Workshop' } });
+    await waitFor(() => expect(dirty.result.current).toBe(false));
+  });
+
+  it('retires the "Saved." line under the buttons as soon as the form changes again', async () => {
+    render(<NewEventForm {...editProps} submit={okSubmit()} />);
+    fireEvent.change(screen.getByDisplayValue('Internal Workshop'), { target: { value: 'One' } });
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+    expect(await screen.findByTestId('save-confirmation')).toBeInTheDocument();
+    fireEvent.change(screen.getByDisplayValue('One'), { target: { value: 'One more' } });
+    await waitFor(() => expect(screen.queryByTestId('save-confirmation')).toBeNull());
   });
 });

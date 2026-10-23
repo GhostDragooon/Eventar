@@ -10,7 +10,8 @@ import { slugifyTitle } from '@/lib/slugify';
 
 const PUBLISH_ROLE_REFUSED = "Your role can't publish events. Ask an organiser admin to publish this draft.";
 
-type PublishResult = { ok: true } | { error: string };
+// `stale`: the event is no longer a current draft, so the page the organiser is looking at is out of date.
+type PublishResult = { ok: true } | { error: string; stale?: true };
 
 // Refusals come back as a result the draft card shows inline; they used to be
 // thrown, which ended on the crash page for something an organiser can fix by
@@ -34,7 +35,7 @@ export async function publishEvent(id: string): Promise<PublishResult> {
     }
     // 20261002010000: only an active draft can be published.
     if (error.code === '22023' && error.message.startsWith('publish_event:')) {
-      return { error: "This event can't be published because it is no longer a current draft. It may have been cancelled or deleted. Check it in Manage." };
+      return { error: "This event can't be published because it is no longer a current draft. It may have been cancelled or deleted.", stale: true };
     }
     throw error;
   }
