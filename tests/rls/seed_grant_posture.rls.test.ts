@@ -31,10 +31,13 @@ type Posture = { anon: Priv[]; authenticated: Priv[]; service_role: Priv[] };
 const LOOKUP: Posture = { anon: ['SELECT'], authenticated: ['SELECT'], service_role: ALL };
 
 // Expected hosted posture (default privileges grant the API roles DML; migrations narrow it).
-// anon on invite_tokens: 20260911000000 revokes I/U/D from anon+authenticated only; SELECT stays.
+// anon on invite_tokens: 20260911000000 revokes I/U/D from anon+authenticated; SELECT stays. service_role keeps
+// SELECT and DELETE only: SEC-01 (20261023140000) revoked its INSERT and UPDATE (definer-only table).
 const EXPECTED: Record<string, Posture> = {
-  invite_tokens: { anon: ['SELECT'], authenticated: ['SELECT'], service_role: ALL }, // 20260911000000
+  invite_tokens: { anon: ['SELECT'], authenticated: ['SELECT'], service_role: ['SELECT', 'DELETE'] }, // 20260911000000 + SEC-01 20261023140000
   credit_disputes: { anon: NONE, authenticated: ['SELECT', 'INSERT'], service_role: ALL }, // 20260804040000
+  // anon: SELECT only (RLS returns it nothing); authenticated lost INSERT in SEC-01 part 2 (20261023150000).
+  registrations: { anon: ['SELECT'], authenticated: ['SELECT', 'UPDATE', 'DELETE'], service_role: ALL },
   professions: LOOKUP,
   positions: LOOKUP,
   degrees: LOOKUP,
@@ -73,6 +76,20 @@ describe.skipIf(!process.env.RLS_TESTS)('seed.sql grant posture matches the migr
           if (missing.length) diffs.push(`${table}: ${role} lacks ${missing.join(',')}`);
         }
       }
+      // SEC-01 (20261023140000): after the real seed, anon holds no INSERT, UPDATE or DELETE on ANY table or view in
+      // public (table or column level). The seed's blanket grant hands it back, so seed.sql re-revokes in one
+      // statement; a new table cannot be forgotten.
+      const anon = await c.query(
+        `select c.relname || ' (' || p.priv || ')' as held
+           from pg_class c
+           join pg_namespace ns on ns.oid = c.relnamespace
+           cross join (values ('INSERT'), ('UPDATE'), ('DELETE')) p(priv)
+          where ns.nspname = 'public' and c.relkind in ('r', 'p', 'f', 'v', 'm')
+            and case when p.priv = 'DELETE' then has_table_privilege('anon', c.oid, p.priv)
+                     else has_any_column_privilege('anon', c.oid, p.priv) end
+          order by 1`,
+      );
+      for (const row of anon.rows) diffs.push(`anon holds ${row.held} after the seed`);
     } finally {
       await c.query('rollback');
       await c.end();

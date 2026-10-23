@@ -13,15 +13,22 @@
 //
 // This file is the standing regression guard: it must stay RED before that
 // migration and GREEN after. Gated on RLS_TESTS (runs under `pnpm test:rls`).
+//
+// SEC-01 (20261023140000 for anon, 20261023150000 for authenticated) took INSERT away from both API roles at the
+// grant layer: registration is a Server Action with the service-role client, and a direct POST skipped capacity,
+// the windows and the rate limit. The policy is now unreachable through PostgREST, but it stays as defence in
+// depth, so these probes still run: inside a transaction that is always rolled back, they grant the privilege
+// back on purpose, SET LOCAL ROLE to anon or authenticated, and insert. If a later migration restores a grant,
+// the policy still has to hold. That the grants are gone is asserted in audited_table_writes.rls.test.ts.
 import { describe, it, expect, beforeAll, afterEach, afterAll } from 'vitest';
-import { admin, createAnonClient } from '../helpers/clients';
+import { admin } from '../helpers/clients';
+import { insertAsRoleWithGrant } from '../helpers/insertAsRole';
 import { mustDelete } from '../helpers/mustDelete';
 
 const DEFAULT_ORG = '00000000-0000-0000-0000-000000000001';
 const STAFF_EMAIL = `insert-forgery-fixture-${Date.now()}@rls-test.invalid`;
 
-describe.skipIf(!process.env.RLS_TESTS)('registrations INSERT — anon cannot forge attendance', () => {
-  const anon = createAnonClient();
+describe.skipIf(!process.env.RLS_TESTS)('registrations INSERT policy — nobody can forge attendance (defence in depth)', () => {
   let staffId: string;
   let eventId: string;
 
@@ -74,40 +81,44 @@ describe.skipIf(!process.env.RLS_TESTS)('registrations INSERT — anon cannot fo
     await mustDelete(admin.from('staff').delete().eq('id', staffId), 'staff');
   });
 
-  it('REJECTS an anon insert that sets status=attended', async () => {
-    const { error } = await anon.from('registrations').insert({
-      event_id: eventId,
-      email: 'forge-attended@rls-test.invalid',
-      full_name: 'Forged Attendee',
-      status: 'attended',
-      check_in_at: new Date().toISOString(),
-      check_in_method: 'qr',
-      registration_code: 'WK-FORGE1',
+  describe.each(['anon', 'authenticated'] as const)('as %s', (role) => {
+    it('REJECTS an insert that sets status=attended', async () => {
+      const r = await insertAsRoleWithGrant(role, 'registrations', {
+        event_id: eventId,
+        email: 'forge-attended@rls-test.invalid',
+        full_name: 'Forged Attendee',
+        status: 'attended',
+        check_in_at: new Date().toISOString(),
+        check_in_method: 'qr',
+        registration_code: 'WK-FORGE1',
+      });
+      expect(r.ok).toBe(false);
+      expect(r.ok === false && r.code).toBe('42501'); // RLS violation, not a constraint reject
+      expect(r.ok === false && r.message).toMatch(/row-level security/i); // the policy, not the grant
     });
-    expect(error).not.toBeNull();
-    expect(error?.code).toBe('42501'); // RLS violation, not a constraint reject
-  });
 
-  it('REJECTS an anon insert that back-dates a check-in without changing status', async () => {
-    const { error } = await anon.from('registrations').insert({
-      event_id: eventId,
-      email: 'forge-checkin@rls-test.invalid',
-      full_name: 'Forged Checkin',
-      check_in_at: new Date().toISOString(),
-      check_in_method: 'manual',
-      registration_code: 'WK-FORGE2',
+    it('REJECTS an insert that back-dates a check-in without changing status', async () => {
+      const r = await insertAsRoleWithGrant(role, 'registrations', {
+        event_id: eventId,
+        email: 'forge-checkin@rls-test.invalid',
+        full_name: 'Forged Checkin',
+        check_in_at: new Date().toISOString(),
+        check_in_method: 'manual',
+        registration_code: 'WK-FORGE2',
+      });
+      expect(r.ok).toBe(false);
+      expect(r.ok === false && r.code).toBe('42501');
+      expect(r.ok === false && r.message).toMatch(/row-level security/i);
     });
-    expect(error).not.toBeNull();
-    expect(error?.code).toBe('42501');
-  });
 
-  it('STILL ALLOWS a normal anon registration (status defaults to registered)', async () => {
-    const { error } = await anon.from('registrations').insert({
-      event_id: eventId,
-      email: 'legit-registrant@rls-test.invalid',
-      full_name: 'Legit Registrant',
-      registration_code: 'WK-LEGIT1',
+    it('STILL ALLOWS a normal registration through the policy (status defaults to registered)', async () => {
+      const r = await insertAsRoleWithGrant(role, 'registrations', {
+        event_id: eventId,
+        email: 'legit-registrant@rls-test.invalid',
+        full_name: 'Legit Registrant',
+        registration_code: 'WK-LEGIT1',
+      });
+      expect(r, r.ok ? '' : r.message).toEqual({ ok: true });
     });
-    expect(error).toBeNull();
   });
 });

@@ -521,16 +521,229 @@ describe.skipIf(!process.env.RLS_TESTS)('audited-table write guard (service_role
             and d.defaclobjtype = 'r'
             and (a.grantee = 0 or a.grantee::regrole::text in ('anon', 'authenticated', 'service_role'))`,
       );
-      // Control: this is the row init_staff.sql restates, so it must still carry the DML grants.
+      // Control: this is the row init_staff.sql restates, so it must still carry the DML grants. anon is no
+      // longer in it (SEC-01, 20261023140000); the sweep for that is in the describe below.
       expect(
         [...new Set(grants.filter((g) => g.priv === 'INSERT').map((g) => g.role))].sort(),
         'default ACL row for postgres in public not found, or it lost the DML grants',
-      ).toEqual(['anon', 'authenticated', 'service_role']);
+      ).toEqual(['authenticated', 'service_role']);
       const born = grants.filter((g) => g.priv === 'TRUNCATE' || g.priv === 'TRIGGER').map((g) => `${g.role} (${g.priv})`);
       expect(
         born,
         `a table created in public would start with: ${born.join(', ')} | Fix in a NEW migration: alter default privileges for role postgres [in schema public] revoke truncate, trigger on tables from anon, authenticated, service_role.`,
       ).toEqual([]);
     }, 30_000);
+  });
+  // ---- SEC-01 (2026-10-23): anon holds no DML on any table in public ----
+  // The platform's default privileges hand anon INSERT, UPDATE and DELETE on every table, and eleven tables were
+  // never narrowed. RLS blocked the writes, so nothing was reachable, but the anon key ships in every browser, so
+  // the grant layer is the control that must not depend on a policy staying correct. Every public write in the
+  // app goes through a Server Action with the service-role client or through a SECURITY DEFINER function; the
+  // only anon client in the app (supabaseAnonServer) signs people in and reads. registrations has an anon INSERT
+  // policy (registrations_anon_insert_when_event_published) that stays as defence in depth but can no longer be
+  // reached by anon.
+  //
+  // A grant-layer refusal says "permission denied for table X"; an RLS refusal says "new row violates row-level
+  // security policy". Both are SQLSTATE 42501, so the message is what tells them apart.
+  describe('anon holds no INSERT, UPDATE or DELETE on any table in public (SEC-01)', () => {
+    const ANON_WRITES = `(values ('INSERT'), ('UPDATE'), ('DELETE')) p(priv)`;
+    // Table-level or column-level: has_table_privilege alone would miss a column grant. DELETE has no column form.
+    const HELD_BY_ANON = (rel: string) =>
+      `case when p.priv = 'DELETE' then has_table_privilege('anon', ${rel}, p.priv) else has_any_column_privilege('anon', ${rel}, p.priv) end`;
+    const REMEDY =
+      ' | Fix in a NEW migration: revoke insert, update, delete on public.<table> from PUBLIC, anon.' +
+      ' Usual cause: a new table inherits the default privileges, or a seed/migration used `grant all`.' +
+      ' Every table failing = migration 20261023140000 is not applied to this database.';
+
+    // The eleven tables no earlier migration narrowed for anon (found 2026-10-23, local stack).
+    const NEVER_NARROWED = [
+      'accrediting_bodies',
+      'agenda_blocks',
+      'consent_records',
+      'events',
+      'organisations',
+      'organisers',
+      'registrations',
+      'speaker_checkins',
+      'staff',
+      'survey_responses',
+      'users',
+    ];
+
+    it.each(NEVER_NARROWED)('%s: anon lacks INSERT, UPDATE and DELETE', async (table) => {
+      const rows = await sqlSuperuserQuery<{ priv: string; held: boolean }>(
+        `select p.priv, ${HELD_BY_ANON(`'public.${table}'::regclass`)} as held from ${ANON_WRITES} order by 1`,
+      );
+      expect(rows, `${table}: the query must cover 3 privileges`).toHaveLength(3);
+      const held = rows.filter((r) => r.held).map((r) => r.priv);
+      expect(held, `${table}: anon still holds ${held.join(', ')}${REMEDY}`).toEqual([]);
+    }, 30_000);
+
+    it('no table or view in public grants anon INSERT, UPDATE or DELETE', async () => {
+      const seen = await sqlSuperuserQuery<{ relname: string }>(
+        `select c.relname from pg_class c join pg_namespace ns on ns.oid = c.relnamespace where ns.nspname = 'public' and c.relkind in ('r', 'p', 'f', 'v', 'm')`,
+      );
+      const seenNames = new Set(seen.map((r) => r.relname));
+      const missing = NEVER_NARROWED.filter((t) => !seenNames.has(t));
+      expect(missing, `the sweep did not see: ${missing.join(', ')} (wrong schema or relkind filter?)`).toEqual([]);
+
+      const held = await sqlSuperuserQuery<{ tbl: string; priv: string }>(
+        `select c.relname as tbl, p.priv
+           from pg_class c
+           join pg_namespace ns on ns.oid = c.relnamespace
+           cross join ${ANON_WRITES}
+          where ns.nspname = 'public' and c.relkind in ('r', 'p', 'f', 'v', 'm')
+            and ${HELD_BY_ANON('c.oid')}
+          order by 1, 2`,
+      );
+      const offenders = held.map((h) => `${h.tbl} (${h.priv})`);
+      expect(offenders, `anon still holds: ${offenders.join(', ')}${REMEDY}`).toEqual([]);
+    }, 30_000);
+
+    it('default privileges for postgres no longer hand anon INSERT, UPDATE or DELETE on new tables', async () => {
+      const grants = await sqlSuperuserQuery<{ role: string; priv: string }>(
+        `select case when a.grantee = 0 then 'PUBLIC' else a.grantee::regrole::text end as role, a.privilege_type as priv
+           from pg_default_acl d, lateral aclexplode(d.defaclacl) a
+          where d.defaclrole = 'postgres'::regrole
+            and (d.defaclnamespace = 0 or d.defaclnamespace = 'public'::regnamespace)
+            and d.defaclobjtype = 'r'
+            and (a.grantee = 0 or a.grantee::regrole::text in ('anon', 'authenticated', 'service_role'))`,
+      );
+      // Control: authenticated and service_role must still be born with DML, so this is the right row.
+      const insertRoles = new Set(grants.filter((g) => g.priv === 'INSERT').map((g) => g.role));
+      expect(
+        ['authenticated', 'service_role'].filter((r) => !insertRoles.has(r)),
+        'default ACL row for postgres in public not found, or authenticated/service_role lost their DML grants',
+      ).toEqual([]);
+      const born = grants
+        .filter((g) => (g.role === 'anon' || g.role === 'PUBLIC') && ['INSERT', 'UPDATE', 'DELETE'].includes(g.priv))
+        .map((g) => `${g.role} (${g.priv})`);
+      expect(
+        born,
+        `a table created in public would start with: ${born.join(', ')} | Fix in a NEW migration: alter default privileges for role postgres [in schema public] revoke insert, update, delete on tables from anon.`,
+      ).toEqual([]);
+    }, 30_000);
+
+    // Found by the SEC-01 backtest (2026-10-23): the same policy is TO {anon, authenticated}, and any visitor can
+    // get an authenticated JWT (the attendee magic link creates the user), so a signed-in person could POST
+    // /rest/v1/registrations directly: past the event's capacity, its registration window, the ended-event check,
+    // the per-IP rate limit and the email_log row, all of which live in the registerForEvent Server Action, and
+    // with anyone's email. The policy only checks that the event is published. Registration is service_role-only.
+    it('authenticated cannot insert registrations directly either (20261023150000)', async () => {
+      const [{ held }] = await sqlSuperuserQuery<{ held: boolean }>(
+        `select has_table_privilege('authenticated', 'public.registrations', 'INSERT') as held`,
+      );
+      expect(held, 'authenticated still holds INSERT on registrations | Fix in a NEW migration: revoke insert on public.registrations from authenticated').toBe(false);
+
+      const user = await createTestUser('sec01-reg-insert');
+      try {
+        const res = await user.client
+          .from('registrations')
+          .insert({ event_id: BOGUS, full_name: 'sec-01', email: 'sec01-direct@rls-test.invalid' });
+        expect(res.error?.code, 'authenticated INSERT must be 42501').toBe(PERMISSION_DENIED);
+        expect(res.error?.message ?? '', 'must be the grant layer, not RLS').toMatch(/permission denied for table registrations/i);
+      } finally {
+        await deleteTestUser(user);
+      }
+    }, 30_000);
+
+    it('a real anon write is refused by the grant, not by a policy (registrations has an anon INSERT policy)', async () => {
+      const anon = createAnonClient();
+      const res = await anon.from('registrations').insert({ event_id: BOGUS, full_name: 'sec-01', email: 'sec01@rls-test.invalid' });
+      expect(res.error?.code, 'anon INSERT must be 42501').toBe(PERMISSION_DENIED);
+      expect(res.error?.message ?? '', 'must be the grant layer, not RLS').toMatch(/permission denied for table registrations/i);
+    }, 30_000);
+  });
+
+  // ---- SEC-01: invite_tokens is definer-only for service_role too ----
+  // create_invite_token and accept_invite_token are SECURITY DEFINER (owner postgres) and are the only writers.
+  // service_role keeps DELETE for cleanup and erasure, as on practitioner_licences and participation_evidence.
+  describe('invite_tokens — definer-only INSERT/UPDATE, service_role DELETE retained (SEC-01)', () => {
+    it('service_role is denied direct INSERT and UPDATE with 42501 from the grant', async () => {
+      const ins = await admin.from('invite_tokens').insert({
+        organisation_id: DEFAULT_ORG,
+        token_hash: 'sec01-guard',
+        role: 'organiser_member',
+        created_by: BOGUS,
+        expires_at: new Date(Date.now() + 3_600_000).toISOString(),
+      });
+      expect(ins.error?.code, 'service_role INSERT must be 42501').toBe(PERMISSION_DENIED);
+      expect(ins.error?.message ?? '').toMatch(/permission denied for table invite_tokens/i);
+
+      const upd = await admin.from('invite_tokens').update({ accepted_at: new Date().toISOString() }).eq('id', BOGUS);
+      expect(upd.error?.code, 'service_role UPDATE must be 42501').toBe(PERMISSION_DENIED);
+      expect(upd.error?.message ?? '').toMatch(/permission denied for table invite_tokens/i);
+    }, 30_000);
+
+    it('anon and authenticated are denied direct INSERT with 42501', async () => {
+      const row = {
+        organisation_id: DEFAULT_ORG,
+        token_hash: 'sec01-guard-2',
+        role: 'organiser_member',
+        created_by: BOGUS,
+        expires_at: new Date(Date.now() + 3_600_000).toISOString(),
+      };
+      const anonRes = await createAnonClient().from('invite_tokens').insert(row);
+      expect(anonRes.error?.code, 'anon INSERT must be 42501').toBe(PERMISSION_DENIED);
+      expect(anonRes.error?.message ?? '', 'must be the grant layer, not RLS').toMatch(/permission denied for table invite_tokens/i);
+      const user = await createTestUser('sec01-invite-write');
+      try {
+        const authRes = await user.client.from('invite_tokens').insert(row);
+        expect(authRes.error?.code, 'authenticated INSERT must be 42501').toBe(PERMISSION_DENIED);
+        expect(authRes.error?.message ?? '', 'must be the grant layer, not RLS').toMatch(/permission denied for table invite_tokens/i);
+      } finally {
+        await deleteTestUser(user);
+      }
+    }, 30_000);
+
+    it('the definer path still works and service_role DELETE is retained: invite, accept, delete round-trip', async () => {
+      const adminUser = await createTestUser('sec01-invite-admin');
+      const invitee = await createTestUser('sec01-invitee');
+      const emails = [adminUser.email, invitee.email];
+      // Postgres connection, not service_role: this must clear a crashed run's rows even if the grant under test
+      // is broken. Invites first (accepted_by and created_by point at the staff rows), then the staff rows.
+      const clearFixtures = async () => {
+        await sqlSuperuserQuery(
+          `delete from public.invite_tokens
+            where created_by in (select id from public.staff where email = any($1))
+               or accepted_by in (select id from public.staff where email = any($1))`,
+          [emails],
+        );
+        await sqlSuperuserQuery(`delete from public.staff where email = any($1)`, [emails]);
+      };
+      let adminStaffId: string | undefined;
+      try {
+        await clearFixtures();
+        const { data: st, error: stErr } = await admin
+          .from('staff')
+          .insert({ email: adminUser.email, role: 'organiser_admin', full_name: 'SEC-01 admin', organisation_id: DEFAULT_ORG, status: 'active' })
+          .select('id')
+          .single();
+        if (stErr || !st) throw new Error(`staff fixture: ${stErr?.message}`);
+        adminStaffId = st.id as string;
+
+        const { data: token, error: createErr } = await adminUser.client.rpc('create_invite_token', { p_role: 'organiser_member' });
+        expect(createErr, 'create_invite_token must still work as a definer function').toBeNull();
+        expect(typeof token).toBe('string');
+
+        const { data: org, error: acceptErr } = await invitee.client.rpc('accept_invite_token', { p_token: token });
+        expect(acceptErr, 'accept_invite_token must still work as a definer function').toBeNull();
+        expect(typeof org).toBe('string');
+
+        const { data: made } = await admin.from('invite_tokens').select('id, accepted_at').eq('created_by', adminStaffId);
+        expect(made, 'exactly one invite was created by the fixture admin').toHaveLength(1);
+        expect(made![0].accepted_at, 'the accept stamped the token').not.toBeNull();
+
+        const del = await admin.from('invite_tokens').delete().eq('created_by', adminStaffId);
+        expect(del.error, 'service_role DELETE must succeed (retained grant)').toBeNull();
+        const { data: after } = await admin.from('invite_tokens').select('id').eq('created_by', adminStaffId);
+        expect(after, 'the invite must be gone after service_role DELETE').toHaveLength(0);
+      } finally {
+        // The invitee's staff row was created by accept_invite_token; the admin's by this test.
+        await clearFixtures();
+        await deleteTestUser(adminUser);
+        await deleteTestUser(invitee);
+      }
+    }, 60_000);
   });
 });

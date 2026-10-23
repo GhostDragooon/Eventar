@@ -8,10 +8,16 @@
 // current_user check inside the trigger is what lets service_role writes
 // through (Server Actions) while blocking direct authenticated/anon
 // writes — this file asserts both directions.
+//
+// SEC-01 (20261023140000, 20261023150000): anon and authenticated no longer hold INSERT on registrations at all,
+// so a direct POST is refused by the grant before the trigger runs. The trigger is defence in depth now; its
+// INSERT-side tests grant the privilege back inside a rolled-back transaction (helpers/insertAsRole.ts) so they
+// still prove the trigger and not the grant.
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { insertAsRoleWithGrant } from '../helpers/insertAsRole';
 import {
-  admin, createAnonClient, createTestUser, deleteTestUser, sqlSuperuser, type TestUser,
+  admin, createTestUser, deleteTestUser, sqlSuperuser, type TestUser,
 } from '../helpers/clients';
 
 const DEFAULT_ORG = '00000000-0000-0000-0000-000000000001';
@@ -103,36 +109,19 @@ describe.skipIf(!process.env.RLS_TESTS)('registrations link-columns immutability
   // INSERT-side guard: registrations_guest_insert_no_user_id_trg
   // ---------------------------------------------------------------------------
 
-  it('anon INSERT with user_id set is blocked (42501)', async () => {
-    const anon = createAnonClient();
-    const { error } = await anon
-      .from('registrations')
-      .insert({
-        event_id: eventId,
-        email: `anon-forge-${ts}@rls-test.invalid`,
-        full_name: 'Anon Forge',
-        registration_code: `WK-AF${String(ts).slice(-4)}`,
-        user_id: linkedUser.id,
-      });
-    expect(error).not.toBeNull();
-    expect(error!.code).toBe('42501');
-  });
-
-  it('authenticated organiser INSERT with user_id set is blocked (42501)', async () => {
-    // owner is a staff user with organiser_update_own RLS on this event's
-    // registrations, so RLS itself would allow the insert. The trigger is
-    // what blocks user_id-carrying inserts from authenticated.
-    const { error } = await owner.client
-      .from('registrations')
-      .insert({
-        event_id: eventId,
-        email: `staff-forge-${ts}@rls-test.invalid`,
-        full_name: 'Staff Forge',
-        registration_code: `WK-SF${String(ts).slice(-4)}`,
-        user_id: linkedUser.id,
-      });
-    expect(error).not.toBeNull();
-    expect(error!.code).toBe('42501');
+  it.each(['anon', 'authenticated'] as const)('%s INSERT with user_id set is blocked by the trigger (42501)', async (role) => {
+    // As authenticated this is also the organiser case: owner has organiser_update_own RLS on this event's
+    // registrations, so the policy would admit the row and only the trigger stops a user_id-carrying insert.
+    const r = await insertAsRoleWithGrant(role, 'registrations', {
+      event_id: eventId,
+      email: `${role}-forge-${ts}@rls-test.invalid`,
+      full_name: 'Forge',
+      registration_code: `WK-${role === 'anon' ? 'AF' : 'SF'}${String(ts).slice(-4)}`,
+      user_id: linkedUser.id,
+    });
+    expect(r.ok).toBe(false);
+    expect(r.ok === false && r.code).toBe('42501');
+    expect(r.ok === false && r.message).toMatch(/registrations\.user_id may only be set/i); // the trigger, not the grant or RLS
   });
 
   it('service_role INSERT with user_id set succeeds (Server Action path)', async () => {

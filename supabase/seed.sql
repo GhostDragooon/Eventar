@@ -152,7 +152,7 @@ revoke insert, update, delete on public.registration_roles              from ano
 -- Seed drift closed 2026-10-17 (MVP DB-01). The blanket grant above re-granted
 -- DML that these migrations had revoked, so local RLS runs saw more than hosted.
 -- service_role is deliberately NOT revoked on any of them (the migrations only
--- revoke anon/authenticated). Guard: tests/rls/seed_grant_posture.rls.test.ts
+-- revoke anon/authenticated), except invite_tokens (SEC-01, below). Guard: tests/rls/seed_grant_posture.rls.test.ts
 -- runs this file in a rolled-back transaction and compares with the migrations.
 --   invite_tokens          — 20260911000000: definer-only writes (I/U/D revoked)
 --   credit_disputes        — 20260804040000: authenticated keeps SELECT+INSERT only
@@ -176,6 +176,17 @@ revoke insert, update, delete on public.societies     from anon, authenticated;
 revoke select, insert, update, delete on public.professional_profiles   from anon;
 revoke select, insert, update, delete on public.additional_appointments from anon;
 revoke select, insert, update, delete on public.society_memberships     from anon;
+--
+-- SEC-01 (2026-10-23, 20261023140000_revoke_anon_dml_and_invite_tokens_service_role_writes.sql): anon holds no
+-- INSERT, UPDATE or DELETE on any table or view in public, and invite_tokens is definer-only for service_role
+-- (DELETE retained). The blanket grant above hands anon DML on every table again; this takes it back in one
+-- statement, so a new table cannot be forgotten. Guard: tests/rls/seed_grant_posture.rls.test.ts (sweep) and
+-- tests/rls/audited_table_writes.rls.test.ts.
+revoke insert, update, delete on all tables in schema public from anon;
+revoke insert, update on public.invite_tokens from service_role;
+-- SEC-01 part 2 (20261023150000_revoke_authenticated_insert_registrations.sql): registration is service_role-only;
+-- authenticated keeps SELECT, UPDATE, DELETE (RLS limits them).
+revoke insert on public.registrations from authenticated;
 -- ─────────────────────────────────────────────────────────────────────────────
 --
 -- For production / pre-seeded projects: skip this file (the live Seoul project

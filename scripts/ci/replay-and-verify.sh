@@ -54,4 +54,17 @@ HELD=$(q "select coalesce(string_agg(r.role || ' ' || p.priv || ' ' || c.relname
  where c.relnamespace = 'public'::regnamespace and c.relkind in ('r','p','f','v','m')
    and has_table_privilege(r.role, c.oid, p.priv)")
 [ -z "$HELD" ] || { echo "API roles hold TRUNCATE/TRIGGER on: $HELD"; exit 1; }
+# 4) SEC-01 (20261023140000, 20261023150000): anon holds no INSERT, UPDATE or DELETE on any public table or view
+# (column-level counts for INSERT and UPDATE), invite_tokens is definer-only for service_role (SELECT and DELETE
+# only), and authenticated cannot INSERT registrations.
+HELD_DML=$(q "select coalesce(string_agg(c.relname || ' ' || p.priv, ', '), '') from pg_class c
+  cross join (values ('INSERT'),('UPDATE'),('DELETE')) p(priv)
+ where c.relnamespace = 'public'::regnamespace and c.relkind in ('r','p','f','v','m')
+   and case when p.priv = 'DELETE' then has_table_privilege('anon', c.oid, p.priv)
+            else has_any_column_privilege('anon', c.oid, p.priv) end")
+[ -z "$HELD_DML" ] || { echo "anon holds DML on: $HELD_DML"; exit 1; }
+HELD_INV=$(q "select coalesce(string_agg(p.priv, ', '), '') from (values ('INSERT'),('UPDATE')) p(priv)
+ where has_table_privilege('service_role', 'public.invite_tokens', p.priv)")
+[ -z "$HELD_INV" ] || { echo "service_role holds $HELD_INV on invite_tokens"; exit 1; }
+[ "$(q "select has_table_privilege('authenticated', 'public.registrations', 'INSERT')")" = "f" ] || { echo "authenticated holds INSERT on registrations"; exit 1; }
 echo "REPLAY + TAMPER GATE: PASS"

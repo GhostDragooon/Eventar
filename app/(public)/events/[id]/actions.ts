@@ -35,7 +35,7 @@ import { firstName } from '@/lib/name';
  *   2. Read the event (anon RLS — fails if event isn't published)
  *   3. Capacity check (count vs max_attendees)
  *   4. INSERT email_log (status='queued')           — service-role
- *   5. INSERT registrations                          — anon under RLS
+ *   5. INSERT registrations                          — service-role (neither anon nor authenticated can INSERT)
  *       - duplicate unique-violation -> mark email_log failed, return error
  *   6. console.log the would-be send                 — Phase 7 replaces this
  *   7. UPDATE email_log (status='sent', sent_at=now())
@@ -166,9 +166,11 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
   // policy grants INSERT but not SELECT, and Postgres's RETURNING (which
   // .select() triggers) requires SELECT on the underlying row. Trying this
   // as anon fails with the misleading "new row violates row-level security
-  // policy" error. The defense-in-depth that anon's RLS provides is still
-  // in place for any direct REST API hits at /rest/v1/registrations — the
-  // policy gates non-published events there. For the Server Action's own
+  // policy" error. Since SEC-01 (20261023140000, 20261023150000) anon and
+  // authenticated hold no INSERT on registrations at all: a direct POST to
+  // /rest/v1/registrations is refused by the grant, so capacity, the windows
+  // and the rate limit below cannot be skipped. The policy that gates
+  // non-published events stays as defence in depth. For this action's own
   // flow, step 2 above already verified event.status='published', so
   // bypassing RLS via admin here is safe.
   //
