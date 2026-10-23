@@ -1000,7 +1000,13 @@ describe('NewEventForm: the create buttons and notes, round 2', () => {
 
 // UX-01 pick a1: Publish asks first. Save draft does not.
 describe('NewEventForm: create mode, Publish confirms before it publishes', () => {
-  beforeEach(() => { Element.prototype.scrollIntoView = vi.fn(); });
+  // fillValidEvent picks today at 09:00, so which check-in sentence shows depends on the hour the suite runs.
+  // Pin the clock (Date only, waitFor keeps its real timers) to 06:00 local: check-in at 08:00 is still ahead.
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn();
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 9, 23, 6, 0, 0) });
+  });
+  afterEach(() => { vi.useRealTimers(); });
 
   it('opens a confirm instead of publishing, and publishes only when confirmed', async () => {
     const submit = vi.fn(async (_payload: unknown) => ({ ok: true as const }));
@@ -1011,7 +1017,7 @@ describe('NewEventForm: create mode, Publish confirms before it publishes', () =
     const dialog = screen.getByRole('dialog', { name: 'Publish this event?' });
     expect(dialog).toHaveTextContent('Test event');
     expect(dialog).toHaveTextContent('Registration opens now.');
-    expect(dialog).toHaveTextContent(/Check-in opens .*60 minutes before the start/);
+    expect(dialog).toHaveTextContent(/Check-in opens at .*60 minutes before the start/);
     expect(submit).not.toHaveBeenCalled();
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Publish event' }));
