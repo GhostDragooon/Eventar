@@ -746,4 +746,95 @@ describe.skipIf(!process.env.RLS_TESTS)('audited-table write guard (service_role
       }
     }, 60_000);
   });
+  // ---- SEC-02 (2026-10-23): authenticated cannot rewrite who created an event or when ----
+  // Found by the UPD-01 backtest [X]: `authenticated` held column UPDATE on id, created_by, created_at,
+  // updated_at and deleted_at of events, and events_org_member_update admits any staff member of the
+  // organisation, so a colleague PATCHed created_by of a PUBLISHED event to their own staff id (204). That
+  // defeats the creator rule (Ivan's ruling 2, 2026-10-23: accreditation and roster roles are creator-only) and
+  // the audit trail's idea of who made an event. Nothing in the app writes those columns as a signed-in user:
+  // update_event_with_blocks never sets them, created_by is written at INSERT only, a soft delete goes through
+  // a definer function, and updated_at is set by a trigger (a trigger's assignment is not a column privilege).
+  describe('events — authenticated cannot UPDATE id, created_by, created_at, updated_at or deleted_at (SEC-02)', () => {
+    const LOCKED = ['id', 'created_by', 'created_at', 'updated_at', 'deleted_at'];
+
+    it.each(LOCKED)('authenticated lacks UPDATE on events.%s', async (col) => {
+      const [{ held }] = await sqlSuperuserQuery<{ held: boolean }>(
+        `select has_column_privilege('authenticated', 'public.events', '${col}', 'UPDATE') as held`,
+      );
+      expect(held, `authenticated still holds UPDATE on events.${col} | Fix in a NEW migration: revoke update on public.events from authenticated, then grant update (<columns without ${col}>)`).toBe(false);
+    }, 30_000);
+
+    it('a colleague PATCHing created_by is refused by the grant (42501), and an ordinary column still updates', async () => {
+      const colleague = await createTestUser('sec02-colleague');
+      const creatorEmail = `sec02-creator-${Date.now()}@rls-test.invalid`;
+      let eventId: string | undefined;
+      let creatorId: string | undefined;
+      let colleagueStaffId: string | undefined;
+      try {
+        const { data: staff, error: stErr } = await admin
+          .from('staff')
+          .insert([
+            { email: colleague.email, role: 'organiser_member', full_name: 'SEC-02 colleague', organisation_id: DEFAULT_ORG, status: 'active' },
+            { email: creatorEmail, role: 'organiser_member', full_name: 'SEC-02 creator', organisation_id: DEFAULT_ORG, status: 'active' },
+          ])
+          .select('id, email');
+        if (stErr || !staff) throw new Error(`staff fixtures: ${stErr?.message}`);
+        creatorId = staff.find((r) => r.email === creatorEmail)!.id as string;
+        colleagueStaffId = staff.find((r) => r.email === colleague.email)!.id as string;
+
+        const { data: ev, error: evErr } = await admin
+          .from('events')
+          .insert({
+            title: 'SEC-02 fixture — DELETE ME',
+            start_time: new Date(Date.now() + 86_400_000).toISOString(),
+            end_time: new Date(Date.now() + 90_000_000).toISOString(),
+            timezone: 'Asia/Hong_Kong',
+            created_by: creatorId,
+            venue_name: 'V', city: 'HK', country: 'HK', latitude: 22.3, longitude: 114.2,
+            status: 'draft',
+            organisation_id: DEFAULT_ORG,
+          })
+          .select('id')
+          .single();
+        if (evErr || !ev) throw new Error(`event fixture: ${evErr?.message}`);
+        eventId = ev.id as string;
+
+        const steal = await colleague.client.from('events').update({ created_by: colleagueStaffId }).eq('id', eventId).select('id');
+        expect(steal.error?.code, 'a colleague taking over created_by must be 42501').toBe(PERMISSION_DENIED);
+        expect(steal.error?.message ?? '').toMatch(/permission denied for table events/i);
+
+        const hide = await colleague.client.from('events').update({ deleted_at: new Date().toISOString() }).eq('id', eventId).select('id');
+        expect(hide.error?.code, 'a colleague soft-deleting through PATCH must be 42501').toBe(PERMISSION_DENIED);
+
+        const edit = await colleague.client.from('events').update({ title: 'SEC-02 edited — DELETE ME' }).eq('id', eventId).select('id');
+        expect(edit.error, 'an ordinary column must still update for an organisation member').toBeNull();
+        const { data: after } = await admin.from('events').select('created_by, deleted_at, title').eq('id', eventId).single();
+        expect(after?.created_by).toBe(creatorId);
+        expect(after?.deleted_at).toBeNull();
+        expect(after?.title).toBe('SEC-02 edited — DELETE ME');
+
+        // The real edit path: update_event_with_blocks is SECURITY INVOKER, so it writes with the caller's column
+        // grants. It must still save a draft after the revoke (every column it sets stays granted).
+        const rpc = await colleague.client.rpc('update_event_with_blocks', {
+          event_id_input: eventId,
+          event_input: {
+            title: 'SEC-02 via rpc — DELETE ME',
+            start_time: new Date(Date.now() + 86_400_000).toISOString(),
+            end_time: new Date(Date.now() + 90_000_000).toISOString(),
+            timezone: 'Asia/Hong_Kong',
+            venue_name: 'V2', city: 'HK', country: 'HK', latitude: 22.3, longitude: 114.2,
+          },
+          blocks_input: [],
+        });
+        expect(rpc.error, 'the edit RPC must still work for an organisation member').toBeNull();
+        const { data: viaRpc } = await admin.from('events').select('title, created_by').eq('id', eventId).single();
+        expect(viaRpc?.title).toBe('SEC-02 via rpc — DELETE ME');
+        expect(viaRpc?.created_by, 'the RPC must not touch created_by').toBe(creatorId);
+      } finally {
+        if (eventId) await mustDelete(admin.from('events').delete().eq('id', eventId), 'events fixture');
+        await mustDelete(admin.from('staff').delete().in('email', [colleague.email, creatorEmail]), 'staff fixtures');
+        await deleteTestUser(colleague);
+      }
+    }, 60_000);
+  });
 });

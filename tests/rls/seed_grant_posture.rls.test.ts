@@ -90,6 +90,13 @@ describe.skipIf(!process.env.RLS_TESTS)('seed.sql grant posture matches the migr
           order by 1`,
       );
       for (const row of anon.rows) diffs.push(`anon holds ${row.held} after the seed`);
+
+      // SEC-02 (20261023160000): the seed's events column grant must not hand identity columns back.
+      const idCols = await c.query(
+        `select col from unnest(array['id','created_by','created_at','updated_at','deleted_at']) col
+          where has_column_privilege('authenticated', 'public.events', col, 'UPDATE')`,
+      );
+      for (const row of idCols.rows) diffs.push(`authenticated holds UPDATE on events.${row.col} after the seed`);
     } finally {
       await c.query('rollback');
       await c.end();

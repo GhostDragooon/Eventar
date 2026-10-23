@@ -97,12 +97,14 @@ grant  insert (
   registration_close_at, hosted_by, organized_by, hero_image_url, category,
   format, deleted_at, checkin_modes, registration_open_at
 ) on public.events to authenticated;
+-- SEC-02 (20261023160000_events_authenticated_cannot_update_identity_columns.sql): UPDATE excludes id,
+-- created_by, created_at, updated_at and deleted_at (INSERT keeps them; created_by is written at INSERT only).
 grant  update (
-  id, title, topic, start_time, end_time, timezone, description, poster_path,
-  max_attendees, created_by, created_at, updated_at, venue_name,
+  title, topic, start_time, end_time, timezone, description, poster_path,
+  max_attendees, venue_name,
   venue_address, city, region, country, latitude, longitude,
   registration_close_at, hosted_by, organized_by, hero_image_url, category,
-  format, deleted_at, checkin_modes, registration_open_at
+  format, checkin_modes, registration_open_at
 ) on public.events to authenticated;
 -- organisation_body_authorisations (migration 20260804000000) — the registry
 -- allow-list deciding which organisation may claim which accrediting body.
