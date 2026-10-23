@@ -39,16 +39,20 @@ vi.mock('@/lib/supabase/server', () => ({
 // The in-code gate reads events.organisation_id and status via admin before the RPC
 // (service-role contexts skip the RPC's own JWT-based check). Default: a draft in the
 // mocked staff's organisation; tests flip mockEvent (null = no such event).
-let mockEvent: { organisation_id: string; status: string } | null = { organisation_id: 'org-1', status: 'draft' };
+let mockEvent: { organisation_id: string; status: string; deleted_at: string | null } | null = { organisation_id: 'org-1', status: 'draft', deleted_at: null };
 vi.mock('@/lib/supabase/admin', () => ({
   supabaseAdmin: vi.fn(() => ({
     from: (_table: string) => ({
-      select: (_cols: string) => ({
+      // Honours the column list, like PostgREST: a select that drops `status` or `organisation_id` returns
+      // objects without them, so the gates see `undefined` and the tests below fail instead of passing blind.
+      select: (cols: string) => ({
         eq: (_col: string, _val: string) => ({
-          maybeSingle: async () => ({
-            data: mockEvent,
-            error: null,
-          }),
+          maybeSingle: async () => {
+            if (mockEvent == null) return { data: null, error: null };
+            const wanted = cols.split(',').map((c) => c.trim());
+            const projected = Object.fromEntries(Object.entries(mockEvent).filter(([k]) => wanted.includes(k)));
+            return { data: projected, error: null };
+          },
         }),
       }),
     }),
@@ -95,7 +99,7 @@ const validBlock = {
 };
 
 beforeEach(() => {
-  mockEvent = { organisation_id: 'org-1', status: 'draft' };
+  mockEvent = { organisation_id: 'org-1', status: 'draft', deleted_at: null };
   requireStaffMock.mockClear();
   revalidatePathMock.mockClear();
   rpcCalls = [];
@@ -106,7 +110,7 @@ describe('updateEvent', () => {
   // Ivan's ruling 2026-10-23: the screens already say "Details cannot be edited after publishing yet", but the
   // server accepted an update to a published event from any colleague (and wrote no audit row). Gate it until P9b.
   it.each(['published', 'cancelled', 'completed'])('refuses an event whose status is %s without calling the RPC', async (status) => {
-    mockEvent = { organisation_id: 'org-1', status };
+    mockEvent = { organisation_id: 'org-1', status, deleted_at: null };
     const result = await updateEvent(eventId, { event: validEvent, blocks: [validBlock] });
     expect(result).toEqual({ error: expect.stringMatching(/no longer a draft/i) });
     expect(rpcCalls).toHaveLength(0);
@@ -114,7 +118,7 @@ describe('updateEvent', () => {
   });
 
   it('refuses every role on a published event, the platform operator included', async () => {
-    mockEvent = { organisation_id: 'org-1', status: 'published' };
+    mockEvent = { organisation_id: 'org-1', status: 'published', deleted_at: null };
     requireStaffMock.mockResolvedValueOnce({ id: 's-9', email: 'op@x.com', role: 'eventar_staff', organisation_id: 'org-other' });
     const result = await updateEvent(eventId, { event: validEvent, blocks: [validBlock] });
     expect(result).toEqual({ error: expect.stringMatching(/no longer a draft/i) });
@@ -122,18 +126,28 @@ describe('updateEvent', () => {
   });
 
   it("refuses another organisation's event before saying anything about its status", async () => {
-    mockEvent = { organisation_id: 'org-2', status: 'published' };
+    mockEvent = { organisation_id: 'org-2', status: 'published', deleted_at: null };
     const result = await updateEvent(eventId, { event: validEvent, blocks: [validBlock] });
     expect(result).toEqual({ error: 'You do not have access to this event.' });
     expect(rpcCalls).toHaveLength(0);
   });
 
-  it("lets the platform operator edit another organisation's draft", async () => {
-    mockEvent = { organisation_id: 'org-2', status: 'draft' };
+  // The action lets the operator through; the live RPC then refuses an eventar_staff caller from another
+  // organisation ("not in the same organisation", backtest F3, pre-existing, DB-04's to settle). This test
+  // pins the action's own gate only: the RPC is mocked.
+  it("lets the platform operator past the action's own gate on another organisation's draft", async () => {
+    mockEvent = { organisation_id: 'org-2', status: 'draft', deleted_at: null };
     requireStaffMock.mockResolvedValueOnce({ id: 's-9', email: 'op@x.com', role: 'eventar_staff', organisation_id: 'org-other' });
     const result = await updateEvent(eventId, { event: validEvent, blocks: [validBlock] });
     expect(result).toEqual({ ok: true });
     expect(rpcCalls).toHaveLength(1);
+  });
+
+  it('treats a soft-deleted draft as not found (the backtest saved one)', async () => {
+    mockEvent = { organisation_id: 'org-1', status: 'draft', deleted_at: '2026-10-01T00:00:00.000Z' };
+    const result = await updateEvent(eventId, { event: validEvent, blocks: [validBlock] });
+    expect(result).toEqual({ error: 'Event not found.' });
+    expect(rpcCalls).toHaveLength(0);
   });
 
   it('says so when the event does not exist', async () => {

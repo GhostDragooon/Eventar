@@ -71,18 +71,19 @@ export async function updateEvent(
     return { error: 'Invalid event id.' };
   }
 
-  // Explicit in-code owner gate (Q19 — edit is owner-only). The RPC's own
-  // owner check covers JWT sessions but is skipped for the service-role
-  // executor (review mode / session-less contexts), so this check is the
-  // authorization there — admin-after-auth pattern, same as 67d13fd.
+  // Explicit in-code organisation gate: any active staff of the event's organisation may edit a draft, the
+  // platform operator any organisation's (the RPC checks the same organisation, not the creator). The RPC's own
+  // check covers JWT sessions but is skipped for the service-role executor (review mode / session-less
+  // contexts), so this check is the authorization there — admin-after-auth pattern, same as 67d13fd.
   {
     const { data: row, error: rowErr } = await supabaseAdmin()
       .from('events')
-      .select('organisation_id, status')
+      .select('organisation_id, status, deleted_at')
       .eq('id', idParse.data)
       .maybeSingle();
     if (rowErr) return { error: 'Could not verify ownership of this event. Please try again.' };
-    if (!row) return { error: 'Event not found.' };
+    // A soft-deleted event is gone for everyone (the public read path and the list already hide it).
+    if (!row || row.deleted_at != null) return { error: 'Event not found.' };
     if (staff.role !== 'eventar_staff' && row.organisation_id !== staff.organisation_id) {
       return { error: 'You do not have access to this event.' };
     }
@@ -91,7 +92,7 @@ export async function updateEvent(
     // with no audit row. Checked after the organisation gate so a stranger learns nothing about the status.
     // Lifts with the audited post-publish edit (P9b); update_event_with_blocks takes the same rule in DB-04.
     if (row.status !== 'draft') {
-      return { error: 'This event is no longer a draft, so its details cannot be edited yet.' };
+      return { error: 'This event is no longer a draft, so its details cannot be edited yet. Your changes were not saved.' };
     }
   }
 
