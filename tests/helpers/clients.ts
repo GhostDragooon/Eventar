@@ -53,10 +53,19 @@ const PASSWORD = 'rls-test-Password-1234!';
 
 export async function createTestUser(localPart: string): Promise<TestUser> {
   const email = `${localPart}@rls-test.invalid`;
-  // Idempotent: delete any leftover from a crashed previous run.
-  const { data: existing } = await admin.auth.admin.listUsers();
-  const leftover = existing?.users.find((u) => u.email === email);
-  if (leftover) await admin.auth.admin.deleteUser(leftover.id);
+  // Idempotent: delete any leftover from a crashed previous run. Direct
+  // lookup, not listUsers(): that returns one page (50 of ~180 local users),
+  // so a leftover past page 1 was never found and createUser then failed.
+  const [leftover] = await sqlSuperuserQuery<{ id: string }>(
+    'select id from auth.users where lower(email) = lower($1)',
+    [email],
+  );
+  if (leftover) {
+    // Fail visibly: an undeletable leftover (e.g. a non-cascading FK row from
+    // a crashed run) otherwise surfaces as a misleading "already registered".
+    const { error: delErr } = await admin.auth.admin.deleteUser(leftover.id);
+    if (delErr) throw new Error(`deleting leftover ${email} (${leftover.id}): ${delErr.message}`);
+  }
 
   const { data, error } = await admin.auth.admin.createUser({
     email,
@@ -79,7 +88,10 @@ export async function createTestUser(localPart: string): Promise<TestUser> {
 
 export async function deleteTestUser(user: TestUser): Promise<void> {
   await user.client.auth.signOut();
-  await admin.auth.admin.deleteUser(user.id); // cascades public.users
+  const { error } = await admin.auth.admin.deleteUser(user.id); // cascades public.users
+  // Not thrown (a throw here could turn unrelated green suites red), but never silent: an undeletable user
+  // (a non-cascading FK row such as practitioner_licences) otherwise fails the NEXT run's createTestUser.
+  if (error) console.error(`deleteTestUser ${user.email} (${user.id}): ${error.message}`);
 }
 
 // Direct superuser connection to the LOCAL Postgres, bypassing PostgREST and
@@ -109,11 +121,14 @@ export async function sqlSuperuser(sql: string): Promise<void> {
 // that PostgREST doesn't expose. Kept a separate function rather than
 // widening sqlSuperuser's return type so its 9 existing fire-and-forget
 // callers are untouched.
-export async function sqlSuperuserQuery<T = Record<string, unknown>>(sql: string): Promise<T[]> {
+export async function sqlSuperuserQuery<T = Record<string, unknown>>(
+  sql: string,
+  params?: unknown[],
+): Promise<T[]> {
   const c = new PgClient({ connectionString: 'postgresql://postgres:postgres@127.0.0.1:54322/postgres' });
   await c.connect();
   try {
-    const res = await c.query(sql);
+    const res = await c.query(sql, params);
     return res.rows as T[];
   } finally {
     await c.end();

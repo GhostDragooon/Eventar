@@ -23,13 +23,17 @@ const BATCH_SIZE = 20;
 // exact venue-NAT scenario the per-event (not per-IP) limit exists for.
 const SHARED_VENUE_IP = '203.0.113.20';
 
+// Per-run suffix: registrations_code_unique is global, so fixed codes collide
+// with any leftover from an earlier run whose cleanup did not finish.
+const RUN = Array.from({ length: 3 }, () => ALPHABET[Math.floor(Math.random() * ALPHABET.length)]).join('');
+
 function codeForIndex(i: number): string {
-  // 6-char valid-alphabet suffix, deterministic per index, no collisions
-  // across 0..199 (36^3 keyspace for the varying 3 chars is ample).
+  // 6-char valid-alphabet suffix, per-run prefix + 3 chars deterministic per
+  // index, no collisions across 0..199 within a run.
   const a = ALPHABET[Math.floor(i / (ALPHABET.length * ALPHABET.length)) % ALPHABET.length];
   const b = ALPHABET[Math.floor(i / ALPHABET.length) % ALPHABET.length];
   const c = ALPHABET[i % ALPHABET.length];
-  return `WK-BUR${a}${b}${c}`;
+  return `WK-${RUN}${a}${b}${c}`;
 }
 
 type ChainRow = { chain_seq: number; link_valid: boolean; content_valid: boolean };

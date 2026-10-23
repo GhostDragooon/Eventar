@@ -81,7 +81,7 @@ export default async function SettingsPage() {
       <section className="mt-xl border-t border-outline-variant pt-lg">
         <h2 className="font-title-lg text-title-lg text-on-surface mb-sm">Team</h2>
         <p className="font-body-md text-body-md text-on-surface-variant mb-md">
-          Manage your organisation's members and invite new teammates.
+          Manage your organisation&apos;s members and invite new teammates.
         </p>
         <Link
           href="/settings/team"
