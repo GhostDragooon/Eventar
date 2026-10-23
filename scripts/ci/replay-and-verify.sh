@@ -44,4 +44,14 @@ rollback;" | sed -n 's/^BROKENCOUNT=//p')
 # Prove the rollback actually took: no residue, chain clean again.
 [ "$(q "select count(*) from audit_events where event_type='ci_probe'")" = "0" ] || { echo "ci_probe rows leaked into audit_events"; exit 1; }
 [ "$(q 'select count(*) from verify_audit_chain() where not link_valid or not content_valid')" = "0" ] || { echo "chain left dirty after the tamper probe"; exit 1; }
+# 3) grant gate: no API role holds TRUNCATE or TRIGGER on any public table
+# (20261010175112). CI replay does not run test:rls, so a future `grant all` in
+# a migration or the seed is otherwise caught only on a developer's machine.
+# Lists the offending (role, privilege, table) triples, expects none. Views count too: TRIGGER is grantable on one.
+HELD=$(q "select coalesce(string_agg(r.role || ' ' || p.priv || ' ' || c.relname, ', '), '') from pg_class c
+  cross join (values ('anon'),('authenticated'),('service_role')) r(role)
+  cross join (values ('TRUNCATE'),('TRIGGER')) p(priv)
+ where c.relnamespace = 'public'::regnamespace and c.relkind in ('r','p','f','v','m')
+   and has_table_privilege(r.role, c.oid, p.priv)")
+[ -z "$HELD" ] || { echo "API roles hold TRUNCATE/TRIGGER on: $HELD"; exit 1; }
 echo "REPLAY + TAMPER GATE: PASS"

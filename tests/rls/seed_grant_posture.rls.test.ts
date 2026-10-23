@@ -1,0 +1,82 @@
+// DB-01 (MVP plan, B7): local seed must not widen what the migrations narrowed.
+//
+// supabase/seed.sql opens with a blanket `grant select, insert, update, delete
+// on all tables` (CLI 2.109 workaround, local only) and then re-asserts each
+// migration's revokes by hand. A table missing from that list silently holds
+// MORE privilege locally than on hosted, so local RLS runs prove less than
+// they claim. Found 2026-10-11: invite_tokens, credit_disputes, professions.
+//
+// This test runs the REAL seed.sql inside a transaction that is always rolled
+// back, then reads has_table_privilege for the tables below and compares with
+// the posture their migrations leave on hosted (which never runs the seed).
+// Hermetic: it does not depend on how the local DB was last reset, and leaves
+// no trace. Control: it first strips anon SELECT on events, which only the
+// seed's blanket grant restores, so a seed that silently did nothing fails here
+// instead of passing vacuously.
+//
+// Gated: only runs under `pnpm test:rls` (RLS_TESTS=1).
+import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { Client } from 'pg';
+import '../helpers/clients'; // module-load guard: refuses a non-local stack
+
+type Priv = 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE';
+const ALL: Priv[] = ['SELECT', 'INSERT', 'UPDATE', 'DELETE'];
+const NONE: Priv[] = [];
+type Posture = { anon: Priv[]; authenticated: Priv[]; service_role: Priv[] };
+
+// Controlled lists: 20260916000000 revokes all, grants SELECT to anon+authenticated,
+// ALL to service_role.
+const LOOKUP: Posture = { anon: ['SELECT'], authenticated: ['SELECT'], service_role: ALL };
+
+// Expected hosted posture (default privileges grant the API roles DML; migrations narrow it).
+// anon on invite_tokens: 20260911000000 revokes I/U/D from anon+authenticated only; SELECT stays.
+const EXPECTED: Record<string, Posture> = {
+  invite_tokens: { anon: ['SELECT'], authenticated: ['SELECT'], service_role: ALL }, // 20260911000000
+  credit_disputes: { anon: NONE, authenticated: ['SELECT', 'INSERT'], service_role: ALL }, // 20260804040000
+  professions: LOOKUP,
+  positions: LOOKUP,
+  degrees: LOOKUP,
+  specialties: LOOKUP,
+  societies: LOOKUP,
+  professional_profiles: { anon: NONE, authenticated: ['SELECT', 'INSERT', 'UPDATE'], service_role: ALL }, // 20260829090000 + 20260829130000
+  additional_appointments: { anon: NONE, authenticated: ALL, service_role: ALL }, // 20260916040000
+  society_memberships: { anon: NONE, authenticated: ALL, service_role: ALL }, // 20260916040000
+};
+
+describe.skipIf(!process.env.RLS_TESTS)('seed.sql grant posture matches the migrations (DB-01)', () => {
+  it('after the real seed, no table in the matrix holds more or less than its migration leaves', async () => {
+    const seed = readFileSync(resolve(process.cwd(), 'supabase/seed.sql'), 'utf8');
+    const c = new Client({ connectionString: 'postgresql://postgres:postgres@127.0.0.1:54322/postgres' });
+    await c.connect();
+    const diffs: string[] = [];
+    try {
+      await c.query('begin');
+      await c.query('revoke select on public.events from anon'); // control, restored only by the seed
+      await c.query(seed);
+
+      const control = await c.query(`select has_table_privilege('anon','public.events','SELECT') as held`);
+      expect(control.rows[0].held, 'seed did not execute: its blanket grant did not run').toBe(true);
+
+      for (const [table, posture] of Object.entries(EXPECTED)) {
+        for (const [role, want] of Object.entries(posture)) {
+          const r = await c.query(
+            `select p as priv, has_table_privilege($1, 'public.' || $2, p) as held
+               from unnest($3::text[]) p`,
+            [role, table, ALL],
+          );
+          const held = r.rows.filter((x) => x.held).map((x) => x.priv as Priv);
+          const extra = held.filter((p) => !want.includes(p));
+          const missing = want.filter((p) => !held.includes(p));
+          if (extra.length) diffs.push(`${table}: ${role} holds extra ${extra.join(',')}`);
+          if (missing.length) diffs.push(`${table}: ${role} lacks ${missing.join(',')}`);
+        }
+      }
+    } finally {
+      await c.query('rollback');
+      await c.end();
+    }
+    expect(diffs).toEqual([]);
+  });
+});

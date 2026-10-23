@@ -13,8 +13,9 @@
 -- ran against local before.) Restore the standard grants here so local matches
 -- live, then RE-ASSERT the Hard Rule 11 audited-table write revokes so this
 -- blanket grant doesn't silently undo them. Keep this list in sync with the
--- migrations' table-level revokes (audit_events / credit_ledger /
--- practitioner_licences) — a new audited table must be added here too.
+-- migrations' table-level revokes — a new audited table must be added here too.
+-- The checks are tests/rls/seed_grant_posture.rls.test.ts (runs this file and
+-- compares with what the migrations leave) and audited_table_writes.rls.test.ts.
 -- DML only, on purpose: never widen this to ALL. That hands TRUNCATE and TRIGGER back to the API roles
 -- (20261010175112_revoke_truncate_and_trigger_from_api_roles.sql); the sweep in
 -- tests/rls/audited_table_writes.rls.test.ts fails if it does.
@@ -147,6 +148,34 @@ revoke insert, update, delete on public.event_accreditation_groups      from ano
 revoke insert, update, delete on public.event_accreditations            from anon, authenticated, service_role;
 revoke insert, update, delete on public.event_accreditation_occurrences from anon, authenticated, service_role;
 revoke insert, update, delete on public.registration_roles              from anon, authenticated, service_role;
+--
+-- Seed drift closed 2026-10-17 (MVP DB-01). The blanket grant above re-granted
+-- DML that these migrations had revoked, so local RLS runs saw more than hosted.
+-- service_role is deliberately NOT revoked on any of them (the migrations only
+-- revoke anon/authenticated). Guard: tests/rls/seed_grant_posture.rls.test.ts
+-- runs this file in a rolled-back transaction and compares with the migrations.
+--   invite_tokens          — 20260911000000: definer-only writes (I/U/D revoked)
+--   credit_disputes        — 20260804040000: authenticated keeps SELECT+INSERT only
+--                            (a person raises a dispute); anon keeps nothing
+--   professions, positions, degrees, specialties, societies — 20260916000000:
+--                            read-only for anon/authenticated. This supersedes that
+--                            migration's note that lookup tables are not re-narrowed
+--                            here because RLS already denies the write: RLS was the
+--                            only control locally, and the grant layer is the one
+--                            hosted relies on.
+--   professional_profiles, additional_appointments, society_memberships —
+--                            20260829090000 / 20260916040000: anon holds nothing
+revoke insert, update, delete on public.invite_tokens from anon, authenticated;
+revoke update, delete on public.credit_disputes from anon, authenticated;
+revoke select, insert on public.credit_disputes from anon;
+revoke insert, update, delete on public.professions   from anon, authenticated;
+revoke insert, update, delete on public.positions     from anon, authenticated;
+revoke insert, update, delete on public.degrees       from anon, authenticated;
+revoke insert, update, delete on public.specialties   from anon, authenticated;
+revoke insert, update, delete on public.societies     from anon, authenticated;
+revoke select, insert, update, delete on public.professional_profiles   from anon;
+revoke select, insert, update, delete on public.additional_appointments from anon;
+revoke select, insert, update, delete on public.society_memberships     from anon;
 -- ─────────────────────────────────────────────────────────────────────────────
 --
 -- For production / pre-seeded projects: skip this file (the live Seoul project
