@@ -6,7 +6,8 @@ vi.mock('server-only', () => ({}));
 const requireStaffMock = vi.fn(async () => ({
   id: 's-1',
   email: 'a@b.com',
-  role: 'organizer' as const,
+  role: 'organizer' as string,
+  organisation_id: 'org-1' as string | null,
 }));
 vi.mock('@/lib/auth', () => ({
   requireStaff: () => requireStaffMock(),
@@ -35,17 +36,17 @@ vi.mock('@/lib/supabase/server', () => ({
   })),
 }));
 
-// The in-code owner gate reads events.created_by via admin before the RPC
-// (service-role contexts skip the RPC's own JWT-based check). Default: the
-// mocked staff (s-1) owns the event; tests can flip mockOwnerId.
-let mockOwnerId: string | null = 's-1';
+// The in-code gate reads events.organisation_id and status via admin before the RPC
+// (service-role contexts skip the RPC's own JWT-based check). Default: a draft in the
+// mocked staff's organisation; tests flip mockEvent (null = no such event).
+let mockEvent: { organisation_id: string; status: string } | null = { organisation_id: 'org-1', status: 'draft' };
 vi.mock('@/lib/supabase/admin', () => ({
   supabaseAdmin: vi.fn(() => ({
     from: (_table: string) => ({
       select: (_cols: string) => ({
         eq: (_col: string, _val: string) => ({
           maybeSingle: async () => ({
-            data: mockOwnerId == null ? null : { created_by: mockOwnerId },
+            data: mockEvent,
             error: null,
           }),
         }),
@@ -94,7 +95,7 @@ const validBlock = {
 };
 
 beforeEach(() => {
-  mockOwnerId = 's-1';
+  mockEvent = { organisation_id: 'org-1', status: 'draft' };
   requireStaffMock.mockClear();
   revalidatePathMock.mockClear();
   rpcCalls = [];
@@ -102,6 +103,46 @@ beforeEach(() => {
 });
 
 describe('updateEvent', () => {
+  // Ivan's ruling 2026-10-23: the screens already say "Details cannot be edited after publishing yet", but the
+  // server accepted an update to a published event from any colleague (and wrote no audit row). Gate it until P9b.
+  it.each(['published', 'cancelled', 'completed'])('refuses an event whose status is %s without calling the RPC', async (status) => {
+    mockEvent = { organisation_id: 'org-1', status };
+    const result = await updateEvent(eventId, { event: validEvent, blocks: [validBlock] });
+    expect(result).toEqual({ error: expect.stringMatching(/no longer a draft/i) });
+    expect(rpcCalls).toHaveLength(0);
+    expect(revalidatePathMock).not.toHaveBeenCalled();
+  });
+
+  it('refuses every role on a published event, the platform operator included', async () => {
+    mockEvent = { organisation_id: 'org-1', status: 'published' };
+    requireStaffMock.mockResolvedValueOnce({ id: 's-9', email: 'op@x.com', role: 'eventar_staff', organisation_id: 'org-other' });
+    const result = await updateEvent(eventId, { event: validEvent, blocks: [validBlock] });
+    expect(result).toEqual({ error: expect.stringMatching(/no longer a draft/i) });
+    expect(rpcCalls).toHaveLength(0);
+  });
+
+  it("refuses another organisation's event before saying anything about its status", async () => {
+    mockEvent = { organisation_id: 'org-2', status: 'published' };
+    const result = await updateEvent(eventId, { event: validEvent, blocks: [validBlock] });
+    expect(result).toEqual({ error: 'You do not have access to this event.' });
+    expect(rpcCalls).toHaveLength(0);
+  });
+
+  it("lets the platform operator edit another organisation's draft", async () => {
+    mockEvent = { organisation_id: 'org-2', status: 'draft' };
+    requireStaffMock.mockResolvedValueOnce({ id: 's-9', email: 'op@x.com', role: 'eventar_staff', organisation_id: 'org-other' });
+    const result = await updateEvent(eventId, { event: validEvent, blocks: [validBlock] });
+    expect(result).toEqual({ ok: true });
+    expect(rpcCalls).toHaveLength(1);
+  });
+
+  it('says so when the event does not exist', async () => {
+    mockEvent = null;
+    const result = await updateEvent(eventId, { event: validEvent, blocks: [validBlock] });
+    expect(result).toEqual({ error: 'Event not found.' });
+    expect(rpcCalls).toHaveLength(0);
+  });
+
   it('returns field errors and does not call the RPC on an invalid event payload', async () => {
     const result = await updateEvent(eventId, {
       event: { ...validEvent, title: '' },

@@ -1,0 +1,16 @@
+# UPD-01 updateEvent refuses anything that is not a draft; DB-04 spec amended
+STATUS: DONE for the server rule and the spec; the creator predicate in the UI waits for Ivan's pick on UX-FU1 surface 5. Review pending (dev lens).
+Origin: Ivan's rulings of 2026-10-23, items 1 and 2 (REVIEW-ROUND-1.md "Needs Ivan" 1 and 2).
+Changed: `app/events/[id]/edit/updateAction.ts`, `app/events/[id]/edit/updateAction.test.ts`, `docs/plans/2026-10-11-mvp-execution-plan.md` (DB-04 card text only).
+What it does:
+- `updateEvent` reads `status` with the organisation check it already did and returns "This event is no longer a draft, so its details cannot be edited yet." for any status other than `draft`, for every role including `eventar_staff` (an update writes no audit row, so no exception until P9b). The organisation check runs first, so a stranger learns nothing about the status. The edit page already renders the form only for drafts; this closes the direct call [X, backtest F1 of round 1: a colleague who did not create a published event could rewrite it].
+- DB-04's spec now says `update_event_with_blocks` refuses a non-draft event with `event_not_draft` for every role until P9b, and the per-field lifecycle locks apply when P9b lifts the rule. DB-04 implements it (one `sql` card at a time).
+Tests added or changed [X]: `updateAction.test.ts`: refuses published, cancelled and completed without calling the RPC or revalidating; refuses the platform operator on a published event; refuses another organisation's event with the access message before any status message; lets the operator edit another organisation's draft; "Event not found". The old admin mock returned `created_by` while the code selects `organisation_id`, so the organisation gate was never exercised; it now returns `{ organisation_id, status }`. Mutations, restored with `cmp`: dropping the status gate fails 4 tests; dropping the organisation gate fails 1.
+Gates [X]: tsc clean · eslint clean on the two files · vitest `app/events/[id]/edit` 5 files / 68 passed · build, test:rls not run (no route or database change).
+Live check: pending (backtest lens): a published event rejects a direct `updateEvent`, a draft saves.
+Not done, by design: the creator predicate for the accreditation field, the multi-body wizard and the roster role chips (ruling 2). It needs a second lock reason in front-end components, and the wording and treatment are surface 5 of `UX-FU1.md` (recommended 5a: one note, values as plain text, no Save). Until Ivan picks, a same-organisation admin who did not create the event still sees enabled controls whose writes fail with the "Only the person who created this event, or Eventar staff, can make this change." message. The rule to implement then: `canSetAccreditation(role) && (role === 'eventar_staff' || event.created_by === staff.id)`; `created_by` is already selected on the edit and details pages; the check-in page needs it added for the roster chips.
+Open questions for Ivan: the UX-FU1 picks (5 and 6 especially).
+Executor: Claude Sonnet 5.5, Claude Code
+Committed:
+Fixtures created: none.
+Suggested commit message: fix(events): updateEvent refuses an event that is not a draft; amend DB-04 to the same rule

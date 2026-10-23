@@ -78,13 +78,20 @@ export async function updateEvent(
   {
     const { data: row, error: rowErr } = await supabaseAdmin()
       .from('events')
-      .select('organisation_id')
+      .select('organisation_id, status')
       .eq('id', idParse.data)
       .maybeSingle();
     if (rowErr) return { error: 'Could not verify ownership of this event. Please try again.' };
     if (!row) return { error: 'Event not found.' };
     if (staff.role !== 'eventar_staff' && row.organisation_id !== staff.organisation_id) {
       return { error: 'You do not have access to this event.' };
+    }
+    // Only a draft can be edited here, whoever asks (the platform operator included): the screens already say
+    // "Details cannot be edited after publishing yet", and the RPC would otherwise rewrite a published event
+    // with no audit row. Checked after the organisation gate so a stranger learns nothing about the status.
+    // Lifts with the audited post-publish edit (P9b); update_event_with_blocks takes the same rule in DB-04.
+    if (row.status !== 'draft') {
+      return { error: 'This event is no longer a draft, so its details cannot be edited yet.' };
     }
   }
 
