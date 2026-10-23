@@ -238,6 +238,7 @@ export default async function StaffEventEditPage({
           occurrences={wizardOccurrences}
           initialGroups={wizardGroups}
           frozen={(creditsRes.count ?? 0) > 0}
+          canSetAccreditation={canSetAccreditation(staff.role)}
         />
       </div>
 

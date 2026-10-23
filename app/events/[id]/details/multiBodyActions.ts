@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { requireStaff, NotAuthorizedError } from '@/lib/auth';
+import { requireStaff, NotAuthorizedError, canSetAccreditation, type Staff } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { translateCpdRpcError } from '@/lib/cpd/rpcErrors';
 
@@ -17,14 +17,29 @@ import { translateCpdRpcError } from '@/lib/cpd/rpcErrors';
 
 export type MultiBodyResult<T = undefined> = { ok: true; data: T } | { error: string };
 
-async function actingStaffId(): Promise<{ id: string } | { error: string }> {
+async function actingStaffId(): Promise<{ id: string; role: Staff['role'] } | { error: string }> {
   try {
     const staff = await requireStaff();
-    return { id: staff.id };
+    return { id: staff.id, role: staff.role };
   } catch (e) {
     if (e instanceof NotAuthorizedError) return { error: 'Not authorised.' };
     throw e;
   }
+}
+
+// The accreditation writes below are refused for a role that cannot set accreditation before the database
+// is asked: set_event_cpd_config admits only organiser_admin and eventar_staff, and the wizard now shows
+// those roles a locked note. Without this, a member reached the RPC and read "Only the event owner...",
+// which was false for the member who created the event. Same wording as cpdActions.ts; the database stays
+// the authority. NOT applied to set/removeRegistrationRole: presenter and chair chips are not accreditation
+// and their RPCs admit organiser_member.
+async function accreditationStaff(): Promise<{ id: string } | { error: string }> {
+  const staff = await actingStaffId();
+  if ('error' in staff) return staff;
+  if (!canSetAccreditation(staff.role)) {
+    return { error: 'Your role can’t set accreditation. Ask an organiser admin to add or change it.' };
+  }
+  return staff;
 }
 
 function revalidateEvent(eventId: string) {
@@ -41,7 +56,7 @@ export async function addAccreditationGroup(input: {
   unit: string | null;
   awardScheme: 'proportional' | 'explicit_schedule';
 }): Promise<MultiBodyResult<{ id: string }>> {
-  const staff = await actingStaffId();
+  const staff = await accreditationStaff();
   if ('error' in staff) return staff;
 
   const parsed = z
@@ -76,7 +91,7 @@ export async function removeAccreditationGroup(input: {
   groupId: string;
   eventId: string;
 }): Promise<MultiBodyResult> {
-  const staff = await actingStaffId();
+  const staff = await accreditationStaff();
   if ('error' in staff) return staff;
 
   const parsed = z.object({ groupId: uuid, eventId: uuid }).safeParse(input);
@@ -98,7 +113,7 @@ export async function addAccreditationRow(input: {
   eventId: string;
   creditValue: number;
 }): Promise<MultiBodyResult<{ id: string }>> {
-  const staff = await actingStaffId();
+  const staff = await accreditationStaff();
   if ('error' in staff) return staff;
 
   const parsed = z
@@ -124,7 +139,7 @@ export async function removeAccreditationRow(input: {
   accreditationId: string;
   eventId: string;
 }): Promise<MultiBodyResult> {
-  const staff = await actingStaffId();
+  const staff = await accreditationStaff();
   if ('error' in staff) return staff;
 
   const parsed = z.object({ accreditationId: uuid, eventId: uuid }).safeParse(input);
@@ -146,7 +161,7 @@ export async function linkAccreditationOccurrence(input: {
   occurrenceId: string;
   eventId: string;
 }): Promise<MultiBodyResult> {
-  const staff = await actingStaffId();
+  const staff = await accreditationStaff();
   if ('error' in staff) return staff;
 
   const parsed = z.object({ accreditationId: uuid, occurrenceId: uuid, eventId: uuid }).safeParse(input);
@@ -169,7 +184,7 @@ export async function unlinkAccreditationOccurrence(input: {
   occurrenceId: string;
   eventId: string;
 }): Promise<MultiBodyResult> {
-  const staff = await actingStaffId();
+  const staff = await accreditationStaff();
   if ('error' in staff) return staff;
 
   const parsed = z.object({ accreditationId: uuid, occurrenceId: uuid, eventId: uuid }).safeParse(input);

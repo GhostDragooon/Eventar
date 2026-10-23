@@ -43,6 +43,12 @@ type Props = {
   initialGroups: WizardGroup[];
   /** Credits already posted for this event — every write below is DB-frozen once this is true. */
   frozen: boolean;
+  /**
+   * Whether this role may set accreditation (canSetAccreditation(staff.role)). False shows the same locked
+   * note as the single-body field instead of the entry button, and any configured bodies read-only. Defaults
+   * true like CpdAccreditationSection; the actions and the database refuse regardless.
+   */
+  canSetAccreditation?: boolean;
 };
 
 const STEPS = ['Accrediting bodies', 'Schedule & occurrences', 'Review'] as const;
@@ -53,7 +59,7 @@ function bodyLabel(directory: AccreditingBodyOption[], id: string): string {
   return b.short_name ? `${b.short_name} — ${b.full_name}` : b.full_name;
 }
 
-export function MultiBodyAccreditationWizard({ eventId, startTime, bodies, bodyDirectory, occurrences, initialGroups, frozen }: Props) {
+export function MultiBodyAccreditationWizard({ eventId, startTime, bodies, bodyDirectory, occurrences, initialGroups, frozen, canSetAccreditation = true }: Props) {
   const [open, setOpen] = useState(initialGroups.length > 0);
   const [step, setStep] = useState<0 | 1 | 2>(0);
   const [groups, setGroups] = useState<WizardGroup[]>(initialGroups);
@@ -175,6 +181,23 @@ export function MultiBodyAccreditationWizard({ eventId, startTime, bodies, bodyD
         ),
       );
     });
+  }
+
+  if (!canSetAccreditation) {
+    return (
+      <div className="mt-md space-y-sm">
+        <p className="rounded-lg bg-surface-container-low px-md py-sm text-body-md text-on-surface-variant">
+          Your role can&rsquo;t set accreditation. An organiser admin can add or change it from this page.
+        </p>
+        {groups.length > 0 && (
+          <ul className="space-y-xs text-body-md text-on-surface">
+            {groups.map((g) => (
+              <li key={g.id}>{bodyLabel(bodyDirectory, g.bodyId)}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
   }
 
   if (!open) {

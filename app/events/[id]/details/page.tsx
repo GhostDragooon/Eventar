@@ -424,6 +424,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
         occurrences={wizardOccurrences}
         initialGroups={wizardGroups}
         frozen={creditsIssued > 0}
+        canSetAccreditation={canSetAccreditation(staff.role)}
       />
 
       {/* Task 10.7 evidence export — one section per row Step 6 spec, mounted

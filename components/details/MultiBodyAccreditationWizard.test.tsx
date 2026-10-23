@@ -326,4 +326,38 @@ describe('MultiBodyAccreditationWizard', () => {
       expect(screen.getByText(/apply to hkcp by/i)).toBeTruthy();
     });
   });
+
+  describe('role gate (CX-05)', () => {
+    const locked = /your role can.t set accreditation/i;
+
+    it('shows the locked note instead of the entry button for a role that cannot set accreditation', () => {
+      render(<MultiBodyAccreditationWizard eventId="e1" startTime="2026-09-01T00:00:00Z" bodies={bodies} bodyDirectory={bodies} occurrences={occurrences} initialGroups={[]} frozen={false} canSetAccreditation={false} />);
+      expect(screen.getByText(locked)).toBeTruthy();
+      expect(screen.queryByText(/configure multiple accrediting bodies/i)).toBeNull();
+    });
+
+    it('with bodies already configured, shows them read-only: no Remove, no Add a body', () => {
+      render(
+        <MultiBodyAccreditationWizard
+          eventId="e1" startTime="2026-09-01T00:00:00Z"
+          bodies={bodies}
+          bodyDirectory={bodies}
+          occurrences={occurrences}
+          initialGroups={[{ id: 'g1', bodyId: 'b1', categoryCode: null, unit: 'points', awardScheme: 'proportional', rows: [] }]}
+          frozen={false}
+          canSetAccreditation={false}
+        />,
+      );
+      expect(screen.getByText(locked)).toBeTruthy();
+      expect(screen.getByText('HKCP — HK College of Pathologists')).toBeTruthy();
+      expect(screen.queryByRole('button', { name: /remove/i })).toBeNull();
+      expect(screen.queryByText(/add a body/i)).toBeNull();
+    });
+
+    it('leaves the entry button for a role that can (and when the prop is omitted)', () => {
+      render(<MultiBodyAccreditationWizard eventId="e1" startTime="2026-09-01T00:00:00Z" bodies={bodies} bodyDirectory={bodies} occurrences={occurrences} initialGroups={[]} frozen={false} canSetAccreditation />);
+      expect(screen.getByText(/configure multiple accrediting bodies/i)).toBeTruthy();
+      expect(screen.queryByText(locked)).toBeNull();
+    });
+  });
 });

@@ -27,7 +27,12 @@ export function translateCpdRpcError(error: CpdRpcError): string {
     if (error.details === 'multi_body_configured') {
       return 'This event has a multiple-body accreditation set up below — use that section to change accreditation, not this field.';
     }
-    return 'Only the event owner (or staff) can make this change.';
+    // The RPCs raise this for anyone who did not create the event, whatever their role. Said as the rule, not
+    // as "ask an admin": the person asking may well be an admin.
+    if (error.details === 'not_owner') {
+      return 'Only the person who created this event, or Eventar staff, can make this change.';
+    }
+    return 'This account can’t make this change. Ask an organiser admin.';
   }
 
   return 'Could not save the change. Try again.';
