@@ -17,6 +17,8 @@ export async function insertAsRoleWithGrant(
   role: 'anon' | 'authenticated',
   table: string,
   row: Record<string, unknown>,
+  /** JWT claims for the statement (PostgREST sets request.jwt.claims); an `email` makes app_private.auth_email() resolve, e.g. as a staff member. */
+  jwtClaims?: Record<string, unknown>,
 ): Promise<InsertOutcome> {
   if (!/^[a-z_]+$/.test(table)) throw new Error(`insertAsRoleWithGrant: bad table name ${table}`);
   const cols = Object.keys(row);
@@ -26,6 +28,7 @@ export async function insertAsRoleWithGrant(
   try {
     await c.query('begin');
     await c.query(`grant insert on public.${table} to ${role}`);
+    if (jwtClaims) await c.query(`select set_config('request.jwt.claims', $1, true)`, [JSON.stringify(jwtClaims)]);
     await c.query(`set local role ${role}`);
     try {
       await c.query(

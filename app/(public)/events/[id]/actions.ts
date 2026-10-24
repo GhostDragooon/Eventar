@@ -95,8 +95,9 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
   // deleted_at gate: softDeleteEvents only sets deleted_at, leaving
   // status='published', so a soft-deleted event stayed registrable via its
   // direct URL while /events, the cron dispatcher and self_check_in all filter
-  // it. Anon RLS still returns the row (published), so this is the layer that
-  // must exclude it. Security review 2026-08-06.
+  // it. Since DB-03 anon RLS no longer returns a deleted row, but the
+  // organisation's own staff still read it, so this stays the layer that must
+  // exclude it. Security review 2026-08-06.
   if (!event || event.status !== 'published' || event.deleted_at != null) {
     return { error: 'Registrations are not open for this event.' };
   }

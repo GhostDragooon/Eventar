@@ -14,7 +14,9 @@
 // Gated: named explicitly in `pnpm test:rls` alongside the DEFERRED-56 suite.
 // Issues at most one credit, on its own disposable fixtures.
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { randomUUID } from 'node:crypto';
 import { admin, createTestUser, deleteTestUser, sqlSuperuser, type TestUser } from '../helpers/clients';
+import { mustDelete } from '../helpers/mustDelete';
 
 const DEFAULT_ORG = '00000000-0000-0000-0000-000000000001';
 
@@ -22,7 +24,11 @@ describe.skipIf(!process.env.RLS_TESTS)('event_registration_eligibility', () => 
   let owner: TestUser;
   let ownerStaffId: string;
   let bodyAdmin: TestUser;
-  let stranger: TestUser;
+  let teammate: TestUser; // same organisation, did not create the event (DB-03)
+  let otherOrgAdmin: TestUser; // a DIFFERENT organisation's admin
+  let otherOrgMember: TestUser; // ... and its member, so the gate is not proven for one role only
+  let platformStaff: TestUser; // eventar_staff rows live in some organisation; the gate must not care which
+  let otherOrgId: string;
   let bodyId: string;
   let eventId: string;
   let licensed: TestUser;
@@ -50,18 +56,31 @@ describe.skipIf(!process.env.RLS_TESTS)('event_registration_eligibility', () => 
   beforeAll(async () => {
     owner = await createTestUser(`elig-owner-${ts}`);
     bodyAdmin = await createTestUser(`elig-bodyadmin-${ts}`);
-    stranger = await createTestUser(`elig-stranger-${ts}`);
+    teammate = await createTestUser(`elig-teammate-${ts}`);
+    otherOrgAdmin = await createTestUser(`elig-otherorg-${ts}`);
+    otherOrgMember = await createTestUser(`elig-otherorgmember-${ts}`);
+    platformStaff = await createTestUser(`elig-platform-${ts}`);
+    const { data: org2, error: org2Err } = await admin
+      .from('organisations')
+      .insert({ name: 'RLS Test Org (eligibility other)', slug: `rls-elig-other-${ts}` })
+      .select('id')
+      .single();
+    if (org2Err || !org2) throw new Error(`other org fixture: ${org2Err?.message}`);
+    otherOrgId = org2.id as string;
     licensed = await createTestUser(`elig-licensed-${ts}`);
     unlicensed = await createTestUser(`elig-unlicensed-${ts}`);
 
     for (const [u, role] of [
       [owner, 'organiser_admin'],
       [bodyAdmin, 'body_admin'],
-      [stranger, 'organiser_admin'],
+      [teammate, 'organiser_member'],
+      [otherOrgAdmin, 'organiser_admin'],
+      [otherOrgMember, 'organiser_member'],
+      [platformStaff, 'eventar_staff'],
     ] as const) {
       const { error } = await admin.from('staff').insert({
         email: u.email, role, full_name: 'Eligibility Fixture Staff',
-        organisation_id: DEFAULT_ORG, status: 'active',
+        organisation_id: [otherOrgAdmin, otherOrgMember, platformStaff].includes(u) ? otherOrgId : DEFAULT_ORG, status: 'active',
       });
       if (error) throw new Error(`staff fixture: ${error.message}`);
     }
@@ -150,10 +169,12 @@ describe.skipIf(!process.env.RLS_TESTS)('event_registration_eligibility', () => 
     await admin.from('organisation_body_authorisations').delete().eq('body_id', bodyId);
     // The event and body are pinned by credit_ledger's NO ACTION FKs once the
     // final test issues a credit — same accepted residue as attendance_issuance.
-    for (const u of [stranger, bodyAdmin, unlicensed]) {
+    for (const u of [teammate, otherOrgAdmin, otherOrgMember, platformStaff, bodyAdmin, unlicensed]) {
+      if (!u) continue; // beforeAll failed before this user was created
       await admin.from('staff').delete().eq('email', u.email);
       await deleteTestUser(u);
     }
+    if (otherOrgId) await mustDelete(admin.from('organisations').delete().eq('id', otherOrgId), 'other organisation fixture');
   }, 120_000);
 
   it('classifies every registrant by whether their credit will post', async () => {
@@ -174,9 +195,37 @@ describe.skipIf(!process.env.RLS_TESTS)('event_registration_eligibility', () => 
     }
   });
 
-  it('refuses a non-owner (42501) — a definer bypasses RLS, so the gate is in the body', async () => {
-    const { error } = await eligibilityFor(stranger.client);
-    expect(error?.code).toBe('42501');
+  // DB-03 (2026-10-24): the roster told a teammate "CPD eligibility couldn't be checked just now" because this
+  // function gated on created_by. It is a READ of the event's own roster, so any active staff member of the
+  // event's ORGANISATION may call it (the writes that touch accreditation stay creator-only, ruling 2).
+  it('a teammate (same organisation, did not create the event) gets the same answer as the creator', async () => {
+    const asOwner = await eligibilityFor(owner.client);
+    const asTeammate = await eligibilityFor(teammate.client);
+    expect(asTeammate.error).toBeNull();
+    expect(asTeammate.rows.length).toBeGreaterThan(0);
+    expect(Object.fromEntries(asTeammate.rows.map((r) => [r.registration_id, r.eligibility])))
+      .toEqual(Object.fromEntries(asOwner.rows.map((r) => [r.registration_id, r.eligibility])));
+  });
+
+  it("refuses another organisation's admin and member (42501) — a definer bypasses RLS, so the gate is in the body", async () => {
+    for (const caller of [otherOrgAdmin, otherOrgMember]) {
+      const { error } = await eligibilityFor(caller.client);
+      expect(error?.code).toBe('42501');
+      expect(error?.message ?? '').toMatch(/not in your organisation/i);
+    }
+  });
+
+  it('platform staff (eventar_staff) may read any organisation\'s roster, whatever organisation their own row sits in', async () => {
+    const asOwner = await eligibilityFor(owner.client);
+    const asPlatform = await eligibilityFor(platformStaff.client);
+    expect(asPlatform.error).toBeNull();
+    expect(asPlatform.rows).toHaveLength(asOwner.rows.length);
+    expect(asPlatform.rows.length).toBeGreaterThan(0);
+  });
+
+  it('an unknown event id is not found (P0002), not a permission error', async () => {
+    const { error } = await eligibilityFor(teammate.client, randomUUID());
+    expect(error?.code).toBe('P0002');
   });
 
   it('the prediction matches what award_attendance_credit actually does', async () => {
