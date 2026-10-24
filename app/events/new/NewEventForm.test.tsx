@@ -1156,8 +1156,12 @@ describe('NewEventForm: agenda block ids across saves (edit mode)', () => {
     fireEvent.change(screen.getByPlaceholderText('Lunch / coffee'), { target: { value: what } });
   }
   async function save(calls: number, submit: ReturnType<typeof vi.fn>) {
-    fireEvent.click(await screen.findByRole('button', { name: /save changes/i }));
-    await waitFor(() => expect(submit).toHaveBeenCalledTimes(calls));
+    // The button is aria-disabled while the previous save is still pending, and a click then does nothing: under load
+    // the second save used to click too early. Wait for it to be live, then for the call.
+    const saveButton = () => screen.getByRole('button', { name: /save changes/i });
+    await waitFor(() => expect(saveButton()).not.toHaveAttribute('aria-disabled', 'true'), { timeout: 5000 });
+    fireEvent.click(saveButton());
+    await waitFor(() => expect(submit).toHaveBeenCalledTimes(calls), { timeout: 5000 });
   }
   const ids = (p: SubmitPayload) => p.blocks.map((b) => b.id);
 
