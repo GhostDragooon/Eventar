@@ -39,17 +39,21 @@ export default async function PublicEventsPage() {
   // Thrown, not swallowed (rule 12): a discarded error rendered the "no
   // upcoming events" empty state, telling the public this organiser runs
   // nothing when the truth was that the list failed to load.
+  // The upcoming/live cut is in the query (end_time >= now, an instant, so no
+  // calendar or zone maths): a limit ahead of a JS filter returned only past
+  // rows once 100+ past events existed. Past the cap the soonest 100 are kept
+  // (ascending start), so only the furthest-future events fall off.
+  // eslint-disable-next-line react-hooks/purity
+  const nowMs = Date.now();
   const { data: events, error: eventsErr } = await supabase
     .from('events')
     .select('id, title, description, status, start_time, end_time, timezone, venue_name, city, category, registration_close_at, registration_open_at, hosted_by, organized_by, deleted_at')
     .eq('status', 'published')
     .is('deleted_at', null)
+    .gte('end_time', new Date(nowMs).toISOString())
     .order('start_time', { ascending: true })
     .limit(100);
   if (eventsErr) throw eventsErr;
-
-  // eslint-disable-next-line react-hooks/purity
-  const nowMs = Date.now();
 
   type PartnerEntry = { name?: string } | string;
   const names = (v: unknown): string[] =>
