@@ -30,6 +30,7 @@
 import { requireStaff, canManageEvent } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { buildCsv } from '@/lib/csv';
+import { selectInBatches } from '@/lib/supabase/inBatches';
 import {
   COLLEGE_EXPORT_HEADER,
   projectCreditLedgerRow,
@@ -98,20 +99,27 @@ export async function exportCollegePackage(eventId: string): Promise<ExportColle
   const licenceIds = [...new Set(ledger.map((r) => r.licence_id))];
   const bodyIds = [...new Set(ledger.map((r) => r.body_id))];
 
-  const usersRes = await admin.from('users').select('id, full_name, salutation').in('id', userIds);
+  // Every lookup keyed on the ledger's ids goes in batches of 100: one `.in()` with the whole list is a 414 past ~220
+  // practitioners. users, profiles, licences and registrations hold one row per id, so a batch is at most 100 rows;
+  // only the evidence lookup can reach max_rows, and it checks its own batch below.
+  const usersRes = await selectInBatches(userIds, (ids) => admin.from('users').select('id, full_name, salutation').in('id', ids));
   if (usersRes.error) {
     console.error('[exportCollegePackage] users lookup failed', { code: usersRes.error.code });
     return { ok: false, error: 'Could not load practitioner details for export. Please try again.' };
   }
-  const profilesRes = await admin
-    .from('professional_profiles')
-    .select('user_id, workplace_text, position_code, position_other, profession_code, specialty_code, specialty_other')
-    .in('user_id', userIds);
+  const profilesRes = await selectInBatches(userIds, (ids) =>
+    admin
+      .from('professional_profiles')
+      .select('user_id, workplace_text, position_code, position_other, profession_code, specialty_code, specialty_other')
+      .in('user_id', ids),
+  );
   if (profilesRes.error) {
     console.error('[exportCollegePackage] professional_profiles lookup failed', { code: profilesRes.error.code });
     return { ok: false, error: 'Could not load practitioner details for export. Please try again.' };
   }
-  const licencesRes = await admin.from('practitioner_licences').select('id, licence_number, status').in('id', licenceIds);
+  const licencesRes = await selectInBatches(licenceIds, (ids) =>
+    admin.from('practitioner_licences').select('id, licence_number, status').in('id', ids),
+  );
   if (licencesRes.error) {
     console.error('[exportCollegePackage] practitioner_licences lookup failed', { code: licencesRes.error.code });
     return { ok: false, error: 'Could not load licence details for export. Please try again.' };
@@ -121,11 +129,9 @@ export async function exportCollegePackage(eventId: string): Promise<ExportColle
     console.error('[exportCollegePackage] accrediting_bodies lookup failed', { code: bodiesRes.error.code });
     return { ok: false, error: 'Could not load accrediting body details for export. Please try again.' };
   }
-  const regsRes = await admin
-    .from('registrations')
-    .select('user_id, registration_code')
-    .eq('event_id', eventId)
-    .in('user_id', userIds);
+  const regsRes = await selectInBatches(userIds, (ids) =>
+    admin.from('registrations').select('user_id, registration_code').eq('event_id', eventId).in('user_id', ids),
+  );
   if (regsRes.error) {
     console.error('[exportCollegePackage] registrations lookup failed', { code: regsRes.error.code });
     return { ok: false, error: 'Could not load registration details for export. Please try again.' };
@@ -134,22 +140,26 @@ export async function exportCollegePackage(eventId: string): Promise<ExportColle
   // a representative single capture, not an exhaustive list (multi-occurrence
   // events can write several evidence rows per registration; the full list is
   // already available via the existing "Export attendance evidence" button).
-  const evidenceRes = await admin
-    .from('participation_evidence')
-    .select('user_id, evidence_type, attestation_strength, captured_at')
-    .eq('event_id', eventId)
-    .in('user_id', userIds)
-    .order('captured_at', { ascending: true })
-    .limit(EXPORT_ROW_LIMIT);
+  const evidenceRes = await selectInBatches(userIds, async (ids) => {
+    const res = await admin
+      .from('participation_evidence')
+      .select('user_id, evidence_type, attestation_strength, captured_at')
+      .eq('event_id', eventId)
+      .in('user_id', ids)
+      .order('captured_at', { ascending: true })
+      .limit(EXPORT_ROW_LIMIT);
+    // Evidence rows are a best-effort enrichment (per-row blank is fine — see
+    // the evidenceByUserId lookup below), so a truncated read degrades rather
+    // than fails the whole export outright: log loudly, keep going. Checked
+    // per batch: that is the read the row cap applies to.
+    if ((res.data ?? []).length >= EXPORT_ROW_LIMIT) {
+      console.error('[exportCollegePackage] evidence read hit its row limit — some rows may show no evidence', { eventId, limit: EXPORT_ROW_LIMIT });
+    }
+    return res;
+  });
   if (evidenceRes.error) {
     console.error('[exportCollegePackage] participation_evidence lookup failed', { code: evidenceRes.error.code });
     return { ok: false, error: 'Could not load evidence details for export. Please try again.' };
-  }
-  // Evidence rows are a best-effort enrichment (per-row blank is fine — see
-  // the evidenceByUserId lookup below), so a truncated read degrades rather
-  // than fails the whole export outright: log loudly, keep going.
-  if ((evidenceRes.data ?? []).length >= EXPORT_ROW_LIMIT) {
-    console.error('[exportCollegePackage] evidence read hit its row limit — some rows may show no evidence', { eventId, limit: EXPORT_ROW_LIMIT });
   }
 
   const professionsRes = await admin.from('professions').select('code, label_en');
@@ -163,17 +173,17 @@ export async function exportCollegePackage(eventId: string): Promise<ExportColle
   }
 
   const lookups: CollegeExportLookups = {
-    userById: new Map((usersRes.data ?? []).map((u) => [u.id as string, u as UserRow])),
-    profileByUserId: new Map((profilesRes.data ?? []).map((p) => [p.user_id as string, p as ProfileRow])),
-    licenceById: new Map((licencesRes.data ?? []).map((l) => [l.id as string, l as LicenceRow])),
+    userById: new Map(usersRes.data.map((u) => [u.id as string, u as UserRow])),
+    profileByUserId: new Map(profilesRes.data.map((p) => [p.user_id as string, p as ProfileRow])),
+    licenceById: new Map(licencesRes.data.map((l) => [l.id as string, l as LicenceRow])),
     bodyById: new Map((bodiesRes.data ?? []).map((b) => [b.id as string, b as BodyRow])),
-    regByUserId: new Map((regsRes.data ?? []).map((r) => [r.user_id as string, r as RegRow])),
+    regByUserId: new Map(regsRes.data.map((r) => [r.user_id as string, r as RegRow])),
     evidenceByUserId: new Map<string, EvidenceRow>(),
     professionLabelByCode: new Map((professionsRes.data ?? []).map((p) => [p.code as string, p.label_en as string])),
     positionLabelByCode: new Map((positionsRes.data ?? []).map((p) => [p.code as string, p.label_en as string])),
     specialtyLabelByCode: new Map((specialtiesRes.data ?? []).map((s) => [s.code as string, s.label_en as string])),
   };
-  for (const e of evidenceRes.data ?? []) {
+  for (const e of evidenceRes.data) {
     const uid = e.user_id as string | null;
     if (uid && !lookups.evidenceByUserId.has(uid)) {
       lookups.evidenceByUserId.set(uid, {

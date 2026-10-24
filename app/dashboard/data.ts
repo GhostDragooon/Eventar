@@ -4,6 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Staff } from '@/lib/auth';
 import type { ProgrammeEvent } from '@/components/dashboard/DashboardWorkstation';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
+import { idBatches } from '@/lib/supabase/inBatches';
 
 const DAY_MS = 86_400_000;
 
@@ -43,14 +44,6 @@ export function ownEvents<Cols extends string>(
   let query = supabase.from('events').select<Cols, { [K in Columns<Cols>]: any }>(cols);
   if (staff.role !== 'eventar_staff') query = query.eq('organisation_id', staff.organisation_id);
   return query;
-}
-
-// An `.in()` puts every id in the request URL: 242 uuids are a 9 KB URL and the gateway answers 414 (the events
-// query below allows 300). 100 ids are about 3.7 KB.
-function idBatches(ids: string[], size = 100): string[][] {
-  const batches: string[][] = [];
-  for (let i = 0; i < ids.length; i += size) batches.push(ids.slice(i, i + size));
-  return batches;
 }
 
 // credit_ledger has no organisation_id, so "credits issued" is counted over the organisation's event ids. Any failed

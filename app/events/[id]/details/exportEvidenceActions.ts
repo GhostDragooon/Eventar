@@ -22,6 +22,7 @@
 import { requireStaff, canManageEvent } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { MAX_ROWS, selectInBatches } from '@/lib/supabase/inBatches';
 import { SupabaseParticipationSource } from '@/evidence/src/ledger/participationSource';
 import { orchestrateParticipation } from '@/evidence/src/orchestrator';
 import type { EvidenceClaim, EvidencePackage } from '@/evidence/src/types';
@@ -157,6 +158,11 @@ export async function exportEventEvidence(eventId: string): Promise<ExportEviden
     .select('body_id')
     .eq('event_id', eventId);
   if (ledgerBodiesRes.error) return { ok: false, error: ledgerBodiesRes.error.message };
+  // PostgREST cuts an unbounded read at max_rows without an error. This read covers every ledger row of the event, so
+  // one check also covers the per-body ledger read below: a regulator file must not be silently short.
+  if ((ledgerBodiesRes.data ?? []).length >= MAX_ROWS) {
+    return { ok: false, error: 'This event has more credit records than a single export can safely include. Contact support for a bulk export.' };
+  }
   const distinctBodyIds = [...new Set((ledgerBodiesRes.data ?? []).map((r) => r.body_id as string))];
   if (distinctBodyIds.length === 0) {
     return { ok: false, error: 'No credit has been posted for this event yet — nothing to export.' };
@@ -226,13 +232,12 @@ export async function exportEventEvidence(eventId: string): Promise<ExportEviden
     const fullLedger = fullLedgerRes.data ?? [];
 
     const licenceIds = [...new Set(fullLedger.map((r) => r.licence_id as string))];
-    const licencesRes = await admin
-      .from('practitioner_licences')
-      .select('id, licence_number, licence_type')
-      .in('id', licenceIds);
+    const licencesRes = await selectInBatches(licenceIds, (ids) =>
+      admin.from('practitioner_licences').select('id, licence_number, licence_type').in('id', ids),
+    );
     if (licencesRes.error) return { ok: false, error: licencesRes.error.message };
     const licenceById = new Map<string, { licence_number: string; licence_type: string | null }>();
-    for (const l of licencesRes.data ?? []) {
+    for (const l of licencesRes.data) {
       licenceById.set(l.id as string, {
         licence_number: (l.licence_number as string) ?? '',
         licence_type: (l.licence_type as string | null) ?? null,

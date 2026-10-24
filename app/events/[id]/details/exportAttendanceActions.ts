@@ -3,6 +3,7 @@
 import { requireStaff, canManageEvent } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { buildCsv } from '@/lib/csv';
+import { MAX_ROWS, selectInBatches } from '@/lib/supabase/inBatches';
 
 export type ExportAttendanceResult =
   | { ok: true; csvBase64: string; filename: string; rowCount: number }
@@ -41,20 +42,24 @@ export async function exportAttendanceEvidence(
   if (evidence.length === 0) {
     return { ok: false, error: 'No attendance evidence recorded for this event.' };
   }
+  // PostgREST cuts an unbounded read at max_rows without an error: a file for a regulator must not be silently short.
+  if (evidence.length >= MAX_ROWS) {
+    console.error('[exportAttendanceEvidence] evidence read hit its row limit — export would be an undercount', { eventId, limit: MAX_ROWS });
+    return { ok: false, error: 'This event has more attendance records than a single export can safely include. Contact support for a bulk export.' };
+  }
 
   const regIds = [...new Set(evidence.map((e) => e.registration_id as string).filter(Boolean))];
   const regMap = new Map<string, { full_name: string; email: string; registration_code: string }>();
 
   if (regIds.length > 0) {
-    const regsRes = await admin
-      .from('registrations')
-      .select('id, full_name, email, registration_code')
-      .in('id', regIds);
+    const regsRes = await selectInBatches(regIds, (ids) =>
+      admin.from('registrations').select('id, full_name, email, registration_code').in('id', ids),
+    );
     if (regsRes.error) {
       console.error('[exportAttendanceEvidence] registration lookup failed', { code: regsRes.error.code });
       return { ok: false, error: 'Could not load registration details for evidence export. Please try again.' };
     }
-    for (const r of regsRes.data ?? []) {
+    for (const r of regsRes.data) {
       regMap.set(r.id as string, {
         full_name: (r.full_name as string) ?? '',
         email: (r.email as string) ?? '',
