@@ -190,8 +190,13 @@ revoke select, insert, update, delete on public.society_memberships     from ano
 revoke insert, update, delete on all tables in schema public from anon;
 revoke insert, update on public.invite_tokens from service_role;
 -- SEC-01 part 2 (20261023150000_revoke_authenticated_insert_registrations.sql): registration is service_role-only;
--- authenticated keeps SELECT, UPDATE, DELETE (RLS limits them).
+-- authenticated keeps SELECT (RLS limits it); DELETE has no policy.
 revoke insert on public.registrations from authenticated;
+-- DB-05 (20261025100000_audited_roster_edit_and_registrations_update_closed.sql): nothing signed in UPDATEs registrations
+-- directly; the roster edit is update_registration_contact and check-in is mark_attended / self_check_in (definers).
+-- DELETE goes with it: no policy admits it, and nothing signed in deletes registrations. The blanket grant above gives
+-- both back, so they are re-asserted here.
+revoke update, delete on public.registrations from anon, authenticated;
 -- ─────────────────────────────────────────────────────────────────────────────
 --
 -- For production / pre-seeded projects: skip this file (the live Seoul project

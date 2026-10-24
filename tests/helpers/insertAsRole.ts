@@ -45,3 +45,44 @@ export async function insertAsRoleWithGrant(
     await c.end();
   }
 }
+
+export type UpdateOutcome = { ok: true; rows: number } | { ok: false; code?: string; message: string };
+
+// One UPDATE by id as an API role, with the table grant AND an allow-all UPDATE policy created for the role inside a
+// transaction that is ALWAYS rolled back (DB-05, 20261025100000: nothing signed in holds UPDATE on registrations or a
+// policy for it any more). What is left to run is the trigger on the table: current_user is the API role, which is
+// what the link-column trigger keys on. `rows` is how many rows the UPDATE changed.
+export async function updateAsRoleWithGrant(
+  role: 'anon' | 'authenticated',
+  table: string,
+  id: string,
+  set: Record<string, unknown>,
+  /** JWT claims, as for insertAsRoleWithGrant: the row has to be visible through a SELECT policy for the UPDATE to see it. */
+  jwtClaims?: Record<string, unknown>,
+): Promise<UpdateOutcome> {
+  if (!/^[a-z_]+$/.test(table)) throw new Error(`updateAsRoleWithGrant: bad table name ${table}`);
+  const cols = Object.keys(set);
+  if (cols.some((c) => !/^[a-z_]+$/.test(c))) throw new Error('updateAsRoleWithGrant: bad column name');
+  const c = new Client({ connectionString: LOCAL_DB });
+  await c.connect();
+  try {
+    await c.query('begin');
+    await c.query(`grant update on public.${table} to ${role}`);
+    await c.query(`create policy zz_update_probe on public.${table} for update to ${role} using (true) with check (true)`);
+    if (jwtClaims) await c.query(`select set_config('request.jwt.claims', $1, true)`, [JSON.stringify(jwtClaims)]);
+    await c.query(`set local role ${role}`);
+    try {
+      const res = await c.query(
+        `update public.${table} set ${cols.map((k, i) => `${k} = $${i + 2}`).join(', ')} where id = $1`,
+        [id, ...cols.map((k) => set[k])],
+      );
+      return { ok: true, rows: res.rowCount ?? 0 };
+    } catch (e) {
+      const err = e as { code?: string; message: string };
+      return { ok: false, code: err.code, message: err.message };
+    }
+  } finally {
+    await c.query('rollback');
+    await c.end();
+  }
+}

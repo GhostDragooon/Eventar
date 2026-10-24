@@ -36,8 +36,9 @@ const LOOKUP: Posture = { anon: ['SELECT'], authenticated: ['SELECT'], service_r
 const EXPECTED: Record<string, Posture> = {
   invite_tokens: { anon: ['SELECT'], authenticated: ['SELECT'], service_role: ['SELECT', 'DELETE'] }, // 20260911000000 + SEC-01 20261023140000
   credit_disputes: { anon: NONE, authenticated: ['SELECT', 'INSERT'], service_role: ALL }, // 20260804040000
-  // anon: SELECT only (RLS returns it nothing); authenticated lost INSERT in SEC-01 part 2 (20261023150000).
-  registrations: { anon: ['SELECT'], authenticated: ['SELECT', 'UPDATE', 'DELETE'], service_role: ALL },
+  // anon: SELECT only (RLS returns it nothing); authenticated lost INSERT in SEC-01 part 2 (20261023150000) and UPDATE in
+  // DB-05 (20261025100000), which took DELETE with it.
+  registrations: { anon: ['SELECT'], authenticated: ['SELECT'], service_role: ALL },
   professions: LOOKUP,
   positions: LOOKUP,
   degrees: LOOKUP,

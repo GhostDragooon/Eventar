@@ -71,4 +71,8 @@ HELD_INV=$(q "select coalesce(string_agg(p.priv, ', '), '') from (values ('INSER
 HELD_EVDEL=$(q "select coalesce(string_agg(r.role, ', '), '') from (values ('anon'),('authenticated')) r(role)
  where has_table_privilege(r.role, 'public.events', 'DELETE')")
 [ -z "$HELD_EVDEL" ] || { echo "API roles hold DELETE on events: $HELD_EVDEL"; exit 1; }
+# 6) DB-05 (20261025100000): no API role updates or deletes registrations directly (the roster edit and check-in are definers)
+HELD_REGUP=$(q "select coalesce(string_agg(r.role, ', '), '') from (values ('anon'),('authenticated')) r(role)
+ where has_any_column_privilege(r.role, 'public.registrations', 'UPDATE') or has_table_privilege(r.role, 'public.registrations', 'DELETE')")
+[ -z "$HELD_REGUP" ] || { echo "API roles hold UPDATE or DELETE on registrations: $HELD_REGUP"; exit 1; }
 echo "REPLAY + TAMPER GATE: PASS"

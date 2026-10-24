@@ -12,10 +12,11 @@
 // SEC-01 (20261023140000, 20261023150000): anon and authenticated no longer hold INSERT on registrations at all,
 // so a direct POST is refused by the grant before the trigger runs. The trigger is defence in depth now; its
 // INSERT-side tests grant the privilege back inside a rolled-back transaction (helpers/insertAsRole.ts) so they
-// still prove the trigger and not the grant.
+// still prove the trigger and not the grant. DB-05 (20261025100000) did the same to UPDATE: the UPDATE-side tests
+// grant the privilege back, and add an allow-all policy, inside a rolled-back transaction (updateAsRoleWithGrant).
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { insertAsRoleWithGrant } from '../helpers/insertAsRole';
+import { insertAsRoleWithGrant, updateAsRoleWithGrant } from '../helpers/insertAsRole';
 import {
   admin, createTestUser, deleteTestUser, sqlSuperuser, type TestUser,
 } from '../helpers/clients';
@@ -149,43 +150,30 @@ describe.skipIf(!process.env.RLS_TESTS)('registrations link-columns immutability
   // UPDATE-side guard: registrations_link_columns_immutable_from_client_trg
   // ---------------------------------------------------------------------------
 
-  it('authenticated organiser UPDATE that changes profile_snapshot is blocked (42501)', async () => {
-    const { error } = await owner.client
-      .from('registrations')
-      .update({ profile_snapshot: { forged: 'by organiser' } })
-      .eq('id', linkedRegId);
-    expect(error).not.toBeNull();
-    expect(error!.code).toBe('42501');
+  // The staff member's JWT email: the registration is visible to the UPDATE only through the organisation SELECT policy.
+  const asOwner = () => ({ role: 'authenticated', email: owner.email });
+
+  it.each([
+    ['profile_snapshot', { profile_snapshot: { forged: 'by organiser' } }, /profile_snapshot is written only/i],
+    ['user_id', () => ({ user_id: owner.id }), /registrations\.user_id is written only/i],
+    ['source', { source: 'walk_in' }, /registrations\.source is set at insert time only/i],
+  ] as const)('authenticated UPDATE that changes %s is blocked by the trigger (42501)', async (_col, set, message) => {
+    const r = await updateAsRoleWithGrant('authenticated', 'registrations', linkedRegId, typeof set === 'function' ? set() : set, asOwner());
+    expect(r.ok).toBe(false);
+    expect(r.ok === false && r.code).toBe('42501');
+    expect(r.ok === false && r.message).toMatch(message); // the trigger, not the grant or RLS
   });
 
-  it('authenticated organiser UPDATE that changes user_id is blocked (42501)', async () => {
-    const { error } = await owner.client
-      .from('registrations')
-      .update({ user_id: owner.id })
-      .eq('id', linkedRegId);
-    expect(error).not.toBeNull();
-    expect(error!.code).toBe('42501');
+  it('authenticated UPDATE that changes an unrelated column passes the trigger', async () => {
+    // Sanity: the trigger only blocks user_id / profile_snapshot / source, so it does not over-block.
+    const r = await updateAsRoleWithGrant('authenticated', 'registrations', linkedRegId, { full_name: 'Renamed in a rolled-back probe' }, asOwner());
+    expect(r).toEqual({ ok: true, rows: 1 });
   });
 
-  it('authenticated organiser UPDATE that changes source is blocked (42501)', async () => {
-    const { error } = await owner.client
-      .from('registrations')
-      .update({ source: 'walk_in' })
-      .eq('id', linkedRegId);
-    expect(error).not.toBeNull();
-    expect(error!.code).toBe('42501');
-  });
-
-  it('authenticated organiser UPDATE that changes an unrelated column succeeds', async () => {
-    // Sanity: the trigger only blocks user_id / profile_snapshot / source.
-    // status='attended' is a legitimate organiser update path.
-    const { error } = await owner.client
-      .from('registrations')
-      .update({ status: 'attended' })
-      .eq('id', linkedRegId);
-    expect(error).toBeNull();
-    // Restore for later tests.
-    await admin.from('registrations').update({ status: 'registered' }).eq('id', linkedRegId);
+  it('the direct UPDATE itself is closed: a signed-in organiser PATCH is refused by the grant (DB-05)', async () => {
+    const { error } = await owner.client.from('registrations').update({ status: 'attended' }).eq('id', linkedRegId);
+    expect(error?.code).toBe('42501');
+    expect(error?.message ?? '').toMatch(/permission denied for table registrations/i);
   });
 
   it('service_role UPDATE that changes profile_snapshot succeeds (Server Action / definer path)', async () => {

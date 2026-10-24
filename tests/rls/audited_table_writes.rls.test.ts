@@ -897,4 +897,20 @@ describe.skipIf(!process.env.RLS_TESTS)('audited-table write guard (service_role
       }
     }, 60_000);
   });
+
+  // DB-05 (20261025100000): registrations were the last audited-mutation table an organisation member could rewrite
+  // directly (status, check_in_at, name, email, code). The roster edit is update_registration_contact; check-in is
+  // mark_attended / self_check_in. The behavioural matrix is registration_contact_edit.rls.test.ts.
+  describe('registrations — no API role UPDATEs or DELETEs a row (DB-05)', () => {
+    it('anon and authenticated hold no UPDATE (table or column) and no DELETE on registrations; service_role keeps both', async () => {
+      const [row] = await sqlSuperuserQuery<{ anon: boolean; auth: boolean; svc: boolean }>(
+        `select has_any_column_privilege('anon', 'public.registrations', 'UPDATE') or has_table_privilege('anon', 'public.registrations', 'DELETE') as anon,
+                has_any_column_privilege('authenticated', 'public.registrations', 'UPDATE') or has_table_privilege('authenticated', 'public.registrations', 'DELETE') as auth,
+                has_table_privilege('service_role', 'public.registrations', 'UPDATE') and has_table_privilege('service_role', 'public.registrations', 'DELETE') as svc`,
+      );
+      expect(row.anon, 'anon holds UPDATE or DELETE on registrations | Fix in a NEW migration: revoke update, delete on public.registrations from anon, authenticated').toBe(false);
+      expect(row.auth, 'authenticated holds UPDATE or DELETE on registrations | Fix in a NEW migration: revoke update, delete on public.registrations from anon, authenticated').toBe(false);
+      expect(row.svc, 'service_role must keep UPDATE (cancel, claim, scripts, teardown)').toBe(true);
+    }, 30_000);
+  });
 });
