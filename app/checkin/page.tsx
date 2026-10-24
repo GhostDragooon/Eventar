@@ -29,6 +29,11 @@ export default async function CheckinIndexPage() {
   }
 
   const supabase = await supabaseServer();
+  // The upcoming/live cut is in the query (end_time >= now, an instant): a limit ahead of the JavaScript filter below
+  // returned only past rows once an organisation had 100+ past published events, and the picker said "No open events"
+  // while events were live. Past the cap the soonest 100 are kept (ascending start, id as tie-break).
+  // eslint-disable-next-line react-hooks/purity
+  const nowMs = Date.now();
   // Both errors are thrown, not swallowed (rule 12). A discarded events error
   // rendered "No open events" — an empty state indistinguishable from a failed
   // load, on the screen an operator opens to find the door they are running. A
@@ -41,12 +46,12 @@ export default async function CheckinIndexPage() {
   )
     .is('deleted_at', null)
     .eq('status', 'published')
+    .gte('end_time', new Date(nowMs).toISOString())
     .order('start_time', { ascending: true })
+    .order('id', { ascending: true })
     .limit(100);
   if (eventsErr) throw eventsErr;
 
-  // eslint-disable-next-line react-hooks/purity
-  const nowMs = Date.now();
   const prelim = (events ?? [])
     .map((e) => ({ ...e, lifecycle: computeLifecycle(e as EventLifecycleRow, nowMs) }))
     .filter((e) => e.lifecycle === 'live' || e.lifecycle === 'upcoming' || e.lifecycle === 'registering');

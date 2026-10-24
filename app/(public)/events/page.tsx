@@ -52,6 +52,7 @@ export default async function PublicEventsPage() {
     .is('deleted_at', null)
     .gte('end_time', new Date(nowMs).toISOString())
     .order('start_time', { ascending: true })
+    .order('id', { ascending: true })
     .limit(100);
   if (eventsErr) throw eventsErr;
 

@@ -2,7 +2,7 @@
 // through supabaseServer()/supabaseAdmin() and decide with canManageEvent().
 //
 // Unlike the "every method returns an empty chain" fakes used where a test only
-// needs props to exist, this one APPLIES eq/in/is filters and PROJECTS the select
+// needs props to exist, this one APPLIES eq/in/is/gte filters and PROJECTS the select
 // list. That lets a test state what a given staff member's query would return, and
 // it catches the gate that reads a column the select forgot to ask for
 // (canManageEvent sees `undefined`, and every owner is redirected).
@@ -51,6 +51,11 @@ export function fakeSupabase(tables: Tables) {
         },
         in(col: string, vals: unknown[]) {
           rows = rows.filter((r) => vals.includes(r[col]));
+          return q;
+        },
+        // Timestamps only (ISO strings): the pages use it for "end_time >= now".
+        gte(col: string, val: string) {
+          rows = rows.filter((r) => Date.parse(r[col] as string) >= Date.parse(val));
           return q;
         },
         is(col: string, val: unknown) {

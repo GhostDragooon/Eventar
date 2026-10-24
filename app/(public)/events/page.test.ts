@@ -13,20 +13,26 @@ vi.mock('@/lib/supabase/server', () => ({
     auth: { getUser: async () => ({ data: { user: null }, error: null }) },
     from: () => {
       const filters: Array<(r: Row) => boolean> = [];
-      let sortBy = '';
-      let ascending = true;
+      const sorts: Array<{ col: string; ascending: boolean }> = [];
       let max = Infinity;
       const ms = (v: unknown) => Date.parse(v as string);
+      const key = (r: Row, c: string) => (c.endsWith('_time') ? ms(r[c]) : (r[c] as string));
       const q = {
         select: () => q,
         eq: (c: string, v: unknown) => (filters.push((r) => r[c] === v), q),
         is: (c: string, v: unknown) => (filters.push((r) => r[c] === v), q),
         gte: (c: string, v: string) => (filters.push((r) => ms(r[c]) >= ms(v)), q),
-        order: (c: string, o: { ascending: boolean }) => ((sortBy = c), (ascending = o.ascending), q),
+        order: (c: string, o?: { ascending: boolean }) => (sorts.push({ col: c, ascending: o?.ascending ?? true }), q),
         limit: (n: number) => ((max = n), q),
         then: (resolve: (v: { data: Row[]; error: null }) => unknown) => {
           const out = state.rows.filter((r) => filters.every((f) => f(r)));
-          if (sortBy) out.sort((a, b) => (ms(a[sortBy]) - ms(b[sortBy])) * (ascending ? 1 : -1));
+          out.sort((a, b) => {
+            for (const { col, ascending } of sorts) {
+              const [x, y] = [key(a, col), key(b, col)];
+              if (x !== y) return (x < y ? -1 : 1) * (ascending ? 1 : -1);
+            }
+            return 0;
+          });
           return resolve({ data: out.slice(0, max), error: null });
         },
       };
@@ -111,6 +117,36 @@ describe('public events listing', () => {
       ...Array.from({ length: 120 }, (_, i) => past(i)),
     ];
     expect(await listed()).toEqual(['Ends right now', 'Started, still running']);
+  });
+
+  it('events that ended a few days ago do not use up the 100 slots either', async () => {
+    // A lower bound looser than "now" (say 30 days back) lets 110 recent past events fill the cap.
+    state.rows = [
+      ...Array.from({ length: 110 }, (_, i) =>
+        event({ title: `Recent ${i}`, start: NOW.getTime() - 3 * DAY + i * 60_000, end: NOW.getTime() - 2 * DAY })),
+      ...Array.from({ length: 3 }, (_, i) => upcoming(i)),
+    ];
+    expect(await listed()).toEqual(['Upcoming 0', 'Upcoming 1', 'Upcoming 2']);
+  });
+
+  it('upcoming drafts do not use up the 100 slots (organisers can read drafts through RLS on this page)', async () => {
+    state.rows = [
+      ...Array.from({ length: 105 }, (_, i) => ({ ...upcoming(i), title: `Draft ${i}`, status: 'draft' })),
+      ...Array.from({ length: 3 }, (_, i) => event({ title: `Published ${i}`, start: NOW.getTime() + (200 + i) * DAY, end: NOW.getTime() + (200 + i) * DAY + HOUR })),
+    ];
+    expect(await listed()).toEqual(['Published 0', 'Published 1', 'Published 2']);
+  });
+
+  it('events that start at the same moment are cut the same way every time (id tie-break)', async () => {
+    const start = NOW.getTime() + DAY;
+    state.rows = Array.from({ length: 105 }, (_, i) => event({ title: `Same ${String(i).padStart(3, '0')}`, start, end: start + HOUR }));
+    state.rows.reverse();
+    const idsByTitle = new Map(state.rows.map((r) => [r.title as string, r.id as string]));
+    const kept = await listed();
+    const expected = [...state.rows].sort((a, b) => ((a.id as string) < (b.id as string) ? -1 : 1)).slice(0, 100).map((r) => r.title as string);
+    expect(kept).toHaveLength(100);
+    expect([...kept].sort()).toEqual([...expected].sort());
+    expect(idsByTitle.size).toBe(105);
   });
 
   it('still hides drafts and soft-deleted events', async () => {
