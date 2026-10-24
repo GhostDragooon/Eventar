@@ -57,7 +57,8 @@ export type CpdBodyOption = { id: string; full_name: string; short_name: string 
 
 // `eventId` rides along only when the event WAS saved but something after it failed
 // (its accreditation); the form then links to it instead of stranding the organiser.
-type SubmitResult = { ok: true } | { error: string; eventId?: string };
+// `blockIds` (edit mode) are the saved agenda blocks' ids in the order they were sent.
+type SubmitResult = { ok: true; blockIds?: string[] } | { error: string; eventId?: string };
 
 /**
  * Pre-fill shape the edit page sends in. Mirrors the event row's columns +
@@ -250,6 +251,12 @@ export default function NewEventForm(props: Props) {
   const [blocks, setBlocks] = useState<BlockDraft[]>(
     () => (props.mode === 'edit' ? initialBlocksFrom(props.initialBlocks) : []),
   );
+  // Database ids of the saved agenda blocks, by the block's in-form localId. A block loaded from the page has
+  // localId === id; one added in this session gets its id from the save result. Sent back as `id` so the next save
+  // updates the row instead of inserting a copy. Kept apart from `blocks` so a write-back cannot flip the dirty check.
+  const [savedBlockIds, setSavedBlockIds] = useState<Record<string, string>>(
+    () => (props.mode === 'edit' ? Object.fromEntries(props.initialBlocks.map((b) => [b.id, b.id])) : {}),
+  );
   const [hostedBy, setHostedBy] = useState<PartnerDraft[]>(
     () => initialPartnersFrom(initialEvent?.hosted_by),
   );
@@ -439,6 +446,7 @@ export default function NewEventForm(props: Props) {
       checkin_modes: { staff: true, self_serve: selfServe },
     };
     const blocksPayload = blocks.map((b, i) => ({
+      id: savedBlockIds[b.localId],
       start_time: new Date(`${datetime.date}T${b.start}:00`).toISOString(),
       end_time:   new Date(`${datetime.date}T${b.end}:00`).toISOString(),
       kind: b.kind,
@@ -474,6 +482,7 @@ export default function NewEventForm(props: Props) {
     const previewUrl = props.mode === 'edit' ? `/events/${props.eventId}` : null;
     const openPreview = nextIntent === 'preview';
     const submittedSnapshot = snapshot;
+    const submittedLocalIds = blocks.map((b) => b.localId);
 
     start(async () => {
       const res = await props.submit(payload);
@@ -489,6 +498,11 @@ export default function NewEventForm(props: Props) {
       // already revalidated /events/[id]/edit), so the form re-mounts with the
       // saved data as its initial values.
       if (props.mode === 'edit') {
+        // The saved ids come back in the order the blocks were sent: keep them for the next save.
+        const ids = res?.blockIds;
+        if (ids?.length === submittedLocalIds.length) {
+          setSavedBlockIds(Object.fromEntries(submittedLocalIds.map((localId, i) => [localId, ids[i]!])));
+        }
         // Save & Preview path: open the public event page in a new tab AFTER
         // the save resolves ok. Use noopener,noreferrer so the popup can't
         // navigate this tab back (window.opener tampering surface) and the

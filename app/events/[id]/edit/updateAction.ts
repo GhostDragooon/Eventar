@@ -38,11 +38,31 @@ function blockFitsEnvelope(block: BlockInput, event: { start_time: string; end_t
       && new Date(block.end_time)   <= new Date(event.end_time);
 }
 
-type UpdateResult = { ok: true } | { error: string };
+// `blockIds` are the saved agenda blocks' ids in payload order, so the form can send them back on its next save.
+type UpdateResult = { ok: true; blockIds: string[] } | { error: string };
+
+const NOT_A_DRAFT = 'This event is no longer a draft, so its details cannot be edited yet. Your changes were not saved.';
+const SURVEY_ANSWERS_PREFIX = 'block_has_survey_answers: ';
+
+// The two refusals update_event_with_blocks raises on purpose (SQLSTATE 22023), as sentences an organiser can act on.
+// Anything else keeps the database's own message.
+function rpcErrorMessage(message: string): string {
+  if (message.startsWith('event_not_draft: ')) return NOT_A_DRAFT;
+  // A second tab removed a block this tab still holds: nothing was saved.
+  if (/^update_event_with_blocks: block \S+ is not part of event /.test(message)) {
+    return 'The agenda changed in another tab or window, so your changes were not saved. Reload this page and try again.';
+  }
+  if (message.startsWith(SURVEY_ANSWERS_PREFIX)) {
+    return `The block "${message.slice(SURVEY_ANSWERS_PREFIX.length)}" has survey answers, so it cannot be removed. Nothing was saved.`;
+  }
+  return message;
+}
 
 /**
- * Full-replace update of an event + its agenda blocks, atomic via the
- * update_event_with_blocks RPC.
+ * Update of an event + its agenda blocks, atomic via the update_event_with_blocks
+ * RPC: the event row is replaced, and the blocks are upserted by id (a block with
+ * an id is updated, one without is inserted, one left out is removed; a block a
+ * survey answer points at cannot be removed).
  *
  * Three-layer auth: middleware (proxy.ts) → requireStaff() → RLS. The RPC is
  * security INVOKER and called through the user-scoped supabaseServer client,
@@ -51,9 +71,9 @@ type UpdateResult = { ok: true } | { error: string };
  * surfacing the rpc() error below already satisfies the Q18 silent-fail check
  * — no extra zero-row guard is needed.
  *
- * RPC contract (see migration 20260613010000 header): full-replace semantics —
- * absent nullable keys overwrite to NULL, so the complete Zod-parsed payload
- * is always sent. `status` is deliberately never sent: the edit form does not
+ * RPC contract (migrations 20260613010000 and 20261024110000): the event row is
+ * full-replace — absent nullable keys overwrite to NULL, so the complete Zod-parsed
+ * payload is always sent. `status` is deliberately never sent: the edit form does not
  * manage lifecycle, and the RPC keeps the current value when the key is absent.
  *
  * Timezone is derived server-side from the submitted coordinates via
@@ -71,8 +91,9 @@ export async function updateEvent(
     return { error: 'Invalid event id.' };
   }
 
-  // Explicit in-code organisation gate: any active staff of the event's organisation may edit a draft, the
-  // platform operator any organisation's (the RPC checks the same organisation, not the creator). The RPC's own
+  // Explicit in-code organisation gate: any active staff of the event's organisation may edit a draft (the RPC checks
+  // the same organisation, not the creator). The platform operator passes THIS gate for any organisation, but the RPC
+  // refuses an operator from another organisation (no UPDATE policy lets them write; a clean 42501). The RPC's own
   // check covers JWT sessions but is skipped for the service-role executor (review mode / session-less
   // contexts), so this check is the authorization there — admin-after-auth pattern, same as 67d13fd.
   {
@@ -92,7 +113,7 @@ export async function updateEvent(
     // with no audit row. Checked after the organisation gate so a stranger learns nothing about the status.
     // Lifts with the audited post-publish edit (P9b); update_event_with_blocks takes the same rule in DB-04.
     if (row.status !== 'draft') {
-      return { error: 'This event is no longer a draft, so its details cannot be edited yet. Your changes were not saved.' };
+      return { error: NOT_A_DRAFT };
     }
   }
 
@@ -102,7 +123,7 @@ export async function updateEvent(
   }
 
   // Deliberate delta vs createEvent (which coerces non-array blocks to []):
-  // under full-replace semantics an empty array DELETES every agenda block,
+  // an empty array removes every agenda block (the ones a survey answer points at refuse the save),
   // so silently coercing a malformed payload would be silent data loss
   // (rule 12). A real "no blocks" submission is an actual [] from the form.
   if (!Array.isArray(input.blocks)) {
@@ -130,7 +151,7 @@ export async function updateEvent(
 
   // Non-owner / not-visible events make the RPC RAISE; supabase surfaces that
   // here. Structured return, same shape as createEvent — never silent success.
-  if (error) return { error: error.message };
+  if (error) return { error: rpcErrorMessage(error.message) };
   if (!data || typeof data !== 'string') return { error: 'no id returned' };
 
   revalidatePath(`/events/${eventId}`);
@@ -138,5 +159,17 @@ export async function updateEvent(
   revalidatePath(`/events/${eventId}/details`);
   // Dashboard lists title/dates — same convention as publishEvent/createEvent.
   revalidatePath('/dashboard');
-  return { ok: true };
+
+  // The RPC returns the event id, not the block ids. display_order is the payload index, so reading the blocks back
+  // in that order gives index i of the result = payload block i. A count that differs means the mapping would be
+  // wrong, so refuse it: the save itself went through, which the message says.
+  const { data: saved, error: readErr } = await supabase
+    .from('agenda_blocks')
+    .select('id')
+    .eq('event_id', idParse.data)
+    .order('display_order', { ascending: true });
+  if (readErr || !saved || saved.length !== blockParse.data.length) {
+    return { error: 'Your changes were saved, but the agenda could not be read back. Reload this page before saving again.' };
+  }
+  return { ok: true, blockIds: saved.map(r => r.id) };
 }

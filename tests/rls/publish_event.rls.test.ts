@@ -369,14 +369,16 @@ describe.skipIf(!process.env.RLS_TESTS)('publish_event RLS + audit', () => {
     eventIds.push(data!.id as string);
   });
 
-  it('update_event_with_blocks edits the event but cannot change its lifecycle', async () => {
+  // DB-04 (2026-10-24): this used to assert that an edit LANDS on a published event. Until the audited post-publish
+  // edit (P9b) exists a published event is not edited (Ivan's ruling, UPD-01), so the RPC refuses it, and a
+  // `status` key in the payload still cannot demote it. The full matrix is in event_agenda_integrity.rls.test.ts.
+  it('update_event_with_blocks refuses a published event (event_not_draft) and cannot change its lifecycle', async () => {
     const eventId = await makeEventFixture('draft');
     const { error: publishErr } = await owner.client.rpc('publish_event', { p_event_id: eventId });
     expect(publishErr).toBeNull();
 
-    // A `status` key in the payload used to reach `status = coalesce(...)` in the
-    // RPC's SET list. Sending 'draft' here would have silently DEMOTED a
-    // published event with no audit trace; it is now ignored.
+    // A `status` key in the payload used to reach `status = coalesce(...)` in the RPC's SET list. Sending 'draft'
+    // here would have silently DEMOTED a published event with no audit trace.
     const { error } = await owner.client.rpc('update_event_with_blocks', {
       event_id_input: eventId,
       event_input: {
@@ -393,15 +395,16 @@ describe.skipIf(!process.env.RLS_TESTS)('publish_event RLS + audit', () => {
       },
       blocks_input: [],
     });
-    expect(error).toBeNull();
+    expect(error?.code).toBe('22023');
+    expect(error?.message).toMatch(/^event_not_draft: /);
 
     const { data: event } = await admin
       .from('events')
       .select('status, published_at, venue_name')
       .eq('id', eventId)
       .single();
-    expect(event?.venue_name).toBe('Edited Venue'); // the edit itself landed
-    expect(event?.status).toBe('published');        // lifecycle untouched
+    expect(event?.venue_name).not.toBe('Edited Venue'); // the edit did not land
+    expect(event?.status).toBe('published');            // lifecycle untouched
     expect(event?.published_at).not.toBeNull();
   });
 

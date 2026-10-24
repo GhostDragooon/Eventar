@@ -235,9 +235,11 @@ describe.skipIf(!process.env.RLS_TESTS)('freeze_cpd_config_if_credited — event
   });
 
   it('still allows that organiser to update a non-CPD column (no over-revoke)', async () => {
+    // registration_close_at, not the title: this fixture is published, and since DB-04 a signed-in user cannot edit a
+    // published event's details (event_not_draft). Closing registration is the one column that stays editable.
     const { error } = await eventOwner.client
       .from('events')
-      .update({ title: `freeze-trigger UNCREDITED fixture (owner touch) — DELETE ME ${ts}` })
+      .update({ registration_close_at: new Date(Date.now() - 60_000).toISOString() })
       .eq('id', uncreditedEventId);
     expect(error).toBeNull();
   });

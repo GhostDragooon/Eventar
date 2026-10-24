@@ -50,6 +50,9 @@ const topicSchema = z.object({
 });
 
 export const blockInputSchema = z.object({
+  // Present on a block that already exists: update_event_with_blocks updates that row instead of replacing it,
+  // so its id (and any survey answer pointing at it) survives a save. Absent = a new block.
+  id: z.string().uuid().optional(),
   start_time: z.string().datetime(),
   end_time: z.string().datetime(),
   kind: z.enum(KINDS),

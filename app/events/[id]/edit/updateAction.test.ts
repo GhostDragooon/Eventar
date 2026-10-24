@@ -19,20 +19,42 @@ vi.mock('next/cache', () => ({
 }));
 
 // ---- mock supabase ----------------------------------------------------------
-// updateEvent talks to the DB exclusively through the update_event_with_blocks
-// RPC, so the mock only needs .rpc(). Every call is recorded for assertions.
+// updateEvent writes through the update_event_with_blocks RPC, then reads the saved block ids back from
+// agenda_blocks. Every call is recorded for assertions.
 let rpcCalls: Array<{ fn: string; params: Record<string, unknown> }> = [];
 let mockRpcResult: { data: unknown; error: { message: string } | null } = {
   data: null,
   error: null,
 };
 
+// agenda_blocks as the RPC leaves it: a block sent with an id keeps it, a new one gets `new-<index>`, display_order
+// is the payload index. The physical order is reversed on purpose, so only an ORDER BY display_order puts the
+// read-back in payload order. `mockReadBack` replaces the whole result (a failed or short read).
+let tableRows: Array<{ id: string; display_order: number }> = [];
+let mockReadBack: { data: Array<{ id: string }> | null; error: { message: string } | null } | null = null;
+let readBackCalls: Array<{ table: string; eventId: string }> = [];
+
 vi.mock('@/lib/supabase/server', () => ({
   supabaseServer: vi.fn(async () => ({
     rpc: async (fn: string, params: Record<string, unknown>) => {
       rpcCalls.push({ fn, params });
+      const sent = (params.blocks_input ?? []) as Array<{ id?: string }>;
+      tableRows = sent.map((b, i) => ({ id: b.id ?? `new-${i}`, display_order: i })).reverse();
       return mockRpcResult;
     },
+    from: (table: string) => ({
+      select: (_cols: string) => ({
+        eq: (_col: string, eventId: string) => ({
+          order: async (col: string, opts: { ascending: boolean }) => {
+            readBackCalls.push({ table, eventId });
+            if (mockReadBack) return mockReadBack;
+            const dir = opts.ascending ? 1 : -1;
+            const rows = [...tableRows].sort((a, b) => (a[col as 'display_order'] - b[col as 'display_order']) * dir);
+            return { data: rows.map(r => ({ id: r.id })), error: null };
+          },
+        }),
+      }),
+    }),
   })),
 }));
 
@@ -103,6 +125,9 @@ beforeEach(() => {
   requireStaffMock.mockClear();
   revalidatePathMock.mockClear();
   rpcCalls = [];
+  tableRows = [];
+  mockReadBack = null;
+  readBackCalls = [];
   mockRpcResult = { data: eventId, error: null };
 });
 
@@ -132,14 +157,14 @@ describe('updateEvent', () => {
     expect(rpcCalls).toHaveLength(0);
   });
 
-  // The action lets the operator through; the live RPC then refuses an eventar_staff caller from another
-  // organisation ("not in the same organisation", backtest F3, pre-existing, DB-04's to settle). This test
-  // pins the action's own gate only: the RPC is mocked.
+  // The action lets the operator through; the live RPC refuses an eventar_staff caller from another organisation
+  // with a clean 42501 (proved in tests/rls/event_agenda_integrity.rls.test.ts). This test pins the action's own
+  // gate only: the RPC is mocked.
   it("lets the platform operator past the action's own gate on another organisation's draft", async () => {
     mockEvent = { organisation_id: 'org-2', status: 'draft', deleted_at: null };
     requireStaffMock.mockResolvedValueOnce({ id: 's-9', email: 'op@x.com', role: 'eventar_staff', organisation_id: 'org-other' });
     const result = await updateEvent(eventId, { event: validEvent, blocks: [validBlock] });
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, blockIds: ['new-0'] });
     expect(rpcCalls).toHaveLength(1);
   });
 
@@ -216,7 +241,7 @@ describe('updateEvent', () => {
       event: validEvent,
       blocks: [validBlock],
     });
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, blockIds: ['new-0'] });
     expect(rpcCalls).toHaveLength(1);
     expect(rpcCalls[0].fn).toBe('update_event_with_blocks');
 
@@ -267,7 +292,7 @@ describe('updateEvent', () => {
       event: { ...validEvent, checkin_modes: { staff: true, self_serve: true } },
       blocks: [],
     });
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, blockIds: [] });
     const eventInput = rpcCalls[0].params.event_input as Record<string, unknown>;
     expect(eventInput.checkin_modes).toEqual({ staff: true, self_serve: true });
   });
@@ -277,7 +302,7 @@ describe('updateEvent', () => {
     // this RPC is full-replace: a missing key would land as SQL NULL on a NOT
     // NULL column. The RPC coalesces to the current value as a second guard.
     const result = await updateEvent(eventId, { event: validEvent, blocks: [] });
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, blockIds: [] });
     const eventInput = rpcCalls[0].params.event_input as Record<string, unknown>;
     expect(eventInput.checkin_modes).toEqual({ staff: true, self_serve: false });
   });
@@ -287,13 +312,13 @@ describe('updateEvent', () => {
       event: { ...validEvent, checkin_modes: { staff: true, self_serve: 'yes' } },
       blocks: [],
     });
-    expect(result).not.toEqual({ ok: true });
+    expect(result).toHaveProperty('error');
     expect(rpcCalls).toHaveLength(0);
   });
 
   it('sends an empty array (never null) when the event has no blocks', async () => {
     const result = await updateEvent(eventId, { event: validEvent, blocks: [] });
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, blockIds: [] });
     expect(rpcCalls).toHaveLength(1);
     expect(rpcCalls[0].params.blocks_input).toEqual([]);
   });
@@ -326,12 +351,75 @@ describe('updateEvent', () => {
       event: validEvent,
       blocks: [validBlock],
     });
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, blockIds: ['new-0'] });
     expect(revalidatePathMock).toHaveBeenCalledWith(`/events/${eventId}`);
     expect(revalidatePathMock).toHaveBeenCalledWith(`/events/${eventId}/edit`);
     expect(revalidatePathMock).toHaveBeenCalledWith(`/events/${eventId}/details`);
     expect(revalidatePathMock).toHaveBeenCalledWith('/dashboard');
     expect(revalidatePathMock).toHaveBeenCalledTimes(4);
+  });
+
+  describe('agenda block ids (DB-04)', () => {
+    const idA = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    const idB = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+    const blockA = { ...validBlock, title: 'A', id: idA };
+    const blockB = { ...validBlock, title: 'B', id: idB };
+
+    it('sends the id of an existing block to the RPC and none for a new one', async () => {
+      await updateEvent(eventId, { event: validEvent, blocks: [blockA, validBlock] });
+      const sent = rpcCalls[0].params.blocks_input as Array<{ id?: string }>;
+      expect(sent[0].id).toBe(idA);
+      expect(sent[1].id).toBeUndefined();
+    });
+
+    it('returns the saved block ids in payload order, reordered and new blocks included', async () => {
+      const result = await updateEvent(eventId, { event: validEvent, blocks: [blockB, blockA, validBlock] });
+      expect(result).toEqual({ ok: true, blockIds: [idB, idA, 'new-2'] });
+      expect(readBackCalls).toEqual([{ table: 'agenda_blocks', eventId }]);
+    });
+
+    it('rejects a block id that is not a uuid without calling the RPC', async () => {
+      const result = await updateEvent(eventId, { event: validEvent, blocks: [{ ...validBlock, id: 'b1' }] });
+      expect(result).toHaveProperty('error');
+      expect(rpcCalls).toHaveLength(0);
+    });
+
+    it('refuses to guess the mapping when the read-back count differs, and says the save went through', async () => {
+      mockReadBack = { data: [{ id: idA }], error: null };
+      const result = await updateEvent(eventId, { event: validEvent, blocks: [blockA, blockB] });
+      expect(result).toEqual({ error: expect.stringMatching(/saved.*Reload/i) });
+      expect(revalidatePathMock).toHaveBeenCalledWith(`/events/${eventId}/edit`);
+    });
+
+    it('returns an error when the read-back fails', async () => {
+      mockReadBack = { data: null, error: { message: 'boom' } };
+      const result = await updateEvent(eventId, { event: validEvent, blocks: [blockA] });
+      expect(result).toEqual({ error: expect.stringMatching(/saved.*Reload/i) });
+    });
+
+    it('turns the RPC refusal for a non-draft event into the same sentence as the action gate', async () => {
+      mockRpcResult = { data: null, error: { message: `event_not_draft: ${eventId} is published` } };
+      const result = await updateEvent(eventId, { event: validEvent, blocks: [blockA] });
+      expect(result).toEqual({
+        error: 'This event is no longer a draft, so its details cannot be edited yet. Your changes were not saved.',
+      });
+    });
+
+    it('says the agenda changed elsewhere when the RPC no longer knows a block id (a second tab removed it)', async () => {
+      mockRpcResult = { data: null, error: { message: 'update_event_with_blocks: block 0b1c2d3e-0000-4000-8000-000000000001 is not part of event 5a6b7c8d-0000-4000-8000-000000000002' } };
+      const result = await updateEvent(eventId, { event: validEvent, blocks: [] });
+      expect(result).toEqual({ error: 'The agenda changed in another tab or window, so your changes were not saved. Reload this page and try again.' });
+      expect(revalidatePathMock).not.toHaveBeenCalled();
+    });
+
+    it('names the block with survey answers when the RPC refuses to remove it', async () => {
+      mockRpcResult = { data: null, error: { message: 'block_has_survey_answers: Opening keynote' } };
+      const result = await updateEvent(eventId, { event: validEvent, blocks: [] });
+      expect(result).toEqual({
+        error: 'The block "Opening keynote" has survey answers, so it cannot be removed. Nothing was saved.',
+      });
+      expect(revalidatePathMock).not.toHaveBeenCalled();
+    });
   });
 
   it('propagates requireStaff rejection before validation or RPC work', async () => {

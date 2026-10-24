@@ -1122,3 +1122,67 @@ describe('NewEventForm: edit mode reports its state to the draft status store', 
     await waitFor(() => expect(screen.queryByTestId('save-confirmation')).toBeNull());
   });
 });
+
+// DB-04: update_event_with_blocks updates a block by its id, so the form must send the ids it knows. A block added
+// in this session only learns its id from the first save; without it, the second save inserted a copy.
+describe('NewEventForm: agenda block ids across saves (edit mode)', () => {
+  type SubmitPayload = Parameters<NonNullable<React.ComponentProps<typeof NewEventForm>['submit']>>[0];
+  type SaveResult = { ok: true; blockIds?: string[] } | { error: string };
+  const secondBlock: InitialBlock = {
+    ...initialBlocks[0]!,
+    id: 'b2',
+    title: 'Closing session',
+    start_time: buildIso(EVENT_DATE, '11:00'),
+    end_time: buildIso(EVENT_DATE, '12:00'),
+  };
+
+  function renderEdit(blocks: InitialBlock[], submit: (p: SubmitPayload) => Promise<SaveResult>) {
+    render(
+      <NewEventForm
+        mode="edit"
+        eventId="11111111-2222-4333-8444-555555555555"
+        initialEvent={initialEvent}
+        initialBlocks={blocks}
+        submit={submit}
+      />,
+    );
+  }
+  function addBreak(what: string) {
+    fireEvent.click(screen.getByRole('button', { name: '+ Break' }));
+    fireEvent.click(screen.getAllByRole('button', { name: /Block start time/ }).at(-1)!);
+    fireEvent.click(screen.getByRole('option', { name: '10:00 AM' }));
+    fireEvent.click(screen.getAllByRole('button', { name: /Block end time/ }).at(-1)!);
+    fireEvent.click(screen.getByRole('option', { name: '10:30 AM' }));
+    fireEvent.change(screen.getByPlaceholderText('Lunch / coffee'), { target: { value: what } });
+  }
+  async function save(calls: number, submit: ReturnType<typeof vi.fn>) {
+    fireEvent.click(await screen.findByRole('button', { name: /save changes/i }));
+    await waitFor(() => expect(submit).toHaveBeenCalledTimes(calls));
+  }
+  const ids = (p: SubmitPayload) => p.blocks.map((b) => b.id);
+
+  it('sends each existing block id, and the id the first save returned for a block added without one', async () => {
+    const submit = vi.fn<(p: SubmitPayload) => Promise<SaveResult>>(async () => ({ ok: true, blockIds: ['b1', 'new-uuid'] }));
+    renderEdit(initialBlocks, submit);
+    addBreak('Coffee');
+
+    await save(1, submit);
+    expect(ids(submit.mock.calls[0]![0])).toEqual(['b1', undefined]);
+
+    await waitFor(() => expect(refreshMock).toHaveBeenCalledTimes(1));
+    await save(2, submit);
+    expect(ids(submit.mock.calls[1]![0])).toEqual(['b1', 'new-uuid']);
+    expect(submit.mock.calls[1]![0].blocks.map((b) => b.title)).toEqual(['Opening session', 'Coffee']);
+  });
+
+  it('keeps each id with its block when a block is removed, not with the position it held', async () => {
+    const submit = vi.fn<(p: SubmitPayload) => Promise<SaveResult>>(async () => ({ ok: true, blockIds: ['b2'] }));
+    renderEdit([initialBlocks[0]!, secondBlock], submit);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Remove' })[0]!);
+
+    await save(1, submit);
+    const sent = submit.mock.calls[0]![0].blocks;
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toMatchObject({ id: 'b2', title: 'Closing session', display_order: 0 });
+  });
+});
