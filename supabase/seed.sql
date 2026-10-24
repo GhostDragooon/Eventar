@@ -106,6 +106,9 @@ grant  update (
   registration_close_at, hosted_by, organized_by, hero_image_url, category,
   format, checkin_modes, registration_open_at
 ) on public.events to authenticated;
+-- SEC-03 (20261024120000_events_authenticated_cannot_delete.sql): no API role hard-deletes an event. A delete is a
+-- soft delete (deleted_at, service_role); the blanket grant above gives DELETE back, so it is re-asserted here.
+revoke delete on public.events from anon, authenticated;
 -- organisation_body_authorisations (migration 20260804000000) — the registry
 -- allow-list deciding which organisation may claim which accrediting body.
 -- Writable ONLY service-role-side until the Stage 10 approval workflow; if the

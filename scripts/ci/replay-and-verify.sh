@@ -67,4 +67,8 @@ HELD_INV=$(q "select coalesce(string_agg(p.priv, ', '), '') from (values ('INSER
  where has_table_privilege('service_role', 'public.invite_tokens', p.priv)")
 [ -z "$HELD_INV" ] || { echo "service_role holds $HELD_INV on invite_tokens"; exit 1; }
 [ "$(q "select has_table_privilege('authenticated', 'public.registrations', 'INSERT')")" = "f" ] || { echo "authenticated holds INSERT on registrations"; exit 1; }
+# 5) SEC-03 (20261024120000): no API role hard-deletes an event
+HELD_EVDEL=$(q "select coalesce(string_agg(r.role, ', '), '') from (values ('anon'),('authenticated')) r(role)
+ where has_table_privilege(r.role, 'public.events', 'DELETE')")
+[ -z "$HELD_EVDEL" ] || { echo "API roles hold DELETE on events: $HELD_EVDEL"; exit 1; }
 echo "REPLAY + TAMPER GATE: PASS"

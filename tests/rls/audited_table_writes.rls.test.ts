@@ -837,4 +837,64 @@ describe.skipIf(!process.env.RLS_TESTS)('audited-table write guard (service_role
       }
     }, 60_000);
   });
+
+  // SEC-03 (20261024120000): the DB-04 backtest hard-deleted a published event as an organiser_member with a plain
+  // DELETE /rest/v1/events: no audit row, and registrations, survey answers and agenda cascaded with it. A delete is a
+  // soft delete run as service_role; no API role needs the grant.
+  describe('events — nobody on the API deletes a row (SEC-03)', () => {
+    it('anon and authenticated hold no DELETE on events; service_role keeps it', async () => {
+      const [row] = await sqlSuperuserQuery<{ anon: boolean; auth: boolean; svc: boolean }>(
+        `select has_table_privilege('anon', 'public.events', 'DELETE') as anon,
+                has_table_privilege('authenticated', 'public.events', 'DELETE') as auth,
+                has_table_privilege('service_role', 'public.events', 'DELETE') as svc`,
+      );
+      expect(row.anon, 'anon holds DELETE on events | Fix in a NEW migration: revoke delete on public.events from anon, authenticated').toBe(false);
+      expect(row.auth, 'authenticated holds DELETE on events | Fix in a NEW migration: revoke delete on public.events from anon, authenticated').toBe(false);
+      expect(row.svc, 'service_role must keep DELETE (cleanup, erasure)').toBe(true);
+    }, 30_000);
+
+    it('a colleague DELETE of a published event is refused by the grant (42501) and the event and its registration survive', async () => {
+      const colleague = await createTestUser('sec03-colleague');
+      let eventId: string | undefined;
+      try {
+        const { data: staff, error: stErr } = await admin
+          .from('staff')
+          .insert({ email: colleague.email, role: 'organiser_member', full_name: 'SEC-03 colleague', organisation_id: DEFAULT_ORG, status: 'active' })
+          .select('id')
+          .single();
+        if (stErr || !staff) throw new Error(`staff fixture: ${stErr?.message}`);
+        const { data: ev, error: evErr } = await admin
+          .from('events')
+          .insert({
+            title: 'SEC-03 fixture — DELETE ME',
+            start_time: new Date(Date.now() + 86_400_000).toISOString(),
+            end_time: new Date(Date.now() + 90_000_000).toISOString(),
+            timezone: 'Asia/Hong_Kong', venue_name: 'V', city: 'HK', country: 'HK', latitude: 22.3, longitude: 114.2,
+            status: 'published', organisation_id: DEFAULT_ORG, created_by: staff.id,
+          })
+          .select('id')
+          .single();
+        if (evErr || !ev) throw new Error(`event fixture: ${evErr?.message}`);
+        eventId = ev.id as string;
+        const { error: regErr } = await admin
+          .from('registrations')
+          .insert({ event_id: eventId, email: `sec03-${Date.now()}@rls-test.invalid`, full_name: 'SEC-03 probe', registration_code: `WK-S3${String(Date.now()).slice(-6)}` });
+        if (regErr) throw new Error(`registration fixture: ${regErr.message}`);
+
+        const del = await colleague.client.from('events').delete().eq('id', eventId).select('id');
+        expect(del.error?.code, 'a colleague hard-deleting a published event must be 42501').toBe(PERMISSION_DENIED);
+        const { data: still } = await admin.from('events').select('id').eq('id', eventId);
+        expect(still).toHaveLength(1);
+        const { data: regs } = await admin.from('registrations').select('id').eq('event_id', eventId);
+        expect(regs).toHaveLength(1);
+      } finally {
+        if (eventId) {
+          await mustDelete(admin.from('registrations').delete().eq('event_id', eventId), 'registrations fixture');
+          await mustDelete(admin.from('events').delete().eq('id', eventId), 'events fixture');
+        }
+        await mustDelete(admin.from('staff').delete().eq('email', colleague.email), 'staff fixture');
+        await deleteTestUser(colleague);
+      }
+    }, 60_000);
+  });
 });
