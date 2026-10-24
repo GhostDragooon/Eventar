@@ -57,5 +57,5 @@ After this card, no `.in()` in app/, lib/ or components/ takes an id list that c
 ## Needs from other cards
 None. data.ts is CX-04's file; the change there is the import swap only.
 Executor: Claude (side session b3b257, asked by the MVP execution coordinator), 2026-10-24.
-Committed:
+Committed: 0959370
 Suggested commit message: fix(export): attendee, licence and practitioner lookups run in batches of 100 ids, so an event with more than about 220 attendees can be exported; a 1000-row read is refused instead of exported short
