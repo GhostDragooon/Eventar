@@ -7,7 +7,7 @@ import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { isValidRegistrationCode, generateRegistrationCode } from '@/lib/registrationCode';
 import { rateLimitBySession } from '@/lib/rateLimit';
-import { computeLifecycle, walkInClosedMessage, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
+import { checkInClosedMessage, computeLifecycle, walkInClosedMessage, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 import {
   awardAttendanceCredit,
   type AwardOutcome,
@@ -220,6 +220,12 @@ export async function markAttended(
       return { error: 'This registration was cancelled — it can’t be checked in. Re-register the attendee first.' };
     case 'unavailable':
       return { error: 'This event isn’t accepting check-ins (it isn’t published, or it was deleted).' };
+    // DB-02: check-in is only open from CHECKIN_OPEN_MINUTES before the start until the end (per occurrence
+    // for a multi-occurrence event); the code IS recognised, so say why it is refused.
+    case 'not_open_yet':
+      return { error: checkInClosedMessage('not_open_yet') };
+    case 'closed':
+      return { error: checkInClosedMessage('closed') };
     case 'no_matching_occurrence':
       // Multi-occurrence events only: no session/day matches this check-in
       // time. Distinct from the default — the code IS recognised.
@@ -277,6 +283,12 @@ export async function walkInRegisterAndCheckIn(input: {
   if (!event || event.deleted_at != null) {
     return { error: 'This event is not available for walk-in registration.' };
   }
+  // Access first (DB-02, the 2026-10-09 finding): the lifecycle answer below tells the caller whether the event
+  // is live, over or not yet open, which another organisation's staff must not learn.
+  if (!canManageEvent(event, staff)) {
+    return { error: 'You do not have access to this event.' };
+  }
+
   // Gate on the DERIVED lifecycle, not the raw status column: pg_cron
   // (Stage 8, deferred) never flips status to 'completed' automatically, so
   // a `status !== 'published'` check alone never catches an event that has
@@ -287,10 +299,6 @@ export async function walkInRegisterAndCheckIn(input: {
   const lifecycle = computeLifecycle(event as EventLifecycleRow, Date.now());
   const closedMessage = walkInClosedMessage(lifecycle);
   if (closedMessage) return { error: closedMessage };
-
-  if (!canManageEvent(event, staff)) {
-    return { error: 'You do not have access to this event.' };
-  }
 
   if (event.max_attendees != null) {
     const { count } = await admin
@@ -370,5 +378,7 @@ export async function walkInRegisterAndCheckIn(input: {
       credit: attended.credit,
     };
   }
-  return attended;
+  // The person IS registered by now (and counts against capacity): say so with the code, so staff do not retry
+  // into "already registered" and can check them in by code once check-in is open (rule 12, DB-02 review F3).
+  return { error: `${fullName} was registered (code ${reg.registration_code}) but not checked in. ${attended.error}` };
 }

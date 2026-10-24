@@ -6,7 +6,7 @@ import { checkDoorSession } from '@/lib/doorSession';
 import { formatInTz } from '@/lib/tz';
 import { isValidRegistrationCode } from '@/lib/registrationCode';
 import { humanizeCameraError } from '@/lib/cameraError';
-import { walkInClosedMessage, type Lifecycle } from '@/lib/lifecycle/eventLifecycle';
+import { checkInGateMessage, computeLifecycle, walkInClosedMessage, type EventLifecycleRow, type Lifecycle } from '@/lib/lifecycle/eventLifecycle';
 import { markAttended, walkInRegisterAndCheckIn } from './actions';
 import { setRegistrationRole, removeRegistrationRole } from '../details/multiBodyActions';
 import { Scoreboard } from './Scoreboard';
@@ -65,7 +65,8 @@ export default function RosterClient({
   eventTimezone,
   eventStartTime,
   eventEndTime,
-  lifecycle,
+  lifecycleRow,
+  serverNowMs,
   initialRoster,
   eligibility,
   eligibilityUnavailable,
@@ -78,7 +79,13 @@ export default function RosterClient({
   eventTimezone: string;
   eventStartTime: string;
   eventEndTime: string;
-  lifecycle: Lifecycle;
+  /** What computeLifecycle needs. The desk derives the lifecycle from the ticking clock below, so check-in opens and closes without a reload (DB-02). */
+  lifecycleRow: EventLifecycleRow;
+  /**
+   * The server's clock at render. The desk's clock is the server's, carried forward by the browser's own elapsed
+   * time, so a tablet whose clock is minutes off never disables controls the server would accept (DB-02 review F2).
+   */
+  serverNowMs: number;
   initialRoster: RosterRow[];
   /** registration_id \u2192 eligibility enum from event_registration_eligibility. */
   eligibility: Record<string, string>;
@@ -102,16 +109,33 @@ export default function RosterClient({
   const [scannerOpen, setScannerOpen] = useState(false);
   const [walkInOpen, setWalkInOpen] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
-  const [nowMs, setNowMs] = useState<number>(() => Date.now());
+  // Server time minus this browser's clock, fixed at mount: nowMs below is the server's clock moving forward.
+  const [clockOffsetMs] = useState<number>(() => serverNowMs - Date.now());
+  const [nowMs, setNowMs] = useState<number>(serverNowMs);
   // One shared useTransition would grey out all 400 chips on a 400-person
   // roster while a single toggle round-trips — track pending per row+role.
   const [pendingRoleKeys, setPendingRoleKeys] = useState<Set<string>>(new Set());
   const [, startTransition] = useTransition();
 
   useEffect(() => {
-    const id = setInterval(() => setNowMs(Date.now()), 30_000);
-    return () => clearInterval(id);
-  }, []);
+    const tick = () => setNowMs(Date.now() + clockOffsetMs);
+    const id = setInterval(tick, 30_000);
+    // A tablet woken from sleep (or a throttled background tab) must not wait out the interval.
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') tick();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [clockOffsetMs]);
+
+  // One clock for every control on the desk. mark_attended and self_check_in refuse outside
+  // [start - 60 min, end] (DB-02); computeLifecycle's 'live' is the same window, so the controls here are
+  // disabled with the reason exactly when the server would refuse, and enable when the window opens.
+  const lifecycle = computeLifecycle(lifecycleRow, nowMs);
+  const checkInClosed = checkInGateMessage(lifecycle);
 
   useEffect(() => {
     const client = supabaseBrowser();
@@ -245,6 +269,7 @@ export default function RosterClient({
       />
 
       <ScanAndManual
+        closedMessage={checkInClosed}
         onScanClick={() => setScannerOpen(true)}
         onManualSubmit={(code) => handleMark(code, 'manual')}
       />
@@ -332,6 +357,7 @@ export default function RosterClient({
                     row={r}
                     eligibility={eligibility[r.id]}
                     nowMs={nowMs}
+                    checkInClosed={checkInClosed}
                     eventTimezone={eventTimezone}
                     onMark={() => handleMark(r.registration_code, 'manual')}
                     roles={roleState[r.id] ?? []}
@@ -397,6 +423,7 @@ function RosterRowItem({
   row: r,
   eligibility,
   nowMs,
+  checkInClosed,
   eventTimezone,
   onMark,
   roles,
@@ -406,6 +433,8 @@ function RosterRowItem({
   row: RosterRow;
   eligibility?: string;
   nowMs: number;
+  /** Why check-in is closed right now (DB-02), or null when it is open. */
+  checkInClosed: string | null;
   eventTimezone: string;
   onMark: () => void;
   roles: ('chair' | 'presenter')[];
@@ -487,8 +516,9 @@ function RosterRowItem({
           type="button"
           variant="outline"
           onClick={onMark}
-          disabled={isCancelled}
-          title={isCancelled ? ELIGIBILITY_NOTE.cancelled : undefined}
+          disabled={isCancelled || checkInClosed != null}
+          title={isCancelled ? ELIGIBILITY_NOTE.cancelled : (checkInClosed ?? undefined)}
+          aria-describedby={checkInClosed && !isCancelled ? 'checkin-closed-note' : undefined}
           className="justify-self-start min-h-11 px-md py-sm font-label-md text-label-md text-primary-ink"
         >
           Check in →
@@ -560,7 +590,7 @@ function WalkInDialog({
         </button>
       </div>
       {closedMessage && (
-        <p className="font-body-md text-body-md text-error mb-sm">{closedMessage}</p>
+        <p role="alert" className="font-body-md text-body-md text-error mb-sm">{closedMessage}</p>
       )}
       <form onSubmit={handleSubmit} className="flex flex-col gap-sm">
         <input

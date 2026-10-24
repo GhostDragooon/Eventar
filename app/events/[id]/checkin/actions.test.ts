@@ -138,6 +138,18 @@ describe('markAttended — attendance stays authoritative when credit fails', ()
     expect(awardMock).not.toHaveBeenCalled();
   });
 
+  // DB-02: mark_attended refuses outside the live window with these two results; the desk must say which.
+  it.each([
+    ['not_open_yet', 'Check-in has not opened yet. It opens 60 minutes before the event starts.'],
+    ['closed', 'Check-in is closed. This event has ended.'],
+  ])('maps %s to its own message and awards nothing', async (result, message) => {
+    checkinResult = result;
+    const res = await markAttended('WK-ABC234', 'qr');
+    expect(res).toEqual({ error: message });
+    expect(res).not.toEqual({ error: 'Code not recognised.' });
+    expect(awardMock).not.toHaveBeenCalled();
+  });
+
   it('passes the staff auth user id as actorId, not the staff row id', async () => {
     await markAttended('WK-ABC234', 'qr');
     // credit_ledger.actor_id references public.users(id); staff.id is an

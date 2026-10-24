@@ -230,7 +230,7 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
   });
 
   // ---- 2b. ambiguous multi-occurrence event (C2) ----
-  it('a multi-occurrence event with no occurrence covering now() returns no_matching_occurrence and does not check in', async () => {
+  it('a multi-occurrence event with no occurrence open now returns not_open_yet (DB-02; was no_matching_occurrence) and does not check in', async () => {
     const eventId = await makeEventFixture();
     const regCode = code('SCI002B');
     const regId = await makeRegistrationFixture(eventId, regCode);
@@ -255,7 +255,7 @@ describe.skipIf(!process.env.RLS_TESTS)('self_check_in RLS + audit', () => {
     const { data, error } = await admin.rpc('self_check_in', { p_code: regCode, p_ip: FAKE_IP });
     expect(error).toBeNull();
     const row = Array.isArray(data) ? data[0] : data;
-    expect(row.result).toBe('no_matching_occurrence');
+    expect(row.result).toBe('not_open_yet'); // DB-02: before the next occurrence's 60-minute pre-open
     expect(row.event_id).toBe(eventId);
 
     // Must not guess: no checkin row. Status is untouched (not reverted —

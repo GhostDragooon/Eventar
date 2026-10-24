@@ -5,7 +5,7 @@ import { formatInTz } from '@/lib/tz';
 import { StaffShell } from '@/components/shell/StaffShell';
 import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
 import { LayoutDashboardIcon, CalendarDaysIcon, UserCheckIcon } from 'lucide-react';
-import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
+import type { EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 import { deriveSpeakerNames } from '@/lib/agenda';
 import RosterClient from './RosterClient';
 
@@ -136,9 +136,6 @@ export default async function StaffCheckinPage({
   const speakerNames = deriveSpeakerNames(blocksRes.data ?? []);
   const initialSpeakerCheckins = checkinsRes.data ?? [];
 
-  // eslint-disable-next-line react-hooks/purity
-  const nowMs = Date.now();
-  const lifecycle = computeLifecycle(event as EventLifecycleRow, nowMs);
 
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role }} backHref={`/events/${id}/details`} backLabel="Event">
@@ -178,7 +175,15 @@ export default async function StaffCheckinPage({
         eventTimezone={event.timezone}
         eventStartTime={event.start_time}
         eventEndTime={event.end_time}
-        lifecycle={lifecycle}
+        lifecycleRow={{
+          status: event.status as EventLifecycleRow['status'],
+          start_time: event.start_time,
+          end_time: event.end_time,
+          registration_close_at: event.registration_close_at,
+          registration_open_at: event.registration_open_at,
+        }}
+        // eslint-disable-next-line react-hooks/purity -- the server's clock, handed to the desk so a skewed device clock cannot gate it
+        serverNowMs={Date.now()}
         initialRoster={rosterRes.data ?? []}
         eligibility={eligibility}
         eligibilityUnavailable={Boolean(eligRes.error)}

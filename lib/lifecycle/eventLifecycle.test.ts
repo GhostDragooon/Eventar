@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeLifecycle, walkInClosedMessage, type EventLifecycleRow } from './eventLifecycle';
+import { checkInClosedMessage, checkInGateMessage, computeLifecycle, walkInClosedMessage, type EventLifecycleRow } from './eventLifecycle';
 
 const baseEvent = (overrides: Partial<EventLifecycleRow> = {}): EventLifecycleRow => ({
   status: 'published',
@@ -106,6 +106,12 @@ describe('walkInClosedMessage', () => {
     expect(walkInClosedMessage('live')).toBeNull();
   });
 
+  it('says the same thing as the rest of the check-in desk, for every state', () => {
+    for (const l of ['drafted', 'registering', 'upcoming', 'completed', 'cancelled'] as const) {
+      expect(walkInClosedMessage(l)).toBe(checkInGateMessage(l));
+    }
+  });
+
   it('names cancellation specifically', () => {
     expect(walkInClosedMessage('cancelled')).toMatch(/cancelled/i);
   });
@@ -116,10 +122,42 @@ describe('walkInClosedMessage', () => {
     expect(msg).not.toMatch(/cancelled/i);
   });
 
-  it.each(['drafted', 'registering', 'upcoming'] as const)(
-    'gives a generic not-open-yet message for %s',
-    (lifecycle) => {
-      expect(walkInClosedMessage(lifecycle)).toBe('This event has not opened for check-in yet.');
-    },
-  );
+  it.each(['registering', 'upcoming'] as const)('gives the not-opened-yet message for %s', (lifecycle) => {
+    expect(walkInClosedMessage(lifecycle)).toBe('Check-in has not opened yet. It opens 60 minutes before the event starts.');
+  });
+
+  it('tells an unpublished draft to publish first', () => {
+    expect(walkInClosedMessage('drafted')).toBe('Publish the event before checking people in.');
+  });
+});
+
+// DB-02: mark_attended and self_check_in refuse outside [start - 60 min, end]; the desk says why in one voice.
+describe('checkInClosedMessage', () => {
+  it('says check-in has not opened and when it will', () => {
+    expect(checkInClosedMessage('not_open_yet')).toBe('Check-in has not opened yet. It opens 60 minutes before the event starts.');
+  });
+
+  it('says check-in is closed because the event ended', () => {
+    expect(checkInClosedMessage('closed')).toBe('Check-in is closed. This event has ended.');
+  });
+
+  it('carries no em-dash (Q41)', () => {
+    expect(checkInClosedMessage('not_open_yet')).not.toContain('\u2014');
+    expect(checkInClosedMessage('closed')).not.toContain('\u2014');
+  });
+});
+
+describe('checkInGateMessage', () => {
+  it('is null (check-in open) only when live', () => {
+    expect(checkInGateMessage('live')).toBeNull();
+  });
+
+  it.each(['registering', 'upcoming'] as const)('says not opened yet for %s', (l) => {
+    expect(checkInGateMessage(l)).toBe(checkInClosedMessage('not_open_yet'));
+  });
+
+  it('says closed for a completed event and names cancellation for a cancelled one', () => {
+    expect(checkInGateMessage('completed')).toBe(checkInClosedMessage('closed'));
+    expect(checkInGateMessage('cancelled')).toMatch(/cancelled/i);
+  });
 });

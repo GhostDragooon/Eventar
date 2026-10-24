@@ -29,19 +29,37 @@ type CodeState =
 export function ScanAndManual({
   onScanClick,
   onManualSubmit,
+  closedMessage = null,
 }: {
   onScanClick: () => void;
   onManualSubmit: (code: string) => Promise<SubmitResult>;
+  /**
+   * Why check-in is closed right now (DB-02: outside [start - 60 min, end] the server refuses), or null when
+   * it is open. Both entry buttons are disabled with this reason shown, so the desk never invites a scan the
+   * server will refuse.
+   */
+  closedMessage?: string | null;
 }) {
   const [codeOpen, setCodeOpen] = useState(false);
 
   return (
     <>
+      {/* Mounted whether check-in is open or not, so assistive tech announces the CHANGE when the window opens or
+          closes (a region that mounts with its text is not announced). Open: screen-reader-only text. */}
+      <p
+        role="status"
+        id="checkin-closed-note"
+        className={closedMessage ? 'mb-sm font-body-md text-body-md text-on-surface-variant' : 'sr-only'}
+      >
+        {closedMessage ?? 'Check-in is open.'}
+      </p>
       <div className="grid grid-cols-1 gap-grid-gutter sm:grid-cols-2">
         <Button
           type="button"
           size="lg"
           onClick={onScanClick}
+          disabled={closedMessage != null}
+          aria-describedby={closedMessage ? 'checkin-closed-note' : undefined}
           className="min-h-[64px] w-full gap-sm text-[calc(16px*var(--text-scale))] font-bold"
         >
           <span className="material-symbols-outlined text-[calc(22px*var(--text-scale))]" aria-hidden>
@@ -55,6 +73,8 @@ export function ScanAndManual({
           size="lg"
           variant="outline"
           onClick={() => setCodeOpen(true)}
+          disabled={closedMessage != null}
+          aria-describedby={closedMessage ? 'checkin-closed-note' : undefined}
           className="min-h-[64px] w-full gap-sm text-[calc(16px*var(--text-scale))] font-bold"
         >
           <span className="material-symbols-outlined text-[calc(22px*var(--text-scale))]" aria-hidden>

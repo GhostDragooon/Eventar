@@ -49,8 +49,28 @@ export function computeLifecycle(event: EventLifecycleRow, nowMs: number): Lifec
  * means walk-ins are allowed (lifecycle === 'live').
  */
 export function walkInClosedMessage(lifecycle: Lifecycle): string | null {
+  // One voice with the rest of the check-in desk (DB-02): a walk-in is a registration plus a check-in, so it is
+  // closed for exactly the reasons check-in is.
+  return checkInGateMessage(lifecycle);
+}
+
+/**
+ * Why check-in is refused, in one voice for the staff surfaces: the check-in desk, the staff scan action and the
+ * walk-in dialog (DB-02). The attendee's own pass page speaks to the attendee and keeps its own copy.
+ * mark_attended and self_check_in refuse outside [start - CHECKIN_OPEN_MINUTES, end] with `not_open_yet` and
+ * `closed`; computeLifecycle's 'live' is the same window except the final instant (the SQL end is exclusive).
+ */
+export function checkInClosedMessage(reason: 'not_open_yet' | 'closed'): string {
+  return reason === 'closed'
+    ? 'Check-in is closed. This event has ended.'
+    : `Check-in has not opened yet. It opens ${CHECKIN_OPEN_MINUTES} minutes before the event starts.`;
+}
+
+/** The same reason derived from the clock, for controls that follow it. `null` means check-in is open. */
+export function checkInGateMessage(lifecycle: Lifecycle): string | null {
   if (lifecycle === 'live') return null;
-  if (lifecycle === 'cancelled') return 'This event was cancelled — walk-in registration is closed.';
-  if (lifecycle === 'completed') return 'This event has ended — walk-in registration is closed.';
-  return 'This event has not opened for check-in yet.';
+  if (lifecycle === 'drafted') return 'Publish the event before checking people in.';
+  if (lifecycle === 'completed') return checkInClosedMessage('closed');
+  if (lifecycle === 'cancelled') return 'This event was cancelled. Check-in is closed.';
+  return checkInClosedMessage('not_open_yet');
 }

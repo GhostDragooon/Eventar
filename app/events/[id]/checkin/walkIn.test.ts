@@ -39,9 +39,11 @@ const markAttendedResult = {
   credit: { anyIssued: false, allSkipped: false, lines: [] },
 };
 
+// What mark_attended answers for the check-in that follows the walk-in's registration.
+let markAttendedStatus = 'ok';
 vi.mock('@/lib/supabase/server', () => ({
   supabaseServer: vi.fn(async () => ({
-    rpc: async () => ({ data: [{ result: 'ok', ...markAttendedResult.registration }], error: null }),
+    rpc: async () => ({ data: [{ result: markAttendedStatus, ...markAttendedResult.registration }], error: null }),
     auth: { getUser: async () => ({ data: { user: { id: 'auth-1' } } }) },
   })),
 }));
@@ -108,6 +110,7 @@ function mockEmailLogInsert() {
 }
 
 beforeEach(() => {
+  markAttendedStatus = 'ok';
   mockRequireStaff.mockReset().mockResolvedValue(staff);
   mockFrom.mockReset();
   mockRpc.mockReset();
@@ -115,6 +118,31 @@ beforeEach(() => {
 });
 
 describe('walkInRegisterAndCheckIn', () => {
+  // Rule 12 (DB-02 dev review F3): the person is registered BEFORE mark_attended can refuse. A refusal after the
+  // insert must say the registration exists (and its code), not read as "nothing happened": a retry otherwise
+  // answers "already registered" and code entry refuses too.
+  it('a check-in refused after the registration says the person was registered, with the code and the reason', async () => {
+    markAttendedStatus = 'not_open_yet';
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...LIVE_TIMES });
+    mockRegInsert({ id: 'reg-1', registration_code: 'WK-TEST1' });
+    mockEmailLogInsert();
+
+    const res = await walkInRegisterAndCheckIn(validInput);
+    expect(res).toEqual({
+      error: 'Walk In was registered (code WK-TEST1) but not checked in. Check-in has not opened yet. It opens 60 minutes before the event starts.',
+    });
+  });
+
+  it.each([
+    ['live', LIVE_TIMES],
+    ['not yet open', NOT_YET_OPEN_TIMES],
+    ['ended', ENDED_TIMES],
+  ])("another organisation's staff get the access error for a %s event, whatever its lifecycle", async (_label, times) => {
+    mockRequireStaff.mockResolvedValueOnce({ ...staff, organisation_id: 'org-other' });
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...times });
+    await expect(walkInRegisterAndCheckIn(validInput)).resolves.toEqual({ error: 'You do not have access to this event.' });
+  });
+
   // Q45, 2026-10-14: a server-side sign-out mid-event must come back as a
   // message, not a throw that froze the dialog on "Registering…".
   const SIGNED_OUT = "You've been signed out. This walk-in was not saved. Reload and sign in again.";
@@ -184,20 +212,20 @@ describe('walkInRegisterAndCheckIn', () => {
     mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...ENDED_TIMES });
 
     const res = await walkInRegisterAndCheckIn(validInput);
-    expect(res).toEqual({ error: 'This event has ended — walk-in registration is closed.' });
+    expect(res).toEqual({ error: 'Check-in is closed. This event has ended.' });
   });
 
   it('rejects a walk-in on a cancelled event', async () => {
     mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'cancelled', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...LIVE_TIMES });
 
     const res = await walkInRegisterAndCheckIn(validInput);
-    expect(res).toEqual({ error: 'This event was cancelled — walk-in registration is closed.' });
+    expect(res).toEqual({ error: 'This event was cancelled. Check-in is closed.' });
   });
 
   it('rejects a walk-in on an event that has not started yet', async () => {
     mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...NOT_YET_OPEN_TIMES });
 
     const res = await walkInRegisterAndCheckIn(validInput);
-    expect(res).toEqual({ error: 'This event has not opened for check-in yet.' });
+    expect(res).toEqual({ error: 'Check-in has not opened yet. It opens 60 minutes before the event starts.' });
   });
 });

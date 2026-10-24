@@ -326,11 +326,13 @@ async function findOrCreateEvent(
   // Beat 4 both work at the same wall-clock moment. The old script only
   // worked because the guard was missing.
   //
-  // STILL WORKING at this offset: Beat 3, Beat 4's staff scan and manual
-  // entry (mark_attended is deliberately NOT time-gated — a trusted,
-  // physically-present actor), and Beat 4.6's credit, which fires off that
-  // staff scan. ONLY the self-serve tap is affected. Awaiting Ivan's call —
-  // see docs/plans/demo-run-sheet.md Beat 4.
+  // DB-02 (2026-10-23): the staff door is time-gated now too. mark_attended refuses outside
+  // [start - CHECKIN_OPEN_MINUTES, end] with not_open_yet / closed (it used to accept a code at any time), so at
+  // this offset Beat 3 (live registration) works and Beat 4 (the staff scan and typed code, and Beat 4.6's credit,
+  // which fires off that scan) does NOT: the two windows are disjoint for both doors. Run Beat 3 at this offset,
+  // then move the SAME event live with a plain re-run (the existing event's times are updated in place):
+  //   DEMO_START_OFFSET_MIN=-30 pnpm exec tsx scripts/demo/seed-demo.ts
+  // The event must be published by then (Beat 2 publishes it). Not rehearsed end to end since DB-02.
   const startTime = new Date(Date.now() + START_OFFSET_MIN * 60_000);
   const endTime = new Date(startTime.getTime() + 4 * 60 * 60_000);
   const keynoteEnd = new Date(startTime.getTime() + 60 * 60_000);
