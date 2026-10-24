@@ -15,10 +15,10 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { sendAttendeeMagicLink } from '../sign-in/actions';
+import { attendeeNextPath, wizardLandingPath } from '../sign-in/attendeeNext';
 import { SiteShell } from '@/components/shell/SiteShell';
 import { MagicLinkSignInForm } from '@/components/auth/MagicLinkSignInForm';
 import { resolveAuthError } from '@/components/auth/auth-error-messages';
-import { safeNextPath } from '@/lib/authDoor';
 import { checkDoorSession } from '@/lib/doorSession';
 
 export default function AttendeeSignUpPage() {
@@ -48,7 +48,14 @@ function AttendeeSignUpForm() {
   const urlErr = resolveAuthError(urlErrorCode, 'attendee');
   // Same open-redirect guard as /account/sign-in — see that page for the
   // reasoning (re-validated server-side in the Server Action either way).
-  const next = safeNextPath(searchParams.get('next')) ?? undefined;
+  const next = attendeeNextPath(searchParams.get('next')) ?? undefined;
+  // FR-005: with a destination, the emailed link lands on the first-run wizard
+  // (/account/complete), which runs it for a new account and hands on to the
+  // destination at the end, or passes a returning account straight through to
+  // it. Without one the default flow is untouched. `next` itself (not this) is
+  // what the Sign in link and the already-signed-in redirect below use.
+  const emailedNext =
+    next && wizardLandingPath(next) ? `/account/complete?next=${encodeURIComponent(next)}` : next;
 
   // Same already-signed-in short-circuit as /account/sign-in — a visitor who
   // reaches this page while already signed in doesn't need to create an
@@ -93,6 +100,11 @@ function AttendeeSignUpForm() {
         to set — the same link works whether this is your first time or your
         hundredth.
       </p>
+      {next === '/account/claim' && (
+        <p className="font-body-md text-body-md text-on-surface m-0">
+          Use the same email you just registered with, so that registration can be added to your record.
+        </p>
+      )}
       <p className="font-body-md text-body-md text-on-surface-variant m-0">
         You can still register for events as a guest without an account —
         creating one is for linking past registrations, editing your
@@ -103,7 +115,7 @@ function AttendeeSignUpForm() {
         initialError={urlErr ?? endedErr}
         placeholder="you@example.com"
         submitLabel="Send sign-up link"
-        next={next}
+        next={emailedNext}
         audience="attendee"
       />
 

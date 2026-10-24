@@ -50,7 +50,11 @@ export function RecordClient({
       <SectionCard icon="event_available" title="Attendance">
         {attendance.length === 0 ? (
           <p className="font-body-md text-body-md text-on-surface-variant m-0">
-            No linked events yet. Register for an event or link past registrations from{' '}
+            No linked events yet.{' '}
+            <Link href="/events" className="text-primary-ink font-medium hover:underline">
+              Browse events
+            </Link>{' '}
+            to register, or link past registrations from{' '}
             <Link href="/account" className="text-primary-ink font-medium hover:underline">
               Account
             </Link>

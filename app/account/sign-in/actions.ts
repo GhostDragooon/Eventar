@@ -14,7 +14,7 @@
 
 import { supabaseAnonServer } from '@/lib/supabase/server';
 import { getRequestOrigin } from '@/lib/origin';
-import { safeNextPath } from '@/lib/authDoor';
+import { attendeeNextPath } from './attendeeNext';
 
 export async function sendAttendeeMagicLink(
   formData: FormData,
@@ -25,10 +25,13 @@ export async function sendAttendeeMagicLink(
   }
 
   // Optional post-sign-in destination the caller passed as a hidden form
-  // field. safeNextPath is the shared open-redirect guard (lib/authDoor.ts):
-  // a path on this origin only; anything else drops to the default. Walk-in
-  // flow round-trips /events/[id] this way.
-  const nextPath = safeNextPath(String(formData.get('next') ?? '')) ?? '/account/record';
+  // field. attendeeNextPath (./attendeeNext.ts) is the open-redirect guard
+  // (safeNextPath, lib/authDoor.ts) narrowed to the attendee audience: a path on
+  // this origin inside the attendee area only, so /dashboard and /login are as
+  // dead as //evil.example; anything else drops to the default. Walk-in flow
+  // round-trips /events/[id] this way, and the sign-up door routes through
+  // /account/complete?next=... so the first-run wizard hands on to it.
+  const nextPath = attendeeNextPath(String(formData.get('next') ?? '')) ?? '/account/record';
 
   const origin = await getRequestOrigin();
   const supabase = await supabaseAnonServer();

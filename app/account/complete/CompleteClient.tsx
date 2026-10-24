@@ -40,6 +40,7 @@ export function CompleteClient({
   professions,
   positions,
   specialties,
+  next = '/account/record',
 }: {
   initialStep: number;
   initialAccount: AccountView;
@@ -49,6 +50,8 @@ export function CompleteClient({
   professions: ControlledListOption[];
   positions: ControlledListOption[];
   specialties: (ControlledListOption & { profession_code: string | null })[];
+  /** Where "Done" lands: already gated by page.tsx (an attendee path), else the portal home. */
+  next?: string;
 }) {
   const router = useRouter();
   const [step, setStep] = useState(Math.min(Math.max(initialStep, 1), 4));
@@ -263,7 +266,7 @@ export function CompleteClient({
   }
 
   function onFinish() {
-    router.push('/account/record');
+    router.push(next);
   }
 
   return (

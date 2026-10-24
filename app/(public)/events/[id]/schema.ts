@@ -25,6 +25,10 @@ export type EmailDelivery = 'sent' | 'queued_dev' | 'failed';
 
 // Returned by the Server Action. Never throws on user-recoverable errors —
 // returns a typed result and lets the form render the friendly message.
+//
+// `linked` says whether the registration row was attached to the caller's own account (user_id written): true only
+// for a signed-in, non-staff caller registering their own email. The success card's "This is now on your record."
+// keys on it, never on a guess from the email (CX-06a review D-02).
 export type RegisterResult =
-  | { ok: true; emailDelivery: EmailDelivery }
+  | { ok: true; emailDelivery: EmailDelivery; linked: boolean }
   | { error: string };

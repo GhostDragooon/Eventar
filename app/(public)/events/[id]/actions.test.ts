@@ -311,7 +311,7 @@ describe('registerForEvent — Phase 7 send-side behaviour', () => {
 
     // emailDelivery: 'queued_dev' tells the success UI to say "dev mode" rather
     // than lie about a message having been sent (playbook §1.2.C).
-    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev' });
+    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev', linked: false });
     expect(mockSendStub).toHaveBeenCalledTimes(1);
     expect(mockSendReal).not.toHaveBeenCalled();
 
@@ -326,7 +326,7 @@ describe('registerForEvent — Phase 7 send-side behaviour', () => {
 
     const result = await registerForEvent(valid);
 
-    expect(result).toEqual({ ok: true, emailDelivery: 'sent' });
+    expect(result).toEqual({ ok: true, emailDelivery: 'sent', linked: false });
     expect(mockSendReal).toHaveBeenCalledTimes(1);
     expect(mockSendStub).not.toHaveBeenCalled();
 
@@ -348,7 +348,7 @@ describe('registerForEvent — Phase 7 send-side behaviour', () => {
 
     // Registration still succeeds; emailDelivery reports the honest failure so
     // the success UI can tell the visitor to show the screen to staff.
-    expect(result).toEqual({ ok: true, emailDelivery: 'failed' });
+    expect(result).toEqual({ ok: true, emailDelivery: 'failed', linked: false });
     expect(mockSendReal).toHaveBeenCalledTimes(1);
 
     expect(lastEmailLogUpdate).toEqual({
@@ -408,7 +408,7 @@ describe('registerForEvent — registration window gate', () => {
 
     const result = await registerForEvent(valid);
 
-    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev' });
+    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev', linked: false });
     expect(mockSendStub).toHaveBeenCalledTimes(1);
   });
 
@@ -466,7 +466,7 @@ describe('registerForEvent — a staff session never attaches an attendee identi
   it('anonymous guest: the row carries no identity and the staff table is never read', async () => {
     const result = await registerForEvent(valid);
 
-    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev' });
+    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev', linked: false });
     expect(lastRegistrationInsert).toEqual(GUEST_ROW);
     expect(rpcCalls).toEqual([]);
     expect(staffLookups).toBe(0);
@@ -478,7 +478,7 @@ describe('registerForEvent — a staff session never attaches an attendee identi
 
     const result = await registerForEvent(valid);
 
-    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev' });
+    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev', linked: false });
     expect(lastRegistrationInsert).toEqual(GUEST_ROW);
     // No snapshot was even built: nothing practitioner-shaped is read under a
     // staff UUID.
@@ -509,7 +509,7 @@ describe('registerForEvent — a staff session never attaches an attendee identi
 
     const result = await registerForEvent({ ...valid, email: 'colleague@example.com' });
 
-    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev' });
+    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev', linked: false });
     expect(lastRegistrationInsert).toEqual({ ...GUEST_ROW, email: 'colleague@example.com' });
     expect(rpcCalls).toEqual([]);
   });
@@ -525,7 +525,7 @@ describe('registerForEvent — a staff session never attaches an attendee identi
     // A failed staff read must never read as "not staff" and attach the id
     // (N1: the old boolean helper failed open) — but it must not block the
     // seat either. The skipped attach is logged (rule 12), with no PII.
-    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev' });
+    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev', linked: false });
     expect(lastRegistrationInsert).toEqual(GUEST_ROW);
     expect(rpcCalls).toEqual([]);
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('staff state unknown'));
@@ -539,7 +539,7 @@ describe('registerForEvent — a staff session never attaches an attendee identi
 
     const result = await registerForEvent(valid);
 
-    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev' });
+    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev', linked: true });
     expect(lastRegistrationInsert).toEqual({
       ...GUEST_ROW,
       user_id: PRACTITIONER_UID,
@@ -553,7 +553,7 @@ describe('registerForEvent — a staff session never attaches an attendee identi
 
     const result = await registerForEvent({ ...valid, email: 'alice@work.com' });
 
-    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev' });
+    expect(result).toEqual({ ok: true, emailDelivery: 'queued_dev', linked: false });
     expect(lastRegistrationInsert).toEqual({ ...GUEST_ROW, email: 'alice@work.com' });
     expect(rpcCalls).toEqual([]);
   });

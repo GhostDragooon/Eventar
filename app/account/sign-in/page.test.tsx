@@ -75,3 +75,25 @@ describe('AttendeeSignInPage — trouble-signing-in help', () => {
     expect(screen.getByText(/this sign-in link has expired or was already used/i)).toBeInTheDocument();
   });
 });
+
+// Spec 001 FR-005: the destination the door forwards to the emailed link is an
+// attendee path or nothing. (The action gates again; this is the page's half.)
+describe('AttendeeSignInPage — next', () => {
+  async function formNext(next: string) {
+    mockSearchParams = new URLSearchParams({ next });
+    const { container } = render(<AttendeeSignInPage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: /send sign-in link/i })).toBeInTheDocument());
+    return container.querySelector<HTMLInputElement>('input[name="next"]')?.value ?? null;
+  }
+
+  it('hands an attendee destination to the form', async () => {
+    expect(await formNext('/account/claim')).toBe('/account/claim');
+  });
+
+  it.each(['//evil.example', '/\\evil', '/dashboard', '/login', '/account/../dashboard'])(
+    'does not hand %j to the form',
+    async (hostile) => {
+      expect(await formNext(hostile)).toBeNull();
+    },
+  );
+});

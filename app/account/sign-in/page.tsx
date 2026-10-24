@@ -17,7 +17,7 @@ import { sendAttendeeMagicLink } from './actions';
 import { SiteShell } from '@/components/shell/SiteShell';
 import { MagicLinkSignInForm } from '@/components/auth/MagicLinkSignInForm';
 import { resolveAuthError } from '@/components/auth/auth-error-messages';
-import { safeNextPath } from '@/lib/authDoor';
+import { attendeeNextPath } from './attendeeNext';
 import { checkDoorSession } from '@/lib/doorSession';
 
 export default function AttendeeSignInPage() {
@@ -47,9 +47,11 @@ function AttendeeSignInForm() {
   const urlErr = resolveAuthError(urlErrorCode, 'attendee');
   // Round-trip destination for the walk-in flow: event page → sign-in → OTP
   // → same event page. The action re-validates; only pass through a path on
-  // this origin (safeNextPath, lib/authDoor.ts: the server does the same check
-  // as a defence in depth against tampered links).
-  const next = safeNextPath(searchParams.get('next')) ?? undefined;
+  // this origin AND in the attendee area (attendeeNextPath, ./attendeeNext.ts:
+  // safeNextPath plus classifyPath, so /dashboard and /login are dropped, not
+  // just //evil; the server does the same check as a defence in depth against
+  // tampered links).
+  const next = attendeeNextPath(searchParams.get('next')) ?? undefined;
 
   // Short-circuit for a visitor who is ALREADY signed in and reached this
   // page anyway (most likely via the pending-credit banner on

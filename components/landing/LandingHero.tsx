@@ -48,15 +48,22 @@ import { LedgerWindow } from './LedgerWindow';
 // destination.
 // 2026-09-25 reversal for practitioner only: reduced to one CTA (Get
 // started → /events). Browsing is ungated; account creation happens at
-// register/claim/walk-in, never as the marketing primary. Organiser pair
-// unchanged.
+// register/claim/walk-in, never as the marketing primary.
+// Reversed again 2026-10-24 (spec 001 FR-001, CX-06a): the practitioner now
+// gets a pair that mirrors the organiser's, "Get started" → sign-up and
+// "Log in" → sign-in, because a hero with no way into the portal left the
+// audience it is written for without a door. Browsing stays ungated: the
+// events list is one click away in the nav and from every registration card.
+// Both doors are attendee paths (Q32): neither points at /login or /dashboard.
+// Organiser pair unchanged.
 const COPY = {
   practitioner: {
     chip: 'For practitioners · CME/CPD attendance without the paperwork',
     head: ['Your CME/CPD log', 'should keep itself.'],
     sub: 'Find accredited events, register, check in on the day. Your Eventar record captures what you attended and the points released — alongside iCMECPD and your college, not instead of them.',
     ctas: [
-      { label: 'Get started', href: '/events' },
+      { label: 'Get started', href: '/account/sign-up' },
+      { label: 'Log in', href: '/account/sign-in' },
     ],
   },
   organiser: {

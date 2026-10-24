@@ -51,6 +51,31 @@ describe('RecordClient — empty states', () => {
   });
 });
 
+// Spec 001 FR-004 (CX-06a, A5): a record with no attendance used to point only
+// at /account, so a practitioner with nothing yet had no way to the events
+// they are meant to attend.
+describe('RecordClient — empty attendance links to the events list (FR-004)', () => {
+  it('the empty attendance state has a "Browse events" link to /events, beside the existing /account link', () => {
+    render(<RecordClient attendance={[]} credits={[]} />);
+    expect(screen.getByRole('link', { name: 'Browse events' })).toHaveAttribute('href', '/events');
+    expect(screen.getByRole('link', { name: 'Account' })).toHaveAttribute('href', '/account');
+  });
+
+  it('puts it in one clear sentence after the lead-in, with no em-dash', () => {
+    render(<RecordClient attendance={[]} credits={[]} />);
+    const line = screen.getByRole('link', { name: 'Browse events' }).closest('p');
+    expect(line).toHaveTextContent(
+      'No linked events yet. Browse events to register, or link past registrations from Account.',
+    );
+    expect(line?.textContent).not.toMatch(/[\u2014\u2013]/);
+  });
+
+  it('is only the empty state: a record that has attendance does not show the link', () => {
+    render(<RecordClient attendance={[attendanceRow()]} credits={[]} />);
+    expect(screen.queryByRole('link', { name: 'Browse events' })).not.toBeInTheDocument();
+  });
+});
+
 describe('RecordClient — attendance section', () => {
   it('renders an attended row with a net-active credit as "On record", not the attended-status colour', () => {
     render(<RecordClient attendance={[attendanceRow({ has_credit: true })]} credits={[]} />);

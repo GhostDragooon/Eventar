@@ -337,5 +337,5 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
   // Step 8 — the public page may show updated counts in future phases.
   revalidatePath(`/events/${event_id}`);
 
-  return { ok: true, emailDelivery };
+  return { ok: true, emailDelivery, linked: canAttachUserId };
 }

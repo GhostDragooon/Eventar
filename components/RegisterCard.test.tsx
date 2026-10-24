@@ -5,7 +5,7 @@ import { vi } from 'vitest';
 // forbidden in jsdom builds. These tests are about conditional rendering,
 // not the action.
 vi.mock('@/app/(public)/events/[id]/actions', () => ({
-  registerForEvent: vi.fn(async () => ({ ok: true as const, emailDelivery: 'sent' as const })),
+  registerForEvent: vi.fn(async () => ({ ok: true as const, emailDelivery: 'sent' as const, linked: false })),
 }));
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -456,5 +456,90 @@ describe('RegisterCard — a failed registration', () => {
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent(/already registered/i);
     await waitFor(() => expect(alert).toHaveFocus());
+  });
+});
+
+// Spec 001 FR-003 (CX-06a, A4): the success card used to say nothing about an
+// account. Signed out it offers to create the record and carries the visitor on
+// to claiming the registration they just made; a signed-in practitioner gets a
+// way to their record; an organiser gets nothing (the organiser line stays).
+//
+// "This is now on your record." is a claim about a database row, so it keys on
+// what registerForEvent REPORTS (`linked`: user_id was written), never on a
+// guess from the email (CX-06a review D-02: a failed staff read at submit time
+// registers a plain guest row for an ordinary practitioner). A host that does
+// not say whether anyone is signed in (the poster page) shows no account prompt
+// at all (D-01): `signedIn` is tri-state, undefined means unknown.
+describe('RegisterCard — account prompt on the success card (FR-003)', () => {
+  const props = { ...baseProps, lifecycle: 'registering' as const };
+
+  async function registerAs(email: string | null, linked = false) {
+    vi.mocked(registerForEvent).mockResolvedValueOnce({ ok: true, emailDelivery: 'sent', linked });
+    if (email !== null) {
+      fireEvent.change(screen.getByRole('textbox', { name: /email/i }), { target: { value: email } });
+    }
+    fireEvent.change(screen.getByRole('textbox', { name: /full name/i }), { target: { value: 'Alice Wong' } });
+    fireEvent.click(screen.getByRole('button', { name: /^register$/i }));
+    await screen.findByRole('heading', { name: /see you on the day|registered as a guest/i });
+  }
+
+  const hrefs = () => screen.queryAllByRole('link').map((a) => a.getAttribute('href'));
+
+  it('signed out: offers "Create your Eventar record" -> sign-up with the claim page as next, only after the registration succeeds', async () => {
+    render(<RegisterCard {...props} signedIn={false} signInHref="/account/sign-in?next=/events/e1" />);
+    expect(screen.queryByRole('link', { name: /create your eventar record/i })).not.toBeInTheDocument();
+
+    await registerAs('alice@work.com');
+    const create = screen.getByRole('link', { name: /^create your eventar record$/i });
+    expect(create).toHaveAttribute('href', '/account/sign-up?next=/account/claim');
+    expect(screen.queryByRole('link', { name: /^my record$/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/now on your record/i)).not.toBeInTheDocument();
+    // The sign-in nudge belongs to the form; the success card swaps it out.
+    expect(hrefs().filter((h) => /^\/(login|dashboard)/.test(h ?? ''))).toEqual([]);
+  });
+
+  it('signed in and the registration was linked: says "This is now on your record." with a "My record" link, no create prompt', async () => {
+    render(<RegisterCard {...props} signedIn defaultName="Alice Wong" defaultEmail="alice@example.com" />);
+    await registerAs(null, true);
+
+    expect(screen.getByText('This is now on your record.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^my record$/i })).toHaveAttribute('href', '/account/record');
+    expect(screen.queryByRole('link', { name: /create your eventar record/i })).not.toBeInTheDocument();
+    expect(hrefs().filter((h) => /^\/(login|dashboard)/.test(h ?? ''))).toEqual([]);
+  });
+
+  it('signed in but the action did NOT link it (a colleague registered, or the staff read failed): no claim, still a way to the record', async () => {
+    // Same address as the session, so an email-match guess would have claimed it: only `linked` decides.
+    render(<RegisterCard {...props} signedIn defaultName="Alice Wong" defaultEmail="alice@example.com" />);
+    await registerAs(null, false);
+
+    expect(screen.queryByText(/now on your record/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^my record$/i })).toHaveAttribute('href', '/account/record');
+    expect(screen.queryByRole('link', { name: /create your eventar record/i })).not.toBeInTheDocument();
+  });
+
+  it('a host that does not know the session (the poster page) shows no account prompt at all, even after a linked registration', async () => {
+    render(<RegisterCard {...props} />);
+    await registerAs('alice@work.com', true);
+
+    expect(screen.queryByText(/now on your record/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /create your eventar record/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^my record$/i })).not.toBeInTheDocument();
+  });
+
+  it('staff never get the create prompt, even from a host that says nobody is signed in', async () => {
+    render(<RegisterCard {...props} signedIn={false} isStaff />);
+    await registerAs('alice@work.com');
+
+    expect(screen.queryByRole('link', { name: /create your eventar record/i })).not.toBeInTheDocument();
+  });
+
+  it('organiser: no account prompt at all, and the organiser line stays (even if the session email were passed in)', async () => {
+    render(<RegisterCard {...props} signedIn isStaff defaultEmail="alice@work.com" />);
+    await registerAs('alice@work.com', true);
+
+    expect(screen.getByRole('heading', { name: /registered as a guest/i })).toBeInTheDocument();
+    expect(screen.queryByText(/now on your record/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 });

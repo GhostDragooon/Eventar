@@ -42,6 +42,7 @@ import { headers } from 'next/headers';
 import { supabaseServer } from '@/lib/supabase/server';
 import { isAccountComplete } from '@/lib/accountCompleteness';
 import { getMyAccountAndProfile, listMyLicences } from '../actions';
+import { wizardLandingPath } from '../sign-in/attendeeNext';
 import { CompleteClient } from './CompleteClient';
 import { SiteShell } from '@/components/shell/SiteShell';
 import type { AccreditingBodyView } from '../schema';
@@ -51,19 +52,30 @@ export const metadata = {
   title: 'Complete your account',
 };
 
-export default async function CompleteAccountPage() {
+export default async function CompleteAccountPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  // Where the visitor was going before the wizard (spec 001 FR-005), set by the
+  // sign-up door: carried through every redirect below and handed to the client
+  // for "Done". Read from the query, so it is gated here: an attendee path
+  // other than the wizard itself, or nothing (which means the record).
+  const landing = wizardLandingPath((await searchParams).next);
+  const here = landing ? `/account/complete?next=${encodeURIComponent(landing)}` : '/account/complete';
+
   const supabase = await supabaseServer();
   // eslint-disable-next-line no-restricted-syntax -- no-session and call-failed collapse to "must sign in"
   const { data: authRes } = await supabase.auth.getUser();
   if (!authRes?.user) {
-    redirect(`/account/sign-in?next=${encodeURIComponent('/account/complete')}`);
+    redirect(`/account/sign-in?next=${encodeURIComponent(here)}`);
   }
 
   const emailConfirmed = authRes.user.email_confirmed_at != null;
   const completeness = await isAccountComplete(authRes.user.id, emailConfirmed);
   const isActionRerender = (await headers()).has('next-action');
   if (completeness.complete && !isActionRerender) {
-    redirect('/account/record');
+    redirect(landing ?? '/account/record');
   }
 
   const [accountResult, licencesResult, bodiesResult, professionsResult, positionsResult, specialtiesResult] =
@@ -82,7 +94,7 @@ export default async function CompleteAccountPage() {
 
   if (!accountResult.ok) {
     const errorParam = accountResult.error === 'not_authorized' ? 'not_authorized' : 'unavailable';
-    redirect(`/account/sign-in?error=${errorParam}&next=${encodeURIComponent('/account/complete')}`);
+    redirect(`/account/sign-in?error=${errorParam}&next=${encodeURIComponent(here)}`);
   }
 
   const bodies: AccreditingBodyView[] = (bodiesResult.data ?? []) as AccreditingBodyView[];
@@ -114,6 +126,7 @@ export default async function CompleteAccountPage() {
           professions={professions}
           positions={positions}
           specialties={specialties}
+          next={landing ?? undefined}
         />
       </div>
     </SiteShell>

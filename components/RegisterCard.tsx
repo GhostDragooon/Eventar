@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { registerForEvent } from '@/app/(public)/events/[id]/actions';
 import type { EmailDelivery } from '@/app/(public)/events/[id]/schema';
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
@@ -55,6 +56,10 @@ type Props = {
    * signed in, and every attribution/discovery branch should honour that.
    * Producer (page) owns the truth; consumer (this component) reads it
    * directly. Second-pass review MODERATE 5.
+   *
+   * Tri-state on purpose (CX-06a review D-01): `undefined` means the host does
+   * not know (the poster page), and the success card then shows no account
+   * prompt; only an explicit `false` offers "Create your Eventar record".
    */
   signedIn?: boolean;
   /**
@@ -69,7 +74,7 @@ type Props = {
 type FormState =
   | { kind: 'idle' }
   | { kind: 'submitting' }
-  | { kind: 'success'; name: string; email: string; emailDelivery: EmailDelivery }
+  | { kind: 'success'; name: string; email: string; emailDelivery: EmailDelivery; linked: boolean }
   | { kind: 'error'; message: string };
 
 export default function RegisterCard({
@@ -82,7 +87,7 @@ export default function RegisterCard({
   defaultEmail,
   signInHref,
   unlinkedRegistrationsCount = 0,
-  signedIn = false,
+  signedIn,
   isStaff = false,
 }: Props) {
   const [name, setName] = useState(defaultName ?? '');
@@ -173,6 +178,30 @@ export default function RegisterCard({
               : 'Need to cancel? See event staff at check-in — this browser tab is your proof of registration.'}
           </p>
         )}
+        {/* FR-003: a way into the account from the result. Signed out (the host says so
+            explicitly): create the record, then claim what was just registered.
+            Signed in: a link to the record, and the sentence "on your record" ONLY when
+            registerForEvent reported `linked` (it attached user_id: own email, not
+            staff, staff read ok); a colleague's registration or a failed staff read
+            put nothing on the visitor's record, so no claim of it (rule 12). A host
+            that does not say whether anyone is signed in (the poster page) gets no
+            prompt. An organiser gets none either (Q32: no attendee prompt on staff). */}
+        {!isStaff && signedIn === false && (
+          <Link
+            href="/account/sign-up?next=/account/claim"
+            className={cn(buttonVariants({ variant: 'outline' }), 'min-h-11 w-full')}
+          >
+            Create your Eventar record
+          </Link>
+        )}
+        {!isStaff && signedIn === true && (
+          <div className="flex flex-col gap-sm">
+            {state.linked && <p className="font-body-md text-body-md text-on-surface m-0">This is now on your record.</p>}
+            <Link href="/account/record" className={cn(buttonVariants({ variant: 'outline' }), 'min-h-11 w-full')}>
+              My record
+            </Link>
+          </div>
+        )}
         {/* An organiser at a desk registers several people in a row; the form
             used to vanish and only a reload brought it back. */}
         {isStaff && (
@@ -245,6 +274,7 @@ export default function RegisterCard({
             name: name.trim(),
             email: email.trim().toLowerCase(),
             emailDelivery: res.emailDelivery,
+            linked: res.linked,
           });
         }
       } catch {
