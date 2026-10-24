@@ -30,19 +30,19 @@ beforeEach(() => {
 // attendee crash page, told to "tell the organiser", with Home pointing at the
 // marketing site. Behind the organiser gate the boundary speaks to them directly.
 describe('app error boundary, organiser workspace paths', () => {
-  it.each(['/dashboard', '/events/new', `/events/${EVENT}/edit`, `/events/${EVENT}/checkin`, '/settings', '/participants', '/analytics', '/checkin'])('%s: the way out is Manage, where drafts are listed, never the marketing site', (path) => {
+  it.each(['/dashboard', '/events/new', `/events/${EVENT}/edit`, `/events/${EVENT}/checkin`, '/settings', '/participants', '/analytics', '/checkin'])('%s: the way out is Programme, which lists drafts, never the marketing site', (path) => {
     mount(path);
-    expect(screen.getByRole('link', { name: 'Check drafts and events' })).toHaveAttribute('href', '/dashboard/manage');
+    expect(screen.getByRole('link', { name: 'Back to Programme' })).toHaveAttribute('href', '/dashboard');
     expect(screen.queryByRole('link', { name: 'Home' })).toBeNull();
   });
 
-  it('does not tell an organiser to tell the organiser, warns about a half-finished save, and does not send them to Programme to look for it', () => {
+  it('does not tell an organiser to tell the organiser, and warns about a half-finished save', () => {
     const { container } = mount(`/events/${EVENT}/edit`, 'd1g3st');
     expect(container.textContent).not.toMatch(/tell the organiser/i);
     expect(container.textContent).toMatch(/if you were saving or publishing, check your events before you repeat it/i);
-    // Programme lists published events only, so the copy must not point there for a draft.
-    // The exit is Manage until P7a shows drafts on Programme (Ivan, 2026-10-11).
-    expect(container.textContent).not.toMatch(/check Programme/i);
+    // The exit is Programme: since CX-04 it lists drafts, so a half-saved draft can be found
+    // there (DashboardWorkstation.test.tsx pins that). The body names no page.
+    expect(screen.getByRole('link', { name: 'Back to Programme' })).toHaveAttribute('href', '/dashboard');
   });
 
   it('gives the reference as something to quote when asking for help, and nothing odd when there is none', () => {
@@ -66,7 +66,7 @@ describe('app error boundary, organiser door paths', () => {
   it.each(['/login', '/login?next=/dashboard', '/invite/abc123'])('%s keeps the public wording and the Home link', (path) => {
     const { container } = mount(path, 'd1g3st');
     expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
-    expect(screen.queryByRole('link', { name: 'Check drafts and events' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Back to Programme' })).toBeNull();
     expect(container.textContent).not.toMatch(/check your events/i);
   });
 });
@@ -75,7 +75,7 @@ describe('app error boundary, public paths', () => {
   it.each(['/', `/events/${EVENT}`, '/account/record', '/pricing'])('%s: Home and the attendee wording', (path) => {
     const { container } = mount(path, 'd1g3st');
     expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
-    expect(screen.queryByRole('link', { name: 'Check drafts and events' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Back to Programme' })).toBeNull();
     expect(container.textContent).toContain('Your data is safe. Try again. If it keeps happening, tell the organiser and quote error d1g3st.');
   });
 
@@ -164,7 +164,7 @@ describe('app error boundary, recovery', () => {
     expect(classes).toMatch(/(^|\s)text-on-primary!(\s|$)/);
     expect(classes).toMatch(/(^|\s)text-label-md(\s|$)/);
     expect(classes).toMatch(/(^|\s)min-h-11(\s|$)/);
-    expect(screen.getByRole('link', { name: 'Check drafts and events' }).className).toMatch(/(^|\s)min-h-11(\s|$)/);
+    expect(screen.getByRole('link', { name: 'Back to Programme' }).className).toMatch(/(^|\s)min-h-11(\s|$)/);
   });
 
   it('leaves a breadcrumb in the console with the digest, never the message, when there is one', () => {

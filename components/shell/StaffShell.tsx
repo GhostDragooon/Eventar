@@ -56,9 +56,10 @@ export type StaffShellProps = StaffShellBaseProps & StaffShellBackProps;
  *
  * EVENTS IS DELIBERATELY ABSENT (Ivan's call 2026-08-09). It was previously
  * rendered inert with a SOON chip, which told an organiser a capability was
- * coming while they were already standing in it: /dashboard IS the staff events
- * list (lifecycle filter tabs, search, sort, per-event edit/delete). The real
- * defect underneath was an audience boundary, not a routing one - the original
+ * coming while they were already standing in it: Programme (/dashboard, events
+ * by date, drafts included, each row opening its event) and Manage
+ * (/dashboard/manage, state filters, search, sort, bulk actions) ARE the staff
+ * events lists. The real defect underneath was an audience boundary, not a routing one - the original
  * link pointed at app/(public)/events, the ATTENDEE-facing directory, so
  * clicking it from the staff sidebar loaded the public listing and the sidebar
  * vanished. The attendee list is not a staff nav destination at all. If the

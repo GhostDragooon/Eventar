@@ -1,11 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { Fragment, useMemo, useState, useSyncExternalStore } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
 import { NeedsAttention, type AttentionItem } from './NeedsAttention';
-import { ExpandableEventCard } from '@/components/event-discovery/ExpandableEventCard';
-import type { EventCardRecord } from '@/components/event-discovery/EventCard';
 import { EVENT_FORMATS, type EventFormat } from '@/app/events/new/schema';
 
 export type WorkstationEvent = {
@@ -128,7 +126,6 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
   const [agendaSearchOpen, setAgendaSearchOpen] = useState(false);
   const [agendaQuery, setAgendaQuery] = useState('');
   const [activeFormat, setActiveFormat] = useState<EventFormat | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [segment, setSegment] = useState<Segment>('upcoming');
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [calMonth, setCalMonth] = useState(() => hkYearMonth(nowMs));
@@ -145,11 +142,11 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
   const todayKey = hkDateKey(nowMs);
 
   const agendaEligible = useMemo(
-    () => events.filter((e) => !e.deleted && e.lifecycle !== 'drafted' && e.lifecycle !== 'cancelled'),
+    () => events.filter((e) => !e.deleted && e.lifecycle !== 'cancelled'),
     [events],
   );
-  // Cancelled and draft events live on Manage; the empty states point there when any exist.
-  const hasHiddenEvents = events.some((e) => !e.deleted && (e.lifecycle === 'cancelled' || e.lifecycle === 'drafted'));
+  // Cancelled events live on Manage; the empty states point there when any exist.
+  const hasHiddenEvents = events.some((e) => !e.deleted && e.lifecycle === 'cancelled');
 
   const formatCounts = useMemo(() => {
     const counts = new Map<EventFormat, number>();
@@ -194,19 +191,6 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
 
   const eventDays = useMemo(() => new Set(agendaEligible.map((e) => hkDateKey(e.startMs))), [agendaEligible]);
 
-  function toRecord(e: ProgrammeEvent): EventCardRecord {
-    return {
-      id: e.id,
-      title: e.title,
-      summary: e.description ?? undefined,
-      format: e.format ? FORMAT_LABEL[e.format] : undefined,
-      dateLabel: `${e.dateLabel} · ${e.timeLabel}`,
-      venueLabel: e.venueName ? (e.city ? `${e.venueName}, ${e.city}` : e.venueName) : '',
-      imageUrl: e.hero_image_url ?? undefined,
-      organizers: e.hosts.map((h) => h.name),
-    };
-  }
-
   const zeroEventsOverall = events.length === 0;
 
   return (
@@ -230,6 +214,9 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
         <h1 className="text-[calc(34px*var(--text-scale))] font-bold leading-[1.1] tracking-[-0.02em] text-on-surface">
           {orgName ?? 'Your programme'}
         </h1>
+        <p className="mt-xs text-[calc(14px*var(--text-scale))] text-on-surface-variant">
+          Your events by date, including drafts. Open one to work on it.
+        </p>
         <p className="mt-xs flex items-center gap-xs text-[calc(13px*var(--text-scale))] text-on-surface-variant">
           <span className="material-symbols-outlined text-[calc(15px*var(--text-scale))]" aria-hidden>schedule</span>
           Times in HKT — {hkClock(nowMs)}
@@ -369,54 +356,42 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
                       <span className="text-[calc(15px*var(--text-scale))] text-on-surface-variant">{dow}</span>
                     </div>
                     {dayEvents.map((e) => (
-                      <Fragment key={e.id}>
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => setExpandedId(e.id)}
-                          onKeyDown={(ev) => {
-                            if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); setExpandedId(e.id); }
-                          }}
-                          className={`ev-row mx-[-12px] grid cursor-pointer gap-[16px] rounded-[12px] p-[14px_12px] transition-colors duration-[180ms] hover:bg-[rgba(20,23,43,0.035)] focus-visible:outline-2 focus-visible:outline-primary ${
-                            viewMode === 'card' ? 'grid-cols-[88px_1fr_110px]' : 'grid-cols-[88px_1fr]'
-                          }`}
-                        >
-                          <div className="pt-[2px] text-[calc(13px*var(--text-scale))] tabular-nums text-on-surface-variant">{e.timeLabel}</div>
-                          <div className="min-w-0">
-                            <div className="mb-[6px] flex items-start justify-between gap-md">
-                              <h3 className="m-0 text-[calc(16px*var(--text-scale))] font-semibold leading-[1.35] tracking-[-0.01em] text-on-surface">{e.title}</h3>
-                              <AgendaStatusPill event={e} />
-                            </div>
-                            {e.hosts.length > 0 && (
-                              <div className="mt-xs flex items-center gap-[6px] text-[calc(12.5px*var(--text-scale))] text-on-surface-variant">
-                                <AvatarStack hosts={e.hosts} />
-                                <span className="truncate">By {e.hosts.map((h) => h.name).join(', ')}</span>
-                              </div>
-                            )}
-                            {e.venueName && (
-                              <div className="mt-xs flex items-center gap-[6px] text-[calc(12.5px*var(--text-scale))] text-on-surface-variant">
-                                <span className="material-symbols-outlined text-[calc(14px*var(--text-scale))]" aria-hidden>location_on</span>
-                                {e.venueName}{e.city ? `, ${e.city}` : ''}
-                              </div>
-                            )}
+                      <Link
+                        key={e.id}
+                        href={`/events/${e.id}/details`}
+                        className={`ev-row mx-[-12px] grid gap-[16px] rounded-[12px] p-[14px_12px] transition-colors duration-[180ms] hover:bg-[rgba(20,23,43,0.035)] focus-visible:outline-2 focus-visible:outline-primary ${
+                          viewMode === 'card' ? 'grid-cols-[88px_1fr_110px]' : 'grid-cols-[88px_1fr]'
+                        }`}
+                      >
+                        <div className="pt-[2px] text-[calc(13px*var(--text-scale))] tabular-nums text-on-surface-variant">{e.timeLabel}</div>
+                        <div className="min-w-0">
+                          <div className="mb-[6px] flex items-start justify-between gap-md">
+                            <h3 className="m-0 text-[calc(16px*var(--text-scale))] font-semibold leading-[1.35] tracking-[-0.01em] text-on-surface">{e.title}</h3>
+                            <AgendaStatusPill event={e} />
                           </div>
-                          {viewMode === 'card' && (
-                            <div className="h-[110px] w-[110px] overflow-hidden rounded-[12px] bg-surface-container" aria-hidden>
-                              {e.hero_image_url ? (
-                                <img src={e.hero_image_url} alt="" className="h-full w-full object-cover" />
-                              ) : (
-                                <FormatPlaceholder format={e.format} />
-                              )}
+                          {e.hosts.length > 0 && (
+                            <div className="mt-xs flex items-center gap-[6px] text-[calc(12.5px*var(--text-scale))] text-on-surface-variant">
+                              <AvatarStack hosts={e.hosts} />
+                              <span className="truncate">By {e.hosts.map((h) => h.name).join(', ')}</span>
+                            </div>
+                          )}
+                          {e.venueName && (
+                            <div className="mt-xs flex items-center gap-[6px] text-[calc(12.5px*var(--text-scale))] text-on-surface-variant">
+                              <span className="material-symbols-outlined text-[calc(14px*var(--text-scale))]" aria-hidden>location_on</span>
+                              {e.venueName}{e.city ? `, ${e.city}` : ''}
                             </div>
                           )}
                         </div>
-                        <ExpandableEventCard
-                          hideTrigger
-                          event={toRecord(e)}
-                          open={expandedId === e.id}
-                          onOpenChange={(open) => setExpandedId(open ? e.id : null)}
-                        />
-                      </Fragment>
+                        {viewMode === 'card' && (
+                          <div className="h-[110px] w-[110px] overflow-hidden rounded-[12px] bg-surface-container" aria-hidden>
+                            {e.hero_image_url ? (
+                              <img src={e.hero_image_url} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              <FormatPlaceholder format={e.format} />
+                            )}
+                          </div>
+                        )}
+                      </Link>
                     ))}
                   </div>
                 );
@@ -485,7 +460,7 @@ function EmptyAgenda({ text, cta, hint = false }: { text: string; cta: boolean; 
       <p className="text-body-md text-on-surface-variant">{text}</p>
       {hint && (
         <p className="mt-xs text-body-md text-on-surface-variant">
-          Cancelled and draft events are listed in{' '}
+          Cancelled events are listed in{' '}
           <Link href="/dashboard/manage" className="font-semibold text-[color:var(--on-primary-container)] hover:underline">Manage</Link>.
         </p>
       )}

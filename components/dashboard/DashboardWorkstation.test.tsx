@@ -83,10 +83,21 @@ describe('DashboardWorkstation — programme home', () => {
     expect(screen.getByRole('button', { name: 'Compact view' })).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('clicking an agenda row opens the ExpandableEventCard dialog', () => {
-    renderBoard([event({ id: 'e-open', title: 'Open Me' })]);
-    fireEvent.click(agenda().getByText('Open Me'));
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  it('each agenda row links to its event details page', () => {
+    renderBoard([
+      event({ id: 'e-one', title: 'Alpha Row' }),
+      event({ id: 'e-two', title: 'Bravo Row', startMs: NOW + 48 * HOUR }),
+    ]);
+    expect(agenda().getByRole('link', { name: /Alpha Row/ })).toHaveAttribute('href', '/events/e-one/details');
+    expect(agenda().getByRole('link', { name: /Bravo Row/ })).toHaveAttribute('href', '/events/e-two/details');
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('says what the page is for, right under the title', () => {
+    renderBoard([event({})]);
+    expect(screen.getByRole('heading', { level: 1 }).nextElementSibling).toHaveTextContent(
+      'Your events by date, including drafts. Open one to work on it.',
+    );
   });
 
   it('clearing the search box on close does not leave the agenda silently filtered', () => {
@@ -152,9 +163,40 @@ describe('DashboardWorkstation — programme home', () => {
     expect(agenda().queryAllByRole('checkbox')).toHaveLength(0);
   });
 
-  it('excludes drafts from the programme agenda', () => {
+  it('lists a draft on the programme agenda with the Draft chip, linked to its details page', () => {
     renderBoard([event({ id: 'd1', title: 'Draft Event', lifecycle: 'drafted' })]);
-    expect(agenda().queryByText('Draft Event')).toBeNull();
+    const row = agenda().getByRole('link', { name: /Draft Event/ });
+    expect(row).toHaveAttribute('href', '/events/d1/details');
+    expect(within(row).getByText('Draft')).toBeInTheDocument();
+  });
+
+  it('puts drafts among the other events in date order', () => {
+    const fixedNow = new Date('2027-03-15T04:00:00Z').getTime(); // 12:00 HKT
+    const at = (iso: string) => new Date(iso).getTime();
+    renderBoard(
+      [
+        event({ id: 'later', title: 'Published Later', startMs: at('2027-03-25T02:00:00Z') }),
+        event({ id: 'draft', title: 'Draft Between', lifecycle: 'drafted', startMs: at('2027-03-20T02:00:00Z') }),
+        event({ id: 'sooner', title: 'Published Sooner', startMs: at('2027-03-18T02:00:00Z') }),
+      ],
+      { nowMs: fixedNow },
+    );
+    expect(agenda().getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
+      'Published Sooner',
+      'Draft Between',
+      'Published Later',
+    ]);
+  });
+
+  it('keeps deleted events off the agenda, drafts included', () => {
+    renderBoard([
+      event({ id: 'live-one', title: 'Still Here' }),
+      event({ id: 'del-draft', title: 'Deleted Draft', lifecycle: 'drafted', deleted: true }),
+      event({ id: 'del-pub', title: 'Deleted Published', deleted: true }),
+    ]);
+    expect(agenda().getByText('Still Here')).toBeInTheDocument();
+    expect(agenda().queryByText('Deleted Draft')).toBeNull();
+    expect(agenda().queryByText('Deleted Published')).toBeNull();
   });
 
   it('a filter with no match and nothing hidden shows no Manage pointer', () => {
@@ -175,13 +217,25 @@ describe('DashboardWorkstation — programme home', () => {
     expect(agenda().queryByRole('link', { name: /create/i })).toBeNull();
   });
 
-  it('points to Manage when the only upcoming events are cancelled or draft', () => {
-    renderBoard([
-      event({ id: 'c1', title: 'Cancelled Soon', lifecycle: 'cancelled' }),
-      event({ id: 'd1', title: 'Draft Soon', lifecycle: 'drafted' }),
-    ]);
+  it('points to Manage, and says only cancelled events are there, when the only upcoming events are cancelled', () => {
+    renderBoard([event({ id: 'c1', title: 'Cancelled Soon', lifecycle: 'cancelled' })]);
     expect(agenda().getByText('No upcoming events. Create one to start your programme.')).toBeInTheDocument();
     expect(agenda().getByRole('link', { name: 'Manage' })).toHaveAttribute('href', '/dashboard/manage');
+    expect(agenda().getByText(/^Cancelled events are listed in/)).toBeInTheDocument();
+    expect(agenda().queryByText(/draft/i)).toBeNull();
+  });
+
+  it('a lone draft is a programme event, not an empty programme', () => {
+    renderBoard([event({ id: 'd1', title: 'Draft Soon', lifecycle: 'drafted' })]);
+    expect(agenda().getByText('Draft Soon')).toBeInTheDocument();
+    expect(agenda().queryByText(/No upcoming events/)).toBeNull();
+    expect(agenda().queryByRole('link', { name: 'Manage' })).toBeNull();
+  });
+
+  it('a past-dated draft is listed on Programme, so an empty Upcoming view does not send anyone to Manage for it', () => {
+    renderBoard([event({ id: 'd-old', title: 'Old Draft', lifecycle: 'drafted', startMs: NOW - 48 * HOUR })]);
+    expect(agenda().getByText('No upcoming events. Create one to start your programme.')).toBeInTheDocument();
+    expect(agenda().queryByRole('link', { name: 'Manage' })).toBeNull();
   });
 
   it('shows no Manage pointer when nothing is hidden', () => {

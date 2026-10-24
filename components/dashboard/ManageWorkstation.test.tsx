@@ -13,7 +13,7 @@ vi.mock('@/app/dashboard/actions', () => ({
 }));
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { ToastProvider } from '@/components/ui/toast';
 import { ManageWorkstation } from './ManageWorkstation';
 import type { ProgrammeEvent } from './DashboardWorkstation';
@@ -62,6 +62,12 @@ function renderManage(events: ProgrammeEvent[]) {
 }
 
 describe('ManageWorkstation', () => {
+  it('says what the page is for, in the header under the title (CX-04)', () => {
+    renderManage([event({ id: 'e-1' })]);
+    const title = screen.getByRole('heading', { level: 1, name: 'Manage events' });
+    expect(within(title.closest('header')!).getByText('Every event in every state, with search, filters and bulk actions.')).toBeInTheDocument();
+  });
+
   describe('per-row action links', () => {
     it('renders Details, Edit, Door, Analytics, and Delete for each event', () => {
       renderManage([event({ id: 'e-7' })]);

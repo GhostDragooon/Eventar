@@ -287,7 +287,7 @@ export function ManageWorkstation({ events }: ManageWorkstationProps) {
             <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>add</span>New event
           </Link>
         </div>
-        <p className="text-[calc(13px*var(--text-scale))] text-on-surface-variant">Filter, export, archive, or open an event to run it.</p>
+        <p className="text-[calc(13px*var(--text-scale))] text-on-surface-variant">Every event in every state, with search, filters and bulk actions.</p>
       </header>
 
       <div className="flex flex-col sm:flex-row gap-sm mb-md">

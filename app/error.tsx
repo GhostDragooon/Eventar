@@ -13,8 +13,8 @@ import { isOrganiserWorkspacePath } from '@/lib/authDoor';
 // Two audiences (Q32). A crash on an organiser page used to land an organiser on
 // the public "tell the organiser" page with a Home link into the marketing site
 // (core-UX finding D, 2026-10-01). Behind the organiser gate the same boundary
-// speaks to them directly: no "tell the organiser", and the way out is Manage, where
-// drafts are listed (Programme hides them until P7a; retarget it then).
+// speaks to them directly: no "tell the organiser", and the way out is Programme,
+// which lists drafts since CX-04 (it was Manage while Programme hid them).
 // /login and an invite link are organiser-DOOR paths with no workspace behind
 // them, so they keep the public wording and the Home link.
 //
@@ -63,7 +63,7 @@ export default function GlobalError({
     ? {
         heading: 'This page hit an unexpected error.',
         body: `If you were saving or publishing, check your events before you repeat it, so nothing is created twice.${error.digest ? ` Reference ${error.digest}: quote it if you ask for help.` : ''}`,
-        exit: { href: '/dashboard/manage', label: 'Check drafts and events' },
+        exit: { href: '/dashboard', label: 'Back to Programme' },
       }
     : {
         heading: 'We hit an unexpected error.',

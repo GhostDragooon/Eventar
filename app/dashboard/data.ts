@@ -45,6 +45,29 @@ export function ownEvents<Cols extends string>(
   return query;
 }
 
+// An `.in()` puts every id in the request URL: 242 uuids are a 9 KB URL and the gateway answers 414 (the events
+// query below allows 300). 100 ids are about 3.7 KB.
+function idBatches(ids: string[], size = 100): string[][] {
+  const batches: string[][] = [];
+  for (let i = 0; i < ids.length; i += size) batches.push(ids.slice(i, i + size));
+  return batches;
+}
+
+// credit_ledger has no organisation_id, so "credits issued" is counted over the organisation's event ids. Any failed
+// batch gives an error and no total, never a partial count.
+export async function countCreditsIssued(
+  admin: SupabaseClient,
+  eventIds: string[],
+): Promise<{ count: number | null; error: { code?: string; message?: string } | null }> {
+  const results = await Promise.all(
+    idBatches(eventIds).map((ids) =>
+      admin.from('credit_ledger').select('id', { count: 'exact', head: true }).eq('entry_type', 'credit_earned').in('event_id', ids),
+    ),
+  );
+  const error = results.find((r) => r.error)?.error ?? null;
+  return { count: error ? null : results.reduce((n, r) => n + (r.count ?? 0), 0), error };
+}
+
 export async function fetchDecoratedEvents(
   supabase: SupabaseClient,
   nowMs: number,
@@ -59,11 +82,14 @@ export async function fetchDecoratedEvents(
     .limit(300);
   if (eventsErr) throw eventsErr;
 
+  // ponytail: a batch of 100 events with over 1000 registrations is still cut by PostgREST's row cap.
   const eventIds = (events ?? []).map((e) => e.id);
-  const regsRes = eventIds.length > 0
-    ? await supabase.from('registrations').select('event_id, status, registered_at, check_in_at').in('event_id', eventIds)
-    : { data: [] as Array<{ event_id: string; status: string; registered_at: string | null; check_in_at: string | null }>, error: null };
-  if (regsRes.error) throw regsRes.error;
+  const regsRes = await Promise.all(
+    idBatches(eventIds).map((ids) => supabase.from('registrations').select('event_id, status, registered_at, check_in_at').in('event_id', ids)),
+  );
+  const regsErr = regsRes.find((r) => r.error)?.error;
+  if (regsErr) throw regsErr;
+  const regs = regsRes.flatMap((r) => r.data ?? []);
 
   const weekAgoMs = nowMs - 7 * DAY_MS;
   const todayStartMs = new Date(new Date(nowMs).setHours(0, 0, 0, 0)).getTime();
@@ -71,7 +97,7 @@ export async function fetchDecoratedEvents(
   for (const e of events ?? []) counts.set(e.id, { registered: 0, attended: 0, delta7: 0 });
   let registered7d = 0;
   let checkedInToday = 0;
-  for (const r of regsRes.data ?? []) {
+  for (const r of regs) {
     const c = counts.get(r.event_id);
     if (!c) continue;
     c.registered++;

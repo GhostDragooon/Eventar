@@ -9,7 +9,7 @@ import {
   type DashboardMetrics,
 } from '@/components/dashboard/DashboardWorkstation';
 import { type AttentionItem } from '@/components/dashboard/NeedsAttention';
-import { fetchDecoratedEvents } from '@/app/dashboard/data';
+import { countCreditsIssued, fetchDecoratedEvents } from '@/app/dashboard/data';
 import { DevEmailStubBanner } from '@/components/dev/DevEmailStubBanner';
 
 export const metadata = {
@@ -60,9 +60,7 @@ export default async function DashboardPage() {
     // caller's role (their own org, or every org for eventar_staff). Before
     // this fix the count was global across every organisation, invisible
     // under review mode for the same reason as the D4 events leak.
-    orgEventIds.length > 0
-      ? admin.from('credit_ledger').select('id', { count: 'exact', head: true }).eq('entry_type', 'credit_earned').in('event_id', orgEventIds)
-      : { count: 0, error: null },
+    countCreditsIssued(admin, orgEventIds),
     // practitioner_licences is practitioner-owned, not organisation-owned
     // (no organisation_id, no event_id — see its own migration comment) — an
     // organiser_admin/organiser_member has no valid join to scope "blocked"

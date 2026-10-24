@@ -36,7 +36,7 @@ function makeQueryMock(rows: unknown[]) {
 }
 
 import { fakeSupabase } from '@/tests/helpers/staffPageFakes';
-import { fetchDecoratedEvents, ownEvents } from './data';
+import { countCreditsIssued, fetchDecoratedEvents, ownEvents } from './data';
 
 describe('fetchDecoratedEvents — org scoping (regression, 2026-09-17 cross-org leak)', () => {
   it('filters by organisation_id for a non-eventar_staff caller', async () => {
@@ -63,6 +63,101 @@ describe('fetchDecoratedEvents — org scoping (regression, 2026-09-17 cross-org
     });
 
     expect(calls.some((c) => c.method === 'eq' && c.args[0] === 'organisation_id')).toBe(false);
+  });
+});
+
+// Found 2026-10-24 (CX-04 live walk): the registrations lookup sent every event id in one `.in()`. 242 ids made a
+// 9 KB URL, the gateway answered 414 and /dashboard and /dashboard/manage crashed for any organisation past about
+// 220 events (the query is capped at 300 events, so it can never get better by itself).
+describe('fetchDecoratedEvents — the registrations lookup stays under the URL limit', () => {
+  const event = (i: number) => ({
+    id: `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`,
+    title: `Event ${i}`, description: null, start_time: '2026-11-01T02:00:00Z', end_time: '2026-11-01T04:00:00Z',
+    timezone: 'Asia/Hong_Kong', status: 'published', venue_name: null, max_attendees: null,
+    registration_close_at: null, registration_open_at: null, created_by: null, category: null,
+    deleted_at: null, format: null, hero_image_url: null, city: null, organized_by: null,
+  });
+
+  it('asks for registrations in small batches and still counts every event', async () => {
+    const events = Array.from({ length: 250 }, (_, i) => event(i));
+    const idLists: string[][] = [];
+    const eventsBuilder = makeQueryMock(events).builder;
+    const regsBuilder = {
+      select: () => regsBuilder,
+      in: async (_col: string, ids: string[]) => {
+        idLists.push(ids);
+        return {
+          data: ids
+            .filter((id) => id === events[0].id || id === events[249].id)
+            .map((id) => ({ event_id: id, status: 'registered', registered_at: null, check_in_at: null })),
+          error: null,
+        };
+      },
+    };
+    const supabase = { from: (t: string) => (t === 'events' ? eventsBuilder : regsBuilder) } as never;
+
+    const { events: out } = await fetchDecoratedEvents(supabase, Date.now(), { role: 'organiser_admin', organisation_id: 'org-mine' });
+
+    expect(idLists.length).toBeGreaterThan(1);
+    // 37 characters per id in the URL: 100 ids is about 3.7 KB, well under the 8 KB gateway limit.
+    expect(Math.max(...idLists.map((l) => l.length))).toBeLessThanOrEqual(100);
+    expect(idLists.flat().sort()).toEqual(events.map((e) => e.id).sort());
+    expect(out[0].registered).toBe(1);
+    expect(out[249].registered).toBe(1);
+    expect(out[100].registered).toBe(0);
+  });
+
+  it('a failing batch fails the page (rule 12), even when it is not the first batch', async () => {
+    const eventsBuilder = makeQueryMock(Array.from({ length: 250 }, (_, i) => event(i))).builder;
+    let call = 0;
+    const regsBuilder = {
+      select: () => regsBuilder,
+      in: async () => (++call === 2 ? { data: null, error: new Error('boom') } : { data: [], error: null }),
+    };
+    const supabase = { from: (t: string) => (t === 'events' ? eventsBuilder : regsBuilder) } as never;
+    await expect(
+      fetchDecoratedEvents(supabase, Date.now(), { role: 'organiser_admin', organisation_id: 'org-mine' }),
+    ).rejects.toThrow('boom');
+  });
+});
+
+// The "Credits issued" tile counts credit_ledger rows for the organisation's events with one `.in()`. Same 414 at
+// about 220 ids, but its error is logged and the tile falls back to 0, so after the registrations fix the page loaded
+// and the tile quietly said 0 (dev lens F1, CX-04).
+describe('countCreditsIssued — the credit count stays under the URL limit', () => {
+  const ids = Array.from({ length: 250 }, (_, i) => `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`);
+  const adminWith = (inResult: (call: number, list: string[]) => { count: number | null; error: Error | null }) => {
+    const lists: string[][] = [];
+    const builder = {
+      select: () => builder,
+      eq: () => builder,
+      in: async (_col: string, list: string[]) => {
+        lists.push(list);
+        return inResult(lists.length, list);
+      },
+    };
+    return { admin: { from: () => builder } as never, lists };
+  };
+
+  it('counts in batches of at most 100 ids and adds the batches up', async () => {
+    const { admin, lists } = adminWith((_c, list) => ({ count: list.length, error: null }));
+    const res = await countCreditsIssued(admin, ids);
+    expect(res).toEqual({ count: 250, error: null });
+    expect(Math.max(...lists.map((l) => l.length))).toBeLessThanOrEqual(100);
+    expect(lists.flat().sort()).toEqual([...ids].sort());
+  });
+
+  it('a failing batch gives an error and no total, never a partial count', async () => {
+    const { admin } = adminWith((call, list) => (call === 2 ? { count: null, error: new Error('boom') } : { count: list.length, error: null }));
+    const res = await countCreditsIssued(admin, ids);
+    expect(res.count).toBeNull();
+    expect(res.error?.message).toBe('boom');
+  });
+
+  it('asks nothing for an organisation with no events', async () => {
+    const { admin, lists } = adminWith(() => ({ count: 99, error: null }));
+    expect(await countCreditsIssued(admin, [])).toEqual({ count: 0, error: null });
+    expect(lists).toHaveLength(0);
   });
 });
 
