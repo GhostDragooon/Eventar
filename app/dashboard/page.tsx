@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { requireStaff, NotAuthorizedError } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
@@ -11,6 +12,7 @@ import {
 import { type AttentionItem } from '@/components/dashboard/NeedsAttention';
 import { countCreditsIssued, fetchDecoratedEvents } from '@/app/dashboard/data';
 import { DevEmailStubBanner } from '@/components/dev/DevEmailStubBanner';
+import { organiserTz } from '@/lib/tz';
 
 export const metadata = {
   title: 'Programme',
@@ -47,7 +49,8 @@ export default async function DashboardPage() {
 
   // eslint-disable-next-line react-hooks/purity
   const nowMs = Date.now();
-  const { events: decorated, registered7d, checkedInToday } = await fetchDecoratedEvents(supabase, nowMs, staff);
+  const tz = organiserTz((await cookies()).get('eventar-tz')?.value);
+  const { events: decorated, registered7d, checkedInToday } = await fetchDecoratedEvents(supabase, nowMs, staff, tz);
 
   // ---- CPD pulse + capture rate (IA spec stat row) -------------------------
   const admin = supabaseAdmin();
@@ -181,7 +184,7 @@ export default async function DashboardPage() {
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role, full_name: staff.full_name }}>
       <DevEmailStubBanner />
-      <DashboardWorkstation events={decorated} attention={attention} metrics={metrics} orgName={orgName} nowMs={nowMs} />
+      <DashboardWorkstation key={tz} events={decorated} attention={attention} metrics={metrics} orgName={orgName} nowMs={nowMs} tz={tz} />
     </StaffShell>
   );
 }

@@ -35,6 +35,7 @@ function event(overrides: Partial<ProgrammeEvent>): ProgrammeEvent {
     description: null,
     lifecycle: 'registering',
     startMs: NOW + 24 * HOUR,
+    dayKey: '2026-07-04',
     dateLabel: 'Fri 4 Jul',
     timeLabel: '19:30 HKT',
     venueName: 'Hall A',

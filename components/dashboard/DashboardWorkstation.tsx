@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState, useSyncExternalStore } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
 import { NeedsAttention, type AttentionItem } from './NeedsAttention';
 import { EVENT_FORMATS, type EventFormat } from '@/app/events/new/schema';
@@ -27,6 +28,8 @@ export type WorkstationEvent = {
 /** Programme home's richer event shape — a superset of WorkstationEvent, so
  *  the same rows also drive the Manage page without a second fetch. */
 export type ProgrammeEvent = WorkstationEvent & {
+  /** The event's own local calendar date (YYYY-MM-DD in events.timezone): agenda days and calendar dots group by it. */
+  dayKey: string;
   format: EventFormat | null;
   hero_image_url: string | null;
   city: string | null;
@@ -49,7 +52,6 @@ export type ViewMode = 'card' | 'compact';
 export type Segment = 'upcoming' | 'past';
 
 const VIEW_STORAGE_KEY = 'eventar.programme.view';
-const TZ = 'Asia/Hong_Kong';
 
 const PILL: Record<Lifecycle, { label: string; cls: string; dot: string }> = {
   live:        { label: 'Live',        cls: 'bg-success-container text-on-success-container', dot: 'bg-[color:var(--success)]' },
@@ -87,20 +89,23 @@ function notifyStorage() {
   window.dispatchEvent(new StorageEvent('storage'));
 }
 
-function hkDateKey(ms: number): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
+function dateKey(ms: number, tz: string): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
 }
-function hkDateHeader(ms: number): { day: string; dow: string } {
+// Formats a YYYY-MM-DD calendar date. Date.parse reads it as UTC midnight,
+// so format in UTC: any other zone can slip it a day.
+function dateHeader(key: string): { day: string; dow: string } {
+  const ms = Date.parse(key);
   return {
-    day: new Intl.DateTimeFormat('en-GB', { timeZone: TZ, day: 'numeric', month: 'short' }).format(new Date(ms)),
-    dow: new Intl.DateTimeFormat('en-GB', { timeZone: TZ, weekday: 'long' }).format(new Date(ms)),
+    day: new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'short' }).format(ms),
+    dow: new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', weekday: 'long' }).format(ms),
   };
 }
-function hkClock(ms: number): string {
-  return new Intl.DateTimeFormat('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(ms));
+function clock(ms: number, tz: string): string {
+  return new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(ms));
 }
-function hkYearMonth(ms: number): { year: number; month: number } {
-  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit' }).formatToParts(new Date(ms));
+function yearMonth(ms: number, tz: string): { year: number; month: number } {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit' }).formatToParts(new Date(ms));
   return {
     year: Number(parts.find((p) => p.type === 'year')!.value),
     month: Number(parts.find((p) => p.type === 'month')!.value) - 1,
@@ -119,16 +124,31 @@ export type DashboardWorkstationProps = {
   metrics: DashboardMetrics;
   orgName: string | null;
   nowMs: number;
+  /** IANA zone where the organiser is: the eventar-tz cookie, validated server-side (organiserTz). */
+  tz: string;
 };
 
-export function DashboardWorkstation({ events, attention, metrics, orgName, nowMs }: DashboardWorkstationProps) {
+export function DashboardWorkstation({ events, attention, metrics, orgName, nowMs, tz }: DashboardWorkstationProps) {
+  const router = useRouter();
+  // The server renders "today" in the zone from the eventar-tz cookie. Keep
+  // that cookie on this browser's zone and re-render once when it was missing
+  // or stale. Compare against the raw cookie, not the server's resolved `tz`
+  // (ICU aliases differ between Node and browsers, e.g. Europe/Kiev vs
+  // Europe/Kyiv), and read it back before refreshing, so a browser that
+  // refuses cookies stays on the UTC fallback instead of refreshing every visit.
+  useEffect(() => {
+    const entry = `eventar-tz=${Intl.DateTimeFormat().resolvedOptions().timeZone}`;
+    if (document.cookie.split('; ').includes(entry)) return;
+    document.cookie = `${entry}; path=/; max-age=31536000; samesite=lax`;
+    if (document.cookie.split('; ').includes(entry)) router.refresh();
+  }, [router]);
   const viewMode = useSyncExternalStore<ViewMode>(subscribeStorage, readViewMode, () => 'card');
   const [agendaSearchOpen, setAgendaSearchOpen] = useState(false);
   const [agendaQuery, setAgendaQuery] = useState('');
   const [activeFormat, setActiveFormat] = useState<EventFormat | null>(null);
   const [segment, setSegment] = useState<Segment>('upcoming');
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  const [calMonth, setCalMonth] = useState(() => hkYearMonth(nowMs));
+  const [calMonth, setCalMonth] = useState(() => yearMonth(nowMs, tz));
 
   function changeView(v: ViewMode) {
     try {
@@ -139,7 +159,7 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
     notifyStorage();
   }
 
-  const todayKey = hkDateKey(nowMs);
+  const todayKey = dateKey(nowMs, tz);
 
   const agendaEligible = useMemo(
     () => events.filter((e) => !e.deleted && e.lifecycle !== 'cancelled'),
@@ -169,27 +189,32 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
       list = list.filter((e) => e.title.toLowerCase().includes(q) || (e.venueName ?? '').toLowerCase().includes(q));
     }
     if (selectedDay) {
-      list = list.filter((e) => hkDateKey(e.startMs) === selectedDay);
+      list = list.filter((e) => e.dayKey === selectedDay);
       return [...list].sort((a, b) => a.startMs - b.startMs);
     }
     list = list.filter((e) =>
       segment === 'upcoming' ? e.lifecycle === 'live' || e.startMs >= nowMs : e.lifecycle !== 'live' && e.startMs < nowMs,
     );
-    return [...list].sort((a, b) => (segment === 'upcoming' ? a.startMs - b.startMs : b.startMs - a.startMs));
+    // Date first, then start: an event can start earlier in absolute time yet
+    // on a later local date (another zone), which would put its day out of order.
+    return [...list].sort((a, b) =>
+      segment === 'upcoming'
+        ? a.dayKey.localeCompare(b.dayKey) || a.startMs - b.startMs
+        : b.dayKey.localeCompare(a.dayKey) || b.startMs - a.startMs,
+    );
   }, [agendaEligible, activeFormat, agendaQuery, selectedDay, segment, nowMs]);
 
   const dateGroups = useMemo(() => {
     const groups = new Map<string, ProgrammeEvent[]>();
     for (const e of agendaFiltered) {
-      const key = hkDateKey(e.startMs);
-      const arr = groups.get(key) ?? [];
+      const arr = groups.get(e.dayKey) ?? [];
       arr.push(e);
-      groups.set(key, arr);
+      groups.set(e.dayKey, arr);
     }
     return [...groups.entries()];
   }, [agendaFiltered]);
 
-  const eventDays = useMemo(() => new Set(agendaEligible.map((e) => hkDateKey(e.startMs))), [agendaEligible]);
+  const eventDays = useMemo(() => new Set(agendaEligible.map((e) => e.dayKey)), [agendaEligible]);
 
   const zeroEventsOverall = events.length === 0;
 
@@ -219,7 +244,7 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
         </p>
         <p className="mt-xs flex items-center gap-xs text-[calc(13px*var(--text-scale))] text-on-surface-variant">
           <span className="material-symbols-outlined text-[calc(15px*var(--text-scale))]" aria-hidden>schedule</span>
-          Times in HKT — {hkClock(nowMs)}
+          Times in HKT — {clock(nowMs, 'Asia/Hong_Kong')}
         </p>
         <p className="mt-xs text-[calc(14px*var(--text-scale))] text-on-surface-variant">
           Accredited CME / CPD events on Eventar · organiser workspace
@@ -327,7 +352,7 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
                 className="mb-md inline-flex items-center gap-xs rounded-full bg-primary-container px-md py-xs text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary-container"
               >
                 <span className="material-symbols-outlined text-[calc(14px*var(--text-scale))]" aria-hidden>close</span>
-                {hkDateHeader(new Date(`${selectedDay}T00:00:00`).getTime()).day} — clear filter
+                {dateHeader(selectedDay).day} — clear filter
               </button>
             )}
 
@@ -348,7 +373,7 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
               )
             ) : (
               dateGroups.map(([key, dayEvents]) => {
-                const { day, dow } = hkDateHeader(dayEvents[0].startMs);
+                const { day, dow } = dateHeader(key);
                 return (
                   <div key={key} className="mb-md">
                     <div className="sticky top-0 z-[1] flex items-baseline gap-[10px] border-b border-outline-variant bg-sidebar py-[10px]">

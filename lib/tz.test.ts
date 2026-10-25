@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatInTz, browserTz, tzFromCoords } from './tz';
+import { formatInTz, browserTz, tzFromCoords, organiserTz } from './tz';
 
 describe('formatInTz', () => {
   it('formats UTC ISO in Europe/Berlin (summer DST = UTC+2)', () => {
@@ -33,5 +33,19 @@ describe('tzFromCoords', () => {
   });
   it('returns Asia/Tokyo for Tokyo coords', () => {
     expect(tzFromCoords(35.6762, 139.6503)).toBe('Asia/Tokyo');
+  });
+});
+
+describe('organiserTz (eventar-tz cookie, client-supplied)', () => {
+  it('keeps a valid IANA zone', () => {
+    expect(organiserTz('Europe/London')).toBe('Europe/London');
+  });
+  it('falls back to UTC when the cookie is missing', () => {
+    expect(organiserTz(undefined)).toBe('UTC');
+  });
+  it('falls back to UTC for anything Intl does not recognise', () => {
+    expect(organiserTz('Not/AZone')).toBe('UTC');
+    expect(organiserTz('Europe/London; path=/')).toBe('UTC');
+    expect(organiserTz('')).toBe('UTC');
   });
 });

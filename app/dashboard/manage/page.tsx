@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { requireStaff, NotAuthorizedError } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
@@ -5,6 +6,7 @@ import { StaffShell } from '@/components/shell/StaffShell';
 import { ManageWorkstation } from '@/components/dashboard/ManageWorkstation';
 import { fetchDecoratedEvents } from '@/app/dashboard/data';
 import { DevEmailStubBanner } from '@/components/dev/DevEmailStubBanner';
+import { organiserTz } from '@/lib/tz';
 
 export const metadata = {
   title: 'Manage events',
@@ -25,7 +27,7 @@ export default async function ManagePage() {
   const supabase = await supabaseServer();
   // eslint-disable-next-line react-hooks/purity
   const nowMs = Date.now();
-  const { events } = await fetchDecoratedEvents(supabase, nowMs, staff);
+  const { events } = await fetchDecoratedEvents(supabase, nowMs, staff, organiserTz((await cookies()).get('eventar-tz')?.value));
 
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role, full_name: staff.full_name }}>

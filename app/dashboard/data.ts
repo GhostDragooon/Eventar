@@ -11,6 +11,9 @@ const DAY_MS = 86_400_000;
 function fmtDate(iso: string, tz: string): string {
   return new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: tz }).format(new Date(iso));
 }
+function fmtDayKey(iso: string, tz: string): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(new Date(iso));
+}
 function fmtTime(iso: string, tz: string): string {
   return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZoneName: 'short', timeZone: tz }).format(new Date(iso));
 }
@@ -65,6 +68,7 @@ export async function fetchDecoratedEvents(
   supabase: SupabaseClient,
   nowMs: number,
   staff: Pick<Staff, 'role' | 'organisation_id'>,
+  tz: string,
 ): Promise<{ events: ProgrammeEvent[]; registered7d: number; checkedInToday: number }> {
   const { data: events, error: eventsErr } = await ownEvents(
     supabase,
@@ -85,7 +89,11 @@ export async function fetchDecoratedEvents(
   const regs = regsRes.flatMap((r) => r.data ?? []);
 
   const weekAgoMs = nowMs - 7 * DAY_MS;
-  const todayStartMs = new Date(new Date(nowMs).setHours(0, 0, 0, 0)).getTime();
+  // "Today" is the calendar day where the organiser is (tz, from the
+  // eventar-tz cookie), never the server process's local midnight, which is
+  // UTC on Vercel.
+  const orgDay = new Intl.DateTimeFormat('en-CA', { timeZone: tz });
+  const todayKey = orgDay.format(nowMs);
   const counts = new Map<string, { registered: number; attended: number; delta7: number }>();
   for (const e of events ?? []) counts.set(e.id, { registered: 0, attended: 0, delta7: 0 });
   let registered7d = 0;
@@ -99,7 +107,7 @@ export async function fetchDecoratedEvents(
       c.delta7++;
       registered7d++;
     }
-    if (r.check_in_at && new Date(r.check_in_at).getTime() >= todayStartMs) checkedInToday++;
+    if (r.check_in_at && orgDay.format(new Date(r.check_in_at)) === todayKey) checkedInToday++;
   }
 
   const decorated: ProgrammeEvent[] = (events ?? []).map((e) => {
@@ -114,6 +122,7 @@ export async function fetchDecoratedEvents(
       description: e.description,
       lifecycle,
       startMs: new Date(e.start_time).getTime(),
+      dayKey: fmtDayKey(e.start_time, e.timezone),
       dateLabel: fmtDate(e.start_time, e.timezone),
       timeLabel: fmtTime(e.start_time, e.timezone),
       venueName: e.venue_name,
