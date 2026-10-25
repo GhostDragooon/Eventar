@@ -21,16 +21,24 @@ export function emailLive(): boolean {
 }
 
 /**
- * Real send when the key is set; otherwise the dev stub — except in
- * production, where a missing key is a misconfiguration, not a convenience. It
- * returns a send error there instead of stubbing, so callers record the row
- * `failed` (retried once the key is set) and report it, rather than parking it
- * in `queued`, which is terminal and reads as fine (rule 12). Same
+ * No key in production: a deployment fault, not a dev convenience. Same
  * `NODE_ENV === 'production'` signal as lib/reviewMode.ts and lib/origin.ts.
+ */
+function emailMisconfigured(): boolean {
+  return !emailLive() && process.env.NODE_ENV === 'production';
+}
+
+/**
+ * Real send when the key is set; otherwise the dev stub — except in
+ * production, where a missing key returns a send error instead of stubbing, so
+ * the caller records the row `failed` and reports it, rather than parking it
+ * in `queued`, which is terminal and reads as fine (rule 12). The bulk path
+ * never reaches this in that state (see `runBulkSend`). A failed confirmation
+ * is not re-sent: only reminder and survey are dispatched again.
  */
 export async function sendEmail(opts: Parameters<typeof sendEmailReal>[0]): Promise<StubSendEmailResult> {
   if (emailLive()) return sendEmailReal(opts);
-  if (process.env.NODE_ENV === 'production') {
+  if (emailMisconfigured()) {
     console.error('[sendEmail] RESEND_API_KEY is unset in production — email NOT sent');
     return {
       error: { code: 'resend_not_configured', message: 'RESEND_API_KEY is unset in production' },
@@ -174,6 +182,14 @@ async function runBulkSend(
   build: (reg: Recipient) => Promise<Envelope>,
   { manual = false }: SendOptions = {},
 ): Promise<SendResult> {
+  // A missing key is a fault of the whole batch, not of each recipient. Per-row
+  // `failed` writes would spend every recipient's MAX_SEND_ATTEMPTS in three
+  // ticks, so setting the key afterwards would never recover the scheduler.
+  if (emailMisconfigured()) {
+    console.error('[runBulkSend] RESEND_API_KEY is unset in production, nothing sent', { purpose, eventId });
+    return zero('Email is not configured on this server (RESEND_API_KEY is unset). Nothing was sent.');
+  }
+
   const admin = supabaseAdmin();
 
   // One read serving two purposes: the scheduler's retry budget, and knowing
