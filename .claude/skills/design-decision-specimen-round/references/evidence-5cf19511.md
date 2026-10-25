@@ -1,0 +1,2 @@
+Tool result: "This session isn't open in any window right now, so its view was left alone. Tell the user what to look at instead.\n{\"views\":[],\"open_panes\":[]}"
+Assistant text: "The app wouldn't open the preview pane for this session, so open that URL in a browser to look at them."

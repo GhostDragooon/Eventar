@@ -1,0 +1,3 @@
+Bash result: "14: * The focus/scrim behaviour here is the same shape ConfirmDialog and\n16: *   - the scrim is an aria-hidden <div>, never a named button (a second\n135:      <div aria-hidden onClick={() => onOpenChange(false)} className=\"absolute inset-0 bg-on-surface/60\" />"
+Edit command: "q='app/dev-preview-uiport/ux-02/parts.tsx'\n...\na='bg-on-surface/40'\nassert a in t\nt=t.replace(a,'bg-on-surface/60')"
+Assistant text: "Dark scrim: the product's modal scrim class, `bg-on-surface/60`, draws a light veil over a dark page. I saw it in the drawer frame; the Dialog itself is unchecked."
