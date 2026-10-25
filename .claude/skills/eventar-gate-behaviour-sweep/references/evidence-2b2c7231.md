@@ -1,0 +1,1 @@
+Handover draft: "5. **CLAUDE.md Hard Rule 7 edit (not made).** Line 145 says \"Currently unset, so sends are stubbed (console.log) regardless of stage.\" That is false for any production build."

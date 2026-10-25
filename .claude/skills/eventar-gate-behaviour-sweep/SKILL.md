@@ -1,12 +1,12 @@
 ---
 name: eventar-gate-behaviour-sweep
-description: Use when changing an Eventar gate's window, status or role.
+description: Use when changing an Eventar gate's window, status or role, or flipping a dev email stub or RESEND_API_KEY send switch.
 category: verification
 ---
 
 # A changed gate leaves its old claim behind; sweep for it before reporting the change
 
-- Before calling a gate change done, grep the old behaviour's words across `docs/`, `scripts/`, `lib/`, `app/` and `docs/DEFERRED.md`. Example: `grep -rni "time-gated\|deliberately not" docs scripts lib app`.
+- Before calling a gate change done, grep the old behaviour's words across `docs/`, `scripts/`, `lib/`, `app/`, `docs/DEFERRED.md`, and the root `CLAUDE.md` and `AGENTS.md`. Root rules are part of the sweep: a stale send-switch line in CLAUDE.md sat outside every path above. Example: `grep -rni "time-gated\|deliberately not" docs scripts lib app`.
 - Every hit that still describes the old behaviour is a defect in the same change. Rewrite it to the new behaviour, and record the migration that changed it in the DEFERRED row or the card hand-back.
 - A demo or seed script that runs at a fixed offset is the usual casualty. Re-derive which surfaces still work at that offset and state it in its run sheet.
 - A comment that says a string or rule has one source ("one voice", "shared source") is a claim to check. Grep each copy of the wording, including pages and server actions that render their own literals. A "shared" comment over separate literals is a defect in the same change.
@@ -14,4 +14,9 @@ category: verification
 - A gate that reads a derived row (an `event_occurrences` window, a cached status) is only as correct as that row's writers. Before shipping, grep every UPDATE path of the source columns (`update_event_with_blocks`, seed scripts, edit actions) and check the derived row follows each one.
 - A filter enforced by RLS (a `deleted_at is null` or `status = 'published'` policy) covers only reads through the user client. Service-role or admin-client readers bypass it. Before calling a visibility gate done, grep every `createAdminClient` or `admin` reader of the same table under `app/` and `lib/`, and check each one applies the gate or is named in the hand-back as not gated.
 - Deleting a fallback that masked drift exposes the drift. After removing the "single occurrence, any time" style branch, re-check which edits leave the derived row stale, and add a test that edits the source column and then runs the gate.
+- Flipping a dev stub or env-keyed send switch (`emailLive()`, `RESEND_API_KEY`) changes what production shows. Grep every reader of that flag (`deliveryLive`, `DevEmailStubStrip`, `queued_dev`, `stubbed`, `dev mode`, `RESEND_API_KEY` in `app/`, `components/`, `lib/`) and every `TEMP:` marker the stub left. Copy that says "stubbed" or "dev mode" while the flag reads live is a defect: gate it on the same flag or rewrite it. Stub-only branches stay until the stub is removed; list them in the hand-back and delete them only when asked.
+- A send switch that turns a silent stub into a hard send error also changes the retry path. Before a backtest, read the retry budget and the give-up branch (`MAX_SEND_ATTEMPTS`, `gaveUp`). A config-level failure (no key) must not write one `failed` row per recipient per tick: each tick spends the budget, and after `MAX_SEND_ATTEMPTS` ticks every row is `gaveUp`, so a key set later never reaches them. The bulk path returns one batch error and writes no ledger rows; the next tick with the key sends everyone. Single sends still write their `failed` row for the caller to report. Check which kinds the dispatcher re-sends: a failed confirmation with no retry path is lost. Say all of this in the hand-back.
+- Sweep the words production shows for the switch, not only the flag names. Grep the literal phrases too: `development stub`, `stalled`, `will record as`, `delivery: "stubbed"`. A banner reading `Email delivery: development stub (no inbox).` beside `Sends failing` cards, or a strip reading `new sends will record as stalled` above `failed` rows, is wrong after the flip. Check each banner and attention card against the row state it summarises.
+- A route's JSON response that reports `delivery: "stubbed"` with `ok: false` is a stale field. Rewrite it from the same flag the send path reads.
+- A switch keyed on `NODE_ENV === 'production'` fires on every `next build` and `next start`, and on any host that sets `NODE_ENV=production` (a Vercel Preview is believed to, not checked against vendor docs). List each such environment and whether the key is set there. Compare with the deploy plan's env matrix (`docs/plans/2026-06-04-phase-8-vercel-deploy.md`), which says the key is "Production only": a Preview without a key now errors where it used to stub.
 - The hand-back lists which claims were swept and what each now says.

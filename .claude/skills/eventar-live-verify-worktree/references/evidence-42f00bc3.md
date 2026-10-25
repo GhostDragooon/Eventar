@@ -1,0 +1,1 @@
+Final report: "A real click on \"Send reminders now\" shows a confirm dialog, then \"Email is not configured on this server (RESEND_API_KEY is unset). Nothing was sent.\" The user reviewer's \"no response\" finding was a confirm dialog its scripted clicks missed."

@@ -1,0 +1,1 @@
+Handover: "3. **`NODE_ENV === 'production'` as the signal.** It is also true for local `next start` and (per the brief, not checked against vendor docs) Vercel Preview. A Preview with no key used to stub; now it errors. Options: keep (Stage 8 env matrix must put the key on Preview too; `docs/plans/2026-06-04-phase-8-vercel-deploy.md:328` says \"Production only\")"

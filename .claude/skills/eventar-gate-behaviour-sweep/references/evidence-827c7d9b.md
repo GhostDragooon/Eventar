@@ -1,0 +1,1 @@
+Final report: "On `04fdc9c`, cron ticks 1–3 each failed 3 sends and tick 4 gave up. On `fb49ac1`, four ticks wrote zero rows and `ok` stayed false." Commit subject: "fix(email): production without a key is one batch error, not a failed row per recipient".

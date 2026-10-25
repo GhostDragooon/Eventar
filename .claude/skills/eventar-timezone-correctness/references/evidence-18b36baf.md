@@ -1,0 +1,4 @@
+app/dashboard/manage/page.tsx:30:  const { events } = await fetchDecoratedEvents(supabase, nowMs, staff, organiserTz((await cookies()).get('eventar-tz')?.value));
+app/dashboard/page.tsx:53:  const { events: decorated, registered7d, checkedInToday } = await fetchDecoratedEvents(supabase, nowMs, staff, tz);
+app/dashboard/data.test.ts:99:    const { events: out } = await fetchDecoratedEvents(supabase, Date.now(), { role: 'organiser_admin', organisation_id: 'org-mine' });
+app/dashboard/data.test.ts:119:      fetchDecoratedEvents(supabase, Date.now(), { role: 'organiser_admin', organisation_id: 'org-mine' }),

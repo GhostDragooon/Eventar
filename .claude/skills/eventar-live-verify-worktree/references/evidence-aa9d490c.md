@@ -1,0 +1,1 @@
+Final message of the 2026-10-25 walk: "The Playwright tool echoed that test user's session cookie into the transcript; the user and its tokens no longer exist." Script written by Bash: `open("$WT/.playwright-mcp/tzshots2.js","w").write(js)` followed by `chmod 600`. Clear step inside the run_code script: `await ctx.clearCookies(); await ctx.addCookies(cookies);` before each state.

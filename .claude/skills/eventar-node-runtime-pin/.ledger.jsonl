@@ -1,0 +1,1 @@
+{"action": "create", "reason": "The 2026-10-21 Node security release made 24.22.1 the minimum safe 24.x. Eventar pins no Node version (no engines, no .nvmrc, no Vercel setting), and the Stage 8 deploy will inherit whatever the platform defaults to. The gap was found during this episode and must be carried to deploy.", "evidence": "references/evidence-e3e0da9d.md"}

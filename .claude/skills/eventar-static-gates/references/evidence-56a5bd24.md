@@ -1,0 +1,1 @@
+Bash input: `timeout 170 pnpm exec vitest run lib/email lib/devEmailStub.test.ts lib/resend.test.ts app/api/cron 'app/(public)/events/[id]' ... 2>&1 | tail -40`. Tool result: `(eval):1: command not found: timeout`. Re-run without the wrapper: `Test Files  11 passed (11)` / `Tests  140 passed (140)`.

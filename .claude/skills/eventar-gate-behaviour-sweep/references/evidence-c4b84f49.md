@@ -1,0 +1,1 @@
+Session titled "Land the email stub-vs-real switch": the agent ran `grep -rn "RESEND_API_KEY" -e "sendEmailReal" ...` and found readers of the switch across `components/` and `lib/` with no skill loaded to prompt that sweep. Tool result listed `components/details/EmailDeliveryStrip.tsx:103` and `components/RegisterCard.tsx:439`.
