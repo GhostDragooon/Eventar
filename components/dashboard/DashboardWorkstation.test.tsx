@@ -110,6 +110,12 @@ describe('DashboardWorkstation — organiser timezone (eventar-tz cookie)', () =
     }
   });
 
+  it('labels the clock with the organiser zone, not a fixed HKT', () => {
+    const now = Date.parse('2026-10-15T02:00:00Z');
+    renderBoard([], { nowMs: now, tz: 'Europe/London' });
+    expect(screen.getByText('Your time: 03:00 (BST)')).toBeInTheDocument();
+  });
+
   it("rings the calendar's today on the organiser's date, not Hong Kong's", () => {
     // Thu 15 Oct 10:00 in Hong Kong is still Wed 14 Oct 22:00 for a New York organiser.
     renderBoard([], { nowMs: Date.parse('2026-10-15T02:00:00Z'), tz: 'America/New_York' });

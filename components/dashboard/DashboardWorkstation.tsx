@@ -104,6 +104,9 @@ function dateHeader(key: string): { day: string; dow: string } {
 function clock(ms: number, tz: string): string {
   return new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(ms));
 }
+function zoneName(ms: number, tz: string): string {
+  return new Intl.DateTimeFormat('en-GB', { timeZone: tz, timeZoneName: 'short' }).formatToParts(new Date(ms)).find((p) => p.type === 'timeZoneName')!.value;
+}
 function yearMonth(ms: number, tz: string): { year: number; month: number } {
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit' }).formatToParts(new Date(ms));
   return {
@@ -244,7 +247,7 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
         </p>
         <p className="mt-xs flex items-center gap-xs text-[calc(13px*var(--text-scale))] text-on-surface-variant">
           <span className="material-symbols-outlined text-[calc(15px*var(--text-scale))]" aria-hidden>schedule</span>
-          Times in HKT — {clock(nowMs, 'Asia/Hong_Kong')}
+          Your time: {clock(nowMs, tz)} ({zoneName(nowMs, tz)})
         </p>
         <p className="mt-xs text-[calc(14px*var(--text-scale))] text-on-surface-variant">
           Accredited CME / CPD events on Eventar · organiser workspace
@@ -262,7 +265,12 @@ export function DashboardWorkstation({ events, attention, metrics, orgName, nowM
       {/* 3 · Events — agenda + calendar */}
       <section className="mb-xxl">
         <div className="mb-lg flex items-center justify-between gap-md">
-          <h2 className="text-[calc(26px*var(--text-scale))] font-bold tracking-[-0.02em] text-on-surface">Events</h2>
+          <div>
+            <h2 className="text-[calc(26px*var(--text-scale))] font-bold tracking-[-0.02em] text-on-surface">Events</h2>
+            <p className="mt-xs text-[calc(13px*var(--text-scale))] text-on-surface-variant">
+              Dates and times are in each event&apos;s local time.
+            </p>
+          </div>
           <div className="flex items-center gap-xs">
             <button
               type="button"
