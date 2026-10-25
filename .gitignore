@@ -46,3 +46,17 @@ next-env.d.ts
 
 # Playwright MCP browser logs and page snapshots
 /.playwright-mcp/
+
+# agent runtime state: session locks, autoharness runs and intents, skill sidecars
+/.claude/autoharness/
+/docs/plans/mvp/.claude/
+.sidecar.json
+.sidecar.json.lock
+
+# graphify local artifacts (skill eventar-graph-refresh: dated backups and the label signature stay untracked)
+/graphify-out/20??-??-??/
+/graphify-out/.graphify_labels.json.sig
+/graphify-out/.graphify_analysis.json
+
+# Supabase Studio scratch queries
+/supabase/snippets/
