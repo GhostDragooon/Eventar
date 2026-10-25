@@ -1,0 +1,1 @@
+STATUS: DONE (code, tests, gates and live check). Not done: the three-lens review (dev, user, backtest agents); the brief did not ask for it, so that is the coordinator's call. Not pushed.

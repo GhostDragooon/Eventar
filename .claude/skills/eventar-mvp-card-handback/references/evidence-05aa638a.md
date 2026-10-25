@@ -1,0 +1,1 @@
+`package.json` and `pnpm-lock.yaml` gained `"motion": "^14.6.0"` during this work, and none of my cards did it. Q41 says no new dependency unless you ask. Is it intended?

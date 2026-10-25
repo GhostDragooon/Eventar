@@ -1,0 +1,1 @@
+Fixtures re-anchored (Thu 20:00, Fri 01:00, 07:00, 09:00 HKT). Server on :3100 stopped overnight; restarting it (still HEAD source, TZ=UTC).

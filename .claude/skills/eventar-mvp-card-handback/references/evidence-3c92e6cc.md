@@ -1,0 +1,1 @@
+F7 (MINOR): the migration header and `DB-03.md` say the UI "is tightened", but no `app/` file changed. `UPD-01.md` records this as pending Ivan's pick on UX-FU1 surface 5. The header says "(tested)", but only `agenda_blocks` is tested.

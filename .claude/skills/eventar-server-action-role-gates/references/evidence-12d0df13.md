@@ -1,0 +1,1 @@
+[Subagent hand-back, backtest lens] "CX-05 gates the accreditation wizard on role only (MAJOR F2). A same-org organiser_admin who did not create the event is served `canSetAccreditation:true`, sees the enabled wizard, and all six actions then fail with not_owner. Call sites: edit/page.tsx:229,245 and details/page.tsx:436,447."

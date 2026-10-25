@@ -1,0 +1,1 @@
+{"action": "create", "reason": "Adding motion to Eventar needed the pnpm choice, the staging scope, and the reduced-motion requirement from the Frontend Design Standard. Those rules are not in any Eventar skill yet.", "evidence": "references/evidence-fa53ca7d.md"}

@@ -13,5 +13,6 @@ Eventar is not Hong Kong only. Day boundaries, "today" counts and day headings u
 - Group agenda rows by each event's own local date (`dayKey`). Sort by `dayKey`, then start time, in both Upcoming and Past. Sorting by absolute start time alone puts a later day above an earlier one when events sit in different zones.
 - When rows mix zones, the caption must say times are each event's local time.
 - Tests set the zone inside the test with `vi.stubEnv('TZ', ...)`; vitest's forks pool honours it. Prove the test fails on the old logic first (see `regression-test-must-fail-first`).
+- A test whose fixture uses the real "today" at a fixed hour flips once the suite runs past that hour. Example: a 09:00 start turns a check-in sentence from "opens at" to "is open now" after 08:00. Pin only the Date: `vi.useFakeTimers({ toFake: ['Date'], now: new Date(y, m, d, 6) })` in `beforeEach`, `vi.useRealTimers()` in `afterEach`. Leave timers real so `waitFor` still works. Keep the exact regex. Do not loosen it to accept both branches.
 - Live checks: follow `eventar-live-verify-worktree` for the TZ=UTC server and the Playwright zone context.
 - Vault reference: `10 — Architecture/Timezone Handling.md`.

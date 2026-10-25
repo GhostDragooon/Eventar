@@ -1,0 +1,1 @@
+all good with your recommendation, except for the border line in the table. outside border is fine not all around. proceed please

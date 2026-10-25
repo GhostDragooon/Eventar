@@ -1,0 +1,1 @@
+CX-04 hand-back, Deviations: "1. NOT DONE: the Manage sentence. Manage's title and its intro line live in components/dashboard/ManageWorkstation.tsx (lines 282 and 290 ...), not under app/dashboard/manage/** (that holds only metadata). ManageWorkstation.tsx is not on the May-edit list, so I stopped. Remaining is a one-line copy swap plus a test."

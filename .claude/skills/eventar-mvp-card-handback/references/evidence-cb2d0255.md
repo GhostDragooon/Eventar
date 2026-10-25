@@ -1,0 +1,1 @@
+STATUS: PARTIAL (paused at Ivan's request, 2026-10-22). Code, tests and static gates are done. **Remaining: the live walk as `ux-member` on their own draft** (§4 live verification). LOCK-CX-05 left in place.

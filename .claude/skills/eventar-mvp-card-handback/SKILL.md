@@ -1,0 +1,27 @@
+---
+name: eventar-mvp-card-handback
+description: Use when writing an MVP card hand-back or LOCK file.
+category: verification
+---
+
+# An MVP card is done only when its hand-back doc says what ran, what did not, and what changed beyond the card
+
+- Before work: check for peer locks, then create `docs/plans/mvp/LOCK-<CARD>` with `( set -C; cat > docs/plans/mvp/LOCK-<CARD> <<EOF ... EOF )`. `set -C` makes a racing peer's create fail instead of overwriting. Remove the LOCK when the card reaches DONE or is closed for good. A card paused at Ivan's request (STATUS PARTIAL) keeps its LOCK, and the doc says so.
+- Write `docs/plans/mvp/<CARD>.md` with these fields in this order: STATUS; Changed; Tests added or changed (name each test and what it asserts); Gates (tsc, eslint, vitest, build, test:rls, with counts); Live check; CI assertion; Evidence tags; Findings; Deviations from the card and why; Open questions for Ivan; Needs from other cards; Executor; Committed; Suggested commit message.
+- Tag each claim `[X]` if run by execution, `[I]` if inferred. Name anything not run and why (for example, a script that calls `supabase db reset`).
+- Verify every `file:line` the hand-back cites with `grep -n` after the doc is written. Line numbers drift from the code they describe, and a number written from memory is wrong until grepped.
+- Every status word in the migration header and the card doc ("tightened", "tested", "done", "wired") is a claim. Before presenting, grep the `app/` and `lib/` diff and the test names for each one. A claim with no shipped file or no test behind it is a Finding, and the word becomes "pending" in the same edit.
+- Extra work beyond the card is a deviation. Report it in the doc and in the reply, with a way to drop it. Do not fold it in silently.
+- Before writing Suggested commit message, read `git diff -- package.json pnpm-lock.yaml`. A dependency that no card names is not yours to commit: list it under Findings and Open questions, and leave it unstaged.
+- Do not commit unless the card says so. Stage nothing outside your own paths.
+- Committer: after the card's commit lands, fill `Committed:` with its short SHA (or `n/a, BLOCKED with no code; <where the hand-back is>` for a card with no code), in a separate docs-only commit. Confirm the blank line exists first with `grep -c -x 'Committed:' <CARD>.md` (expect 1). `grep -c` exits 1 on zero matches, so do not chain it unguarded.
+- Commit procedure for a reviewed group: see `eventar-commit-card-groups`.
+- A card that needs a file its "May edit" list does not name, or a file another card reserves, is BLOCKED. Change nothing. Write the hand-back as `STATUS: BLOCKED (nothing edited)` with the file and line evidence, and give Ivan the options (allow the one file, wait for the reserving card, or drop that part). Do not ship a partial fix that the card's own copy would still fail.
+- A "May edit" entry names files, not just folders. If a step changes copy or behaviour that a component renders, name that component file. A glob such as `app/dashboard/manage/**` does not cover `components/dashboard/ManageWorkstation.tsx`, which holds the Manage page's title and intro line. An executor given only the glob stops PARTIAL.
+- An executor that stops PARTIAL on a scope gap is not finished. When the coordinator completes it, the hand-back's STATUS stays the truth (PARTIAL until the review lenses report). Put the coordinator's additions in a `Coordinator additions` block: each file added, why the card's wording covered it, and the test that failed before the change. Each addition is also a Deviation.
+- When a card's claim conflicts with what the live code or database enforces (for example, "every action checks the role" while the RPC admits more roles), apply the database's rule, list the divergence under Findings, and ask. Do not apply the card's blanket version.
+- Review protocol per card: three separate agents, dev lens, user lens, and backtest, each with its own Budget line. Do not present the card until all three have reported. Record each lens's counts and open items in the hand-back's Findings. STATUS is DONE only after all three lenses report. Until then write `STATUS: PARTIAL (code, gates and live check done; review lenses pending)` and name the lenses under Open questions. Shipping code, gates and a live check without the lenses is PARTIAL even when the brief does not mention lenses; say so in the reply and ask whether to run them.
+- Every review fix applied as MECHANICAL goes in the hand-back Deviations or Findings as a before→after line (file, old text, new text, which finding it closes). Name the design-level findings as not applied and waiting on Ivan.
+- Reply: card status, doc path, source conflicts found, and the next eligible card by name.
+- A card that needs Ivan's design pick: list each option in the reply (id, the skill that argued for it, its cost) and ask through AskUserQuestion. A link to a preview page does not replace the options.
+- "Keep going one task after another" means take the next eligible card without asking. "Pause at the next checkpoint" means finish the card in progress through its hand-back doc, then stop and name the next card. Do not start another card after a pause request.

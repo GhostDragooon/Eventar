@@ -1,0 +1,1 @@
+The 9 self-loops were already in the old graph (9 before, 9 after, all in test files), so this update didn't add them. macOS has no `timeout`, so running `cluster-only` directly:

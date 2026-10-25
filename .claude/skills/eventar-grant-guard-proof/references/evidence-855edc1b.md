@@ -1,0 +1,1 @@
+`anon` holds the `MAINTAIN` privilege on 24 of 35 public tables, which a `revoke maintain` in the next grant sweep would fix. It is not reachable through PostgREST.

@@ -1,0 +1,1 @@
+The rollback note names `20261010000725`, which does not define the function. The right file is `20260814030000_review_mode_eligibility_override.sql` (F1).

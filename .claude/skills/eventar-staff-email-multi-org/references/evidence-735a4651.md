@@ -1,0 +1,3 @@
+F2 MAJOR: `isStaffSession` fails open on PGRST116, so a two-org organiser is treated as a practitioner. `/account` and `/account/profile` redirect them to `/account/complete`, the practitioner onboarding (the one-org control goes to `/dashboard`). ... Suggested fix: map PGRST116 to `'staff'` in `getStaffSessionState` and `true` in `isStaffSession`. That also resolves F1, but it changes the tri-state contract, so it is Ivan's call.
+F1 MAJOR: a signed-in two-org user on `/login` without `?error=` ... still gets the old "could not check ... try again" outage text.
+Real-client probe: "two rows" gives error {code: PGRST116}; "zero rows" gives data null; a server 500 with code 57014 is a different error.

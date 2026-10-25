@@ -1,0 +1,1 @@
+STATUS: BLOCKED (nothing edited). The card needs one file it does not list. Stop condition: §3.2 step 9 and §4, "the card needs a file it does not list". ... `components/auth/auth-error-messages.ts` is not in CX-07's "May edit" list (proxy.ts, lib/auth.ts, their tests), and §3.1 reserves it to CX-06b ("CX-06b only").

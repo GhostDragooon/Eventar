@@ -1,0 +1,1 @@
+Option A applied at Ivan's word (2026-10-23): `getStaffSessionState` now says 'staff' for PGRST116. Edit to app/login/page.tsx: `const skipsCheck = Boolean(urlErrorCode && urlErrorCode !== 'not_organiser');` with the useEffect guard `if (view.kind !== 'checking' || skipsCheck) return;`.

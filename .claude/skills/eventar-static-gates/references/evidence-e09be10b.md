@@ -1,0 +1,1 @@
+The tip gate's vitest run had two failures, both in the known flaky component tests (`PublishDraftButton`, `MagicLinkSignInForm`). I'll rerun them alone once the build step finishes.

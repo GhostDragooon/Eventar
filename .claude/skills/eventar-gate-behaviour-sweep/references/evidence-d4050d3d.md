@@ -1,0 +1,1 @@
+**Unaffected and still working at 180 min: Beat 3, Beat 4's staff scan and manual entry (`mark_attended` is deliberately not time-gated — a trusted, physically-present actor), and Beat 4.6's credit, which fires off that staff scan.** See Beat 4's caveat for the options.

@@ -1,0 +1,1 @@
+[User] "double check that you applied the frontend component, then present again please". [Assistant, before the fix] "The first version used only the real `Button`, `StatusPill` and tokens. The dialog, the draft card and the event toolbar were look-alikes copied from the product's classes."

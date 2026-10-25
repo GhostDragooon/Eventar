@@ -1,0 +1,1 @@
+The 24th (the not-found guard after the row lock) survived until I added a delete-while-waiting test, and is now killed.

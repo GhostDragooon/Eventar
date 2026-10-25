@@ -1,0 +1,1 @@
+[Tool result, Bash] "-- DML only, on purpose: never widen this to ALL. That hands TRUNCATE and TRIGGER back to the API roles\ninjected: anon TRUNCATE events". Command: `begin; grant truncate on public.events to anon; $Q; rollback;` where $Q is the has_table_privilege query over anon, authenticated and service_role.

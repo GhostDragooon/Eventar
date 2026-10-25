@@ -1,0 +1,1 @@
+The seed, the CI replay gate and the audited-writes matrix all re-assert it.

@@ -1,0 +1,1 @@
+"deleted events stay private" holds only for reads through RLS. The admin-client readers ignore `deleted_at`: the check-in confirm page still shows a "Pass ready" view with title and venue, and the survey page and account lists are unchanged.

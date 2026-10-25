@@ -1,0 +1,1 @@
+The :3100 server is in review mode (dev-local.sh default), which makes signed-out staff pages open: reviewers must check it before trusting an auth walk.

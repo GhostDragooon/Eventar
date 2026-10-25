@@ -1,0 +1,1 @@
+The sibling `/account/sign-up` page has the **same cookie-trust redirect**, so it would loop too. Same root cause, same approved fix. Checking it:

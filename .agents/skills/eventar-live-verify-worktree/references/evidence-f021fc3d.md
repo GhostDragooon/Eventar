@@ -1,0 +1,1 @@
+ports :3100/:3200 were held by peer sessions in review mode. Logic is covered by unit tests, the proxy hop by code reading, and the `/login` hop by curl (`x-nextjs-action-not-found`). First live check: sign out globally mid-door on the local stack.

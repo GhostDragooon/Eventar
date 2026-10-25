@@ -1,0 +1,1 @@
+(echo "begin;"; cat supabase/migrations/20261023170000_check_in_only_inside_the_live_window.sql; echo "rollback;") | $P $U -v ON_ERROR_STOP=1 -q 2>&1 | tail -3; echo "replay-in-rolled-back-txn done"  →  fixed 2 ... replay-in-rolled-back-txn done. Migration comment: "-- Rollback: copy the single function definitions back, do not re-run the old files (they hold other statements)".

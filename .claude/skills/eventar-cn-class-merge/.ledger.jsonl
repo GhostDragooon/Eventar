@@ -1,0 +1,1 @@
+{"action": "create", "reason": "Lesson from CX-03: the shared cn() merger treated custom type-scale classes as text colour, so text-label-md evicted text-on-primary! and the reverse. The fix belongs in the shared merger, and any change to it shifts rendered sizes across call sites, which needs a before/after diff.", "evidence": "references/evidence-e506d26a.md"}

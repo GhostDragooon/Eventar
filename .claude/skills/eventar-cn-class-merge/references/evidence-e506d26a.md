@@ -1,0 +1,1 @@
+a fix to the shared class merger `cn()` (lib/utils.ts) so that type-scale classes such as `text-label-md` stop evicting text-colour classes (and the reverse). The visible effect: some buttons and badges got smaller (14px or 16px to the token's 12px with letter-spacing), and some buttons that used to render dark text on blue now render white text.

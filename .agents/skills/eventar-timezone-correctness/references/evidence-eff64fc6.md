@@ -1,0 +1,1 @@
+its not HKT but where the organizer is located, this is not a hong kong only platform

@@ -1,0 +1,1 @@
+The backtest's no-staff control left 2 `consent_granted` audit rows, and the user lens left sign-in audit rows. Audit rows are permanent by design.

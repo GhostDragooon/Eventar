@@ -1,0 +1,1 @@
+Coordinator edit to CX-04.md: "The 414 crash (below) sits in app/dashboard/data.ts ... the registrations lookup now asks for 100 event ids per request (about 3.7 KB of URL) and merges the batches; a failing batch still fails the page."

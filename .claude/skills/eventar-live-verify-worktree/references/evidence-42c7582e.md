@@ -1,0 +1,1 @@
+cat scratch-demo/locks/*.lock → "claude-ux-fu1 UX-FU1 specimen verification 2026-10-23T14:15:48Z". SendMessage: "Request: tell me when you release scratch-demo/locks/dev-3100.lock, and please leave the :3100 server running for me. … Because the pane's cookie jar is shared, I will not start until your lock is gone."

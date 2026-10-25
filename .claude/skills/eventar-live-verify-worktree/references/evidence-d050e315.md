@@ -1,0 +1,1 @@
+Stop hook last_assistant_message: "I've written the failing test for the fix in `lib/auth.test.ts`. It fails for the right reason: it expects `'staff'` and gets `'unknown'`. I'm holding the `lib/auth.ts` edit until the user-lens reviewer finishes, so a live reload doesn't change what they see mid-walk."

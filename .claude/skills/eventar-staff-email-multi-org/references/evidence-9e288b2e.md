@@ -1,0 +1,1 @@
+Option A applied at Ivan's word (2026-10-23): `getStaffSessionState` now says 'staff' for PGRST116. The live check then found that `/login` (bare) and `/login?next=...` stick on "Loading…" for a two-organisation person; the fix is in `app/login/page.tsx`.
