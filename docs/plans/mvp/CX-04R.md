@@ -1,5 +1,5 @@
 # CX-04R specimen round: the Events home
-STATUS: DONE (specimens), awaiting pick
+STATUS: BUILT 2026-11-01 (picks 1f + 2a; see `handoff_20261101-mvp-execution-7.md`). The specimen route and notes below are the record of the round.
 
 ## Look at
 Route: `/dev-preview-uiport/cx-04r` (dev only, gated by `app/dev-preview-uiport/layout.tsx`). Sample today is Monday 2 November 2026.
