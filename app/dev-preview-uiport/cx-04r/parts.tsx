@@ -174,7 +174,7 @@ function Chips({ list }: { list: Ev[] }) {
   );
 }
 
-function BulkBar({ n, inDrafts }: { n: number; inDrafts: boolean }) {
+export function BulkBar({ n, inDrafts }: { n: number; inDrafts: boolean }) {
   const b = 'gap-xs px-md py-sm font-label-md text-label-md min-h-11';
   return (
     <div className="mb-md flex flex-wrap items-center justify-between gap-md rounded-lg border border-[color:var(--primary-fixed-dim)] bg-primary-container/60 px-md py-sm">
@@ -321,6 +321,40 @@ function EventCard({ e, on, nested }: { e: Ev; on: boolean; nested?: boolean }) 
   return <li className="rounded-[18px] border border-outline-variant bg-surface-container-high p-[4px]">{inner}</li>;
 }
 
+/** Reference: React Bits Pro Card 4 (date cell, inset title panel, action row under it). Layout and style only, built from Eventar tokens. */
+export function DatedCard({ e, on }: { e: Ev; on: boolean }) {
+  const day = Number(e.day.slice(8));
+  const wd = e.head.replace('Today, ', '').split(' ')[0].slice(0, 3);
+  const c = 'min-h-11 w-full gap-xs px-sm font-label-md text-label-md';
+  // The filled button is the next thing an organiser does: check people in while the event is live or open.
+  const doorNow = e.life === 'live' || e.life === 'registering';
+  return (
+    <li className={cn('grid grid-cols-[64px_minmax(0,1fr)] gap-sm rounded-[16px] border bg-surface-container-lowest p-sm @min-[640px]:grid-cols-[88px_minmax(0,1fr)]', on ? 'border-[color:var(--primary-fixed-dim)]' : 'border-outline-variant')}>
+      <div className="col-span-full"><StatusPill lifecycle={e.life} /></div>
+      <div className="flex flex-col items-center justify-center text-center">
+        <span className="text-[calc(28px*var(--text-scale))] font-bold leading-none tabular-nums text-on-surface">{day}</span>
+        <span className="mt-xs text-[calc(13px*var(--text-scale))] text-on-surface-variant">{wd}</span>
+      </div>
+      <div className="flex min-w-0 flex-col gap-xs">
+        <div className="flex items-start gap-xs rounded-[12px] bg-surface-container p-sm">
+          <Check on={on} mine={e.mine} title={e.title} />
+          <div className="min-w-0 flex-1 pt-xs">
+            <Link href={`/events/${e.id}/details`} className="font-title-lg text-title-lg font-semibold text-on-surface hover:text-[color:var(--on-primary-container)]">{e.title}</Link>
+            <p className="mt-xs flex items-center gap-xs text-[calc(12.5px*var(--text-scale))] tabular-nums text-on-surface-variant"><Icon name="schedule" className="text-[calc(14px*var(--text-scale))]" />{e.time}</p>
+            <Meta e={e} />
+            {e.passed && <Passed />}
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-xs">
+          <Link href={`/events/${e.id}/details`} className={cn(buttonVariants({ variant: 'outline' }), c)}>Details</Link>
+          <Link href={`/events/${e.id}/edit`} className={cn(buttonVariants({ variant: 'outline' }), c)}>Edit</Link>
+          <Link href={`/events/${e.id}/checkin`} className={cn(buttonVariants({ variant: doorNow ? 'default' : 'outline' }), c)}>Check-in</Link>
+        </div>
+      </div>
+    </li>
+  );
+}
+
 function CardLinks({ id }: { id: string }) {
   const c = 'min-h-11 w-full gap-xs px-sm font-label-md text-label-md';
   return (
@@ -405,7 +439,7 @@ function Strip({ days }: { days: Set<string> }) {
 
 /* ------------------------------ the page body ------------------------------ */
 
-export type Layout = 'rail' | 'cards' | 'strip' | 'quiet' | 'nested';
+export type Layout = 'rail' | 'cards' | 'strip' | 'quiet' | 'nested' | 'dated';
 
 export function EventsHome({ layout, tab = 'active', ticks = [], deleted = 0 }: { layout: Layout; tab?: Tab; ticks?: string[]; deleted?: number }) {
   const base = tab === 'drafts' ? DRAFTS : ACTIVE;
@@ -416,6 +450,8 @@ export function EventsHome({ layout, tab = 'active', ticks = [], deleted = 0 }: 
   const agenda = layout === 'rail' || layout === 'strip' || layout === 'quiet';
   const body = agenda ? (
     <Agenda list={list} ticks={ticks} quiet={layout === 'quiet'} />
+  ) : layout === 'dated' ? (
+    <ul className="flex flex-col gap-sm">{list.map((e) => <DatedCard key={e.id} e={e} on={ticks.includes(e.id)} />)}</ul>
   ) : (
     <ul className="flex flex-col gap-sm">{list.map((e) => <EventCard key={e.id} e={e} on={ticks.includes(e.id)} nested={layout === 'nested'} />)}</ul>
   );

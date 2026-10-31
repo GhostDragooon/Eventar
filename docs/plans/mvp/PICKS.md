@@ -10,3 +10,5 @@ Notes from Ivan, same day:
 - Rejected, with reasons in docs/plans/mvp/UX-01.md: a2, a3, b1, b3, c2, c3, d2, d3.
 CX-04R states (2): a (filter tabs Active | Drafts | Cancelled | Deleted with counts), 2026-10-31
 CX-04R actions (3): c (keep Manage card and bulk; checkbox only on events you created, all for eventar_staff), 2026-10-31
+CX-04R composition (1): f (dated cards with an action row; status row above the date), 2026-11-01
+CX-04R motion (2): a (almost none), 2026-11-01

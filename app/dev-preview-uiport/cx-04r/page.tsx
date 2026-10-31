@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { Desktop, EventsHome, Frame, Option, Phone, Section, type Layout } from './parts';
+import { ACTIVE, BulkBar, DatedCard, DRAFTS, Desktop, EventsHome, Frame, Option, Phone, Section, type Layout } from './parts';
+import { MotionDemo } from './motion-demo';
 
 /* Hallmark · scope: app surface in the existing organiser shell, locked tokens, no catalog theme. */
 
@@ -64,7 +65,7 @@ export default function CX04R() {
         </nav>
       </header>
 
-      <Section id="s1" title="1. Composition of the Events home" intro="Five ways to lay out the same events. The shell, tabs, Create button, counts and tick rule are identical; only the list, the date aid and the hierarchy change. The footer line in every frame is the 242-event long-list hint (187 active, 41 drafts, 14 cancelled).">
+      <Section id="s1" title="1. Composition of the Events home" intro="Six ways to lay out the same events. The shell, tabs, Create button, counts and tick rule are identical; only the list, the date aid and the hierarchy change. The footer line in every frame is the 242-event long-list hint (187 active, 41 drafts, 14 cancelled).">
         <div className="flex flex-col gap-lg">
           <Option
             id="1a"
@@ -122,11 +123,27 @@ export default function CX04R() {
           >
             <Trio layout="nested" />
           </Option>
+
+          <Option
+            id="1f"
+            name="Dated cards with an action row"
+            summary="Each event is a card. The status (Live, Registering, Draft) is a row across the top, above the date. Under it sit the date cell on the left (day number over weekday), the title, time, place and counts in an inset panel, and a full-width row of three buttons under the panel. Search and sort sit above, like 1b. The first button that matters is filled: Check-in while the event is live or open, otherwise all three are outlined."
+            argued="Ivan's reference: the React Bits Pro Card 4 agenda card. Its style and layout are followed; the code is written fresh from Eventar's own tokens, nothing is copied from the block."
+            cost="The date repeats on every card instead of grouping under one header, so three events on the same day show the same number three times. No calendar rail and no format chips, as in 1b. The inset panel is a second surface inside the card, which adds a tone step the product does not use elsewhere. A card is about as tall as 1b's, so a phone shows about two per screen."
+            single
+          >
+            <Trio layout="dated" />
+          </Option>
         </div>
       </Section>
 
-      <Section id="s2" title="2. Motion on this surface" intro="Tabs, filters and the bulk bar are used many times a day. The skills disagree on how much they should move. Described here, not animated; none of it is built until you pick.">
+      <Section id="s2" title="2. Motion on this surface" intro="Tabs, filters and the bulk bar are used many times a day. The skills disagree on how much they should move. The sample below runs all three on the same card list; the text under it is the full spec. None of it is built until you pick.">
         <div className="flex flex-col gap-lg">
+          <MotionDemo
+            active={ACTIVE.map((e) => <DatedCard key={e.id} e={e} on={false} />)}
+            drafts={DRAFTS.map((e) => <DatedCard key={e.id} e={e} on={false} />)}
+            bar={<BulkBar n={2} inDrafts={false} />}
+          />
           <Option id="2a" name="Almost none" summary="Tab and filter changes swap content with no motion. The bulk bar rises in when the first row is ticked." argued="emilkowalski-motion and review-animations (delete motion on high-frequency actions; UI under 300 ms; transform and opacity only; hover motion gated to real pointers)." cost="The surface feels plain. Nothing signals that a tab changed beyond the underline and the list itself." single>
             <Spec rows={[
               ['Tab change', 'Underline and text colour change only, 120 ms ease-out. The list swaps instantly.'],
