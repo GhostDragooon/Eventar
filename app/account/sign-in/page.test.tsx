@@ -44,8 +44,8 @@ describe('AttendeeSignInPage — trouble-signing-in help', () => {
     // (user-lens BLOCKER 2 fix).
     expect(screen.getByText(/links expire after 15 minutes/i)).toBeInTheDocument();
     expect(screen.getByText(/check spam/i)).toBeInTheDocument();
-    expect(screen.getByText(/same address you used when registering/i)).toBeInTheDocument();
-    expect(screen.getByText(/contact the event organizer for help/i)).toBeInTheDocument();
+    expect(screen.getByText(/same address you registered with/i)).toBeInTheDocument();
+    expect(screen.getByText(/contact the event organiser/i)).toBeInTheDocument();
     // No "soft-security reassurance" that reads as a policy statement.
     expect(screen.queryByText(/we don.t restrict who can register/i)).not.toBeInTheDocument();
     // Never leak the "staff" framing on the attendee door.
@@ -82,7 +82,7 @@ describe('AttendeeSignInPage — next', () => {
   async function formNext(next: string) {
     mockSearchParams = new URLSearchParams({ next });
     const { container } = render(<AttendeeSignInPage />);
-    await waitFor(() => expect(screen.getByRole('button', { name: /send sign-in link/i })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: /^continue$/i })).toBeInTheDocument());
     return container.querySelector<HTMLInputElement>('input[name="next"]')?.value ?? null;
   }
 
