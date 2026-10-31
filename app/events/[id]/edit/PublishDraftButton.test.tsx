@@ -108,13 +108,13 @@ describe('PublishDraftButton', () => {
     await waitFor(() => expect(push).toHaveBeenCalledTimes(1));
   });
 
-  it('when the draft is no longer current, says so, links Manage, offers only Close, and refreshes the page when closed', async () => {
+  it('when the draft is no longer current, says so, links Events, offers only Close, and refreshes the page when closed', async () => {
     publishEvent.mockResolvedValue({ error: "This event can't be published because it is no longer a current draft.", stale: true });
     const dialog = open();
     confirm(dialog);
     const alert = await within(dialog).findByRole('alert');
     expect(alert).toHaveTextContent("no longer a current draft");
-    expect(within(alert).getByRole('link', { name: 'Manage' })).toHaveAttribute('href', '/dashboard/manage');
+    expect(within(alert).getByRole('link', { name: 'Events' })).toHaveAttribute('href', '/dashboard');
     expect(within(dialog).queryByRole('button', { name: 'Publish event' })).toBeNull();
     // The DRAFT badge and this card are stale behind the dialog: refresh them when it is dismissed.
     expect(refresh).not.toHaveBeenCalled();

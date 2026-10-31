@@ -1,38 +1,14 @@
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { requireStaff, NotAuthorizedError } from '@/lib/auth';
-import { supabaseServer } from '@/lib/supabase/server';
-import { StaffShell } from '@/components/shell/StaffShell';
-import { ManageWorkstation } from '@/components/dashboard/ManageWorkstation';
-import { fetchDecoratedEvents } from '@/app/dashboard/data';
-import { DevEmailStubBanner } from '@/components/dev/DevEmailStubBanner';
-import { organiserTz } from '@/lib/tz';
 
-export const metadata = {
-  title: 'Manage events',
-  robots: { index: false, follow: false },
-};
-
+// CX-04R: Manage folded into the Events home at /dashboard. The route stays so bookmarks and `next` values keep working;
+// the query string is carried across (a bare redirect() would drop it).
 export const dynamic = 'force-dynamic';
 
-export default async function ManagePage() {
-  let staff;
-  try {
-    staff = await requireStaff();
-  } catch (e) {
-    if (e instanceof NotAuthorizedError) redirect('/login');
-    throw e;
+export default async function ManageRedirect({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(await searchParams)) {
+    for (const v of Array.isArray(value) ? value : value === undefined ? [] : [value]) params.append(key, v);
   }
-
-  const supabase = await supabaseServer();
-  // eslint-disable-next-line react-hooks/purity
-  const nowMs = Date.now();
-  const { events } = await fetchDecoratedEvents(supabase, nowMs, staff, organiserTz((await cookies()).get('eventar-tz')?.value));
-
-  return (
-    <StaffShell staff={{ email: staff.email, role: staff.role, full_name: staff.full_name }}>
-      <DevEmailStubBanner />
-      <ManageWorkstation events={events} />
-    </StaffShell>
-  );
+  const qs = params.toString();
+  redirect(qs ? `/dashboard?${qs}` : '/dashboard');
 }

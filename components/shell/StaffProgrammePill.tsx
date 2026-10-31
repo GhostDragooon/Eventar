@@ -14,7 +14,7 @@ import Link from 'next/link';
 // The caption sits to the LEFT of the pill (reading order → context first,
 // then the action), hidden below sm to keep the nav clean at 375px where
 // the pill alone is already at the tightness limit — the pill's own
-// "Programme" label carries enough context in that width class.
+// "Events" label carries enough context in that width class.
 export function StaffProgrammePill() {
   return (
     <div className="flex shrink-0 items-center gap-sm">
@@ -28,7 +28,7 @@ export function StaffProgrammePill() {
         href="/dashboard"
         className="shrink-0 whitespace-nowrap rounded-full bg-primary px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary transition-transform duration-150 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
       >
-        Programme
+        Events
       </Link>
     </div>
   );

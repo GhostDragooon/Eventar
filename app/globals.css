@@ -902,3 +902,20 @@ html {
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
   }
 }
+
+/* Events home bulk bar. CX-04R motion 2a: the bar rises in 8 px with opacity when the first row is ticked, 180 ms.
+   Under reduced motion it only fades. Nothing else on that page animates. */
+@keyframes bulkBarIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes bulkBarFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.bulk-bar-in {
+  animation: bulkBarIn 180ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bulk-bar-in { animation-name: bulkBarFade; }
+}

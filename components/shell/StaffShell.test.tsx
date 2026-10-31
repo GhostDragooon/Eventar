@@ -30,12 +30,11 @@ describe('StaffShell — primary navigation', () => {
         <div>page content</div>
       </StaffShell>,
     );
-    expect(screen.getByRole('link', { name: 'Programme' })).toHaveAttribute('href', '/dashboard');
-    expect(screen.getByRole('link', { name: 'Manage' })).toHaveAttribute('href', '/dashboard/manage');
     expect(screen.getByRole('link', { name: 'Check-in' })).toHaveAttribute('href', '/checkin');
-    // Labelled "Reports" per the IA spec's area 7 ("Reports / Analytics") and
-    // the mockup sidebar; the ROUTE it must reach is still /analytics.
-    expect(screen.getByRole('link', { name: 'Reports' })).toHaveAttribute('href', '/analytics');
+    expect(screen.getByRole('link', { name: 'Events' })).toHaveAttribute('href', '/dashboard');
+    // History is the /analytics data (what we ran); Doctrine 2026-10-30.
+    expect(screen.getByRole('link', { name: 'History' })).toHaveAttribute('href', '/analytics');
+    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/settings');
   });
 
   it('does NOT link to /events — that route ejects the user out of the shell', () => {
@@ -72,7 +71,7 @@ describe('StaffShell — primary navigation', () => {
       </StaffShell>,
     );
     expect(screen.getByRole('link', { name: 'Check-in' })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('link', { name: 'Programme' })).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('link', { name: 'Events' })).not.toHaveAttribute('aria-current');
   });
 
   it('renders the Eventar brand mark at the top of the sidebar, pointing at /dashboard', () => {
@@ -89,20 +88,37 @@ describe('StaffShell — primary navigation', () => {
     expect(screen.getByRole('link', { name: /eventar home/i })).toHaveAttribute('href', '/dashboard');
   });
 
-  it('shows every IA area, with unbuilt ones inert rather than linking to 404s', () => {
-    // docs/plans/2026-07-12-organiser-ia-spec.md lists 8 areas; 7 render (Events
-    // was removed 2026-08-09 — /dashboard already IS the events list) and four
-    // of those have routes. The unbuilt ones must be VISIBLE (so the shell shows
-    // the real IA) and NOT links (so nothing navigates into a 404).
+  it('has exactly four sidebar items and none of the retired ones (Doctrine 2026-10-30)', () => {
+    // Check-in, Events, History, Settings. Programme and Manage became one Events home; Participants, Accreditation,
+    // Communications and Reports are not top-level organiser destinations.
     render(
       <StaffShell staff={staff}>
         <div>page content</div>
       </StaffShell>,
     );
-    for (const label of ['Accreditation', 'Communications']) {
-      expect(screen.getByText(label)).toBeInTheDocument();
-      expect(screen.queryByRole('link', { name: new RegExp(label, 'i') })).toBeNull();
+    const nav = screen.getByRole('navigation', { name: 'Primary' });
+    expect(within(nav).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['/checkin', '/dashboard', '/analytics', '/settings']);
+    for (const retired of ['Programme', 'Manage', 'Participants', 'Accreditation', 'Communications', 'Reports']) {
+      expect(screen.queryByText(retired)).toBeNull();
     }
+  });
+
+  it('lights History on a single event\'s analytics page and Settings on its sub-pages', () => {
+    mockPathname = '/events/abc/analytics';
+    const { unmount } = render(
+      <StaffShell staff={staff}>
+        <div>page content</div>
+      </StaffShell>,
+    );
+    expect(screen.getByRole('link', { name: 'History' })).toHaveAttribute('aria-current', 'page');
+    unmount();
+    mockPathname = '/settings/team';
+    render(
+      <StaffShell staff={staff}>
+        <div>page content</div>
+      </StaffShell>,
+    );
+    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('aria-current', 'page');
   });
 
   it('puts the Eventar wordmark in the footer, inside a contentinfo landmark', () => {
@@ -135,11 +151,11 @@ describe('StaffShell — primary navigation', () => {
 
   it('renders the back link when backHref + backLabel are provided', () => {
     render(
-      <StaffShell staff={staff} backHref="/dashboard" backLabel="Programme">
+      <StaffShell staff={staff} backHref="/dashboard" backLabel="Events">
         <div>page content</div>
       </StaffShell>,
     );
-    expect(screen.getByRole('link', { name: /back to programme/i })).toHaveAttribute('href', '/dashboard');
+    expect(screen.getByRole('link', { name: /back to events/i })).toHaveAttribute('href', '/dashboard');
   });
 
   it('does NOT render a back link when backHref + backLabel are absent', () => {
@@ -185,7 +201,7 @@ describe('StaffShell — primary navigation', () => {
         <div>page content</div>
       </StaffShell>,
     );
-    const aside = screen.getByRole('link', { name: 'Programme' }).closest('aside')!;
+    const aside = screen.getByRole('link', { name: 'Events' }).closest('aside')!;
     // The chip is the last child of the sidebar's flex column, so it always
     // sits at the foot regardless of how many nav rows render above it.
     const flexColumn = aside.firstElementChild!;

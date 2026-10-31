@@ -55,6 +55,7 @@ function event(overrides: Partial<ProgrammeEvent>): ProgrammeEvent {
     format: null,
     hero_image_url: null,
     city: null,
+    createdBy: null,
     hosts: [],
     ...overrides,
   };

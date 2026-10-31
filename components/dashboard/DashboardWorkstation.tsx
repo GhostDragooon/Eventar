@@ -33,6 +33,8 @@ export type ProgrammeEvent = WorkstationEvent & {
   format: EventFormat | null;
   hero_image_url: string | null;
   city: string | null;
+  /** events.created_by (the staff row id): the Events home shows a tick box only on events the viewer created. */
+  createdBy: string | null;
   hosts: Array<{ name: string; avatar_url: string | null }>;
 };
 

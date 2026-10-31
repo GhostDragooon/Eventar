@@ -189,10 +189,10 @@ export default async function StaffEventEditPage({
   const registrationClosed = ended || atCapacity;
 
   return (
-    <StaffShell staff={{ email: staff.email, role: staff.role }} backHref="/dashboard" backLabel="Programme">
+    <StaffShell staff={{ email: staff.email, role: staff.role }} backHref="/dashboard" backLabel="Events">
       <Breadcrumbs
         items={[
-          { label: 'Programme', href: '/dashboard', icon: LayoutDashboardIcon },
+          { label: 'Events', href: '/dashboard', icon: LayoutDashboardIcon },
           { label: event.title, href: `/events/${id}/details`, icon: CalendarDaysIcon },
           { label: 'Edit', icon: SquarePenIcon },
         ]}

@@ -58,6 +58,11 @@ export function fakeSupabase(tables: Tables) {
           rows = rows.filter((r) => Date.parse(r[col] as string) >= Date.parse(val));
           return q;
         },
+        // Timestamps only, like gte: the History page uses it for "end_time < now".
+        lt(col: string, val: string) {
+          rows = rows.filter((r) => Date.parse(r[col] as string) < Date.parse(val));
+          return q;
+        },
         is(col: string, val: unknown) {
           rows = rows.filter((r) => (r[col] ?? null) === val);
           return q;

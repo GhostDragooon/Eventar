@@ -15,7 +15,7 @@ vi.mock('@/app/dashboard/actions', () => ({
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { ToastProvider } from '@/components/ui/toast';
-import { ManageWorkstation } from './ManageWorkstation';
+import { EventsHome } from './EventsHome';
 import type { ProgrammeEvent } from './DashboardWorkstation';
 
 afterEach(cleanup);
@@ -49,59 +49,148 @@ function event(overrides: Partial<ProgrammeEvent>): ProgrammeEvent {
     format: null,
     hero_image_url: null,
     city: null,
+    createdBy: 'staff-1',
     hosts: [],
     ...overrides,
   };
 }
 
-function renderManage(events: ProgrammeEvent[]) {
+const VIEWER = { id: 'staff-1', role: 'organiser_member' };
+
+function renderManage(events: ProgrammeEvent[], viewer = VIEWER) {
   return render(
     <ToastProvider>
-      <ManageWorkstation events={events} />
+      <EventsHome events={events} viewer={viewer} nowMs={NOW} />
     </ToastProvider>,
   );
 }
 
-describe('ManageWorkstation', () => {
-  it('says what the page is for, in the header under the title (CX-04)', () => {
+describe('EventsHome', () => {
+  it('is titled Events, says where finished events went, and offers New event (CX-04R)', () => {
     renderManage([event({ id: 'e-1' })]);
-    const title = screen.getByRole('heading', { level: 1, name: 'Manage events' });
-    expect(within(title.closest('header')!).getByText('Every event in every state, with search, filters and bulk actions.')).toBeInTheDocument();
+    const title = screen.getByRole('heading', { level: 1, name: 'Events' });
+    expect(within(title.closest('header')!).getByText('1 events. Finished events are in History.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /new event/i })).toHaveAttribute('href', '/events/new');
+    expect(document.body.textContent).not.toMatch(/Programme|Manage/);
   });
 
   describe('per-row action links', () => {
-    it('renders Details, Edit, Door, Analytics, and Delete for each event', () => {
+    it('renders Details, Edit and Check-in, and no per-card Delete', () => {
       renderManage([event({ id: 'e-7' })]);
-      expect(screen.getByRole('link', { name: /details/i })).toHaveAttribute('href', '/events/e-7/details');
-      expect(screen.getByRole('link', { name: /edit/i })).toHaveAttribute('href', '/events/e-7/edit');
-      expect(screen.getByRole('link', { name: /check-in/i })).toHaveAttribute('href', '/events/e-7/checkin');
-      expect(screen.getByRole('link', { name: /analytics/i })).toHaveAttribute('href', '/events/e-7/analytics');
-      expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /^details$/i })).toHaveAttribute('href', '/events/e-7/details');
+      expect(screen.getByRole('link', { name: /^edit$/i })).toHaveAttribute('href', '/events/e-7/edit');
+      expect(screen.getByRole('link', { name: /^check-in$/i })).toHaveAttribute('href', '/events/e-7/checkin');
+      expect(screen.queryByRole('link', { name: /analytics/i })).toBeNull();
+      expect(screen.queryByRole('button', { name: /delete/i })).toBeNull();
     });
   });
 
-  describe('delete flow (dialog → action → toast)', () => {
-    it('card Delete opens the designed dialog instead of window.confirm', () => {
+  describe('state tabs', () => {
+    const mixed = [
+      event({ id: 'a1', title: 'Open One' }),
+      event({ id: 'a2', title: 'Live One', lifecycle: 'live' }),
+      event({ id: 'd1', title: 'Draft One', lifecycle: 'drafted' }),
+      event({ id: 'c1', title: 'Called Off', lifecycle: 'cancelled' }),
+      event({ id: 'h1', title: 'Finished One', lifecycle: 'completed' }),
+      event({ id: 'x1', title: 'Binned One', deleted: true }),
+    ];
+
+    it('counts Active, Drafts, Cancelled and Deleted; completed events belong to no tab', () => {
+      renderManage(mixed);
+      const tabs = within(screen.getByRole('tablist', { name: 'Event state' }));
+      expect(tabs.getByRole('tab', { name: /^Active\s*2$/ })).toHaveAttribute('aria-selected', 'true');
+      expect(tabs.getByRole('tab', { name: /^Drafts\s*1$/ })).toBeInTheDocument();
+      expect(tabs.getByRole('tab', { name: /^Cancelled\s*1$/ })).toBeInTheDocument();
+      expect(tabs.getByRole('tab', { name: /^Deleted\s*1$/ })).toBeInTheDocument();
+      expect(screen.queryByText('Finished One')).toBeNull();
+      fireEvent.click(screen.getByRole('tab', { name: /^Drafts/ }));
+      expect(screen.queryByText('Finished One')).toBeNull();
+    });
+
+    it('a draft is findable under Drafts, not under Active', () => {
+      renderManage(mixed);
+      expect(screen.queryByText('Draft One')).toBeNull();
+      fireEvent.click(screen.getByRole('tab', { name: /^Drafts/ }));
+      expect(screen.getByText('Draft One')).toBeInTheDocument();
+      expect(screen.queryByText('Open One')).toBeNull();
+    });
+
+    it('hides the Deleted tab while nothing is deleted', () => {
+      renderManage([event({ id: 'a1' })]);
+      expect(screen.queryByRole('tab', { name: /^Deleted/ })).toBeNull();
+    });
+
+    it('a draft whose date has passed says so', () => {
+      renderManage([event({ id: 'd1', title: 'Old Draft', lifecycle: 'drafted', startMs: NOW - 48 * HOUR })]);
+      fireEvent.click(screen.getByRole('tab', { name: /^Drafts/ }));
+      expect(screen.getByText('The date has passed. Edit the date to publish this draft.')).toBeInTheDocument();
+    });
+
+    it('Cancel is offered on Active only (not on Drafts)', () => {
+      renderManage([event({ id: 'a1', title: 'Open One' }), event({ id: 'd1', title: 'Draft One', lifecycle: 'drafted' })]);
+      fireEvent.click(screen.getByLabelText('Select Open One'));
+      expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('tab', { name: /^Drafts/ }));
+      fireEvent.click(screen.getByLabelText('Select Draft One'));
+      expect(screen.getByText('1 selected')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();
+    });
+
+    it('the Deleted tab offers Restore for a row and for the selection', async () => {
+      renderManage([event({ id: 'x1', title: 'Binned One', deleted: true })]);
+      fireEvent.click(screen.getByRole('tab', { name: /^Deleted/ }));
+      fireEvent.click(screen.getByRole('button', { name: 'Restore' }));
+      await waitFor(() => expect(restoreMock).toHaveBeenCalledWith(['x1']));
+    });
+  });
+
+  describe('tick box only on events the viewer created', () => {
+    const rows = [
+      event({ id: 'mine', title: 'My Event', createdBy: 'staff-1' }),
+      event({ id: 'theirs', title: 'Their Event', createdBy: 'staff-2' }),
+    ];
+
+    it('shows a tick box on own events and none on a colleague\'s, which says who it belongs to', () => {
+      renderManage(rows);
+      expect(screen.getByLabelText('Select My Event')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Select Their Event')).toBeNull();
+      expect(within(screen.getByText('Their Event').closest('li')!).getByText('Created by a colleague')).toBeInTheDocument();
+    });
+
+    it('eventar_staff can tick every event', () => {
+      renderManage(rows, { id: 'staff-9', role: 'eventar_staff' });
+      expect(screen.getByLabelText('Select My Event')).toBeInTheDocument();
+      expect(screen.getByLabelText('Select Their Event')).toBeInTheDocument();
+    });
+  });
+
+  describe('delete flow (tick, bulk Delete, dialog, action, toast)', () => {
+    function tickAndDelete(title = 'Sample Event') {
+      fireEvent.click(screen.getByLabelText(`Select ${title}`));
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    }
+
+    it('bulk Delete opens the designed dialog instead of window.confirm', () => {
       renderManage([event({ id: 'e-1', title: 'Sample Event' })]);
-      fireEvent.click(screen.getByRole('button', { name: /delete/i }));
+      tickAndDelete();
       const dialog = screen.getByRole('dialog');
-      expect(dialog).toHaveTextContent('Delete "Sample Event"?');
+      expect(dialog).toHaveTextContent('Delete 1 event?');
       expect(dialog).toHaveTextContent('Deleted bucket');
       expect(softDeleteMock).not.toHaveBeenCalled();
     });
 
     it('cancelling the dialog runs nothing', () => {
       renderManage([event({})]);
-      fireEvent.click(screen.getByRole('button', { name: /delete/i }));
-      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      tickAndDelete('Sample Event');
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' }));
       expect(screen.queryByRole('dialog')).toBeNull();
       expect(softDeleteMock).not.toHaveBeenCalled();
     });
 
     it('confirming runs the soft delete and surfaces a success toast', async () => {
       renderManage([event({ id: 'e-9' })]);
-      fireEvent.click(screen.getByRole('button', { name: /delete/i }));
-      fireEvent.click(screen.getByRole('button', { name: 'Delete event' }));
+      tickAndDelete('Sample Event');
+      fireEvent.click(screen.getByRole('button', { name: 'Delete 1 event' }));
       await waitFor(() => expect(softDeleteMock).toHaveBeenCalledWith(['e-9']));
       await waitFor(() =>
         expect(screen.getByRole('status')).toHaveTextContent(/moved to Deleted/),
@@ -112,8 +201,8 @@ describe('ManageWorkstation', () => {
     it('an action error is surfaced as an error toast (never silent)', async () => {
       softDeleteMock.mockResolvedValueOnce({ error: 'Could not update the selected events.' } as never);
       renderManage([event({})]);
-      fireEvent.click(screen.getByRole('button', { name: /delete/i }));
-      fireEvent.click(screen.getByRole('button', { name: 'Delete event' }));
+      tickAndDelete('Sample Event');
+      fireEvent.click(screen.getByRole('button', { name: 'Delete 1 event' }));
       await waitFor(() =>
         expect(screen.getByRole('status')).toHaveTextContent('Could not update the selected events.'),
       );
@@ -121,7 +210,7 @@ describe('ManageWorkstation', () => {
   });
 
   describe('live-first ordering', () => {
-    it('pins live events to the top of the All list regardless of sort', () => {
+    it('pins live events to the top of the Active list regardless of sort', () => {
       renderManage([
         event({ id: 'a', title: 'Alpha Soonest', startMs: NOW + 1 * HOUR }),
         event({ id: 'b', title: 'Bravo Live', lifecycle: 'live', startMs: NOW + 48 * HOUR }),
@@ -211,30 +300,6 @@ describe('ManageWorkstation', () => {
       expect(screen.getByText('Could not update the selected events.')).toBeInTheDocument();
     });
 
-    it('cancels only the selected events that are not already cancelled', () => {
-      vi.useRealTimers();
-      renderManage([
-        event({ id: 'live-1', title: 'Still On' }),
-        event({ id: 'off-1', title: 'Already Off', lifecycle: 'cancelled' }),
-      ]);
-      fireEvent.click(screen.getByLabelText('Select Still On'));
-      fireEvent.click(screen.getByLabelText('Select Already Off'));
-      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-      expect(screen.getByRole('button', { name: 'Cancel 1 event' })).toBeInTheDocument();
-      fireEvent.click(screen.getByRole('button', { name: 'Cancel 1 event' }));
-      cleanup();
-      expect(cancelMock).toHaveBeenCalledWith(['live-1']);
-    });
-
-    it('says so, and opens nothing, when every selected event is already cancelled', () => {
-      vi.useRealTimers();
-      renderManage([event({ id: 'off-1', title: 'Already Off', lifecycle: 'cancelled' })]);
-      fireEvent.click(screen.getByLabelText('Select Already Off'));
-      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-      expect(screen.getByText('The selected events are already cancelled.')).toBeInTheDocument();
-      expect(screen.queryByRole('dialog')).toBeNull();
-    });
-
     it('ignores a click on Done in its first 500 ms (a double-click on the first dialog)', () => {
       confirmCancel();
       fireEvent.click(screen.getByRole('button', { name: 'Done' }));
@@ -245,7 +310,7 @@ describe('ManageWorkstation', () => {
     it('does not offer Cancel on the Cancelled tab', () => {
       vi.useRealTimers();
       renderManage([event({ id: 'x-1', title: 'Already Off', lifecycle: 'cancelled' })]);
-      fireEvent.click(screen.getByRole('button', { name: /^Cancelled/ }));
+      fireEvent.click(screen.getByRole('tab', { name: /^Cancelled/ }));
       fireEvent.click(screen.getByLabelText('Select Already Off'));
       expect(screen.getByText('1 selected')).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();

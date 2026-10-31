@@ -52,7 +52,7 @@ describe('PublicShell — state-aware right-side CTA (SiteShell parity)', () => 
     expect(screen.getByRole('link', { name: /^sign in$/i })).toBeInTheDocument();
   });
 
-  it('signed-in + isStaff renders StaffProgrammePill (Programme -> /dashboard), NOT the AccountMenu', () => {
+  it('signed-in + isStaff renders StaffProgrammePill (Events -> /dashboard), NOT the AccountMenu', () => {
     // Ivan 2026-09-24: organisers have no attendee identity on PublicShell —
     // suppress attendee chrome, give them a route back to /dashboard.
     render(
@@ -60,8 +60,8 @@ describe('PublicShell — state-aware right-side CTA (SiteShell parity)', () => 
         <div>content</div>
       </PublicShell>,
     );
-    const programme = screen.getByRole('link', { name: /^programme$/i });
-    expect(programme).toHaveAttribute('href', '/dashboard');
+    const events = screen.getByRole('link', { name: /^events$/i });
+    expect(events).toHaveAttribute('href', '/dashboard');
     expect(screen.queryByRole('button', { name: /^account$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^sign in$/i })).not.toBeInTheDocument();
   });

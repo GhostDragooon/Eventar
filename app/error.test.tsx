@@ -30,9 +30,9 @@ beforeEach(() => {
 // attendee crash page, told to "tell the organiser", with Home pointing at the
 // marketing site. Behind the organiser gate the boundary speaks to them directly.
 describe('app error boundary, organiser workspace paths', () => {
-  it.each(['/dashboard', '/events/new', `/events/${EVENT}/edit`, `/events/${EVENT}/checkin`, '/settings', '/participants', '/analytics', '/checkin'])('%s: the way out is Programme, which lists drafts, never the marketing site', (path) => {
+  it.each(['/dashboard', '/events/new', `/events/${EVENT}/edit`, `/events/${EVENT}/checkin`, '/settings', '/participants', '/analytics', '/checkin'])('%s: the way out is Events, which lists drafts, never the marketing site', (path) => {
     mount(path);
-    expect(screen.getByRole('link', { name: 'Back to Programme' })).toHaveAttribute('href', '/dashboard');
+    expect(screen.getByRole('link', { name: 'Back to Events' })).toHaveAttribute('href', '/dashboard');
     expect(screen.queryByRole('link', { name: 'Home' })).toBeNull();
   });
 
@@ -40,9 +40,9 @@ describe('app error boundary, organiser workspace paths', () => {
     const { container } = mount(`/events/${EVENT}/edit`, 'd1g3st');
     expect(container.textContent).not.toMatch(/tell the organiser/i);
     expect(container.textContent).toMatch(/if you were saving or publishing, check your events before you repeat it/i);
-    // The exit is Programme: since CX-04 it lists drafts, so a half-saved draft can be found
+    // The exit is Events: it lists drafts, so a half-saved draft can be found
     // there (DashboardWorkstation.test.tsx pins that). The body names no page.
-    expect(screen.getByRole('link', { name: 'Back to Programme' })).toHaveAttribute('href', '/dashboard');
+    expect(screen.getByRole('link', { name: 'Back to Events' })).toHaveAttribute('href', '/dashboard');
   });
 
   it('gives the reference as something to quote when asking for help, and nothing odd when there is none', () => {
@@ -60,13 +60,13 @@ describe('app error boundary, organiser workspace paths', () => {
 });
 
 // /login and /invite/<token> are organiser-DOOR paths. A signed-out organiser or a
-// not-yet-staff invitee has no Programme to go back to, and /dashboard would only
+// not-yet-staff invitee has no Events page to go back to, and /dashboard would only
 // bounce them to /login and lose the invite token.
 describe('app error boundary, organiser door paths', () => {
   it.each(['/login', '/login?next=/dashboard', '/invite/abc123'])('%s keeps the public wording and the Home link', (path) => {
     const { container } = mount(path, 'd1g3st');
     expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
-    expect(screen.queryByRole('link', { name: 'Back to Programme' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Back to Events' })).toBeNull();
     expect(container.textContent).not.toMatch(/check your events/i);
   });
 });
@@ -75,7 +75,7 @@ describe('app error boundary, public paths', () => {
   it.each(['/', `/events/${EVENT}`, '/account/record', '/pricing'])('%s: Home and the attendee wording', (path) => {
     const { container } = mount(path, 'd1g3st');
     expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
-    expect(screen.queryByRole('link', { name: 'Back to Programme' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Back to Events' })).toBeNull();
     expect(container.textContent).toContain('Your data is safe. Try again. If it keeps happening, tell the organiser and quote error d1g3st.');
   });
 
@@ -164,7 +164,7 @@ describe('app error boundary, recovery', () => {
     expect(classes).toMatch(/(^|\s)text-on-primary!(\s|$)/);
     expect(classes).toMatch(/(^|\s)text-label-md(\s|$)/);
     expect(classes).toMatch(/(^|\s)min-h-11(\s|$)/);
-    expect(screen.getByRole('link', { name: 'Back to Programme' }).className).toMatch(/(^|\s)min-h-11(\s|$)/);
+    expect(screen.getByRole('link', { name: 'Back to Events' }).className).toMatch(/(^|\s)min-h-11(\s|$)/);
   });
 
   it('leaves a breadcrumb in the console with the digest, never the message, when there is one', () => {

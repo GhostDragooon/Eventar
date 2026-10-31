@@ -4,26 +4,20 @@ import { requireStaff, NotAuthorizedError } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { StaffShell } from '@/components/shell/StaffShell';
-import {
-  DashboardWorkstation,
-  type ProgrammeEvent,
-  type DashboardMetrics,
-} from '@/components/dashboard/DashboardWorkstation';
-import { type AttentionItem } from '@/components/dashboard/NeedsAttention';
-import { countCreditsIssued, fetchDecoratedEvents } from '@/app/dashboard/data';
+import { EventsHome } from '@/components/dashboard/EventsHome';
+import { NeedsAttention, type AttentionItem } from '@/components/dashboard/NeedsAttention';
+import { fetchDecoratedEvents } from '@/app/dashboard/data';
 import { DevEmailStubBanner } from '@/components/dev/DevEmailStubBanner';
 import { organiserTz } from '@/lib/tz';
 
 export const metadata = {
-  title: 'Programme',
+  title: 'Events',
   robots: { index: false, follow: false },
 };
 
 // Session-scoped staff page — never static-prerender (review mode skips the
 // cookie read that would otherwise force dynamic).
 export const dynamic = 'force-dynamic';
-
-const DAY_MS = 86_400_000;
 
 export default async function DashboardPage() {
   let staff;
@@ -36,73 +30,13 @@ export default async function DashboardPage() {
 
   const supabase = await supabaseServer();
 
-  let orgName: string | null = null;
-  if (staff.organisation_id) {
-    const { data: orgRow, error: orgErr } = await supabase
-      .from('organisations')
-      .select('name')
-      .eq('id', staff.organisation_id)
-      .maybeSingle();
-    if (orgErr) console.error('[dashboard] organisation name lookup failed', { code: orgErr.code });
-    else orgName = orgRow?.name ?? null;
-  }
-
   // eslint-disable-next-line react-hooks/purity
   const nowMs = Date.now();
   const tz = organiserTz((await cookies()).get('eventar-tz')?.value);
-  const { events: decorated, registered7d, checkedInToday } = await fetchDecoratedEvents(supabase, nowMs, staff, tz);
-
-  // ---- CPD pulse + capture rate (IA spec stat row) -------------------------
+  const { events: decorated } = await fetchDecoratedEvents(supabase, nowMs, staff, tz);
   const admin = supabaseAdmin();
-  const orgEventIds = decorated.map((d) => d.id);
-  const [issuedRes, blockedRes] = await Promise.all([
-    // credit_ledger has no organisation_id column, but attendance credit is
-    // always awarded against a specific event (record_credit_entry() takes
-    // p_event_id as a required parameter) — scope by `decorated`'s ids, which
-    // fetchDecoratedEvents() has already resolved to the right set for this
-    // caller's role (their own org, or every org for eventar_staff). Before
-    // this fix the count was global across every organisation, invisible
-    // under review mode for the same reason as the D4 events leak.
-    countCreditsIssued(admin, orgEventIds),
-    // practitioner_licences is practitioner-owned, not organisation-owned
-    // (no organisation_id, no event_id — see its own migration comment) — an
-    // organiser_admin/organiser_member has no valid join to scope "blocked"
-    // licences to their org by, so this stays global. Flagged, not fixed:
-    // this is a genuine "which population does this card mean" product
-    // question, not a missing join. See handoff for the two concrete options.
-    admin
-      .from('practitioner_licences')
-      .select('id', { count: 'exact', head: true })
-      .in('status', ['lapsed', 'revoked']),
-  ]);
-  if (issuedRes.error) console.error('[dashboard] credit_ledger count failed', { code: issuedRes.error.code });
-  if (blockedRes.error) console.error('[dashboard] licence count failed', { code: blockedRes.error.code });
-  const creditsIssued = issuedRes.count ?? 0;
-  const creditsBlocked = blockedRes.count ?? 0;
-
-  const startedIds = new Set(
-    decorated.filter((d) => !d.deleted && d.startMs <= nowMs).map((d) => d.id),
-  );
-  const runRegistered = decorated
-    .filter((d) => startedIds.has(d.id))
-    .reduce((s, d) => s + d.registered, 0);
-  const runAttended = decorated
-    .filter((d) => startedIds.has(d.id))
-    .reduce((s, d) => s + d.attended, 0);
-
-  const isOpen = (d: ProgrammeEvent) =>
+  const isOpen = (d: (typeof decorated)[number]) =>
     !d.deleted && (d.lifecycle === 'registering' || d.lifecycle === 'upcoming' || d.lifecycle === 'live');
-  const metrics: DashboardMetrics = {
-    openRegistered: decorated.filter(isOpen).reduce((s, d) => s + d.registered, 0),
-    registered7d,
-    eventsThisWeek: decorated.filter((d) => isOpen(d) && d.startMs <= nowMs + 7 * DAY_MS).length,
-    closingSoon: decorated.filter((d) => isOpen(d) && d.closesInDays != null && d.closesInDays <= 7).length,
-    checkedInToday,
-    captureRate: runRegistered > 0 ? Math.round((runAttended / runRegistered) * 100) : null,
-    creditsIssued,
-    creditsBlocked,
-    liveNow: decorated.filter((d) => !d.deleted && d.lifecycle === 'live').length,
-  };
 
   // ---- "Needs attention" feed -----------------------------------------------
   const liveIds = decorated.filter((d) => !d.deleted && d.lifecycle === 'live').map((d) => d.id);
@@ -184,7 +118,8 @@ export default async function DashboardPage() {
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role, full_name: staff.full_name }}>
       <DevEmailStubBanner />
-      <DashboardWorkstation key={tz} events={decorated} attention={attention} metrics={metrics} orgName={orgName} nowMs={nowMs} tz={tz} />
+      {attention.length > 0 && <div className="mb-lg"><NeedsAttention items={attention} /></div>}
+      <EventsHome key={tz} events={decorated} viewer={{ id: staff.id, role: staff.role }} nowMs={nowMs} />
     </StaffShell>
   );
 }

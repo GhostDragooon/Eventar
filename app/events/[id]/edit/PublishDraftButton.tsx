@@ -128,7 +128,7 @@ export default function PublishDraftButton({
             (refusal.stale ? (
               <span>
                 {refusal.message} Check it in{' '}
-                <Link href="/dashboard/manage" className="underline underline-offset-4">Manage</Link>.
+                <Link href="/dashboard" className="underline underline-offset-4">Events</Link>.
               </span>
             ) : (
               refusal.message

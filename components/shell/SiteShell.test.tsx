@@ -77,7 +77,7 @@ describe('SiteShell — state-aware right-side CTA', () => {
     expect(screen.getByRole('link', { name: /^sign in$/i })).not.toHaveAttribute('aria-current');
   });
 
-  it('signed-in + isStaff renders the StaffProgrammePill (Programme link to /dashboard), NOT the attendee AccountMenu', () => {
+  it('signed-in + isStaff renders the StaffProgrammePill (Events link to /dashboard), NOT the attendee AccountMenu', () => {
     // Ivan 2026-09-24: organisers have no attendee identity — attendee
     // shells suppress the AccountMenu and render an escape hatch back to
     // /dashboard when the session is staff.
@@ -86,8 +86,8 @@ describe('SiteShell — state-aware right-side CTA', () => {
         <div>content</div>
       </SiteShell>,
     );
-    const programme = screen.getByRole('link', { name: /^programme$/i });
-    expect(programme).toHaveAttribute('href', '/dashboard');
+    const events = screen.getByRole('link', { name: /^events$/i });
+    expect(events).toHaveAttribute('href', '/dashboard');
     // Attendee Account menu MUST NOT render for a staff session.
     expect(screen.queryByRole('button', { name: /^account$/i })).not.toBeInTheDocument();
     // Sign-in pill MUST NOT render either — this is a signed-in state.

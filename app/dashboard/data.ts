@@ -136,6 +136,7 @@ export async function fetchDecoratedEvents(
       format: e.format ?? null,
       hero_image_url: e.hero_image_url ?? null,
       city: e.city ?? null,
+      createdBy: e.created_by ?? null,
       hosts: organizedBy.filter((h) => h.name).map((h) => ({ name: h.name as string, avatar_url: null })),
     };
   });

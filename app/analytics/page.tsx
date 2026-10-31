@@ -8,7 +8,7 @@ import { formatInTz } from '@/lib/tz';
 import { ownEvents } from '@/app/dashboard/data';
 
 export const metadata = {
-  title: 'Analytics',
+  title: 'History',
   robots: { index: false, follow: false },
 };
 
@@ -16,8 +16,8 @@ export const metadata = {
 // cookie read that would otherwise force dynamic).
 export const dynamic = 'force-dynamic';
 
-// Global Analytics index — the nav tab's target. Completed events, most
-// recent first; each row opens the per-event post-event review.
+// History (Doctrine 2026-10-30, CX-04R) — the nav item's target: what we ran. Completed events, most recent first; each
+// row opens the per-event post-event review. No points here (Q26 gate).
 export default async function AnalyticsIndexPage() {
   let staff;
   try {
@@ -28,6 +28,11 @@ export default async function AnalyticsIndexPage() {
   }
 
   const supabase = await supabaseServer();
+  // eslint-disable-next-line react-hooks/purity
+  const nowMs = Date.now();
+  // "Completed" is cut in the query: published or completed rows whose end has passed, which is computeLifecycle's rule.
+  // A limit ahead of the JavaScript filter let upcoming published events use up the 100 slots, so an organisation with
+  // 100+ future events saw an empty History (the check-in picker had the same bug).
   const { data: events, error: eventsErr } = await ownEvents(
     supabase,
     staff,
@@ -35,12 +40,11 @@ export default async function AnalyticsIndexPage() {
   )
     .is('deleted_at', null)
     .in('status', ['published', 'completed'])
+    .lt('end_time', new Date(nowMs).toISOString())
     .order('start_time', { ascending: false })
     .limit(100);
   if (eventsErr) throw eventsErr;
 
-  // eslint-disable-next-line react-hooks/purity
-  const nowMs = Date.now();
   const prelim = (events ?? [])
     .map((e) => ({ ...e, lifecycle: computeLifecycle(e as EventLifecycleRow, nowMs) }))
     .filter((e) => e.lifecycle === 'completed');
@@ -79,14 +83,13 @@ export default async function AnalyticsIndexPage() {
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role }}>
       <header className="mb-lg">
-        <p className="text-label-md font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-xs">Analytics</p>
-        <h1 className="text-[calc(30px*var(--text-scale))] leading-[1.1] font-extrabold tracking-[-0.025em] text-on-surface">Pick a completed event to review</h1>
-        <p className="font-body-md text-body-md text-on-surface-variant mt-xs">{completed.length} completed event{completed.length === 1 ? '' : 's'}</p>
+        <h1 className="text-[calc(30px*var(--text-scale))] leading-[1.1] font-extrabold tracking-[-0.025em] text-on-surface">History</h1>
+        <p className="font-body-md text-body-md text-on-surface-variant mt-xs">{completed.length} completed event{completed.length === 1 ? '' : 's'}. Pick one to review it.</p>
       </header>
 
       {completed.length === 0 ? (
         <div className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-xl text-center">
-          <p className="font-body-md text-body-md text-on-surface-variant">No completed events yet — analytics unlock after an event wraps.</p>
+          <p className="font-body-md text-body-md text-on-surface-variant">No completed events yet. An event appears here once it has finished.</p>
         </div>
       ) : (
         <ul className="flex flex-col gap-sm">

@@ -54,32 +54,17 @@ type StaffShellBackProps =
 export type StaffShellProps = StaffShellBaseProps & StaffShellBackProps;
 
 /**
- * 7 of the spec's 8 areas (6 here + Settings, rendered separately below).
- * `href: null` means the surface does not exist yet: rendered visible-but-inert
- * so the shell shows the real IA without shipping a link to a 404 (Ivan's call
- * 2026-08-09). Give an item an href the day its route lands - that is the whole
- * migration.
- *
- * EVENTS IS DELIBERATELY ABSENT (Ivan's call 2026-08-09). It was previously
- * rendered inert with a SOON chip, which told an organiser a capability was
- * coming while they were already standing in it: Programme (/dashboard, events
- * by date, drafts included, each row opening its event) and Manage
- * (/dashboard/manage, state filters, search, sort, bulk actions) ARE the staff
- * events lists. The real defect underneath was an audience boundary, not a routing one - the original
- * link pointed at app/(public)/events, the ATTENDEE-facing directory, so
- * clicking it from the staff sidebar loaded the public listing and the sidebar
- * vanished. The attendee list is not a staff nav destination at all. If the
- * spec's dedicated organiser list is ever built, it gets its own route and its
- * own row then - not a placeholder now.
+ * The organiser sidebar is four items: Check-in, Events, History and Settings (rendered separately below).
+ * Doctrine 2026-10-30 (docs/plans/DOCTRINE-two-persona-2026-10-30.md section 3) replaced the older seven-area list
+ * (Programme, Manage, Participants, Accreditation, Check-in, Communications, Reports). CX-04R folded Programme and
+ * Manage into one Events home at /dashboard; History is /analytics (what we ran). The public attendee directory
+ * (/events) is not a staff nav destination, and a surface that does not exist yet gets no row: `href: null` still
+ * renders an inert row, but nothing uses it.
  */
 const NAV: { label: string; href: string | null; icon: string; count?: number }[] = [
-  { label: 'Programme', href: '/dashboard', icon: 'calendar_today' },
-  { label: 'Manage', href: '/dashboard/manage', icon: 'event_note' },
-  { label: 'Participants', href: '/participants', icon: 'group' },
-  { label: 'Accreditation', href: null, icon: 'verified_user' },
   { label: 'Check-in', href: '/checkin', icon: 'how_to_reg' },
-  { label: 'Communications', href: null, icon: 'mail' },
-  { label: 'Reports', href: '/analytics', icon: 'bar_chart' },
+  { label: 'Events', href: '/dashboard', icon: 'event' },
+  { label: 'History', href: '/analytics', icon: 'history' },
 ];
 
 function isActive(pathname: string, href: string): boolean {
@@ -207,7 +192,7 @@ export function StaffShell(props: StaffShellProps) {
               <p className="mt-md hidden px-md text-[calc(10px*var(--text-scale))] font-semibold uppercase tracking-[.1em] text-on-surface-variant/70 md:block">
                 Admin
               </p>
-              <NavRow label="Settings" href="/settings" icon="settings" active={pathname === '/settings'} />
+              <NavRow label="Settings" href="/settings" icon="settings" active={pathname === '/settings' || pathname.startsWith('/settings/')} />
             </nav>
 
             {/* Account chip pinned bottom-left (Ivan's call 2026-09-07). The

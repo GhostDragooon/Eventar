@@ -16,7 +16,7 @@ vi.mock('@/lib/supabase/server', async () => {
   return { supabaseServer: async () => fakeSupabase(h.tables) };
 });
 
-import { NOW, ended, eventRow, hrefsOf, treeOf } from '@/tests/helpers/staffPageFakes';
+import { NOW, ended, eventRow, hrefsOf, textOf, treeOf } from '@/tests/helpers/staffPageFakes';
 import AnalyticsIndexPage from './page';
 
 const staff = (role: string, organisation_id: string) => ({
@@ -28,7 +28,7 @@ const staff = (role: string, organisation_id: string) => ({
 const endedA = eventRow({ id: 'ev-a-ended', title: 'Org A ended', organisation_id: 'org-a', ...ended });
 const endedB = eventRow({ id: 'ev-b-ended', title: 'Org B ended', organisation_id: 'org-b', ...ended });
 
-describe('/analytics — pick a completed event to review', () => {
+describe('/analytics — History: what we ran (CX-04R)', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(NOW);
@@ -48,5 +48,15 @@ describe('/analytics — pick a completed event to review', () => {
     const hrefs = hrefsOf(await treeOf(() => AnalyticsIndexPage()));
     expect(hrefs).toContain('/events/ev-a-ended/analytics');
     expect(hrefs).toContain('/events/ev-b-ended/analytics');
+  });
+
+  it('is titled History and lists no upcoming event: the end-time cut is in the query, ahead of the limit', async () => {
+    const future = eventRow({ id: 'ev-a-future', title: 'Org A next month', organisation_id: 'org-a', start_time: new Date(NOW + 86_400_000 * 30).toISOString(), end_time: new Date(NOW + 86_400_000 * 30 + 3_600_000).toISOString() });
+    h.tables = { events: [endedA, future], registrations: [], survey_responses: [] };
+    h.staff = staff('organiser_admin', 'org-a');
+    const tree = await treeOf(() => AnalyticsIndexPage());
+    expect(textOf(tree)).toContain('History');
+    expect(hrefsOf(tree)).toContain('/events/ev-a-ended/analytics');
+    expect(hrefsOf(tree)).not.toContain('/events/ev-a-future/analytics');
   });
 });
