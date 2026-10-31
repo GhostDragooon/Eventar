@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils';
 import { StatusPill } from '@/components/lifecycle/StatusPill';
 import type { ProgrammeEvent } from './DashboardWorkstation';
+import type { TabKey } from './eventTabs';
 
 const PILL: Record<Lifecycle, { label: string }> = {
   live:        { label: 'Live' },
@@ -30,7 +31,6 @@ const CATEGORY_LABEL: Record<string, string> = {
 
 // The Events home shows four states (Ivan, CX-04R pick a, 2026-10-31). Completed events are History's, not this
 // page's, so they belong to no tab. Deleted is hidden while it is empty.
-type TabKey = 'active' | 'drafts' | 'cancelled' | 'deleted';
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'active', label: 'Active' },
   { key: 'drafts', label: 'Drafts' },
@@ -68,16 +68,18 @@ export type EventsHomeProps = {
   events: ProgrammeEvent[];
   /** The signed-in organiser: a tick box shows only on events they created (everyone's for eventar_staff), because the bulk RPC skips the rest silently. */
   viewer: { id: string; role: string };
-  /** Server time: a draft whose date has passed says so. */
+  /** Server time: a draft whose date has passed says so, and a date in another year shows its year. */
   nowMs: number;
+  /** The tab a link asked for (?tab=). Read once on load; clicking a tab then keeps the address in step. */
+  initialTab?: TabKey;
 };
 
 const UNDO_SECONDS = 7;
 
-export function EventsHome({ events, viewer, nowMs }: EventsHomeProps) {
+export function EventsHome({ events, viewer, nowMs, initialTab = 'active' }: EventsHomeProps) {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortKey>('soonest');
-  const [tab, setTab] = useState<TabKey>('active');
+  const [chosenTab, setChosenTab] = useState<TabKey>(initialTab);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pending, startTransition] = useTransition();
   const { toast } = useToast();
@@ -105,7 +107,21 @@ export function EventsHome({ events, viewer, nowMs }: EventsHomeProps) {
     return c;
   }, [events]);
 
+  // Deleted hides while it is empty: restoring the last deleted event must not leave the page on a tab that is gone.
+  const tab: TabKey = chosenTab === 'deleted' && counts.deleted === 0 ? 'active' : chosenTab;
   const inBin = tab === 'deleted';
+  const total = counts.active + counts.drafts + counts.cancelled;
+
+  function pickTab(next: TabKey) {
+    setChosenTab(next);
+    setSelected(new Set());
+    // The address follows the tab so a refresh or a shared link keeps it. Next.js reads history.replaceState, so this
+    // costs no server round trip. Active is the default and carries no parameter.
+    const url = new URL(window.location.href);
+    if (next === 'active') url.searchParams.delete('tab');
+    else url.searchParams.set('tab', next);
+    window.history.replaceState(null, '', url);
+  }
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -122,6 +138,12 @@ export function EventsHome({ events, viewer, nowMs }: EventsHomeProps) {
     }
     return sorted;
   }, [events, query, tab, sort]);
+
+  // Only ticked rows that are on screen count: a search that hides a ticked row must not leave it in the bulk action.
+  const picked = useMemo(() => {
+    const on = new Set(visible.map((e) => e.id));
+    return new Set([...selected].filter((id) => on.has(id)));
+  }, [selected, visible]);
 
   function toggle(id: string) {
     setSelected((s) => {
@@ -230,7 +252,7 @@ export function EventsHome({ events, viewer, nowMs }: EventsHomeProps) {
   useEffect(() => () => sendIfUnsent(), []);
 
   function runBulk(kind: 'archive' | 'cancel' | 'restore') {
-    const ids = [...selected];
+    const ids = [...picked];
     if (ids.length === 0) return;
     if (kind === 'restore') {
       execute('restore', ids);
@@ -253,7 +275,7 @@ export function EventsHome({ events, viewer, nowMs }: EventsHomeProps) {
   }
 
   function exportCsv() {
-    const rows = events.filter((e) => selected.has(e.id));
+    const rows = events.filter((e) => picked.has(e.id));
     const header = ['Title', 'Status', 'Category', 'Date', 'Venue', 'Registered', 'Capacity', 'Attended'];
     const body = rows.map((e) =>
       [e.title, PILL[e.lifecycle].label, e.category ? CATEGORY_LABEL[e.category] ?? '' : '', e.dateLabel, e.venueName ?? '', String(e.registered), e.maxAttendees == null ? '' : String(e.maxAttendees), String(e.attended)]
@@ -277,7 +299,7 @@ export function EventsHome({ events, viewer, nowMs }: EventsHomeProps) {
         <div>
           <h1 className="text-[calc(28px*var(--text-scale))] font-bold tracking-[-0.02em] text-on-surface">Events</h1>
           <p className="text-[calc(13px*var(--text-scale))] text-on-surface-variant">
-            {counts.active + counts.drafts + counts.cancelled} events. Finished events are in History.
+            {total} event{total === 1 ? '' : 's'}. Finished events are in History.
           </p>
         </div>
         <Link href="/events/new" className={cn(buttonVariants(), 'h-11 gap-xs px-lg font-label-md text-label-md')}>
@@ -291,7 +313,7 @@ export function EventsHome({ events, viewer, nowMs }: EventsHomeProps) {
           const n = counts[t.key];
           if (t.key === 'deleted' && n === 0) return null;
           return (
-            <button key={t.key} type="button" role="tab" aria-selected={on} onClick={() => { setTab(t.key); setSelected(new Set()); }}
+            <button key={t.key} type="button" role="tab" aria-selected={on} onClick={() => pickTab(t.key)}
               className={cn('relative flex min-h-11 shrink-0 items-center font-label-md text-label-md', on ? 'text-on-surface' : 'text-on-surface-variant hover:text-on-surface')}>
               {t.label}
               {/* bg-primary + text-on-primary, not the shipped text-white on --on-primary-container (1.32:1 in dark). */}
@@ -329,9 +351,9 @@ export function EventsHome({ events, viewer, nowMs }: EventsHomeProps) {
         </div>
       </div>
 
-      {selected.size > 0 && (
+      {picked.size > 0 && (
         <div className="bulk-bar-in mb-md flex flex-wrap items-center justify-between gap-md rounded-lg border border-[color:var(--primary-fixed-dim)] bg-primary-container/60 px-md py-sm">
-          <span className="font-label-md text-label-md font-semibold text-on-surface">{selected.size} selected</span>
+          <span className="font-label-md text-label-md font-semibold text-on-surface">{picked.size} selected</span>
           <div className="flex flex-wrap items-center gap-sm">
             <Button type="button" variant="outline" onClick={exportCsv} disabled={pending} className={btn}>
               <span className={cn('material-symbols-outlined', icon16)} aria-hidden>download</span>Export CSV
@@ -381,7 +403,7 @@ export function EventsHome({ events, viewer, nowMs }: EventsHomeProps) {
       ) : (
         <ul className="flex flex-col gap-sm">
           {visible.map((e) => (
-            <EventRow key={e.id} e={e} nowMs={nowMs} selectable={canSelect(e)} selected={selected.has(e.id)} onToggle={() => toggle(e.id)} inBin={inBin} onRestore={() => execute('restore', [e.id])} pending={busy} />
+            <EventRow key={e.id} e={e} nowMs={nowMs} selectable={canSelect(e)} selected={picked.has(e.id)} onToggle={() => toggle(e.id)} inBin={inBin} onRestore={() => execute('restore', [e.id])} pending={busy} />
           ))}
         </ul>
       )}
@@ -433,7 +455,11 @@ function EventRow({ e, nowMs, selectable, selected, onToggle, onRestore, inBin, 
   e: ProgrammeEvent; nowMs: number; selectable: boolean; selected: boolean; onToggle: () => void; onRestore: () => void; inBin: boolean; pending: boolean;
 }) {
   const day = Number(e.dayKey.slice(8));
-  const weekday = e.dateLabel.split(/[ ,]/)[0];
+  // dateLabel is "Mon 2 Nov" (en-GB, in the event's own timezone); dayKey is the same day as YYYY-MM-DD.
+  const [weekday, , month] = e.dateLabel.split(/[ ,]+/);
+  // ponytail: this year is read in UTC, so an event within hours of New Year can show or hide its year wrongly; a tz-aware year needs the event's timezone on ProgrammeEvent.
+  const year = e.dayKey.slice(0, 4);
+  const otherYear = year !== String(new Date(nowMs).getUTCFullYear());
   const showAttended = e.lifecycle === 'live' || e.lifecycle === 'completed';
   // The filled button is the next thing an organiser does: check people in while the event is live or open.
   const doorNow = e.lifecycle === 'live' || e.lifecycle === 'registering';
@@ -452,7 +478,8 @@ function EventRow({ e, nowMs, selectable, selected, onToggle, onRestore, inBin, 
       <div className={cn('grid grid-cols-[56px_minmax(0,1fr)] gap-xs rounded-[16px] border bg-surface-container-lowest p-xs', selected ? 'border-[color:var(--primary-fixed-dim)]' : 'border-outline-variant')}>
         <div className="flex flex-col items-center justify-center rounded-[12px] bg-surface-container text-center">
           <span className="text-[calc(22px*var(--text-scale))] font-bold leading-none tabular-nums text-on-surface">{day}</span>
-          <span className="mt-xs text-[calc(12px*var(--text-scale))] leading-none text-on-surface-variant">{weekday}</span>
+          <span className="mt-xs text-[calc(12px*var(--text-scale))] leading-none text-on-surface-variant">{weekday} {month}</span>
+          {otherYear && <span className="mt-[2px] text-[calc(11px*var(--text-scale))] leading-none tabular-nums text-on-surface-variant">{year}</span>}
         </div>
         <div className="flex min-w-0 flex-col rounded-[12px] bg-surface-container p-xs">
           <div className="flex min-w-0 flex-wrap items-center gap-x-sm">
@@ -473,7 +500,7 @@ function EventRow({ e, nowMs, selectable, selected, onToggle, onRestore, inBin, 
             </div>
             {passed && <p className="mt-xs text-[calc(12.5px*var(--text-scale))] font-medium text-on-surface">The date has passed. Edit the date to publish this draft.</p>}
           </div>
-          <div className="mt-xs grid grid-cols-3 gap-sm">
+          <div className={cn('mt-xs grid gap-sm', e.lifecycle === 'drafted' ? 'grid-cols-2' : 'grid-cols-3')}>
             {inBin ? (
               <Button type="button" variant="outline" onClick={onRestore} disabled={pending} className={cn(link, 'col-span-3')}>
                 <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>restore_from_trash</span>Restore
@@ -482,7 +509,10 @@ function EventRow({ e, nowMs, selectable, selected, onToggle, onRestore, inBin, 
               <>
                 <Link href={`/events/${e.id}/details`} className={cn(buttonVariants({ variant: 'outline' }), link)}>Details</Link>
                 <Link href={`/events/${e.id}/edit`} className={cn(buttonVariants({ variant: 'outline' }), link)}>Edit</Link>
-                <Link href={`/events/${e.id}/checkin`} className={cn(buttonVariants({ variant: doorNow ? 'default' : 'outline' }), link)}>Check-in</Link>
+                {/* Check-in is refused on a draft, so a draft has no Check-in button until it is published. */}
+                {e.lifecycle !== 'drafted' && (
+                  <Link href={`/events/${e.id}/checkin`} className={cn(buttonVariants({ variant: doorNow ? 'default' : 'outline' }), link)}>Check-in</Link>
+                )}
               </>
             )}
           </div>

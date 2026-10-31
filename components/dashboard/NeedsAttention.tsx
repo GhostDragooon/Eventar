@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 /**
  * "Needs attention" queue — docs/plans/2026-07-12-organiser-ia-spec.md,
@@ -43,7 +44,56 @@ const TONE: Record<AttentionTone, { chip: string; icon: string }> = {
   info: { chip: 'bg-surface-container-high text-on-surface-variant', icon: 'schedule' },
 };
 
-export function NeedsAttention({ items }: { items: AttentionItem[] }) {
+function AttentionRow({ it }: { it: AttentionItem }) {
+  return (
+    <li>
+      <Link
+        href={it.href}
+        className="nav-item flex items-start gap-md px-lg py-md hover:bg-surface-container-high"
+      >
+        <span
+          className={`mt-[2px] grid h-[26px] w-[26px] shrink-0 place-items-center rounded-lg ${TONE[it.tone].chip}`}
+          aria-hidden
+        >
+          <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]">
+            {it.icon || TONE[it.tone].icon}
+          </span>
+        </span>
+
+        <span className="min-w-0 flex-1">
+          <span className="block text-[calc(13.5px*var(--text-scale))] font-semibold leading-snug text-on-surface">
+            {it.title}
+          </span>
+          <span className="mt-[2px] block text-[calc(12.5px*var(--text-scale))] leading-snug text-on-surface-variant">
+            {it.detail}
+          </span>
+        </span>
+
+        <span className="shrink-0 text-right">
+          <span className="block text-[calc(12.5px*var(--text-scale))] font-semibold tabular-nums text-on-surface">
+            {it.meta}
+          </span>
+          {it.metaSub && (
+            <span className="block text-[calc(11.5px*var(--text-scale))] text-on-surface-variant">
+              {it.metaSub}
+            </span>
+          )}
+        </span>
+
+        <span className="material-symbols-outlined mt-[2px] shrink-0 text-[calc(18px*var(--text-scale))] text-on-surface-variant" aria-hidden>
+          chevron_right
+        </span>
+      </Link>
+    </li>
+  );
+}
+
+export function NeedsAttention({ items, limit }: { items: AttentionItem[]; limit?: number }) {
+  // `limit` shows the most urgent rows (callers pass them in urgency order) and folds the rest behind a native
+  // disclosure, so the panel never pushes the page's main list off the first screen. Omitted: every row shows.
+  const shown = limit != null ? items.slice(0, limit) : items;
+  const rest = limit != null ? items.slice(limit) : [];
+  const list = 'm-0 list-none divide-y divide-[color:var(--outline-variant)] p-0';
   return (
     <section
       aria-labelledby="needs-attention-heading"
@@ -70,49 +120,22 @@ export function NeedsAttention({ items }: { items: AttentionItem[] }) {
           Nothing needs you. Sends are landing, accreditations are confirmed and no survey closes today.
         </p>
       ) : (
-        <ul className="m-0 list-none divide-y divide-[color:var(--outline-variant)] p-0">
-          {items.map((it) => (
-            <li key={it.id}>
-              <Link
-                href={it.href}
-                className="nav-item flex items-start gap-md px-lg py-md hover:bg-surface-container-high"
-              >
-                <span
-                  className={`mt-[2px] grid h-[26px] w-[26px] shrink-0 place-items-center rounded-lg ${TONE[it.tone].chip}`}
-                  aria-hidden
-                >
-                  <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]">
-                    {it.icon || TONE[it.tone].icon}
-                  </span>
-                </span>
-
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[calc(13.5px*var(--text-scale))] font-semibold leading-snug text-on-surface">
-                    {it.title}
-                  </span>
-                  <span className="mt-[2px] block text-[calc(12.5px*var(--text-scale))] leading-snug text-on-surface-variant">
-                    {it.detail}
-                  </span>
-                </span>
-
-                <span className="shrink-0 text-right">
-                  <span className="block text-[calc(12.5px*var(--text-scale))] font-semibold tabular-nums text-on-surface">
-                    {it.meta}
-                  </span>
-                  {it.metaSub && (
-                    <span className="block text-[calc(11.5px*var(--text-scale))] text-on-surface-variant">
-                      {it.metaSub}
-                    </span>
-                  )}
-                </span>
-
-                <span className="material-symbols-outlined mt-[2px] shrink-0 text-[calc(18px*var(--text-scale))] text-on-surface-variant" aria-hidden>
-                  chevron_right
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className={list}>
+            {shown.map((it) => <AttentionRow key={it.id} it={it} />)}
+          </ul>
+          {rest.length > 0 && (
+            <details className="group border-t border-outline-variant">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center px-lg font-label-md text-label-md text-[color:var(--on-primary-container)] hover:bg-surface-container-high">
+                <span className="group-open:hidden">Show {rest.length} more</span>
+                <span className="hidden group-open:inline">Show fewer</span>
+              </summary>
+              <ul className={cn(list, 'border-t border-outline-variant')}>
+                {rest.map((it) => <AttentionRow key={it.id} it={it} />)}
+              </ul>
+            </details>
+          )}
+        </>
       )}
     </section>
   );

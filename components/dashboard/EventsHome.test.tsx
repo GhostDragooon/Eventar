@@ -57,10 +57,10 @@ function event(overrides: Partial<ProgrammeEvent>): ProgrammeEvent {
 
 const VIEWER = { id: 'staff-1', role: 'organiser_member' };
 
-function renderManage(events: ProgrammeEvent[], viewer = VIEWER) {
+function renderManage(events: ProgrammeEvent[], viewer = VIEWER, extra: { initialTab?: 'active' | 'drafts' | 'cancelled' | 'deleted' } = {}) {
   return render(
     <ToastProvider>
-      <EventsHome events={events} viewer={viewer} nowMs={NOW} />
+      <EventsHome events={events} viewer={viewer} nowMs={NOW} {...extra} />
     </ToastProvider>,
   );
 }
@@ -69,7 +69,7 @@ describe('EventsHome', () => {
   it('is titled Events, says where finished events went, and offers New event (CX-04R)', () => {
     renderManage([event({ id: 'e-1' })]);
     const title = screen.getByRole('heading', { level: 1, name: 'Events' });
-    expect(within(title.closest('header')!).getByText('1 events. Finished events are in History.')).toBeInTheDocument();
+    expect(within(title.closest('header')!).getByText('1 event. Finished events are in History.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /new event/i })).toHaveAttribute('href', '/events/new');
     expect(document.body.textContent).not.toMatch(/Programme|Manage/);
   });
@@ -141,6 +141,73 @@ describe('EventsHome', () => {
       fireEvent.click(screen.getByRole('tab', { name: /^Deleted/ }));
       fireEvent.click(screen.getByRole('button', { name: 'Restore' }));
       await waitFor(() => expect(restoreMock).toHaveBeenCalledWith(['x1']));
+    });
+  });
+
+  describe('the tab follows the address (Ivan 2026-11-01: open the tab and keep the URL in sync)', () => {
+    const rows = [
+      event({ id: 'a1', title: 'Open One' }),
+      event({ id: 'd1', title: 'Draft One', lifecycle: 'drafted' }),
+    ];
+    afterEach(() => window.history.replaceState(null, '', '/'));
+
+    it('opens the tab a link asked for', () => {
+      renderManage(rows, VIEWER, { initialTab: 'drafts' });
+      expect(screen.getByRole('tab', { name: /^Drafts/ })).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByText('Draft One')).toBeInTheDocument();
+      expect(screen.queryByText('Open One')).toBeNull();
+    });
+
+    it('writes ?tab= when a tab is clicked and drops it for Active', () => {
+      renderManage(rows);
+      fireEvent.click(screen.getByRole('tab', { name: /^Drafts/ }));
+      expect(window.location.search).toBe('?tab=drafts');
+      fireEvent.click(screen.getByRole('tab', { name: /^Active/ }));
+      expect(window.location.search).toBe('');
+    });
+
+    it('falls back to Active when the asked-for Deleted tab is empty, instead of showing a tab that is not there', () => {
+      renderManage(rows, VIEWER, { initialTab: 'deleted' });
+      expect(screen.getByRole('tab', { name: /^Active/ })).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByText('Open One')).toBeInTheDocument();
+    });
+  });
+
+  describe('drafts and dates', () => {
+    it('a draft offers Details and Edit but no Check-in (check-in is refused until it is published)', () => {
+      renderManage([event({ id: 'd1', title: 'Draft One', lifecycle: 'drafted' })], VIEWER, { initialTab: 'drafts' });
+      expect(screen.getByRole('link', { name: /^details$/i })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /^edit$/i })).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /^check-in$/i })).toBeNull();
+    });
+
+    it('the date block names the month, and the year only when it is not this year', () => {
+      const thisYear = new Date(NOW).getUTCFullYear();
+      renderManage([
+        event({ id: 'a1', title: 'Same Year', dayKey: `${thisYear}-11-14`, dateLabel: 'Sat 14 Nov' }),
+        event({ id: 'a2', title: 'Next Year', dayKey: `${thisYear + 1}-03-02`, dateLabel: 'Tue 2 Mar' }),
+      ]);
+      const same = within(screen.getByText('Same Year').closest('li')!);
+      expect(same.getByText('Sat Nov')).toBeInTheDocument();
+      expect(same.queryByText(String(thisYear))).toBeNull();
+      const next = within(screen.getByText('Next Year').closest('li')!);
+      expect(next.getByText('Tue Mar')).toBeInTheDocument();
+      expect(next.getByText(String(thisYear + 1))).toBeInTheDocument();
+    });
+  });
+
+  describe('selection follows what is on screen', () => {
+    it('a ticked row hidden by a search is not part of the bulk action or the count', () => {
+      renderManage([event({ id: 'a1', title: 'Alpha' }), event({ id: 'b1', title: 'Bravo' })]);
+      fireEvent.click(screen.getByLabelText('Select Alpha'));
+      fireEvent.click(screen.getByLabelText('Select Bravo'));
+      expect(screen.getByText('2 selected')).toBeInTheDocument();
+      fireEvent.change(screen.getByLabelText('Search events'), { target: { value: 'bravo' } });
+      expect(screen.getByText('1 selected')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+      expect(screen.getByRole('dialog')).toHaveTextContent('Delete 1 event?');
+      fireEvent.click(screen.getByRole('button', { name: 'Delete 1 event' }));
+      expect(softDeleteMock).toHaveBeenCalledWith(['b1']);
     });
   });
 

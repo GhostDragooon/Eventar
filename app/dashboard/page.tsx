@@ -5,6 +5,7 @@ import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { StaffShell } from '@/components/shell/StaffShell';
 import { EventsHome } from '@/components/dashboard/EventsHome';
+import { TAB_KEYS } from '@/components/dashboard/eventTabs';
 import { NeedsAttention, type AttentionItem } from '@/components/dashboard/NeedsAttention';
 import { fetchDecoratedEvents } from '@/app/dashboard/data';
 import { DevEmailStubBanner } from '@/components/dev/DevEmailStubBanner';
@@ -19,7 +20,7 @@ export const metadata = {
 // cookie read that would otherwise force dynamic).
 export const dynamic = 'force-dynamic';
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ tab?: string | string[] }> }) {
   let staff;
   try {
     staff = await requireStaff();
@@ -27,6 +28,9 @@ export default async function DashboardPage() {
     if (e instanceof NotAuthorizedError) redirect('/login');
     throw e;
   }
+
+  const { tab } = await searchParams;
+  const initialTab = TAB_KEYS.find((k) => k === tab);
 
   const supabase = await supabaseServer();
 
@@ -118,8 +122,8 @@ export default async function DashboardPage() {
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role, full_name: staff.full_name }}>
       <DevEmailStubBanner />
-      {attention.length > 0 && <div className="mb-lg"><NeedsAttention items={attention} /></div>}
-      <EventsHome key={tz} events={decorated} viewer={{ id: staff.id, role: staff.role }} nowMs={nowMs} />
+      {attention.length > 0 && <div className="mb-lg"><NeedsAttention items={attention} limit={3} /></div>}
+      <EventsHome key={tz} events={decorated} viewer={{ id: staff.id, role: staff.role }} nowMs={nowMs} initialTab={initialTab} />
     </StaffShell>
   );
 }
