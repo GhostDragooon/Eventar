@@ -21,8 +21,8 @@ Boundary rules:
 >
 > ### 2026-10-31 — MVP execution seq 5: two-persona doctrine mapped and applied to the live docs (docs only)
 > **Handoff, with Ivan's action list (§0) first: [handoff_20261031-mvp-execution-5.md](handoff_20261031-mvp-execution-5.md).** Conflict map and rulings: [mvp/DOCTRINE-CONFLICT-MAP.md](mvp/DOCTRINE-CONFLICT-MAP.md); vault Decisions Log **Q47**. The MVP plan, CX-04, UX-02, CX-06a, UX-FU1, the IA spec and FR-006 carry a "Doctrine 2026-10-30" marker.
-> - **Rulings (Ivan 2026-10-31):** generic Organiser failure message (implies an email + password door, to confirm); Hard Rule 1 vs the email-keyed `staff` table recorded as debt; organiser History parts 2 and 3 are org-level aggregates.
-> - **Open:** organiser door = password (confirm), staff MFA, one email on two orgs, which card first (recommend CX-04R). **Nothing is built;** the running app still shows Programme and Manage.
+> - **Rulings (Ivan 2026-10-31):** organiser stays magic-link only with one bland failure line; Hard Rule 1 vs the email-keyed `staff` table recorded as debt (Sign Up waits on `staff.user_id`); History MVP is "what we ran", no points; nav and doors follow the doctrine.
+> - **Order (Ivan):** CX-04R, then UX-02 re-cut, then door copy; nothing else. Open, not blocking: one email on two orgs, OPEN-4/6/7. **CX-04R not built yet;** the running app still shows Programme and Manage.
 >
 > ### 2026-10-31 — MVP execution seq 4: tree consolidated and pushed, Node patched, UX-02 specimens vs the 2026-10-30 doctrine
 > **Handoff, with Ivan's action list (§0) first: [handoff_20261031-mvp-execution-4.md](handoff_20261031-mvp-execution-4.md).** Read [DOCTRINE-two-persona-2026-10-30.md](DOCTRINE-two-persona-2026-10-30.md) first: it supersedes the Programme/Manage dual home above for MVP shell, nav and CX-04/UX-02 work.

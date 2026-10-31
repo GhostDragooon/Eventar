@@ -16,7 +16,14 @@ Evidence tags: [X] executed this session, [R] read in code or docs, [I] inferred
 
 Terms: **R1** = your wrong-door ruling; **OPEN-n** = open questions in `mvp/DOCTRINE-CONFLICT-MAP.md` section 2; **K1** = the identity-and-access kernel block (changes to it need a Decisions Log entry); **TOTP** = the authenticator-app code; **PGRST116** = the database error when one email matches two staff rows; **carded** = written up as an MVP task card; **CX-04R** = the proposed redo of the shipped dashboard card CX-04. **R3** = your ruling that organiser History parts 2 and 3 (as speaker, as audience) are org-level aggregates; **R4** = your ruling that this pass edits repo and vault and leaves CLAUDE.md as proposed text; **History** = the organiser sidebar item with three parts (1 what we ran, 2 as speaker, 3 as audience); **Q26** = the vault gate against compliance totals; **five-item nav** = Check-in · Registrations · Events · History · Account. Items 1 to 9 are decisions (5 and 8 may need map section 8 and Q47 open); 10 is a carry-over list.
 
-**Decide** (recommendation first)
+**Ivan's answers (2026-10-31, after the first cut; these win over the Decide text below)**
+- **Door:** the organiser stays **magic-link only**, with no password or Forgot chrome. One bland failure message, never leaks who is staff, never ends an attendee session. Supersedes my R1 password inference (Decide 1 = no, OPEN-9 closed; Decide 2 moot, OPEN-2 closed for MVP, staff MFA stays an open Auth Flow call outside MVP).
+- **Nav and doors follow the doctrine:** Events home; no Programme, Manage or Participants at top level. Q47 is accepted as written except the door change above (Decide 9, OPEN-11 closed). **Sign Up waits on `staff.user_id`** (R2).
+- **History MVP is "what we ran" with no points** (Decide 7, OPEN-12 closed). Parts 2 and 3 are out of MVP (Decide 8, OPEN-10 closed as moot; if they return, the aggregates-only rule from R3 applies).
+- **Build order, nothing else:** CX-04R, then the UX-02 re-cut, then door copy (Decide 5). Not carded: the attendee surfaces card, organiser Sign Up, Team invite by email, History parts 2 and 3.
+- **Not answered, not blocking:** Decide 3 (one email on two organisations; moot while Sign Up waits), Decide 4 (attendee door stays as it is), Decide 6 (OPEN-4, 6, 7).
+
+**Decide** (recommendation first; the answers above close 1, 2, 5, 7, 8 and 9)
 1. **Organiser door is email + password? (OPEN-9)** Recommend: yes, confirm. Your R1 (every failed Organiser log in says "The email or password you entered is not correct", then Forgot email, Forgot password, Attendee log in link; same text for unknown, wrong password, not staff, suspended) implies a password door, and the vault Auth Flow already locks password + TOTP. Today the door is a magic link (`app/login/actions.ts:29`) [I]. Alternative: keep the magic link and show the same message without the word "password".
 2. **Ship the password door without TOTP? (OPEN-2)** Recommend: no, build both in the doors card, because the vault locks password + mandatory TOTP and nothing of it is built [R]. Cost: a bigger card. Alternative: password first, TOTP later, which you accept in writing.
 3. **One email on two organisations? (OPEN-1)** Recommend: refuse it until multi-org is carded. Today a second active staff row for the same email locks that person out of both organisations (PGRST116, `proxy.ts:103-106`) [R]; Organiser Sign Up and the invite-accept function can both create that row. I did not check whether such a row exists locally.
@@ -35,7 +42,7 @@ Terms: **R1** = your wrong-door ruling; **OPEN-n** = open questions in `mvp/DOCT
 
 **Execute** (only Ivan can, in order)
 1. Read Q47 at the end of vault `02 — Decisions Log.md` (about 3 minutes) before answering Decide. The vault is already edited (your R4); backups of the eight touched files are in `/private/tmp/claude-501/-Users-ivan-Eventar/ad018300-4210-4e8f-b19f-65c45487e2e8/scratchpad/vault-backup`.
-2. Answer Decide 1 to 5, 6 (OPEN-4, 6 and 7 only), 7, 8 and 9.
+2. Answered ("Ivan's answers" above). Decide 3, 4 and 6 remain; none blocks CX-04R.
 3. Hosted migrations are still blocked by the auto-mode classifier: add allow rules for `supabase migration list --linked*` and `supabase db push --linked*`, or run them yourself. The 10 local-only migrations are listed in `handoff_20261025-mvp-execution-3.md` item 1.
 4. Delete `scratch-demo/locks/dev-3100.lock`.
 5. Push: I commit after both reviews finish, and this session's last message names the SHA. Then reply "push main up to <sha>". Push approval is per session.
@@ -86,7 +93,7 @@ Ivan locked a PayPal-shaped entry (a landing pill picks the Attendee or Organise
 
 ## Key decisions
 
-- **R1 generic organiser failure message** (Ivan). One text for every failure so the staff list never leaks; the attendee session is never signed out (finding I1). Chosen over "sign out after bounce" (reopens I1) and "check before sending" (leaks who is staff).
+- **R1 generic organiser failure message** (Ivan). One text for every failure so the staff list never leaks; the attendee session is never signed out (finding I1). Chosen over "sign out after bounce" (reopens I1) and "check before sending" (leaks who is staff). Revised the same day: the door stays a magic link, so the message is one bland line with no password or Forgot chrome.
 - **R2 Hard Rule 1 is recorded as debt, not amended.** `staff.user_id` becomes a precondition of the Sign Up card. Rejected: amending the rule (a staff member who changes email would lose access) and carding the migration now (a K1 kernel change mid-MVP).
 - **R3 organiser History parts 2 and 3 are org-level aggregates** through a column-limited definer function (Q43). Rejected: the staff member's own record (reverses Q32 and reopens blocker B2).
 - **R4 repo and vault edited, CLAUDE.md left as proposed text.**
@@ -145,15 +152,15 @@ Baseline facts [X]: `origin/main` and local `main` were both `757a7e8` at the st
 
 ## Where we're going
 
-1. Ivan answers Decide 1 to 9 (about 15 minutes to read this page and Q47).
+1. Done 2026-10-31: Ivan answered Decide 1, 2, 5, 7, 8, 9 (section 0, "Ivan's answers"); 3, 4, 6 stay open, not blocking.
 2. CX-04R: run the frontend pipeline (stage 1 `impeccable-design-polish`, stage 2 `hallmark` then `frontend-design:frontend-design`, stage 3 four taste skills, stage 4 `ui-ux-pro-max`, stage 5 motion), show before and after, then build.
-3. UX-02 re-cut under the five-item nav; then the doors card with R1 copy and `staff.user_id` only if Sign Up is carded.
+3. UX-02 re-cut under the five-item nav; then door copy only (no Sign Up, no Team invite, no History parts 2 and 3, no attendee surfaces card: Ivan, "nothing else").
 4. Email calls, land `fb49ac1`, prune worktrees; push this handoff on Ivan's go.
 
 ## Risks & blockers
 
 - The doctrine overrides locked decisions it does not name (Hard Rule 1, Auth Flow invite-only, K1 change control, the S-Attendee freeze, Q19). Q47 now names them; CLAUDE.md still does until Ivan applies the proposed text.
-- The organiser door is a password door only if Decide 1 is confirmed; building R1 as a magic-link message would be wrong copy.
+- Settled (Ivan): the organiser door stays a magic link. Door copy must not mention a password or Forgot options.
 - Autoharness rewrites tracked skill files after each episode; commit by pathspec.
 - Flaky under load, rerun alone: `app/events/[id]/edit/PublishDraftButton.test.tsx`, `components/auth/MagicLinkSignInForm.test.tsx`. Docker is off, so the local stack and :3100 are down [R].
 
@@ -175,5 +182,5 @@ cd /Users/ivan/Eventar
 git fetch && git status -s && git log --oneline origin/main..main   # expect this session's commit only
 # read first: docs/plans/mvp/DOCTRINE-CONFLICT-MAP.md (sections 1, 2, 8), then this file's section 0
 # vault: 02 — Decisions Log.md, Q47
-# Next action: ask Ivan Decide 1 (organiser door = email + password), then Decide 5 (which card first)
+# Next action: CX-04R (card in the plan, section 4). Its one open spec call is where cancelled events live (CX-04 item 5); show it in the before/after.
 ```

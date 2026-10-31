@@ -11,6 +11,8 @@ Verdicts: **C** conflicts, **S** superseded (older wording loses), **OK** consis
 
 ## 1. Rulings taken 2026-10-31 (Ivan)
 
+> **Revised later 2026-10-31 (Ivan):** the organiser stays **magic-link only**, with no password or Forgot chrome; one bland failure message that never leaks staff and never ends an attendee session. R1's "email + password" consequence below is withdrawn. Nav and doors follow the doctrine; Sign Up waits on `staff.user_id`; History MVP is "what we ran" with no points; build order CX-04R, UX-02 re-cut, door copy, nothing else.
+
 - **R1. Wrong door.** Every failed Organiser log in shows one message: "The email or password you entered is not correct." Then Forgot email, Forgot password, and a link to the Attendee log in. The same text covers an unknown email, a wrong password, not staff, and suspended or removed staff, so the staff list never leaks.
   - Consequence (Ivan's wording implies it; confirm as OPEN-9, Decide 1 in handoff seq 5): the organiser door becomes **email + password**. Today it is a magic link (`app/login/actions.ts:29`, `shouldCreateUser` left at its default).
   - Build rules: the check never replaces or signs out an existing attendee session (finding I1, `proxy.ts:111-120`); an invitee arriving at `/login?next=/invite/<token>` gets a set-password step, not the generic error; existing staff have no password, so their first log in is through Forgot password. Two things to design: the staff check must run before a password sign-in is accepted, because a successful `signInWithPassword` issues a session cookie that would replace an attendee's; and `/login?error=multiple_organisations` (`proxy.ts:105`) is a second, different failure text (OPEN-1).
@@ -23,17 +25,17 @@ Verdicts: **C** conflicts, **S** superseded (older wording loses), **OK** consis
 | Id | Question | Recommendation |
 |---|---|---|
 | OPEN-1 | One email on two organisations locks the person out of both (`.maybeSingle()` PGRST116, `proxy.ts:103-106`, `lib/auth.ts:165-167`); `UNIQUE (email, organisation_id)` (`supabase/migrations/20260704130200_staff_org_scope.sql:14-16`) is what allows the second row. Org Sign Up and `accept_invite_token` can both create the second row. | Refuse an email that is already active staff elsewhere, until multi-org is carded. |
-| OPEN-2 | Staff MFA. Vault Auth Flow locks password + mandatory TOTP; nothing is built. R1 makes the password half live. | Decide inside the doors card; ship password first only if Ivan accepts the gap in writing. |
+| OPEN-2 | Staff MFA. Vault Auth Flow locks password + mandatory TOTP; nothing is built. R1 makes the password half live. | Decide inside the doors card; ship password first only if Ivan accepts the gap in writing. **CLOSED for MVP 2026-10-31:** no password door, so no TOTP in this scope; staff MFA stays an open Auth Flow call. |
 | OPEN-3 | Does the attendee door stay a magic link behind the same Email, Next shape? | Yes for MVP. |
 | OPEN-4 | Glossary: "Account admin" means `organiser_admin`; "Registrations" (nav label) clashes with licence "registration" in `CONTEXT.md`. | Add both entries; the nav label wins in the UI. |
 | OPEN-5 | Sign Up safeguards: name impersonation (an org called "HKCP"), whether an `organisers` row is created, slug generation (`organisations.slug` is NOT NULL UNIQUE), and rate limiting or Turnstile for an unauthenticated write that creates a tenant. | Decide when the Sign Up card is written. |
 | OPEN-6 | "Pay-as-you-go out of scope forever" vs the per-event price anchor (Q40, HKD 6,000 per event). | Read it as self-serve payments onboarding only. |
 | OPEN-7 | Shareable-link team invites already ship (`app/settings/team/TeamClient.tsx`, `20260911000000_invite_tokens.sql`) and are not email-bound; the doctrine says email + role. | Leave them, record it, build the email version when carded. |
 | OPEN-8 | UX-04 heading: "Participants" (doctrine) or "Registrations" (pick b2). | Registrations inside the event; Participants stays the roster word in the doctrine's event tabs. Ask. |
-| OPEN-9 | Is the organiser door email + password? R1 implies it; today it is a magic link (`app/login/actions.ts:29`). | Yes: it matches the password + TOTP design locked in the vault Auth Flow. Copy that names a password is used only if yes. |
-| OPEN-10 | R3 narrows a Q43 rejection: Q43 call 1 refused "registrants at my organisation" as an org read of people's data (an organisation can manufacture that link, Q42). R3's column-limited definer function reads the same kind of link. | Accept only aggregates (no names, no contact fields), on their own card; otherwise drop History parts 2 and 3 from MVP. |
-| OPEN-11 | Does Ivan accept Q47 as the K1 sign-off for organiser Sign Up, the overrides it lists, and the Q32 boundary exception (the landing's Organiser pill may link `/login`)? These are the author's reading of the 2026-10-30 lock. | Yes; if no, Q47 is edited before anything builds. |
-| OPEN-12 | The doctrine calls History a "points log"; Q26 and Milestone C forbid compliance totals and cycle figures, and `/account/record` shows points today. May points or counts show? | A dated log with no totals and no counts until Q26 is decided. |
+| OPEN-9 | Is the organiser door email + password? R1 implies it; today it is a magic link (`app/login/actions.ts:29`). | Yes: it matches the password + TOTP design locked in the vault Auth Flow. Copy that names a password is used only if yes. **CLOSED 2026-10-31:** NO. The organiser stays magic-link only; one bland failure message, no password chrome. |
+| OPEN-10 | R3 narrows a Q43 rejection: Q43 call 1 refused "registrants at my organisation" as an org read of people's data (an organisation can manufacture that link, Q42). R3's column-limited definer function reads the same kind of link. | Accept only aggregates (no names, no contact fields), on their own card; otherwise drop History parts 2 and 3 from MVP. **CLOSED 2026-10-31 (moot):** History parts 2 and 3 are out of MVP; if they return, aggregates only. |
+| OPEN-11 | Does Ivan accept Q47 as the K1 sign-off for organiser Sign Up, the overrides it lists, and the Q32 boundary exception (the landing's Organiser pill may link `/login`)? These are the author's reading of the 2026-10-30 lock. | Yes; if no, Q47 is edited before anything builds. **CLOSED 2026-10-31:** accepted; nav and doors follow the doctrine, Sign Up waits on `staff.user_id`. |
+| OPEN-12 | The doctrine calls History a "points log"; Q26 and Milestone C forbid compliance totals and cycle figures, and `/account/record` shows points today. May points or counts show? | A dated log with no totals and no counts until Q26 is decided. **CLOSED 2026-10-31:** no points; History MVP is "what we ran". |
 
 ## 3. Code vs doctrine
 
@@ -44,7 +46,7 @@ Verdicts: **C** conflicts, **S** superseded (older wording loses), **OK** consis
 | Landing nav pill | `components/shell/StaffProgrammePill.tsx:31`: label "Programme" (`LandingAuthPill.tsx:53-66` is the sign-in and account part) | C | Label Events |
 | Attendee door | `app/account/sign-in/page.tsx:113-132`, `app/account/sign-up/page.tsx:91-120`: one field plus magic-link button; sign-in has no Sign Up link; eyebrow "Sign in · Account" | C | Email, Next, or Sign Up; label the side "Attendee" |
 | Attendee success home | `app/account/sign-in/actions.ts:34`: `/account/record` (attendance and points) | C | A Registrations surface that does not exist yet; the record page is History |
-| Organiser door | `app/login/page.tsx:217-239`: "Welcome back", "Organizer access only", "Send magic link"; no Sign Up, no Attendee link | C | R1 form and copy; label the side "Organiser" |
+| Organiser door | `app/login/page.tsx:217-239`: "Welcome back", "Organizer access only", "Send magic link"; no Sign Up, no Attendee link | C | One bland failure line, magic link kept (R1 revised); label the side "Organiser" |
 | Not staff after login | `proxy.ts:111-121` keeps the session and redirects to `/login?error=not_organiser`; panel copy at `app/login/page.tsx:199-213,337-348` | C | The limbo the doctrine forbids; replace with R1 message (session kept) |
 | Staff identity | `staff` keyed on email, no `user_id`; `status` in invited, active, suspended, removed; roles organiser_admin, organiser_member, body_admin, auditor, eventar_staff | OK\* (R2 debt) | Account admin = `organiser_admin` (shown "Admin" in `TeamClient.tsx:25`) |
 | Org creation | Nothing public. `provisionOrganisation` (`app/settings/orgActions.ts:15-58`) is eventar_staff only and has no caller in the UI | C | New public action: email, name, org name, creator `organiser_admin`, generated slug; K1 change (see section 6) |
@@ -140,10 +142,10 @@ Verdicts: **C** conflicts, **S** superseded (older wording loses), **OK** consis
 
 ## 8. Cards this opens
 
-- **CX-04R** (PROPOSED, design decision, runs the locked pipeline): nav Check-in, Events, History, Settings; Manage's filters, Drafts and Create fold into `/dashboard`; Past tab dropped; Participants off the nav; relabel Programme to Events everywhere in the table above; change the listed tests.
+- **CX-04R** (CARDED 2026-10-31, first in order; design decision, runs the locked pipeline): nav Check-in, Events, History, Settings; Manage's filters, Drafts and Create fold into `/dashboard`; Past tab dropped; Participants off the nav; relabel Programme to Events everywhere in the table above; change the listed tests.
 - **UX-02 re-cut** under the doctrine nav (five items), then picks.
-- **Attendee surfaces card** (PROPOSED, not written): builds Registrations, the History split of `/account/record`, and the attendee Check-in route. Until it is carded, today's `/account/record` meets A2, A5 and the plan's practitioner walk.
-- **Doors card** (CX-06a and CX-06b merged scope): landing pill, both doors, R1 copy, side labels.
+- **Attendee surfaces card** (NOT carded, Ivan 2026-10-31: "nothing else"): builds Registrations, the History split of `/account/record`, and the attendee Check-in route. Until it is carded, today's `/account/record` meets A2, A5 and the plan's practitioner walk.
+- **Door copy** (Ivan: copy only; CX-06a and CX-06b merged scope, bland failure line, side labels, Log in | Sign Up wording): landing pill, both doors, R1 copy, side labels.
 - **Later, only if carded:** organiser Sign Up (needs `staff.user_id`, OPEN-1, OPEN-5), Team invite by email, organiser History parts 2 and 3.
 
 ## 9. Open items merged from handoffs seq 1 to 4
