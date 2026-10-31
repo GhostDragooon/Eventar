@@ -32,6 +32,8 @@ import { firstName } from '@/lib/name';
 // the older "no wordmark in shell chrome" rule - Ivan's call 2026-08-09, taken
 // explicitly after being shown the conflict.
 
+export type StaffNavItem = { label: string; href: string | null; icon: string; count?: number };
+
 type StaffShellBaseProps = {
   staff: {
     email: string;
@@ -39,6 +41,10 @@ type StaffShellBaseProps = {
     full_name?: string | null;
   };
   children: React.ReactNode;
+  /** Design-round specimens only: replaces the sidebar list. Production callers omit it, so output is unchanged. */
+  navItems?: StaffNavItem[];
+  /** Design-round specimens only: lights this href instead of reading the pathname. */
+  activeHref?: string;
 };
 
 type StaffShellBackProps =
@@ -82,7 +88,7 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href;
 }
 
-function NavRow({
+export function NavRow({
   label,
   href,
   icon,
@@ -148,7 +154,7 @@ function NavRow({
 }
 
 export function StaffShell(props: StaffShellProps) {
-  const { staff, children, backHref, backLabel } = props;
+  const { staff, children, backHref, backLabel, navItems = NAV, activeHref } = props;
   const pathname = usePathname() ?? '';
 
   return (
@@ -189,11 +195,11 @@ export function StaffShell(props: StaffShellProps) {
               aria-label="Primary"
               className="flex gap-xs overflow-x-auto md:flex-1 md:flex-col md:overflow-x-visible md:overflow-y-auto"
             >
-              {NAV.map((item) => (
+              {navItems.map((item) => (
                 <NavRow
                   key={item.label}
                   {...item}
-                  active={item.href ? isActive(pathname, item.href) : false}
+                  active={item.href ? (activeHref !== undefined ? item.href === activeHref : isActive(pathname, item.href)) : false}
                 />
               ))}
 
