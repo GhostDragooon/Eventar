@@ -5,25 +5,40 @@ import Link from 'next/link';
  * Auth page shell modelled on React Bits Pro **Auth 3**
  * (centered sign-in card over a full-bleed backdrop).
  *
- * Used by the organiser door (`/login`). Magic-link only for now.
+ * Used by both doors: organiser (`/login`) and attendee (`/account/sign-in`).
+ * Magic-link only for now.
  *
  * TODO(auth-backdrop): Replace the temporary gradient with the final brand /
  * photography backdrop (Auth 3 ships an image layer; keep the same cover +
  * center structure when the asset lands).
  *
  * TODO(auth-sso): When SSO is product-ready, render provider buttons under the
- * optional `footer` / divider slot (Google / Apple / GitHub as in Auth 3).
+ * optional divider slot (Google / Apple / GitHub as in Auth 3).
  * Do not invent providers before that decision.
  */
 export function AuthBackdropCard({
   children,
+  door = 'organiser',
   asideTitle = 'Eventar',
-  asideBody = 'Organiser door — run events, check-in, and team access.',
+  asideBody,
 }: {
   children: ReactNode;
+  /** Which door this page is — drives aside copy and the other-door link. */
+  door?: 'organiser' | 'attendee';
   asideTitle?: string;
   asideBody?: string;
 }) {
+  const body =
+    asideBody ??
+    (door === 'attendee'
+      ? 'Attendee door — your registrations, check-in pass, and record.'
+      : 'Organiser door — run events, check-in desk, and team access.');
+
+  const otherDoor =
+    door === 'attendee'
+      ? { href: '/login', label: 'Organiser log in' }
+      : { href: '/account/sign-in', label: 'Attendee sign in' };
+
   return (
     <div className="relative min-h-dvh w-full overflow-hidden text-on-surface">
       {/* Backdrop — Auth 3 image layer. Temporary brand gradient until asset. */}
@@ -40,35 +55,32 @@ export function AuthBackdropCard({
       </div>
 
       <div className="relative z-[1] mx-auto flex min-h-dvh w-full max-w-6xl flex-col items-center justify-center gap-xl px-grid-margin py-xl lg:flex-row lg:items-center lg:justify-between lg:gap-2xl">
-        {/* Card — Auth 3 centered panel */}
         <div className="w-full max-w-[400px] rounded-[20px] border border-white/10 bg-surface-container-lowest/95 p-lg shadow-lg backdrop-blur-sm dark:bg-surface-container-high/95">
           <div className="flex flex-col gap-lg">{children}</div>
         </div>
 
-        {/* Side copy on large screens (Auth 3 places brand text on the image) */}
         <div className="hidden max-w-sm text-white lg:block">
           <p className="text-[calc(28px*var(--text-scale))] font-bold tracking-tight">{asideTitle}</p>
-          <p className="mt-sm text-[calc(15px*var(--text-scale))] leading-relaxed text-white/80">{asideBody}</p>
+          <p className="mt-sm text-[calc(15px*var(--text-scale))] leading-relaxed text-white/80">{body}</p>
           <p className="mt-lg text-[calc(13px*var(--text-scale))] text-white/70">
             <Link href="/" className="underline-offset-2 hover:underline">
               Back to home
             </Link>
             {' · '}
-            <Link href="/account/sign-in" className="underline-offset-2 hover:underline">
-              Attendee sign in
+            <Link href={otherDoor.href} className="underline-offset-2 hover:underline">
+              {otherDoor.label}
             </Link>
           </p>
         </div>
       </div>
 
-      {/* Mobile escape links */}
       <p className="relative z-[1] pb-lg text-center text-[calc(13px*var(--text-scale))] text-white/80 lg:hidden">
         <Link href="/" className="underline-offset-2 hover:underline">
           Home
         </Link>
         {' · '}
-        <Link href="/account/sign-in" className="underline-offset-2 hover:underline">
-          Attendee sign in
+        <Link href={otherDoor.href} className="underline-offset-2 hover:underline">
+          {otherDoor.label}
         </Link>
       </p>
     </div>
@@ -77,7 +89,7 @@ export function AuthBackdropCard({
 
 /**
  * Optional “or” divider + SSO slot placeholder.
- * Not rendered on /login until TODO(auth-sso) is done.
+ * Not rendered until TODO(auth-sso) is done.
  */
 export function AuthSsoSlotPlaceholder() {
   return (

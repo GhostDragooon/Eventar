@@ -1,20 +1,13 @@
 'use client';
 
-// Attendee sign-in page. Mirrors app/login/page.tsx structure verbatim
-// (SiteShell + centered card + Suspense boundary + resolveAuthError from
-// ?error= query) so the visual style matches. The only differences:
-//   1. Copy: "Sign in to your account" instead of "Log in · Eventar".
-//   2. No ControlledAccessNotice — that notice is about the staff allowlist,
-//      not applicable to attendees.
-//   3. submitMagicLink = sendAttendeeMagicLink (different Server Action).
-//
-// Style oracle: /login/page.tsx + /settings SettingsSection (Ivan, Stage C
-// decision Q4 — match verbatim, no reinvention).
+// Attendee sign-in — same Auth 3 backdrop shell as organiser /login.
+// Differences: no ControlledAccessNotice; sendAttendeeMagicLink; attendee copy.
 
 import { Suspense, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { sendAttendeeMagicLink } from './actions';
-import { SiteShell } from '@/components/shell/SiteShell';
+import { AuthBackdropCard } from '@/components/auth/AuthBackdropCard';
 import { MagicLinkSignInForm } from '@/components/auth/MagicLinkSignInForm';
 import { resolveAuthError } from '@/components/auth/auth-error-messages';
 import { attendeeNextPath } from './attendeeNext';
@@ -29,15 +22,7 @@ export default function AttendeeSignInPage() {
 }
 
 function AttendeeSignInShell({ children }: { children?: React.ReactNode } = {}) {
-  return (
-    <SiteShell active="signin">
-      <div className="mx-auto w-full max-w-md px-grid-margin py-xl">
-        <div className="flex flex-col gap-lg bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm">
-          {children}
-        </div>
-      </div>
-    </SiteShell>
-  );
+  return <AuthBackdropCard door="attendee">{children}</AuthBackdropCard>;
 }
 
 function AttendeeSignInForm() {
@@ -45,48 +30,18 @@ function AttendeeSignInForm() {
   const router = useRouter();
   const urlErrorCode = searchParams.get('error');
   const urlErr = resolveAuthError(urlErrorCode, 'attendee');
-  // Round-trip destination for the walk-in flow: event page → sign-in → OTP
-  // → same event page. The action re-validates; only pass through a path on
-  // this origin AND in the attendee area (attendeeNextPath, ./attendeeNext.ts:
-  // safeNextPath plus classifyPath, so /dashboard and /login are dropped, not
-  // just //evil; the server does the same check as a defence in depth against
-  // tampered links).
   const next = attendeeNextPath(searchParams.get('next')) ?? undefined;
 
-  // Short-circuit for a visitor who is ALREADY signed in and reached this
-  // page anyway (most likely via the pending-credit banner on
-  // /checkin/confirm, which unconditionally links here). Redirect to `next`
-  // (or /account) instead of asking them to redeem another OTP against the
-  // same email they're already signed in as. This is a client-side check
-  // rather than a server-side one because the page is 'use client' for the
-  // Suspense + useSearchParams shape; a proper server-side auth check would
-  // need to split the file — flagged as a future cleanup, not blocking.
-  //
-  // The form is HELD OUT of the render tree until the session check
-  // resolves. Rendering the form eagerly and racing the useEffect lets a
-  // reflex-fast signed-in visitor submit the form (sending themselves a
-  // magic link they don't need + landing them on a "check your inbox"
-  // false-positive) before the redirect fires. Second-pass review IMPORTANT
-  // 3. The signed-out latency cost is one getSession() call (cookie read,
-  // no network) — invisible in practice.
-  // An error on the URL (e.g. a staff account with no `users` row bouncing
-  // off /account) means the session check already failed once upstream —
-  // redirecting again here would loop. Lazy-init sessionKnown true so the
-  // form renders immediately with the error, skipping the session check
-  // below entirely (never a setState-in-effect, since this runs at mount).
   const [sessionKnown, setSessionKnown] = useState(() => Boolean(urlErrorCode));
   const [endedErr, setEndedErr] = useState<string | null>(null);
   useEffect(() => {
     if (urlErrorCode) return;
     let cancelled = false;
     (async () => {
-      // Server-verified, not a bare cookie read: see lib/doorSession.ts.
       const session = await checkDoorSession();
       if (cancelled) return;
       if (session === 'signed_in') {
         router.replace(next ?? '/account/record');
-        // Do NOT set sessionKnown — leave the form unmounted while the
-        // navigation completes so the visitor cannot submit into the void.
         return;
       }
       if (session === 'ended') setEndedErr(resolveAuthError('session_ended', 'attendee'));
@@ -98,51 +53,45 @@ function AttendeeSignInForm() {
   }, [router, next, urlErrorCode]);
 
   if (!sessionKnown) {
-    // Skeleton: same shell the Suspense boundary uses, so signed-out
-    // visitors see one continuous frame from server-render through the
-    // session-check to the form appearing.
     return <AttendeeSignInShell />;
   }
 
   return (
     <AttendeeSignInShell>
       <p className="text-label-md font-semibold uppercase tracking-[0.18em] m-0">
-        <span className="text-[color:var(--on-primary-container)]">Sign in</span>
-        <span className="text-on-surface-variant"> · Account</span>
+        <span className="text-[color:var(--on-primary-container)]">Attendee</span>
+        <span className="text-on-surface-variant"> · Sign in</span>
       </p>
-      <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">
-        Sign in to your account
-      </h1>
+      <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">Sign in</h1>
       <p className="font-body-md text-body-md text-on-surface-variant m-0">
-        Use the email you registered with. We&apos;ll send you a one-time
-        link to sign in.
+        New user?{' '}
+        <Link
+          href="/account/sign-up"
+          className="font-semibold text-[color:var(--on-primary-container)] hover:underline"
+        >
+          Create an account
+        </Link>
+        . We&apos;ll email a one-time link — no password.
       </p>
       <p className="font-body-md text-body-md text-on-surface-variant m-0">
-        You can still register for events as a guest without an account —
-        this door is for linking past registrations, editing your profile,
-        and releasing held CME/CPD points.
+        Guest registration still works without an account. This door is for linking past
+        registrations, your profile, and held CME/CPD points.
       </p>
       <MagicLinkSignInForm
         submitMagicLink={sendAttendeeMagicLink}
         initialError={urlErr ?? endedErr}
         placeholder="you@example.com"
-        submitLabel="Send sign-in link"
+        submitLabel="Continue"
         next={next}
         audience="attendee"
       />
+
+      {/* TODO(auth-sso): same slot as organiser when enabled */}
 
       <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant text-center m-0">
         The link expires after 15 minutes and works once.
       </p>
 
-      {/* Recovery block — parity with /login's "Trouble signing in?" details.
-          Bullets 1 and 2 (link expiry, spam) apply to any magic-link flow.
-          Bullet 3 nudges toward the actual common failure — a typo or a
-          different address used at registration (user-lens CONFUSING 4;
-          soft-security reassurance was worse than useless). Bullet 4
-          acknowledges the honest dead end when the inbox is truly lost —
-          magic-link-only means we can't self-serve you back in from here
-          (user-lens BLOCKER 2). */}
       <details className="group">
         <summary className="cursor-pointer font-body-md text-body-md text-[color:var(--on-primary-container)] hover:underline list-none">
           Trouble signing in?
@@ -150,10 +99,21 @@ function AttendeeSignInForm() {
         <ul className="mt-sm font-body-md text-[calc(13px*var(--text-scale))] text-on-surface-variant leading-relaxed list-disc pl-lg flex flex-col gap-xs">
           <li>Links expire after 15 minutes and work once — request a fresh one above.</li>
           <li>Check spam, and make sure you opened the newest email.</li>
-          <li>Open the link in the same browser you asked for it in. A link opened on another device, or inside a mail app&apos;s built-in browser, won&apos;t sign you in.</li>
-          <li>Make sure you typed the same address you used when registering — we look up the account by that address.</li>
-          <li>Still have access to your inbox but the link never arrives? Try a different browser, or ask the event organizer to check your registration.</li>
-          <li>Lost access to your inbox entirely? We can&apos;t recover a magic-link account from this screen. Please contact the event organizer for help.</li>
+          <li>
+            Open the link in the same browser you asked for it in. A link opened on another device,
+            or inside a mail app&apos;s built-in browser, won&apos;t sign you in.
+          </li>
+          <li>
+            Use the same address you registered with — we look up the account by that address.
+          </li>
+          <li>
+            Link never arrives? Try another browser, or ask the event organiser about your
+            registration.
+          </li>
+          <li>
+            Lost the inbox entirely? We can&apos;t recover a magic-link account from this screen.
+            Contact the event organiser.
+          </li>
         </ul>
       </details>
     </AttendeeSignInShell>

@@ -22,14 +22,8 @@ export default function LoginPage() {
   );
 }
 
-/**
- * Layout: React Bits Pro Auth 3 shape (backdrop + centered card).
- * Session / door logic unchanged from Band 1 + CX-07.
- *
- * TODO(auth-backdrop) / TODO(auth-sso): see AuthBackdropCard.tsx
- */
 function LoginLayout({ children }: { children: React.ReactNode }) {
-  return <AuthBackdropCard>{children}</AuthBackdropCard>;
+  return <AuthBackdropCard door="organiser">{children}</AuthBackdropCard>;
 }
 
 function Eyebrow() {
@@ -142,14 +136,14 @@ function LoginForm() {
           "No password. We'll email a one-tap link, then return you to your invite."
         ) : (
           <>
-            New here?{' '}
+            Staff emails only. Need an account as a practitioner?{' '}
             <Link
               href="/account/sign-up"
               className="font-semibold text-[color:var(--on-primary-container)] hover:underline"
             >
-              Create an account
-            </Link>{' '}
-            on the attendee door, or ask an admin for an organiser invite.
+              Attendee sign up
+            </Link>
+            .
           </>
         )}
       </p>
@@ -169,8 +163,6 @@ function LoginForm() {
         audience={isInvite ? 'invitee' : 'organizer'}
         submitLabel="Continue"
       />
-
-      {/* TODO(auth-sso): mount AuthSsoSlotPlaceholder / real SSO under an or-divider */}
 
       <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant text-center m-0">
         The link expires after 15 minutes and works once.
