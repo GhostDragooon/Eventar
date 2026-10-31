@@ -66,8 +66,6 @@ function csvEscape(v: string): string {
 
 export type EventsHomeProps = {
   events: ProgrammeEvent[];
-  /** The signed-in organiser: a tick box shows only on events they created (everyone's for eventar_staff), because the bulk RPC skips the rest silently. */
-  viewer: { id: string; role: string };
   /** Server time: a draft whose date has passed says so, and a date in another year shows its year. */
   nowMs: number;
   /** The tab a link asked for (?tab=). Read once on load; clicking a tab then keeps the address in step. */
@@ -76,7 +74,7 @@ export type EventsHomeProps = {
 
 const UNDO_SECONDS = 7;
 
-export function EventsHome({ events, viewer, nowMs, initialTab = 'active' }: EventsHomeProps) {
+export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeProps) {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortKey>('soonest');
   const [chosenTab, setChosenTab] = useState<TabKey>(initialTab);
@@ -95,8 +93,6 @@ export function EventsHome({ events, viewer, nowMs, initialTab = 'active' }: Eve
   // nothing is sent until the countdown ends or the organiser clicks Done.
   // left === 0 means the write has been sent.
   const [undo, setUndo] = useState<null | { ids: string[]; left: number }>(null);
-
-  const canSelect = (e: ProgrammeEvent) => viewer.role === 'eventar_staff' || e.createdBy === viewer.id;
 
   const counts = useMemo(() => {
     const c: Record<TabKey, number> = { active: 0, drafts: 0, cancelled: 0, deleted: 0 };
@@ -403,7 +399,7 @@ export function EventsHome({ events, viewer, nowMs, initialTab = 'active' }: Eve
       ) : (
         <ul className="flex flex-col gap-sm">
           {visible.map((e) => (
-            <EventRow key={e.id} e={e} nowMs={nowMs} selectable={canSelect(e)} selected={picked.has(e.id)} onToggle={() => toggle(e.id)} inBin={inBin} onRestore={() => execute('restore', [e.id])} pending={busy} />
+            <EventRow key={e.id} e={e} nowMs={nowMs} selected={picked.has(e.id)} onToggle={() => toggle(e.id)} inBin={inBin} onRestore={() => execute('restore', [e.id])} pending={busy} />
           ))}
         </ul>
       )}
@@ -451,8 +447,8 @@ export function EventsHome({ events, viewer, nowMs, initialTab = 'active' }: Eve
 // CX-04R pick 1f: the tick box sits outside the card, in a gutter as tall as the card, so it shares a centreline with the
 // date block. Inside the card the status pill and title are one 44 px line; the details and the buttons start at the pill's
 // left edge. Motion 2a: nothing animates here.
-function EventRow({ e, nowMs, selectable, selected, onToggle, onRestore, inBin, pending }: {
-  e: ProgrammeEvent; nowMs: number; selectable: boolean; selected: boolean; onToggle: () => void; onRestore: () => void; inBin: boolean; pending: boolean;
+function EventRow({ e, nowMs, selected, onToggle, onRestore, inBin, pending }: {
+  e: ProgrammeEvent; nowMs: number; selected: boolean; onToggle: () => void; onRestore: () => void; inBin: boolean; pending: boolean;
 }) {
   const day = Number(e.dayKey.slice(8));
   // dateLabel is "Mon 2 Nov" (en-GB, in the event's own timezone); dayKey is the same day as YYYY-MM-DD.
@@ -469,11 +465,9 @@ function EventRow({ e, nowMs, selectable, selected, onToggle, onRestore, inBin, 
   return (
     <li className={cn('grid grid-cols-[44px_minmax(0,1fr)] gap-sm', e.deleted && 'opacity-70')}>
       <div className="flex items-center">
-        {selectable && (
-          <label className="grid size-11 shrink-0 cursor-pointer place-items-center">
-            <input type="checkbox" checked={selected} onChange={onToggle} aria-label={`Select ${e.title}`} className="size-[18px] cursor-pointer accent-[color:var(--on-primary-container)]" />
-          </label>
-        )}
+        <label className="grid size-11 shrink-0 cursor-pointer place-items-center">
+          <input type="checkbox" checked={selected} onChange={onToggle} aria-label={`Select ${e.title}`} className="size-[18px] cursor-pointer accent-[color:var(--on-primary-container)]" />
+        </label>
       </div>
       <div className={cn('grid grid-cols-[56px_minmax(0,1fr)] gap-xs rounded-[16px] border bg-surface-container-lowest p-xs', selected ? 'border-[color:var(--primary-fixed-dim)]' : 'border-outline-variant')}>
         <div className="flex flex-col items-center justify-center rounded-[12px] bg-surface-container text-center">
@@ -496,7 +490,6 @@ function EventRow({ e, nowMs, selectable, selected, onToggle, onRestore, inBin, 
                   {e.registered}{e.maxAttendees != null ? ` / ${e.maxAttendees}` : ''} registered{showAttended ? `, ${e.attended} checked in` : ''}
                 </span>
               )}
-              {!selectable && <span>Created by a colleague</span>}
             </div>
             {passed && <p className="mt-xs text-[calc(12.5px*var(--text-scale))] font-medium text-on-surface">The date has passed. Edit the date to publish this draft.</p>}
           </div>

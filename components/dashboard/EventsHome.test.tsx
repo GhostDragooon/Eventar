@@ -49,18 +49,15 @@ function event(overrides: Partial<ProgrammeEvent>): ProgrammeEvent {
     format: null,
     hero_image_url: null,
     city: null,
-    createdBy: 'staff-1',
     hosts: [],
     ...overrides,
   };
 }
 
-const VIEWER = { id: 'staff-1', role: 'organiser_member' };
-
-function renderManage(events: ProgrammeEvent[], viewer = VIEWER, extra: { initialTab?: 'active' | 'drafts' | 'cancelled' | 'deleted' } = {}) {
+function renderManage(events: ProgrammeEvent[], extra: { initialTab?: 'active' | 'drafts' | 'cancelled' | 'deleted' } = {}) {
   return render(
     <ToastProvider>
-      <EventsHome events={events} viewer={viewer} nowMs={NOW} {...extra} />
+      <EventsHome events={events} nowMs={NOW} {...extra} />
     </ToastProvider>,
   );
 }
@@ -152,7 +149,7 @@ describe('EventsHome', () => {
     afterEach(() => window.history.replaceState(null, '', '/'));
 
     it('opens the tab a link asked for', () => {
-      renderManage(rows, VIEWER, { initialTab: 'drafts' });
+      renderManage(rows, { initialTab: 'drafts' });
       expect(screen.getByRole('tab', { name: /^Drafts/ })).toHaveAttribute('aria-selected', 'true');
       expect(screen.getByText('Draft One')).toBeInTheDocument();
       expect(screen.queryByText('Open One')).toBeNull();
@@ -167,7 +164,7 @@ describe('EventsHome', () => {
     });
 
     it('falls back to Active when the asked-for Deleted tab is empty, instead of showing a tab that is not there', () => {
-      renderManage(rows, VIEWER, { initialTab: 'deleted' });
+      renderManage(rows, { initialTab: 'deleted' });
       expect(screen.getByRole('tab', { name: /^Active/ })).toHaveAttribute('aria-selected', 'true');
       expect(screen.getByText('Open One')).toBeInTheDocument();
     });
@@ -175,7 +172,7 @@ describe('EventsHome', () => {
 
   describe('drafts and dates', () => {
     it('a draft offers Details and Edit but no Check-in (check-in is refused until it is published)', () => {
-      renderManage([event({ id: 'd1', title: 'Draft One', lifecycle: 'drafted' })], VIEWER, { initialTab: 'drafts' });
+      renderManage([event({ id: 'd1', title: 'Draft One', lifecycle: 'drafted' })], { initialTab: 'drafts' });
       expect(screen.getByRole('link', { name: /^details$/i })).toBeInTheDocument();
       expect(screen.getByRole('link', { name: /^edit$/i })).toBeInTheDocument();
       expect(screen.queryByRole('link', { name: /^check-in$/i })).toBeNull();
@@ -211,23 +208,12 @@ describe('EventsHome', () => {
     });
   });
 
-  describe('tick box only on events the viewer created', () => {
-    const rows = [
-      event({ id: 'mine', title: 'My Event', createdBy: 'staff-1' }),
-      event({ id: 'theirs', title: 'Their Event', createdBy: 'staff-2' }),
-    ];
-
-    it('shows a tick box on own events and none on a colleague\'s, which says who it belongs to', () => {
-      renderManage(rows);
-      expect(screen.getByLabelText('Select My Event')).toBeInTheDocument();
-      expect(screen.queryByLabelText('Select Their Event')).toBeNull();
-      expect(within(screen.getByText('Their Event').closest('li')!).getByText('Created by a colleague')).toBeInTheDocument();
-    });
-
-    it('eventar_staff can tick every event', () => {
-      renderManage(rows, { id: 'staff-9', role: 'eventar_staff' });
+  describe('tick box on every event in the organisation (Ivan 2026-11-01: the server allows it, so the page does)', () => {
+    it('shows a tick box on every row, whoever created it', () => {
+      renderManage([event({ id: 'mine', title: 'My Event' }), event({ id: 'theirs', title: 'Their Event' })]);
       expect(screen.getByLabelText('Select My Event')).toBeInTheDocument();
       expect(screen.getByLabelText('Select Their Event')).toBeInTheDocument();
+      expect(screen.queryByText(/created by/i)).toBeNull();
     });
   });
 

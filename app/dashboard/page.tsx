@@ -123,7 +123,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     <StaffShell staff={{ email: staff.email, role: staff.role, full_name: staff.full_name }}>
       <DevEmailStubBanner />
       {attention.length > 0 && <div className="mb-lg"><NeedsAttention items={attention} limit={3} /></div>}
-      <EventsHome key={tz} events={decorated} viewer={{ id: staff.id, role: staff.role }} nowMs={nowMs} initialTab={initialTab} />
+      <EventsHome key={tz} events={decorated} nowMs={nowMs} initialTab={initialTab} />
     </StaffShell>
   );
 }
