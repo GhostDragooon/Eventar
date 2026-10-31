@@ -219,9 +219,10 @@ function Links({ id, ghost }: { id: string; ghost?: boolean }) {
   );
 }
 
-function Meta({ e }: { e: Ev }) {
+function Meta({ e, lead }: { e: Ev; lead?: ReactNode }) {
   return (
     <div className="mt-xs flex flex-wrap items-center gap-x-md gap-y-xs text-[calc(12.5px*var(--text-scale))] text-on-surface-variant">
+      {lead}
       <span className="inline-flex items-center gap-xs"><Icon name="location_on" className="text-[calc(14px*var(--text-scale))]" />{e.venue}</span>
       <span>{e.fmt}</span>
       {e.life !== 'drafted' && <span className="tabular-nums">{e.reg} / {e.cap} registered{e.checked != null ? `, ${e.checked} checked in` : ''}</span>}
@@ -329,26 +330,32 @@ export function DatedCard({ e, on }: { e: Ev; on: boolean }) {
   // The filled button is the next thing an organiser does: check people in while the event is live or open.
   const doorNow = e.life === 'live' || e.life === 'registering';
   return (
-    <li className={cn('grid grid-cols-[64px_minmax(0,1fr)] gap-sm rounded-[16px] border bg-surface-container-lowest p-sm @min-[640px]:grid-cols-[88px_minmax(0,1fr)]', on ? 'border-[color:var(--primary-fixed-dim)]' : 'border-outline-variant')}>
-      <div className="col-span-full"><StatusPill lifecycle={e.life} /></div>
-      <div className="flex flex-col items-center justify-center text-center">
-        <span className="text-[calc(28px*var(--text-scale))] font-bold leading-none tabular-nums text-on-surface">{day}</span>
-        <span className="mt-xs text-[calc(13px*var(--text-scale))] text-on-surface-variant">{wd}</span>
+    <li className="grid grid-cols-[44px_minmax(0,1fr)] gap-sm">
+      {/* The tick box sits outside the card, in its own gutter as tall as the card, centred, so it shares the date block's centreline. */}
+      <div className="flex items-center">
+        <Check on={on} mine={e.mine} title={e.title} />
       </div>
-      <div className="flex min-w-0 flex-col gap-xs">
-        <div className="flex items-start gap-xs rounded-[12px] bg-surface-container p-sm">
-          <Check on={on} mine={e.mine} title={e.title} />
-          <div className="min-w-0 flex-1 pt-xs">
+      <div className={cn('grid grid-cols-[56px_minmax(0,1fr)] gap-xs rounded-[16px] border bg-surface-container-lowest p-xs', on ? 'border-[color:var(--primary-fixed-dim)]' : 'border-outline-variant')}>
+        {/* The date block (number over weekday) is centred in the tile both ways; the tile is as tall as the card. */}
+        <div className="flex flex-col items-center justify-center rounded-[12px] bg-surface-container text-center">
+          <span className="text-[calc(22px*var(--text-scale))] font-bold leading-none tabular-nums text-on-surface">{day}</span>
+          <span className="mt-xs text-[calc(12px*var(--text-scale))] leading-none text-on-surface-variant">{wd}</span>
+        </div>
+        <div className="flex min-w-0 flex-col rounded-[12px] bg-surface-container p-xs">
+          {/* The pill sits in a 44 px line, so pill, title and date number share one centreline; details and buttons share the pill's left edge. */}
+          <div className="flex min-w-0 flex-wrap items-center gap-x-sm">
+            <span className="flex h-11 items-center"><StatusPill lifecycle={e.life} /></span>
             <Link href={`/events/${e.id}/details`} className="font-title-lg text-title-lg font-semibold text-on-surface hover:text-[color:var(--on-primary-container)]">{e.title}</Link>
-            <p className="mt-xs flex items-center gap-xs text-[calc(12.5px*var(--text-scale))] tabular-nums text-on-surface-variant"><Icon name="schedule" className="text-[calc(14px*var(--text-scale))]" />{e.time}</p>
-            <Meta e={e} />
+          </div>
+          <div className="-mt-xs pb-xs">
+            <Meta e={e} lead={<span className="inline-flex items-center gap-xs tabular-nums"><Icon name="schedule" className="text-[calc(14px*var(--text-scale))]" />{e.time}</span>} />
             {e.passed && <Passed />}
           </div>
-        </div>
-        <div className="grid grid-cols-3 gap-xs">
-          <Link href={`/events/${e.id}/details`} className={cn(buttonVariants({ variant: 'outline' }), c)}>Details</Link>
-          <Link href={`/events/${e.id}/edit`} className={cn(buttonVariants({ variant: 'outline' }), c)}>Edit</Link>
-          <Link href={`/events/${e.id}/checkin`} className={cn(buttonVariants({ variant: doorNow ? 'default' : 'outline' }), c)}>Check-in</Link>
+          <div className="mt-xs grid grid-cols-3 gap-sm">
+            <Link href={`/events/${e.id}/details`} className={cn(buttonVariants({ variant: 'outline' }), c)}>Details</Link>
+            <Link href={`/events/${e.id}/edit`} className={cn(buttonVariants({ variant: 'outline' }), c)}>Edit</Link>
+            <Link href={`/events/${e.id}/checkin`} className={cn(buttonVariants({ variant: doorNow ? 'default' : 'outline' }), c)}>Check-in</Link>
+          </div>
         </div>
       </div>
     </li>

@@ -127,7 +127,7 @@ export default function CX04R() {
           <Option
             id="1f"
             name="Dated cards with an action row"
-            summary="Each event is a card. The status (Live, Registering, Draft) is a row across the top, above the date. Under it sit the date cell on the left (day number over weekday), the title, time, place and counts in an inset panel, and a full-width row of three buttons under the panel. Search and sort sit above, like 1b. The first button that matters is filled: Check-in while the event is live or open, otherwise all three are outlined."
+            summary="Each event is a card. A narrow date cell (day number over weekday) sits on the left of an inset panel. The panel starts with the status (Live, Registering, Draft) beside the time, then the title, place and counts, and a full-width row of three buttons under the panel. Search and sort sit above, like 1b. The first button that matters is filled: Check-in while the event is live or open, otherwise all three are outlined."
             argued="Ivan's reference: the React Bits Pro Card 4 agenda card. Its style and layout are followed; the code is written fresh from Eventar's own tokens, nothing is copied from the block."
             cost="The date repeats on every card instead of grouping under one header, so three events on the same day show the same number three times. No calendar rail and no format chips, as in 1b. The inset panel is a second surface inside the card, which adds a tone step the product does not use elsewhere. A card is about as tall as 1b's, so a phone shows about two per screen."
             single
