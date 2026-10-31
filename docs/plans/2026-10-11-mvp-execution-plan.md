@@ -1,5 +1,7 @@
 # MVP execution plan: both portals pass the intuitive test (2026-10-11)
 
+> **Doctrine 2026-10-30 applies.** [`DOCTRINE-two-persona-2026-10-30.md`](DOCTRINE-two-persona-2026-10-30.md) (Ivan lock) supersedes the Programme + Manage dual home and the marketing-only audience toggle. Cards O1, O5, A2, A5, A7, CX-04, CX-06a/b, UX-02, UX-03, UX-04 and section 8 are amended in place and marked. Conflict list, rulings and open questions: [`mvp/DOCTRINE-CONFLICT-MAP.md`](mvp/DOCTRINE-CONFLICT-MAP.md). The MVP spine (create, publish, register, check-in) is unchanged.
+
 **Status:** PROPOSED (waiting for Ivan's "go"); nothing below has started. Assignment protocol (§3.2) adopted by Ivan 2026-10-17: assignment is by task, not by agent. Executed by any capable model (Claude Code sessions or Codex), not by the session that wrote it.
 **Target:** 7–14 working days from the day Ivan says "go" (Day 1).
 **Authority:** Ivan's revised MVP definition (§1). Where this plan and the older core-UX plan (`~/.claude/plans/pasted-content-id-c1b3-eventar-buzzing-pretzel.md`) disagree on scope or order, **this plan wins**; the older plan stays the source of package specs that this plan cites.
@@ -22,11 +24,11 @@ Both sides must pass the intuitive test on the core paths. No "organiser-only MV
 
 | ID | Requirement |
 |---|---|
-| O1 | Sign in at the organiser door (`/login`) and land on Programme (`/dashboard`). |
+| O1 | Sign in at the organiser door (`/login`) and land on Events (`/dashboard`; Doctrine 2026-10-30, was Programme). |
 | O2 | Create event → Save draft (honest primary action, clear confirmation, the draft is findable). |
 | O3 | Edit and build the agenda on the draft (single-day is acceptable; no silent data loss on save). |
 | O4 | Publish with a clear gate, a preview or confirm step, and an obvious next action after publishing. |
-| O5 | Find the event on Programme / Manage without confusion between the two surfaces. |
+| O5 | Find the event on the one Events home (`/dashboard`), drafts included, with filters or tabs inside it (Doctrine 2026-10-30: Programme and Manage are not sibling top nav). |
 | O6 | Roster and Check-in are hard-split: Roster is the list and management surface; Check-in is the live capture surface. No "Roster" button that lands in check-in. |
 | O7 | Check-in succeeds only inside the live window. Evidence is never written days early or after the event has closed. |
 | O8 | Walk-in / staff check-in works, with the correct source label, and never attaches the organiser's own staff identity to an attendee registration. |
@@ -39,10 +41,10 @@ Out of scope: a perfect multi-day occurrence model, full published-event editing
 | ID | Requirement |
 |---|---|
 | A1 | Clear door: `/account/sign-up` and `/account/sign-in` are reachable from the landing page and from public event pages, not only by typing the URL. |
-| A2 | Sign-up / magic link → completion wizard (if needed) → a real home (`/account/record` or equivalent) with practitioner chrome, not marketing chrome or organiser language. |
+| A2 | Sign-up / magic link → completion wizard (if needed) → a real home (Registrations, today `/account/record`; Doctrine 2026-10-30; until the attendee surfaces card is written, `/account/record` meets A2) with practitioner chrome, not marketing chrome or organiser language. |
 | A3 | Browse and find events from the practitioner context. |
 | A4 | Register for a published event (guest or signed in); after success there is an explicit path into the account ("this is now on your record" or equivalent). |
-| A5 | The record shows registrations and attendance in a usable empty or populated state; the primary next action is obvious. |
+| A5 | Registrations (upcoming and live) and History (past attendance) each show a usable empty or populated state (Doctrine 2026-10-30 split; until carded, `/account/record` meets A5); the primary next action is obvious. |
 | A6 | No identity leakage: a practitioner is never silently signed out, or bounced into organiser rejection copy, when they touch an organiser CTA; the path is honest and recoverable. |
 | A7 | A staff session on public/attendee surfaces is clearly framed ("You're viewing the public page") and never accumulates practitioner profile data under the staff UUID. |
 
@@ -71,7 +73,7 @@ Evidence: **[X]** executed or observed, **[R]** read in code on 2026-10-11 (HEAD
 | A4 | **The registration success card offers no path into the account** (`RegisterCard.tsx` success block) [R]. | CX-06a (FR-003) |
 | A5 | `/account/record` exists with empty states [R]; the "no attendance" state's link to `/events` needs checking against FR-004 [I]. | CX-06a |
 | A6 | Band 1 made `/login` explain instead of signing out [R]. `LandingAuthPill` has no interim state [R: plan P1a]. | CX-06b, verified in §8 |
-| A7 | The organiser registration line exists ("You're signed in as an organiser. This creates a guest registration.") [R]; `StaffProgrammePill` is hidden on mobile with `aria-hidden` [R: plan P1a]. | CX-06b |
+| A7 | The organiser registration line exists ("You're signed in as an organiser. This creates a guest registration.") [R]; `StaffProgrammePill` (label becomes Events, Doctrine 2026-10-30) is hidden on mobile with `aria-hidden` [R: plan P1a]. | CX-06b |
 
 ## 3. Assignment, locks and roles
 
@@ -105,7 +107,7 @@ A file listed here is edited by one card at a time, in this order. Before editin
 | `app/events/[id]/edit/page.tsx`, `PublishDraftButton.tsx` | UX-03 → UX-04 |
 | `app/events/[id]/details/page.tsx` | UX-03 → UX-04 |
 | `app/events/[id]/checkin/RosterClient.tsx` (it also holds the walk-in dialog), `ScanAndManual.tsx`, `checkin/actions.ts` | DB-02 → UX-04 |
-| `components/dashboard/DashboardWorkstation.tsx`, `app/dashboard/**` | CX-04 only |
+| `components/dashboard/DashboardWorkstation.tsx`, `app/dashboard/**` | CX-04 only; the CX-04R redo also owns `components/shell/StaffShell.tsx`, `app/participants/**`, `app/events/[id]/edit/PublishDraftButton.tsx`, and the `backLabel` lines in `app/settings/page.tsx`, `app/events/[id]/details/page.tsx`, `app/events/[id]/edit/page.tsx`, `app/events/new/page.tsx` (Doctrine 2026-10-30) |
 | `app/error.tsx` (+ test) | CX-04 only |
 | `components/RegisterCard.tsx`, `components/landing/**`, `app/account/complete/**` | CX-06a → UX-02 |
 | `app/account/**` pages (shell wrapping) | CX-06a → UX-02 |
@@ -152,7 +154,7 @@ Zero talk: executors coordinate only through git and `docs/plans/mvp/`. Files th
 | DB-01 | sql | Seed drift re-assert and the CI grant assertion | Immediately |
 | UX-01 | design | Design round: publish confirm, Roster/Check-in split, save-draft confirmation. Specimens only, no product code | Immediately |
 | DB-02 | sql | Check-in only inside the live window | CX-01 and DB-01 committed |
-| CX-04 | mechanical | Drafts on Programme; Programme and Manage explain themselves | CX-01 committed |
+| CX-04 | mechanical (shipped) | Drafts on Programme; Programme and Manage explain themselves. SUPERSEDED, Doctrine 2026-10-30: the redo is CX-04R, one Events home (`mvp/DOCTRINE-CONFLICT-MAP.md` section 8) | CX-01 committed |
 | CX-06a | mechanical | Practitioner funnel and registration to account path | CX-01 committed |
 | UX-03 | design | Wire publish confirm and save confirmation | UX-01 picks (a) and (c) recorded in `PICKS.md` |
 | DB-03 | sql | Teammate eligibility and soft-deleted events | DB-02 committed |
@@ -176,7 +178,7 @@ Zero talk: executors coordinate only through git and `docs/plans/mvp/`. Files th
 7. make a design decision (a new page or layout, motion, colour or token, a new component pattern); if a card turns out to need one, stop (see "Stop and ask");
 8. start a second dev server, or kill a process you did not start;
 9. delete another agent's fixtures, locks or files (the only exceptions: the stale card LOCK takeover in §3.2 step 7, and the stale shared-stack lock rule below);
-10. write an em-dash in new or changed user-facing copy (Q41 / D14); link attendee chrome to `/login` or `/dashboard`, or the staff shell to the public `/events` (Q32 boundary).
+10. write an em-dash in new or changed user-facing copy (Q41 / D14); link attendee chrome to `/login` or `/dashboard`, or the staff shell to the public `/events` (Q32 boundary). Exception (Doctrine 2026-10-30): the landing's Organiser pill and door links may point at `/login`.
 
 **Local environment.**
 - Stack: API `127.0.0.1:54321`, DB `127.0.0.1:54322`, Mailpit `127.0.0.1:54324`. Check it is up with `supabase status`.
@@ -237,7 +239,7 @@ Days count from Ivan's "go". Sizes: S ≤ half a day, M about a day, L about two
 
 ## 6. What is deliberately NOT in this MVP
 
-Per §1 and to protect the 14 days: P5 per-day occurrences and the multi-day model (P3 works without it: §7.2 DB-02); P9a event-updated email and P9b published-event editing; P10 form rebuild, agenda modal and day timeline; P7b merging Manage into Programme; G1 ground tokens; C6 `peek_invite_token`; animation work and `/review-animations`; the draft preview page (spec 002 FR-004: the confirm step satisfies O4); the idempotency key against lost-reply duplicate creates (consolidated handoff C9; next after MVP); the security backlog B1–B5 and B8 (pre-Stage-8, after MVP; DB-03 takes the parts the MVP paths need); D13 (organiser on another organisation's event page). Each stays where the consolidated handoff §3 records it.
+Per §1 and to protect the 14 days: P5 per-day occurrences and the multi-day model (P3 works without it: §7.2 DB-02); P9a event-updated email and P9b published-event editing; P10 form rebuild, agenda modal and day timeline; P7b merging Manage into Programme (pulled into MVP inside CX-04R, Doctrine 2026-10-30); G1 ground tokens; C6 `peek_invite_token`; animation work and `/review-animations`; the draft preview page (spec 002 FR-004: the confirm step satisfies O4); the idempotency key against lost-reply duplicate creates (consolidated handoff C9; next after MVP); the security backlog B1–B5 and B8 (pre-Stage-8, after MVP; DB-03 takes the parts the MVP paths need); D13 (organiser on another organisation's event page). Each stays where the consolidated handoff §3 records it.
 
 ## 7. Task cards
 
@@ -287,17 +289,24 @@ push. Write its hand-back and stop.
 - **Steps:** read the `--text-*` font-size token names from `app/globals.css`; use `extendTailwindMerge` to register them in the `font-size` class group; keep `cn`'s signature. Test: `cn('text-label-md', 'text-on-primary')` keeps both; `cn('text-label-md', 'text-body-lg')` keeps only the last; a colour still overrides a colour.
 - **Done when:** tests pass (mutation: revert to plain `twMerge`, see them fail); `check:ui-colours` and `check:ui-primitives` unchanged; the hand-back lists every component whose rendered classes change (grep for `cn(` with a `text-<size>` token next to a `text-<colour>`), with before/after screenshots of the three spots outside P2a whose size changes, taken on `:3100`.
 
-#### CX-04 · Programme shows drafts and opens each event; Programme and Manage explain themselves (O2, O5, O9)
+#### CX-04 · Programme shows drafts and opens each event; Programme and Manage explain themselves (O2, O5, O9) · SHIPPED, steps 3 and 4 superseded by CX-04R (Doctrine 2026-10-30)
 - **Type:** mechanical · **Size:** M · **Days:** 4–5 · **Start when:** see §3.3
 - **Read:** core-UX plan §3 Band 2 Lane A "P7a"; spec 002 User Story 1 (`specs/002-event-workspace/spec.md`).
-- **May edit:** `components/dashboard/DashboardWorkstation.tsx` (+ tests), `app/dashboard/page.tsx`, `app/dashboard/manage/**` (headings and intro copy only), `components/shell/StaffShell.tsx` (the stale comment at about lines 57–66 only), `app/error.tsx` and `app/error.test.tsx`.
+- **May edit:** `components/dashboard/DashboardWorkstation.tsx` (+ tests), `app/dashboard/page.tsx`, `app/dashboard/manage/**` (headings and intro copy only; superseded by CX-04R, Doctrine 2026-10-30), `components/shell/StaffShell.tsx` (the stale comment at about lines 57–66 only), `app/error.tsx` and `app/error.test.tsx`.
 - **Steps:**
   1. Programme rows link to `/events/<id>/details` (restores what `16dadaa` removed). Use the existing row and link patterns.
   2. Drafts appear on Programme in date order with the existing Draft state chip (the one Manage uses). `agendaEligible` currently excludes `lifecycle === 'drafted'`; drop that clause only. The create form requires a date, so every draft has one; if one is ever missing, list it after the dated events rather than inventing a new group. Deleted events stay hidden.
-  3. One sentence under each page title, so the two pages explain themselves: Programme "Your events by date, including drafts. Open one to work on it." Manage "Every event in every state, with search, filters and bulk actions." (no em-dashes).
-  4. Now that drafts show on Programme, retarget the organiser crash page's exit to Programme (`app/error.tsx`: `{ href: '/dashboard', label: 'Back to Programme' }`) and update `app/error.test.tsx`; keep the assertion that the copy never says "check Programme" for a draft only if it is still true, otherwise replace it with one that the exit lists drafts.
+  3. ~~One sentence under each page title, so the two pages explain themselves~~ (SUPERSEDED, Doctrine 2026-10-30: one Events home, drop the explainers): Programme "Your events by date, including drafts. Open one to work on it." Manage "Every event in every state, with search, filters and bulk actions." (no em-dashes).
+  4. Now that drafts show on Programme, retarget the organiser crash page's exit to Programme (`app/error.tsx`: `{ href: '/dashboard', label: 'Back to Programme' }` (shipped; Doctrine 2026-10-30: becomes 'Back to Events')) and update `app/error.test.tsx`; keep the assertion that the copy never says "check Programme" for a draft only if it is still true, otherwise replace it with one that the exit lists drafts.
   5. Walk O9: as `ux-admin`, open a completed event from Programme and confirm Analytics, College export and survey results are reachable from its details page. If a link is missing, add it with the existing toolbar link pattern; if it needs a new component, stop and report.
 - **Done when:** behavioural tests for: a draft appears with its chip; a row links to its details page; deleted events stay hidden; the crash-page exit. Live walk as `ux-admin` and `ux-member` with screenshots of Programme and Manage.
+
+#### CX-04R · One Events home, organiser sidebar Check-in · Events · History · Settings (O1, O5, O9; Doctrine 2026-10-30) · PROPOSED
+- **Type:** design decision (runs the locked frontend pipeline; Ivan sees before and after before the build) · **Size:** M-L · **Start when:** Ivan cards it and has answered CX-04 items 2, 5 and 7 in `mvp/CX-04.md`.
+- **Read:** `DOCTRINE-two-persona-2026-10-30.md` section 3; `mvp/DOCTRINE-CONFLICT-MAP.md` sections 3 and 8; `components/shell/StaffShell.tsx:69-77`.
+- **May edit:** `components/shell/StaffShell.tsx` (+ test), `components/shell/StaffProgrammePill.tsx`, `components/dashboard/DashboardWorkstation.tsx` and `ManageWorkstation.tsx` (+ tests), `app/dashboard/**`, `app/participants/**` (nav removal only), `app/error.tsx` (+ test), `app/events/[id]/edit/PublishDraftButton.tsx` (+ test), the `backLabel` values and the "Manage all events" CTA (`DashboardWorkstation.tsx:483`) listed in the conflict map, `SiteShell.test.tsx` and `PublicShell.test.tsx` (they assert the pill label; the label itself is in `StaffProgrammePill.tsx`).
+- **Steps:** (1) sidebar becomes Check-in, Events, History, Settings; inert Accreditation, Communications and Reports rows go; (2) `/dashboard` is the Events home: live and upcoming, Drafts, Create, filters or tabs inside, no Past tab; Manage's filters and bulk actions fold in (the minimal P7b); (3) `/dashboard/manage` redirects to `/dashboard`; (4) History part 1 (what we ran) is the `/analytics` data (assumption, handoff Decide 5); parts 2 and 3 stay unbuilt until carded (ruling R3); (5) relabel Programme to Events in every place the conflict map lists.
+- **Done when:** sidebar test asserts exactly four items and no link to the public `/events`; a draft is findable on Events; no string "Programme" or "Manage" remains in user-facing organiser copy; the listed tests are updated; live walk as `ux-admin` and `ux-member`.
 
 #### CX-05 · Gate the multi-body accreditation wizard by role (O6; Ivan, 2026-10-11)
 - **Type:** mechanical · **Size:** S · **Day:** 1 · **Start when:** see §3.3
@@ -311,8 +320,8 @@ push. Write its hand-back and stop.
 - **Read:** spec 001 (`specs/001-attendee-portal/spec.md`) User Stories 1–2 and FR-001 to FR-005; core-UX plan §3 Lane A "P1a" (line numbers there date from 2026-10-01: re-locate by content).
 - **May edit:** `components/landing/LandingHero.tsx` (+ test), `components/RegisterCard.tsx` (+ test), `app/account/record/RecordClient.tsx` (+ test), `app/account/complete/page.tsx` and `CompleteClient.tsx` (the `next` hand-off only), `app/account/sign-up/**` and `app/account/sign-in/**` (the `next` hand-off only).
 - **Steps:**
-  1. **FR-001:** in practitioner mode the landing hero offers "Get started" (→ `/account/sign-up`) and "Log in" (→ `/account/sign-in`), mirroring the organiser pair; update the comment that explains the CTA set and the test lock in `LandingHero.test.tsx`.
-  2. **FR-003, A4:** the registration success card offers, signed out, "Create your Eventar record" → `/account/sign-up?next=/account/claim`; signed in as a practitioner, the line "This is now on your record." with a "My record" link → `/account/record`; for staff, nothing (the organiser line stays). Copy exactly as written here.
+  1. **FR-001** (Doctrine 2026-10-30: the landing pill reads Attendee | Organiser and picks the door, both doors are Log in | Sign Up; re-ask whether "Get started" becomes "Sign Up"): in practitioner mode the landing hero offers "Get started" (→ `/account/sign-up`) and "Log in" (→ `/account/sign-in`), mirroring the organiser pair; update the comment that explains the CTA set and the test lock in `LandingHero.test.tsx`.
+  2. **FR-003, A4:** the registration success card offers, signed out, "Create your Eventar record" → `/account/sign-up?next=/account/claim`; signed in as a practitioner, the line "This is now on your record." with a "My record" link → `/account/record` (shipped; Doctrine 2026-10-30: label becomes "Registrations"); for staff, nothing (the organiser line stays). Copy exactly as written here.
   3. **FR-004, A5:** the record's empty attendance state links to `/events` with one clear sentence.
   4. **FR-005:** the sign-up → wizard → home flow carries `next` through every step and lands there on completion, defaulting to `/account/record`. Gate `next` with `safeNextPath` / `classifyPath` from `lib/authDoor.ts` so only attendee paths are honoured (never `/dashboard` or `/login`).
 - **Done when:** behavioural tests for each item, including a hostile `next` (`//evil.example`, `/\evil`, `/dashboard`) falling back to `/account/record`; live walk with a fresh practitioner from the landing page through sign-up, the wizard, registration and the record.
@@ -320,8 +329,8 @@ push. Write its hand-back and stop.
 #### CX-06b · Practitioner and staff chrome fixes (A6, A7)
 - **Type:** mechanical · **Size:** M · **Days:** 6–7 · **Start when:** see §3.3
 - **Read:** core-UX plan §3 Lane A "P1a" (the second half of its list).
-- **May edit:** `components/shell/StaffProgrammePill.tsx`, `components/landing/LandingAuthPill.tsx`, `components/ui/AccountMenu.tsx`, `app/(public)/checkin/confirm/page.tsx` (the claim link only), the survey, pricing, not-found and invite pages' shell wrapper only, `components/auth/auth-error-messages.ts` (the copy the core-UX plan cites at line 22; re-locate), and the stale comments the plan names; tests for each.
-- **Steps:** `StaffProgrammePill` visible on mobile and not `aria-hidden` (A7); `LandingAuthPill` shows an interim state while the session is read and fails safe; the claim link is hidden for staff on `checkin/confirm`; `AccountMenu` becomes a plain disclosure (drop `role="menu"`; button with `aria-expanded`, list of links); the survey, pricing, not-found and invite pages get the same public chrome as their siblings (use the existing shell; if none fits, stop); the copy fix and stale comments.
+- **May edit:** `components/shell/StaffProgrammePill.tsx`, `components/landing/LandingAuthPill.tsx`, `components/ui/AccountMenu.tsx`, `app/(public)/checkin/confirm/page.tsx` (the claim link only), the survey, pricing, not-found and invite pages' shell wrapper only, `components/auth/auth-error-messages.ts` (Doctrine 2026-10-30: wrong-door copy per ruling R1 in `mvp/DOCTRINE-CONFLICT-MAP.md`, naming a password only if the organiser door becomes a password door (OPEN-9); the copy the core-UX plan cites at line 22; re-locate), and the stale comments the plan names; tests for each.
+- **Steps:** `StaffProgrammePill` (label Events, Doctrine 2026-10-30) visible on mobile and not `aria-hidden` (A7); `LandingAuthPill` shows an interim state while the session is read and fails safe; the claim link is hidden for staff on `checkin/confirm`; `AccountMenu` becomes a plain disclosure (drop `role="menu"`; button with `aria-expanded`, list of links); the survey, pricing, not-found and invite pages get the same public chrome as their siblings (use the existing shell; if none fits, stop); the copy fix and stale comments.
 - **Done when:** tests per item; keyboard walk of `AccountMenu`; screenshots at 375 px and desktop.
 
 #### CX-07 · A two-organisation staff member is told why, not shown an outage
@@ -382,21 +391,21 @@ Only an executor that can run the pipeline takes a `design` card (§3). Every `d
 
 #### UX-02 · P1b: the practitioner portal shell (A2, A3, A5)
 - **Type:** design · **Size:** L · **Days:** 6–8 (can move to Days 4–5 if UX-01 picks slip) · **Start when:** see §3.3.
-- **Decided already (Q41, direction C):** build to the D0 specimens; any deviation is a design decision (stop and ask).
+- **Decided already (Q41, direction C):** build to the D0 specimens (visual language only; Doctrine 2026-10-30 replaces the nav, so UX-02 is re-cut before picks); any deviation is a design decision (stop and ask).
 - **Read:** spec 001 User Stories 3–5, FR-006 and FR-007; core-UX plan §3 Band 3 "P1b".
-- **Steps:** new `components/shell/AccountShell.tsx`, mounted per page like `StaffShell`, on record, profile, claim and settings (nav: My record, Profile, … per FR-006); sign-in and sign-up stay on `SiteShell` as the door; `/account/complete` gets the onboarding variant with no portal nav; the practitioner band on `app/(public)/events/page.tsx` (FR-002), hidden for staff.
+- **Steps:** new `components/shell/AccountShell.tsx`, mounted per page like `StaffShell`, on record, profile, claim and settings (nav: Check-in, Registrations, Events, History, Account per Doctrine 2026-10-30, which beats FR-006 and the D0 labels); sign-in and sign-up stay on `SiteShell` as the door; `/account/complete` gets the onboarding variant with no portal nav; the practitioner band on `app/(public)/events/page.tsx` (FR-002), hidden for staff.
 - **Done when:** a fresh practitioner never sees marketing chrome after sign-in; tests that each account page renders inside `AccountShell` and the doors do not; walk at 375 px and desktop answering the four questions on every page.
 
 #### UX-03 · P2b-lite: confirm before publishing, confirm after saving, and say what is next (O2, O4)
 - **Type:** design · **Size:** M · **Days:** 4–5 · **Start when:** see §3.3.
 - **Read:** spec 002 User Story 2 and FR-005/FR-006; core-UX plan §3 Band 3 "P2b"; `handoff_20261001-core-ux.md` §8.5 and §8.7 (what P2a carried here).
-- **Steps:** build Ivan's picks. In any case: the confirm step on every Publish control (`Dialog.tsx`; fix `ConfirmDialog` issues F-DIALOG-1..4 only if it is reused); publish what is on screen or refuse while the form is dirty; announce the result (D15) and land on the details page in its "next steps" state; a "Draft saved" confirmation after the redirect to `/events/<id>/edit`; on a 22023 refusal refresh the page state so the DRAFT badge and button go, and make "Manage" a link; give the one-way warning `aria-describedby` on the Publish button; delete the stale docstring at `edit/page.tsx` (around lines 459–466).
+- **Steps:** build Ivan's picks. In any case: the confirm step on every Publish control (`Dialog.tsx`; fix `ConfirmDialog` issues F-DIALOG-1..4 only if it is reused); publish what is on screen or refuse while the form is dirty; announce the result (D15) and land on the details page in its "next steps" state; a "Draft saved" confirmation after the redirect to `/events/<id>/edit`; on a 22023 refusal refresh the page state so the DRAFT badge and button go, and make "Manage" a link (Doctrine 2026-10-30: link to Events, Drafts); give the one-way warning `aria-describedby` on the Publish button; delete the stale docstring at `edit/page.tsx` (around lines 459–466).
 - **Done when:** behavioural tests per item; live walk as `ux-admin` (publish from the form and from the draft card) and `ux-body` (no publish) with DB read-backs.
 
 #### UX-04 · P8-lite: Roster and Check-in, hard-split (O6)
 - **Type:** design · **Size:** L · **Days:** 8–10 · **Start when:** see §3.3.
 - **Read:** spec 002 User Stories 3–5; core-UX plan §3 Band 3 "P8".
-- **Steps:** new `/events/[id]/registrations` (records, role chips moved out of `RosterClient`, the edit dialog if DB-05 shipped); the check-in page becomes capture only; relabel and relink "Roster", "Open roster →" and "Open check-in" so the names match the pages; add the route to the `proxy.ts` matcher and `lib/authDoor.ts` (the sync test enforces that they agree); coordinate the per-event analytics page if touched.
+- **Steps:** new `/events/[id]/registrations` (heading is a re-ask, OPEN-8: Doctrine 2026-10-30 says Participants) (records, role chips moved out of `RosterClient`, the edit dialog if DB-05 shipped); the check-in page becomes capture only; relabel and relink "Roster", "Open roster →" and "Open check-in" so the names match the pages; add the route to the `proxy.ts` matcher and `lib/authDoor.ts` (the sync test enforces that they agree); coordinate the per-event analytics page if touched.
 - **Done when:** no control labelled Roster lands on check-in (grep and test); live walk as `ux-admin` and `ux-member` before, during and after the window.
 
 ### 7.4 Coordinator (milestones M1, M2, final; Ivan starts it)
@@ -412,18 +421,18 @@ Each review is **three separate agents** (the phase-completion protocol): a **de
 Two fresh user-lens agents, one per persona, on `:3100` with review mode off, local stack. At **every** step record the answers to the four questions (where am I, what is the main thing, how do I progress, how do I get back) and a screenshot. A step passes only if all four are obvious. Then a dev-lens over the whole MVP diff, and a backtest of every write.
 
 **Organiser** (`ux-admin`, then repeat 2–6 as `ux-member` and 2 and 4 as `ux-body`):
-1. Signed out, open `/dashboard` → sent to `/login` → magic link → lands on Programme (O1).
-2. Create an event, Save draft → confirmation seen; the draft is on Programme with its chip and on Manage (O2, O5).
+1. Signed out, open `/dashboard` → sent to `/login` → magic link → lands on Events (O1; Doctrine 2026-10-30).
+2. Create an event, Save draft → confirmation seen; the draft is on the Events home with its chip (O2, O5; Doctrine 2026-10-30: no separate Manage page).
 3. Open the draft, add three agenda blocks, save, reorder, save again, remove one, save → the table holds exactly the expected blocks, no duplicates (O3; DB read-back).
 4. Publish → a confirm step names what becomes public → after confirming, the next action is obvious; as `ux-body` the reason is shown instead (O4).
-5. From Programme, open the event; "Roster" opens the registrations list, "Check-in" opens the capture surface; neither lands on the other (O6).
+5. From Events (Doctrine 2026-10-30), open the event; "Roster" opens the registrations list, "Check-in" opens the capture surface; neither lands on the other (O6).
 6. Before the window: check-in refused with the right message, no rows written; inside: one check-in; after the end: refused (O7; DB read-back of `registration_checkins` and evidence).
 7. Walk-in inside the window → `source = 'walk_in'`, `user_id` not the staff member's (O8; DB read-back).
-8. After the event: feedback, records and the College export are reachable from Programme in two clicks or fewer (O9).
+8. After the event: feedback, records and the College export are reachable from History (what we ran) in two clicks or fewer (O9; Doctrine 2026-10-30).
 
 **Practitioner** (a fresh `@final.invalid` address):
 1. From the landing page and from a public event page, reach sign-up and sign-in without typing a URL (A1).
-2. Sign up → magic link → wizard → land on the record inside the practitioner shell; no marketing or organiser chrome (A2).
+2. Sign up → magic link → wizard → land on Registrations (Doctrine 2026-10-30; today `/account/record`) inside the practitioner shell; no marketing or organiser chrome (A2).
 3. Find events from inside the portal and open one (A3).
 4. Register → the success card says it is on your record and links there (A4).
 5. The record shows the registration; with no attendance yet, the next action is obvious (A5).

@@ -1,4 +1,7 @@
 # CX-06a The practitioner funnel: door, success prompt, empty record, `next` (A1, A2, A4, A5)
+
+> **Doctrine 2026-10-30.** Door words are now Log in | Sign Up, the door page labels its side (Attendee or Organiser), and the success home is Registrations. **Superseded:** U-03 (one door has six names) and U-10. **Survive:** U-02, U-04, U-05, U-06, D-04 (FR-005 `next`), D-05 (dot-segment `classifyPath`), D-10. The "My record" link and label become "Registrations". The R1 copy mentions a password; use it only if the organiser door becomes a password door (OPEN-9). `mvp/DOCTRINE-CONFLICT-MAP.md`.
+
 STATUS: DONE
 Changed [R]: `components/landing/LandingHero.tsx` (+test), `components/RegisterCard.tsx` (+test), `app/account/record/RecordClient.tsx` (+test), `app/account/complete/page.tsx`, `CompleteClient.tsx`, `app/account/sign-in/{actions.ts,page.tsx,page.test.tsx}`, `app/account/sign-up/{page.tsx,page.test.tsx}`. New: `app/account/sign-in/{attendeeNext.ts,attendeeNext.test.ts,actions.test.ts,nextGate.test.tsx}`, `app/account/complete/{page.test.tsx,CompleteClient.test.tsx}`. LOCK `updated:` line kept current, LOCK left in place.
 

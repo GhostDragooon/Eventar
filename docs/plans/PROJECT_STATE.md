@@ -2,20 +2,27 @@
 
 ## Audience & routes (Q32 boundary — read before touching any nav/redirect/CTA)
 
+> **Doctrine 2026-10-30 (Q47).** Target shape below; the code still has Programme and Manage until CX-04R. Read [DOCTRINE-two-persona-2026-10-30.md](DOCTRINE-two-persona-2026-10-30.md) and [mvp/DOCTRINE-CONFLICT-MAP.md](mvp/DOCTRINE-CONFLICT-MAP.md) first.
+
 Two audiences, two doors, never crossed:
 
 | Audience | Door (sign-in) | Homes | Never links to |
 |---|---|---|---|
-| **Attendee** | `/account/sign-in` | `/events` (public), `/account` | `/login`, `/dashboard*` |
-| **Organizer** | `/login` | `/dashboard` (Programme), `/dashboard/manage` (Manage) | public `/events` listing |
+| **Attendee** | `/account/sign-in`, `/account/sign-up` | Target: Check-in · Registrations · Events · History · Account. Today: `/events` (public), `/account`, `/account/record` | `/dashboard*` (the landing's Organiser pill may link `/login`) |
+| **Organiser** | `/login` | Target: Check-in · Events (`/dashboard`) · History · Settings. Today: `/dashboard` (Programme) and `/dashboard/manage` (Manage) until CX-04R | public `/events` listing |
 
 Boundary rules:
 - StaffShell never links to public `/events` — the sidebar's events surface IS `/dashboard`.
-- Attendee-facing shells (SiteShell, PublicShell, LandingNav) never point their auth CTA at `/login`.
-- The organizer post-login landing is `/dashboard` (Programme); `/auth/callback` derives which door an error bounces back to from `?next=`. ⚠️ **Corrected 2026-09-25** — this line previously said "organizer flows never set [next]," which stopped being true at `3a8c279` (2026-09-25): `/login?next=/events/new` is an organizer flow that sets `next`. The callback's actual logic is a path-prefix heuristic (`/account*`, `/events/*` except exactly `/events/new` → attendee door; everything else → `/login`), and it misroutes any other organiser sub-route under `/events/<id>/...` — see `docs/plans/handoff_20260925-two-persona-review.md` finding I4.
+- Attendee-facing shells (SiteShell, PublicShell, LandingNav) never point their auth CTA at `/login`. Exception (Doctrine 2026-10-30): the landing pill's Organiser door and its Organiser CTAs.
+- The organizer post-login landing is `/dashboard` (labelled Events per Doctrine 2026-10-30; route unchanged); `/auth/callback` derives which door an error bounces back to from `?next=`. ⚠️ **Corrected 2026-09-25** — this line previously said "organizer flows never set [next]," which stopped being true at `3a8c279` (2026-09-25): `/login?next=/events/new` is an organizer flow that sets `next`. The callback's actual logic is a path-prefix heuristic (`/account*`, `/events/*` except exactly `/events/new` → attendee door; everything else → `/login`), and it misroutes any other organiser sub-route under `/events/<id>/...` — see `docs/plans/handoff_20260925-two-persona-review.md` finding I4.
 - Both flows share `/auth/callback` — see `app/auth/callback/route.ts`.
 
 > ## ⬆️ CURRENT — STAGE 10 (2026 dual-track). ⚠️ **2026-09-25 re-review found the boundary NOT fit for use — 2 live BLOCKERs (invite acceptance, staff-attendee identity leak) + 5 IMPORTANTs, several contradicting this block's own "shipped"/"resolved" claims below. See the 2026-09-25 (later) entry and `handoff_20260925-two-persona-review.md` before treating anything below as current truth.** Two-persona funnels + attendee IA + Q32 boundary hardening shipped 2026-09-23 → 2026-09-24 (uncommitted, pending Ivan's review) — landing dual-funnel restructure, Account disclosure menu, `/account/sign-up`, post-login default `/account`→`/account/record`, completeness gate on `/account/record` (doctrine reversal), staff-vs-attendee session split at layout + shell layers, `walk_in` source-label migration. Open Capture Mode Phase A itself still **not started** — prelude BLOCKERs (F-DETAILS-1, F-CHECKIN-1) were fixed 2026-09-19 at `428c23a`, plus three follow-up checkin fixes at `dd1cf30`. Dual-track close-out (College/MCHK CSV export, prior-approval advisory wizard parity, Day-2-only award engine coverage) shipped 2026-09-17 at `e9d4f4c`. Prior: QA pass on account-creation (wizard auto-redirect + review-mode identity split) committed 2026-09-17 at `98a3c9c`/`7afe43d`. Practitioner account creation (guided `/account/complete` wizard, controlled lists, org first-run) shipped 2026-09-16 at `dbadc02`. Dashboard route split (`/dashboard` Programme + `/dashboard/manage` Manage) shipped 2026-09-07 at `16dadaa`. Organiser `/dashboard` rebuilt into a Luma-style programme home, shipped 2026-09-06. Smoothness pass on attendee flow also shipped 2026-09-06. Product alignment pass (WP1/WP2/WP3-R1/WP4-A/WP5-E1) landed 2026-09-05 (committed at `1017c78`). Full 2→4→1→3 queue from `handoff_03092026.md` CLOSED on 2026-09-04.
+>
+> ### 2026-10-31 — MVP execution seq 5: two-persona doctrine mapped and applied to the live docs (docs only)
+> **Handoff, with Ivan's action list (§0) first: [handoff_20261031-mvp-execution-5.md](handoff_20261031-mvp-execution-5.md).** Conflict map and rulings: [mvp/DOCTRINE-CONFLICT-MAP.md](mvp/DOCTRINE-CONFLICT-MAP.md); vault Decisions Log **Q47**. The MVP plan, CX-04, UX-02, CX-06a, UX-FU1, the IA spec and FR-006 carry a "Doctrine 2026-10-30" marker.
+> - **Rulings (Ivan 2026-10-31):** generic Organiser failure message (implies an email + password door, to confirm); Hard Rule 1 vs the email-keyed `staff` table recorded as debt; organiser History parts 2 and 3 are org-level aggregates.
+> - **Open:** organiser door = password (confirm), staff MFA, one email on two orgs, which card first (recommend CX-04R). **Nothing is built;** the running app still shows Programme and Manage.
 >
 > ### 2026-10-31 — MVP execution seq 4: tree consolidated and pushed, Node patched, UX-02 specimens vs the 2026-10-30 doctrine
 > **Handoff, with Ivan's action list (§0) first: [handoff_20261031-mvp-execution-4.md](handoff_20261031-mvp-execution-4.md).** Read [DOCTRINE-two-persona-2026-10-30.md](DOCTRINE-two-persona-2026-10-30.md) first: it supersedes the Programme/Manage dual home above for MVP shell, nav and CX-04/UX-02 work.

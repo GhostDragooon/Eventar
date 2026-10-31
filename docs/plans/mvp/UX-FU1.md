@@ -1,4 +1,7 @@
 # UX-FU1 Pending front-end findings from review round 1, as one specimen round
+
+> **Doctrine 2026-10-30.** Surfaces 1 to 9, 11 and 12 survive unchanged (none draws Programme, Manage or an old attendee label). Surface 9c (link to the team list) already fits Settings, Team. Surface 10 (the Manage row) is re-asked after CX-04R. `mvp/DOCTRINE-CONFLICT-MAP.md`.
+
 STATUS: DONE (specimens), awaiting pick. Nothing is applied. 12 surfaces, 36 options, my recommendation is always letter `a` and is listed first on the page.
 Look at: Route `/dev-preview-uiport/ux-fu1` on :3100 (dev only, gated out of production by the sandbox layout). The :3100 server (eventar-noreview) was already running from the queue session; I left it running.
 Changed: `app/dev-preview-uiport/ux-fu1/page.tsx`, `frames.tsx`, `live.tsx`, `defects.tsx`, `measure.tsx` (new, specimens only, no product code), this file.

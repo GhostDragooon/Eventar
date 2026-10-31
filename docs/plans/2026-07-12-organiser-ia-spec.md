@@ -1,5 +1,8 @@
 # Organiser IA + data-design spec — v1 (2026-07-12)
 
+> **Superseded in part by Doctrine 2026-10-30** ([`DOCTRINE-two-persona-2026-10-30.md`](DOCTRINE-two-persona-2026-10-30.md), section 3). The eight-area main nav and the mobile bar below are replaced by the organiser sidebar **Check-in, Events, History, Settings**. Participants, Accreditation, Communications and Reports move inside the event; cross-event trends go to History. The Layout, Events chips (without Past) and Settings, Team parts stay. History did not exist in this spec. `mvp/DOCTRINE-CONFLICT-MAP.md`.
+
+
 _Drill-down on the organiser web app: navigation, per-module contents, meaningful data, presentation rules, and input/output flows. Grounded in Ivan's 8 reference screenshots + his proposed IA (this doc adds/subtracts from it explicitly) + the block architecture. Feeds task #8 (design implementation) and the M2 unfreeze scope. Terminology note (2026-07-12, vault Q29): the practitioner credit module is the **"CPD Ledger"** — Ivan's original proposal called this area "CPR/CPD passport", a term now retired (it's a competitor's brand)._
 
 ## Layout decision
