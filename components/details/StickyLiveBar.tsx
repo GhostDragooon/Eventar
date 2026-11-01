@@ -84,7 +84,7 @@ export function StickyLiveBar({
             className="inline-flex items-center gap-xs bg-primary text-on-primary px-md py-[6px] rounded-full text-[calc(12px*var(--text-scale))] font-semibold hover:opacity-90 transition-opacity shrink-0"
           >
             <span className="material-symbols-outlined text-[calc(15px*var(--text-scale))]" aria-hidden>group</span>
-            Open roster →
+            Open check-in →
           </Link>
         </div>
       </div>

@@ -369,7 +369,7 @@ export default async function EventDetailsPage({
       )}
 
       {/* Event Manager header — eyebrow + title + status pill on the left, the
-          for-use toolbar (Edit / Roster / Public / Analytics) top-right. */}
+          for-use toolbar (Edit / Registrations / Check-in / Public / Analytics) top-right. */}
       <header className="mb-lg flex flex-col md:flex-row md:items-start md:justify-between gap-md">
         <div className="min-w-0">
           <p className="text-label-md font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-xs">Event Manager</p>
@@ -629,9 +629,14 @@ function ActionToolbar({ eventId, lifecycle }: { eventId: string; lifecycle: Lif
         <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>edit</span>Edit
       </Link>
       {showRoster && (
-        <Link href={`/events/${eventId}/checkin`} className={lifecycle === 'live' ? live : outline}>
-          <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>group</span>Roster
-        </Link>
+        <>
+          <Link href={`/events/${eventId}/registrations`} className={outline}>
+            <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>group</span>Registrations
+          </Link>
+          <Link href={`/events/${eventId}/checkin`} className={lifecycle === 'live' ? live : outline}>
+            <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>how_to_reg</span>Check-in
+          </Link>
+        </>
       )}
       {showPublic && (
         <Link href={`/events/${eventId}`} target="_blank" rel="noreferrer" className={outline}>

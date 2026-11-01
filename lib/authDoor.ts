@@ -7,7 +7,7 @@
 //
 // Replaces the callback's old path-prefix heuristic ("/account*, or /events/*
 // except exactly /events/new"), which sent a failed organiser sign-in on
-// /events/<id>/checkin, /edit, /details or /analytics to the attendee door
+// /events/<id>/checkin, /registrations, /edit, /details or /analytics to the attendee door
 // (finding I4, 2026-09-25). Event pages are matched on a UUID-shaped segment
 // (events.id is uuid), so a future /events/<word> sibling of /events/new
 // cannot be mistaken for an event page.
@@ -71,7 +71,7 @@ export function classifyPath(next: string | null | undefined): 'attendee' | 'org
       if (second === 'new') return segments.length === 2 ? 'organiser' : null;
       if (second === undefined || !UUID.test(second)) return null;
       if (segments.length === 2) return 'attendee';
-      return segments.length === 3 && ['edit', 'checkin', 'details', 'analytics'].includes(third)
+      return segments.length === 3 && ['edit', 'checkin', 'registrations', 'details', 'analytics'].includes(third)
         ? 'organiser'
         : null;
     default:

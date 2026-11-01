@@ -224,6 +224,7 @@ export async function setRegistrationRole(input: {
   if (error) return { error: translateCpdRpcError(error) };
 
   revalidatePath(`/events/${parsed.data.eventId}/checkin`);
+  revalidatePath(`/events/${parsed.data.eventId}/registrations`);
   return { ok: true, data: undefined };
 }
 
@@ -249,5 +250,6 @@ export async function removeRegistrationRole(input: {
   if (error) return { error: translateCpdRpcError(error) };
 
   revalidatePath(`/events/${parsed.data.eventId}/checkin`);
+  revalidatePath(`/events/${parsed.data.eventId}/registrations`);
   return { ok: true, data: undefined };
 }

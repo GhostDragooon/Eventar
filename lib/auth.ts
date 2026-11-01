@@ -43,6 +43,13 @@ export function canPublishEvents(role: Staff['role']): boolean {
   return role === 'organiser_admin' || role === 'organiser_member' || role === 'eventar_staff';
 }
 
+// Which roles update_registration_contact() and set_registration_role() accept: organiser_admin, organiser_member
+// and eventar_staff. body_admin and auditor read the Registrations list and cannot change it. Decides what to
+// SHOW; the database refuses regardless.
+export function canEditRegistrations(role: Staff['role']): boolean {
+  return role === 'organiser_admin' || role === 'organiser_member' || role === 'eventar_staff';
+}
+
 // Which roles set_event_cpd_config() accepts: its resolve_actor gate names only
 // these two (read from the live definition on 2026-10-02). An organiser_member
 // can create and publish an event but not accredit it; the create form used to

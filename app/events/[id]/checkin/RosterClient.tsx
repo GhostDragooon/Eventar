@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/browser';
 import { checkDoorSession } from '@/lib/doorSession';
 import { formatInTz } from '@/lib/tz';
@@ -8,7 +8,6 @@ import { isValidRegistrationCode } from '@/lib/registrationCode';
 import { humanizeCameraError } from '@/lib/cameraError';
 import { checkInGateMessage, computeLifecycle, walkInClosedMessage, type EventLifecycleRow, type Lifecycle } from '@/lib/lifecycle/eventLifecycle';
 import { markAttended, walkInRegisterAndCheckIn } from './actions';
-import { setRegistrationRole, removeRegistrationRole } from '../details/multiBodyActions';
 import { Scoreboard } from './Scoreboard';
 import { ScanAndManual } from './ScanAndManual';
 import { SpeakersCard, type SpeakerCheckinRow } from './SpeakersCard';
@@ -70,7 +69,6 @@ export default function RosterClient({
   initialRoster,
   eligibility,
   eligibilityUnavailable,
-  roles,
   maxAttendees: _maxAttendees,
   speakerNames,
   initialSpeakerCheckins,
@@ -90,8 +88,6 @@ export default function RosterClient({
   /** registration_id \u2192 eligibility enum from event_registration_eligibility. */
   eligibility: Record<string, string>;
   eligibilityUnavailable: boolean;
-  /** registration_id → non-default roles (attendee is implicit, never listed here). */
-  roles: Record<string, ('chair' | 'presenter')[]>;
   /**
    * Capacity, currently unused — the Scoreboard renders attended/registered.
    * Kept on the prop contract so the page can pass it without divergence; a
@@ -103,7 +99,6 @@ export default function RosterClient({
   initialSpeakerCheckins: SpeakerCheckinRow[];
 }) {
   const [roster, setRoster] = useState<RosterRow[]>(initialRoster);
-  const [roleState, setRoleState] = useState(roles);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'attended' | 'registered'>('all');
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -112,10 +107,6 @@ export default function RosterClient({
   // Server time minus this browser's clock, fixed at mount: nowMs below is the server's clock moving forward.
   const [clockOffsetMs] = useState<number>(() => serverNowMs - Date.now());
   const [nowMs, setNowMs] = useState<number>(serverNowMs);
-  // One shared useTransition would grey out all 400 chips on a 400-person
-  // roster while a single toggle round-trips — track pending per row+role.
-  const [pendingRoleKeys, setPendingRoleKeys] = useState<Set<string>>(new Set());
-  const [, startTransition] = useTransition();
 
   useEffect(() => {
     const tick = () => setNowMs(Date.now() + clockOffsetMs);
@@ -225,39 +216,6 @@ export default function RosterClient({
     return { ok: true, name: res.registration.full_name };
   }
 
-  function toggleRole(registrationId: string, role: 'chair' | 'presenter', has: boolean) {
-    const key = `${registrationId}:${role}`;
-    setPendingRoleKeys((prev) => new Set(prev).add(key));
-    startTransition(async () => {
-      let res: Awaited<ReturnType<typeof setRegistrationRole>>;
-      let ended = false;
-      try {
-        res = has
-          ? await removeRegistrationRole({ registrationId, eventId, roleCode: role })
-          : await setRegistrationRole({ registrationId, eventId, roleCode: role });
-      } catch {
-        ended = await sessionEnded();
-        res = { error: ended ? "You've been signed out. The role was not changed." : 'Could not update the role. Please try again.' };
-      } finally {
-        // Never leave the toggle stuck pending.
-        setPendingRoleKeys((prev) => {
-          const next = new Set(prev);
-          next.delete(key);
-          return next;
-        });
-      }
-      if ('error' in res) {
-        setToast({ kind: 'err', message: res.error, signInHref: ended ? doorSignIn(eventId) : undefined });
-        return;
-      }
-      setRoleState((prev) => {
-        const current = prev[registrationId] ?? [];
-        const next = has ? current.filter((r) => r !== role) : [...current, role];
-        return { ...prev, [registrationId]: next };
-      });
-    });
-  }
-
   return (
     <div className="flex flex-col gap-grid-gutter">
       <Scoreboard
@@ -360,9 +318,6 @@ export default function RosterClient({
                     checkInClosed={checkInClosed}
                     eventTimezone={eventTimezone}
                     onMark={() => handleMark(r.registration_code, 'manual')}
-                    roles={roleState[r.id] ?? []}
-                    pendingRoleKeys={pendingRoleKeys}
-                    onToggleRole={(role, has) => toggleRole(r.id, role, has)}
                   />
                 ))}
               </ul>
@@ -426,9 +381,6 @@ function RosterRowItem({
   checkInClosed,
   eventTimezone,
   onMark,
-  roles,
-  pendingRoleKeys,
-  onToggleRole,
 }: {
   row: RosterRow;
   eligibility?: string;
@@ -437,9 +389,6 @@ function RosterRowItem({
   checkInClosed: string | null;
   eventTimezone: string;
   onMark: () => void;
-  roles: ('chair' | 'presenter')[];
-  pendingRoleKeys: Set<string>;
-  onToggleRole: (role: 'chair' | 'presenter', has: boolean) => void;
 }) {
   const isAttended = r.status === 'attended';
   const isCancelled = r.status === 'cancelled';
@@ -472,36 +421,6 @@ function RosterRowItem({
             <span>{ELIGIBILITY_NOTE[eligibility]}</span>
           </p>
         )}
-        {/* Multi-body role (chair/presenter) — attendee is the implicit
-            default and has no toggle. Same cell as the name, not a 5th
-            column: the roster's 4-column grid is a locked TC spec.
-            Disabled once attended: award_attendance_credit runs synchronously
-            at check-in and credit_ledger_attendance_uniq means a role set
-            afterward can never change what was already posted. */}
-        <div className="mt-[2px] flex gap-xs">
-          {(['chair', 'presenter'] as const).map((role) => {
-            const has = roles.includes(role);
-            const pending = pendingRoleKeys.has(`${r.id}:${role}`);
-            return (
-              <button
-                key={role}
-                type="button"
-                disabled={pending || isAttended}
-                aria-pressed={has}
-                aria-label={`${role} — ${r.full_name}`}
-                title={isAttended ? 'Already checked in — role changes here won’t affect the credit already posted.' : undefined}
-                onClick={() => onToggleRole(role, has)}
-                className={`rounded-full px-xs py-[1px] text-[calc(11px*var(--text-scale))] font-medium capitalize transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary-ink disabled:opacity-50 ${
-                  has
-                    ? 'bg-primary-container text-on-primary-container'
-                    : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'
-                }`}
-              >
-                {role}
-              </button>
-            );
-          })}
-        </div>
       </div>
       <code className="font-body-md text-[calc(13px*var(--text-scale))] text-on-surface-variant tabular-nums">
         {r.registration_code}

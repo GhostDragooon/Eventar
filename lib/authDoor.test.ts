@@ -26,6 +26,7 @@ describe('classifyPath — organiser door', () => {
     '/events/new',
     `/events/${EVENT}/edit`,
     `/events/${EVENT}/checkin`,
+    `/events/${EVENT}/registrations`,
     `/events/${EVENT}/details`,
     `/events/${EVENT}/analytics`,
     '/checkin',
@@ -205,7 +206,7 @@ describe('proxy.ts matcher ↔ classifier drift guard', () => {
 describe('isOrganiserWorkspacePath', () => {
   it.each([
     '/dashboard', '/dashboard/manage', '/events/new', `/events/${EVENT}/edit`, `/events/${EVENT}/checkin`,
-    `/events/${EVENT}/details`, `/events/${EVENT}/analytics`, '/settings', '/settings/team',
+    `/events/${EVENT}/registrations`, `/events/${EVENT}/details`, `/events/${EVENT}/analytics`, '/settings', '/settings/team',
     '/participants', '/analytics', '/checkin', '/dashboard?tab=draft',
   ])('%s is behind the gate', (path) => {
     expect(isOrganiserWorkspacePath(path)).toBe(true);

@@ -36,7 +36,7 @@ describe('formatSendResult', () => {
 
     expect(retrying).not.toBe(permanent);
     expect(retrying).toContain('retrying automatically');
-    expect(permanent).toContain('Roster');
+    expect(permanent).toContain('Check-in page');
     expect(permanent).not.toContain('retrying');
   });
 

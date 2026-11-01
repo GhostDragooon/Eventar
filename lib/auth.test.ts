@@ -18,7 +18,7 @@ vi.mock('@/lib/supabase/admin', () => ({ supabaseAdmin: () => 'admin-client-mark
 import { afterEach, describe, expect, it } from 'vitest';
 import { AuthRetryableFetchError, AuthSessionMissingError } from '@supabase/supabase-js';
 import { createClient } from '@supabase/supabase-js';
-import { requireStaff, NotAuthorizedError, getStaffSessionState, isStaffSession, canPublishEvents, canSetAccreditation } from './auth';
+import { requireStaff, NotAuthorizedError, getStaffSessionState, isStaffSession, canPublishEvents, canSetAccreditation, canEditRegistrations } from './auth';
 
 // Fabricate a minimal supabase client shape that requireStaff depends on.
 // The fake chain actually APPLIES each .eq(field, value) predicate against
@@ -240,6 +240,19 @@ describe('canPublishEvents', () => {
     ['auditor', false],
   ] as const)('%s -> %s', (role, expected) => {
     expect(canPublishEvents(role)).toBe(expected);
+  });
+});
+
+// update_registration_contact() and set_registration_role() name the same three roles as publish_event().
+describe('canEditRegistrations', () => {
+  it.each([
+    ['organiser_admin', true],
+    ['organiser_member', true],
+    ['eventar_staff', true],
+    ['body_admin', false],
+    ['auditor', false],
+  ] as const)('%s -> %s', (role, expected) => {
+    expect(canEditRegistrations(role)).toBe(expected);
   });
 });
 

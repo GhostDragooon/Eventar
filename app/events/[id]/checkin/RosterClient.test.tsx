@@ -14,10 +14,6 @@ vi.mock('./actions', () => ({
   markAttended: vi.fn(async () => ({ error: 'unused' })),
   walkInRegisterAndCheckIn: vi.fn(async () => ({ error: 'unused' })),
 }));
-vi.mock('../details/multiBodyActions', () => ({
-  setRegistrationRole: vi.fn(),
-  removeRegistrationRole: vi.fn(),
-}));
 vi.mock('./SpeakersCard', () => ({ SpeakersCard: () => null }));
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -54,7 +50,6 @@ function renderDesk(startInMin: number, serverNowMs = T0) {
       ]}
       eligibility={{}}
       eligibilityUnavailable={false}
-      roles={{}}
       maxAttendees={null}
       speakerNames={[]}
       initialSpeakerCheckins={[]}

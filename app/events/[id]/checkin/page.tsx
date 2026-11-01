@@ -4,6 +4,7 @@ import { supabaseServer } from '@/lib/supabase/server';
 import { formatInTz } from '@/lib/tz';
 import { StaffShell } from '@/components/shell/StaffShell';
 import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
+import Link from 'next/link';
 import { LayoutDashboardIcon, CalendarDaysIcon, UserCheckIcon } from 'lucide-react';
 import type { EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 import { deriveSpeakerNames } from '@/lib/agenda';
@@ -71,18 +72,6 @@ export default async function StaffCheckinPage({
       .eq('event_id', id),
   ]);
 
-  // C5: what each registrant DID (chair/presenter), independent of any body's
-  // category vocabulary (ADR-0002 "R1, resolved"). registration_roles has no
-  // event_id column, so the filter goes through the FK embed (!inner makes it
-  // restrict the top-level rows, not just decorate them) rather than an
-  // .in(registration_id, [...ids]) — a large event would otherwise push one
-  // UUID per registrant into the query string, and a query-string-length
-  // failure here degrades to every role chip silently rendering blank.
-  const rolesRes = await supabase
-    .from('registration_roles')
-    .select('registration_id, role_code, registrations!inner(event_id)')
-    .eq('registrations.event_id', id);
-
   // Read-time CPD eligibility (Stage 7). Definer RPC: every hop of the identity
   // chain (registration email → auth.users → verified licence) is invisible to
   // an organiser's session, so this cannot be a join above. Returns
@@ -110,11 +99,11 @@ export default async function StaffCheckinPage({
   // feed the Speakers card only, which already renders a normal, specced
   // empty state ("No speakers configured…") for zero speakers — so a
   // failed read here degrades into that same state rather than taking
-  // down the whole check-in desk, matching the roles/eligibility tier
+  // down the whole check-in desk, matching the eligibility tier
   // below. Previously these threw too, which under concurrent DB load
   // (multiple reads on this page timing out in the same window) produced
   // an inconsistent experience: the SAME load spike sometimes only hit
-  // eligibility/roles (graceful) and sometimes also hit these two
+  // eligibility (graceful) and sometimes also hit these two
   // (hard crash to the generic app-wide error boundary), even though none
   // of the four is more load-bearing than the roster itself.
   if (rosterRes.error) throw rosterRes.error;
@@ -124,15 +113,6 @@ export default async function StaffCheckinPage({
   if (checkinsRes.error) {
     console.error('[checkin] speaker_checkins read failed', { code: checkinsRes.error.code });
   }
-  if (rolesRes.error) {
-    console.error('[checkin] registration_roles read failed', { code: rolesRes.error.code });
-  }
-  const roles: Record<string, ('chair' | 'presenter')[]> = {};
-  for (const row of (rolesRes.data ?? []) as { registration_id: string; role_code: string }[]) {
-    if (row.role_code === 'attendee') continue;
-    (roles[row.registration_id] ??= []).push(row.role_code as 'chair' | 'presenter');
-  }
-
   const speakerNames = deriveSpeakerNames(blocksRes.data ?? []);
   const initialSpeakerCheckins = checkinsRes.data ?? [];
 
@@ -168,6 +148,13 @@ export default async function StaffCheckinPage({
             </p>
           )}
         </div>
+        <Link
+          href={`/events/${id}/registrations`}
+          className="mt-sm inline-flex min-h-11 items-center gap-xs font-label-md text-label-md text-primary-ink hover:underline"
+        >
+          Registrations
+          <span aria-hidden>→</span>
+        </Link>
       </header>
 
       <RosterClient
@@ -187,7 +174,6 @@ export default async function StaffCheckinPage({
         initialRoster={rosterRes.data ?? []}
         eligibility={eligibility}
         eligibilityUnavailable={Boolean(eligRes.error)}
-        roles={roles}
         maxAttendees={event.max_attendees}
         speakerNames={speakerNames}
         initialSpeakerCheckins={initialSpeakerCheckins}

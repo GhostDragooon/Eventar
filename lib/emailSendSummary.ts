@@ -32,12 +32,12 @@ export function formatSendResult(r: EmailSendCounts): string {
   // sent" — which is what it looked like before this counter existed — is a
   // loss rendered as a success, the exact rule-12 inversion this path keeps
   // producing. It needs the same call to action as a give-up.
-  if (r.stalled) parts.push(`${r.stalled} logged earlier but never emailed — check them in from the Roster`);
+  if (r.stalled) parts.push(`${r.stalled} logged earlier but never emailed — check them in on the Check-in page`);
   if (r.failed) parts.push(`${r.failed} failed — retrying automatically`);
   // A give-up is NOT a failure the operator can wait out: the scheduler will
   // never try again. It has to name the action, because the consequence of
   // doing nothing is a practitioner arriving without a pass.
-  if (r.gaveUp) parts.push(`${r.gaveUp} couldn't be emailed — check them in from the Roster`);
+  if (r.gaveUp) parts.push(`${r.gaveUp} couldn't be emailed — check them in on the Check-in page`);
   return parts.length === 0 ? 'No eligible recipients.' : parts.join(' · ');
 }
 
