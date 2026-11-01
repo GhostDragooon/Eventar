@@ -14,19 +14,6 @@ export function formatInTz(iso: string, timeZone: string): string {
   return `${m.day} ${m.month} ${m.year}, ${m.hour}:${m.minute}`;
 }
 
-// The organiser's zone arrives in the eventar-tz cookie, which the browser
-// wrote (the old DashboardWorkstation; nothing writes it now) and the client fully controls: accept only a
-// zone Intl recognises. Missing or invalid falls back to UTC until the
-// browser sets it.
-export function organiserTz(cookieValue: string | undefined): string {
-  if (!cookieValue) return 'UTC';
-  try {
-    return new Intl.DateTimeFormat('en', { timeZone: cookieValue }).resolvedOptions().timeZone;
-  } catch {
-    return 'UTC';
-  }
-}
-
 export function browserTz(): string {
   if (typeof Intl === 'undefined') return 'UTC';
   return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
