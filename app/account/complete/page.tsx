@@ -44,7 +44,7 @@ import { isAccountComplete } from '@/lib/accountCompleteness';
 import { getMyAccountAndProfile, listMyLicences } from '../actions';
 import { wizardLandingPath } from '../sign-in/attendeeNext';
 import { CompleteClient } from './CompleteClient';
-import { SiteShell } from '@/components/shell/SiteShell';
+import { AccountShell } from '@/components/shell/AccountShell';
 import type { AccreditingBodyView } from '../schema';
 import type { ControlledListOption } from './schema';
 
@@ -115,7 +115,7 @@ export default async function CompleteAccountPage({
         : 4;
 
   return (
-    <SiteShell active="account" signedIn accountComplete={completeness.complete}>
+    <AccountShell variant="onboarding" email={authRes.user.email ?? undefined}>
       <div className="mx-auto w-full max-w-2xl px-grid-margin py-xl">
         <CompleteClient
           initialStep={initialStep}
@@ -129,6 +129,6 @@ export default async function CompleteAccountPage({
           next={landing ?? undefined}
         />
       </div>
-    </SiteShell>
+    </AccountShell>
   );
 }

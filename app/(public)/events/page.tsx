@@ -1,5 +1,6 @@
 import { supabaseServer } from '@/lib/supabase/server';
 import { SiteShell } from '@/components/shell/SiteShell';
+import { AccountShell } from '@/components/shell/AccountShell';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 import { getAccountMenuState } from '@/app/account/actions';
 import { EventsListClient, type PublicEventCard } from './EventsListClient';
@@ -86,6 +87,26 @@ export default async function PublicEventsPage() {
       };
     });
 
+  const body = (
+    <div className="max-w-[860px] mx-auto px-grid-margin py-xl">
+      <header className="text-center mb-lg">
+        <p className="text-label-md font-semibold uppercase tracking-[0.18em] text-[color:var(--on-primary-container)] mb-xs">Events</p>
+        <h1 className="text-[calc(34px*var(--text-scale))] font-extrabold tracking-[-0.03em] text-on-surface mb-xs">Upcoming events</h1>
+        <p className="font-body-md text-body-md text-on-surface-variant">
+          Open programmes across the professions — register in under a minute.
+        </p>
+      </header>
+
+      <EventsListClient events={cards} />
+    </div>
+  );
+
+  // UX-02 pick 3b: a signed-in attendee with a complete account sees the catalogue inside the portal shell.
+  // Signed-out visitors, organisers and incomplete accounts keep the public shell (spec FR-007: no portal until the record exists).
+  if (signedIn && menuState && !menuState.isStaff && menuState.accountComplete) {
+    return <AccountShell>{body}</AccountShell>;
+  }
+
   return (
     <SiteShell
       active="events"
@@ -94,17 +115,7 @@ export default async function PublicEventsPage() {
       accountComplete={menuState?.accountComplete ?? false}
       unlinkedCount={menuState?.unlinkedCount ?? 0}
     >
-      <div className="max-w-[860px] mx-auto px-grid-margin py-xl">
-        <header className="text-center mb-lg">
-          <p className="text-label-md font-semibold uppercase tracking-[0.18em] text-[color:var(--on-primary-container)] mb-xs">Events</p>
-          <h1 className="text-[calc(34px*var(--text-scale))] font-extrabold tracking-[-0.03em] text-on-surface mb-xs">Upcoming events</h1>
-          <p className="font-body-md text-body-md text-on-surface-variant">
-            Open programmes across the professions — register in under a minute.
-          </p>
-        </header>
-
-        <EventsListClient events={cards} />
-      </div>
+      {body}
     </SiteShell>
   );
 }

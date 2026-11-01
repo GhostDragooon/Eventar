@@ -13,9 +13,9 @@
 import { redirect } from 'next/navigation';
 import { supabaseServer } from '@/lib/supabase/server';
 import { isAccountComplete } from '@/lib/accountCompleteness';
-import { listMyAttendanceRecords, listMyCreditRecords, getUnlinkedRegistrationCount } from '../actions';
+import { listMyAttendanceRecords, listMyCreditRecords } from '../actions';
 import { RecordClient } from './RecordClient';
-import { SiteShell } from '@/components/shell/SiteShell';
+import { AccountShell } from '@/components/shell/AccountShell';
 
 export const metadata = {
   title: 'Your record',
@@ -36,10 +36,9 @@ export default async function AccountRecordPage() {
     redirect('/account/complete');
   }
 
-  const [attendanceResult, creditsResult, unlinkedResult] = await Promise.all([
+  const [attendanceResult, creditsResult] = await Promise.all([
     listMyAttendanceRecords(),
     listMyCreditRecords(),
-    getUnlinkedRegistrationCount(),
   ]);
   // Same fail-closed posture as app/account/page.tsx:45-51 — a genuine auth
   // failure bounces to sign-in; any other error degrades to an empty list
@@ -50,13 +49,12 @@ export default async function AccountRecordPage() {
 
   const attendance = attendanceResult.ok ? attendanceResult.data.items : [];
   const credits = creditsResult.ok ? creditsResult.data.items : [];
-  const unlinkedCount = unlinkedResult.ok ? unlinkedResult.data.count : 0;
 
   return (
-    <SiteShell active="account" signedIn accountComplete unlinkedCount={unlinkedCount}>
+    <AccountShell>
       <div className="mx-auto w-full max-w-2xl px-grid-margin py-xl">
         <RecordClient attendance={attendance} credits={credits} />
       </div>
-    </SiteShell>
+    </AccountShell>
   );
 }

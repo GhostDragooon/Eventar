@@ -5,7 +5,7 @@
 import { redirect } from 'next/navigation';
 import { supabaseServer } from '@/lib/supabase/server';
 import { ClaimClient } from './ClaimClient';
-import { SiteShell } from '@/components/shell/SiteShell';
+import { AccountShell } from '@/components/shell/AccountShell';
 import { isAccountComplete } from '@/lib/accountCompleteness';
 
 export const metadata = {
@@ -29,15 +29,13 @@ export default async function ClaimPage() {
   }
 
   return (
-    // unlinkedCount omitted (defaults 0): showing "Claim past events" in the
-    // menu while already on the claim page would just point at itself.
-    <SiteShell active="account" signedIn accountComplete>
+    <AccountShell>
       <div className="mx-auto w-full max-w-2xl px-grid-margin py-xl">
         <ClaimClient
           email={authRes.user.email ?? ''}
           emailVerified={emailVerified}
         />
       </div>
-    </SiteShell>
+    </AccountShell>
   );
 }

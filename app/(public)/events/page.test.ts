@@ -6,11 +6,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 vi.mock('server-only', () => ({}));
 
 type Row = Record<string, unknown>;
-const { state } = vi.hoisted(() => ({ state: { rows: [] as Row[] } }));
+const { state } = vi.hoisted(() => ({ state: { rows: [] as Row[], user: null as { id: string } | null } }));
 
 vi.mock('@/lib/supabase/server', () => ({
   supabaseServer: vi.fn(async () => ({
-    auth: { getUser: async () => ({ data: { user: null }, error: null }) },
+    auth: { getUser: async () => ({ data: { user: state.user }, error: null }) },
     from: () => {
       const filters: Array<(r: Row) => boolean> = [];
       const sorts: Array<{ col: string; ascending: boolean }> = [];
@@ -42,9 +42,13 @@ vi.mock('@/lib/supabase/server', () => ({
 }));
 vi.mock('@/app/account/actions', () => ({ getAccountMenuState: vi.fn() }));
 vi.mock('@/components/shell/SiteShell', () => ({ SiteShell: () => null }));
+vi.mock('@/components/shell/AccountShell', () => ({ AccountShell: () => null }));
 vi.mock('./EventsListClient', () => ({ EventsListClient: () => null }));
 
 import PublicEventsPage from './page';
+import { SiteShell } from '@/components/shell/SiteShell';
+import { AccountShell } from '@/components/shell/AccountShell';
+import { getAccountMenuState } from '@/app/account/actions';
 
 const NOW = new Date('2026-10-24T05:00:00.000Z');
 const HOUR = 3_600_000;
@@ -93,6 +97,8 @@ describe('public events listing', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'], now: NOW });
     state.rows = [];
+    state.user = null;
+    vi.mocked(getAccountMenuState).mockReset();
   });
   afterEach(() => vi.useRealTimers());
 
@@ -156,5 +162,40 @@ describe('public events listing', () => {
       { ...upcoming(2), title: 'Deleted', deleted_at: NOW.toISOString() },
     ];
     expect(await listed()).toEqual(['Upcoming 0']);
+  });
+});
+
+// UX-02 pick 3b: which shell wraps the list depends on who is looking.
+describe('public events listing: shell by audience', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'], now: NOW });
+    state.rows = [];
+  });
+  afterEach(() => vi.useRealTimers());
+
+  const menu = (over: Partial<{ isStaff: boolean; accountComplete: boolean }>) =>
+    vi.mocked(getAccountMenuState).mockResolvedValue({ isStaff: false, accountComplete: true, unlinkedCount: 0, ...over } as never);
+  const shellFor = async () => (await PublicEventsPage() as unknown as { type: unknown }).type;
+
+  it('a signed-in attendee with a complete account gets the portal shell', async () => {
+    state.user = { id: 'u1' };
+    menu({});
+    expect(await shellFor()).toBe(AccountShell);
+  });
+
+  it.each([
+    ['a signed-out visitor', null, {}],
+    ['an organiser', { id: 'u2' }, { isStaff: true }],
+    ['an attendee whose account is incomplete', { id: 'u3' }, { accountComplete: false }],
+  ])('%s keeps the public shell', async (_n, user, over) => {
+    state.user = user;
+    menu(over);
+    expect(await shellFor()).toBe(SiteShell);
+  });
+
+  it('keeps the public shell when the menu state cannot be read', async () => {
+    state.user = { id: 'u1' };
+    vi.mocked(getAccountMenuState).mockRejectedValue(new Error('down'));
+    expect(await shellFor()).toBe(SiteShell);
   });
 });

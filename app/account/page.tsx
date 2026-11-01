@@ -11,7 +11,7 @@ import { redirect } from 'next/navigation';
 import { supabaseServer } from '@/lib/supabase/server';
 import { getMyAccountAndProfile, getUnlinkedRegistrationCount, listMyLicences } from './actions';
 import { AccountClient } from './AccountClient';
-import { SiteShell } from '@/components/shell/SiteShell';
+import { AccountShell } from '@/components/shell/AccountShell';
 import { isAccountComplete } from '@/lib/accountCompleteness';
 
 export const metadata = {
@@ -96,7 +96,7 @@ export default async function AccountPage() {
     : null;
 
   return (
-    <SiteShell active="account" signedIn accountComplete unlinkedCount={initialUnlinkedCount}>
+    <AccountShell>
       <div className="mx-auto w-full max-w-2xl px-grid-margin py-xl">
         <AccountClient
           initialAccount={result.data.account}
@@ -107,6 +107,6 @@ export default async function AccountPage() {
           profileAndMembershipReady={profileAndMembershipReady}
         />
       </div>
-    </SiteShell>
+    </AccountShell>
   );
 }

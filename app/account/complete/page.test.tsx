@@ -34,7 +34,7 @@ vi.mock('../actions', () => ({
       : { ok: true, data: { account: { id: 'u1' }, profile: null } },
   listMyLicences: async () => ({ ok: true, data: { licences: [] } }),
 }));
-vi.mock('@/components/shell/SiteShell', () => ({ SiteShell: ({ children }: { children: unknown }) => children }));
+vi.mock('@/components/shell/AccountShell', () => ({ AccountShell: ({ children }: { children: unknown }) => children }));
 vi.mock('./CompleteClient', () => ({ CompleteClient: () => null }));
 
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -46,7 +46,7 @@ async function run(next?: string) {
   redirect.mockClear();
   try {
     const tree = await CompleteAccountPage({ searchParams: Promise.resolve(next === undefined ? {} : { next }) });
-    // SiteShell(div(CompleteClient)) with SiteShell mocked to pass children through.
+    // AccountShell(div(CompleteClient)) with AccountShell mocked to pass children through.
     const client = (tree as unknown as { props: { children: El } }).props.children.props!.children as {
       props: { next?: string };
     };
@@ -133,5 +133,14 @@ describe('/account/complete — the account read fails', () => {
     expect((await run('/account/claim')).redirectedTo).toBe(
       `/account/sign-in?error=not_authorized&next=${encodeURIComponent(back)}`,
     );
+  });
+});
+
+describe('/account/complete: shell', () => {
+  it('runs on the onboarding variant with the caller\'s email: no portal nav until the record exists', async () => {
+    s.user = { id: 'u1', email: 'uma@sample.test', email_confirmed_at: '2026-10-24T00:00:00Z' } as typeof s.user;
+    const tree = (await CompleteAccountPage({ searchParams: Promise.resolve({}) })) as unknown as { props: { variant?: string; email?: string } };
+    expect(tree.props.variant).toBe('onboarding');
+    expect(tree.props.email).toBe('uma@sample.test');
   });
 });

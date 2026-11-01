@@ -11,13 +11,12 @@ import { redirect } from 'next/navigation';
 import { supabaseServer } from '@/lib/supabase/server';
 import {
   getMyAccountAndProfile,
-  getUnlinkedRegistrationCount,
   listMyAppointments,
   listMyLicences,
   listMySocietyMemberships,
 } from '../actions';
 import { ProfileClient } from './ProfileClient';
-import { SiteShell } from '@/components/shell/SiteShell';
+import { AccountShell } from '@/components/shell/AccountShell';
 import type { AccreditingBodyView } from '../schema';
 import { isAccountComplete } from '@/lib/accountCompleteness';
 import type { ControlledListOption } from '../complete/schema';
@@ -51,7 +50,6 @@ export default async function ProfilePage() {
     specialtiesResult,
     degreesResult,
     societiesResult,
-    unlinkedResult,
   ] = await Promise.all([
     getMyAccountAndProfile(),
     listMyLicences(),
@@ -72,7 +70,6 @@ export default async function ProfilePage() {
     supabase.from('specialties').select('code, profession_code, label_en').order('display_order', { ascending: true }),
     supabase.from('degrees').select('code, label_en').order('display_order', { ascending: true }),
     supabase.from('societies').select('code, label_en').order('display_order', { ascending: true }),
-    getUnlinkedRegistrationCount(),
   ]);
   if (!result.ok) {
     const errorParam =
@@ -92,10 +89,9 @@ export default async function ProfilePage() {
   const specialties: (ControlledListOption & { profession_code: string | null })[] = specialtiesResult.data ?? [];
   const degrees: ControlledListOption[] = degreesResult.data ?? [];
   const societies: ControlledListOption[] = societiesResult.data ?? [];
-  const unlinkedCount = unlinkedResult.ok ? unlinkedResult.data.count : 0;
 
   return (
-    <SiteShell active="account" signedIn accountComplete unlinkedCount={unlinkedCount}>
+    <AccountShell>
       <div className="mx-auto w-full max-w-2xl px-grid-margin py-xl">
         <ProfileClient
           initialProfile={result.data.profile}
@@ -110,6 +106,6 @@ export default async function ProfilePage() {
           societies={societies}
         />
       </div>
-    </SiteShell>
+    </AccountShell>
   );
 }
