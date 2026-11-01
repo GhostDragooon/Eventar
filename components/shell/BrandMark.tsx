@@ -21,15 +21,13 @@ export function BrandMark({
   href = '/',
   compact = false,
 }: {
-  href?: string;
+  /** `null` draws the mark with no link (the onboarding bar: a link out would drop the wizard's `?next=`). */
+  href?: string | null;
   compact?: boolean;
 }) {
-  return (
-    <Link
-      href={href}
-      className={`flex items-center gap-sm${compact ? ' px-sm py-xs' : ''}`}
-      aria-label="Eventar home"
-    >
+  const cls = `flex items-center gap-sm${compact ? ' px-sm py-xs' : ''}`;
+  const inner = (
+    <>
       <span
         className={`grid place-items-center rounded-lg bg-primary font-semibold text-on-primary ${
           compact
@@ -43,6 +41,13 @@ export function BrandMark({
       <span className="text-[calc(16px*var(--text-scale))] font-semibold tracking-[-0.01em] text-on-surface">
         Eventar
       </span>
+    </>
+  );
+  return href === null ? (
+    <div className={cls}>{inner}</div>
+  ) : (
+    <Link href={href} className={cls} aria-label="Eventar home">
+      {inner}
     </Link>
   );
 }

@@ -54,7 +54,7 @@ function RailRow({ item, current }: { item: (typeof NAV)[number]; current: boole
   );
   if (!item.href) {
     return (
-      <span aria-disabled="true" className={cn(base, 'cursor-default', SOON)}>
+      <span aria-disabled="true" title={`${item.label} is coming soon`} className={cn(base, 'cursor-default', SOON)}>
         {inner}
         <span className="rounded-full border border-outline-variant px-sm py-[1px] text-[calc(10px*var(--text-scale))] font-semibold text-on-surface-variant/70">
           Soon
@@ -78,7 +78,7 @@ function TabBar({ pathname }: { pathname: string }) {
   return (
     <nav
       aria-label="Portal"
-      className="fixed inset-x-0 bottom-0 z-10 grid border-t border-outline-variant bg-surface px-xs pb-xs pt-xs md:hidden"
+      className="fixed inset-x-0 bottom-0 z-10 grid border-t border-outline-variant bg-surface px-xs pb-[max(4px,env(safe-area-inset-bottom))] pt-xs md:hidden"
       style={{ gridTemplateColumns: `repeat(${NAV.length}, auto)`, justifyContent: 'space-between' }}
     >
       {NAV.map((item) => {
@@ -91,6 +91,7 @@ function TabBar({ pathname }: { pathname: string }) {
           <>
             <Icon name={item.icon} className="text-[calc(22px*var(--text-scale))]" />
             <span>{item.label}</span>
+            {!item.href && <span className="sr-only"> (coming soon)</span>}
           </>
         );
         return item.href ? (
@@ -98,7 +99,7 @@ function TabBar({ pathname }: { pathname: string }) {
             {inner}
           </Link>
         ) : (
-          <span key={item.label} aria-disabled="true" className={cn(cls, SOON)}>
+          <span key={item.label} aria-disabled="true" title={`${item.label} is coming soon`} className={cn(cls, SOON)}>
             {inner}
           </span>
         );
@@ -130,11 +131,11 @@ export function AccountShell({
           Skip to content
         </a>
         <header className="flex min-h-14 items-center justify-between gap-md border-b border-outline-variant bg-surface px-md">
-          <BrandMark href="/account/complete" />
+          <BrandMark href={null} />
           <span className="flex min-w-0 items-center gap-sm text-[calc(13px*var(--text-scale))] text-on-surface-variant">
             {email && <span className="hidden truncate sm:inline">{email}</span>}
             <button
-              // ui-primitive-allow: bar action beside the brand, same quiet outline treatment as the rail's Sign out
+              // ui-primitive-allow: bar action beside the brand, an outline pill (the rail's Sign out is a borderless nav row)
               type="button"
               onClick={signOut}
               className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-outline-variant px-md font-medium text-on-surface hover:bg-surface-container-high"
@@ -161,7 +162,7 @@ export function AccountShell({
           aria-label="Your Eventar portal"
           className="hidden shrink-0 bg-sidebar md:sticky md:top-0 md:flex md:h-screen md:w-[232px] md:flex-col md:self-start md:border-r md:border-outline-variant"
         >
-          <div className="flex h-full flex-col gap-xs p-md">
+          <div className="flex h-full flex-col gap-xs overflow-y-auto p-md">
             <div className="pb-sm">
               <BrandMark compact href="/events" />
             </div>
@@ -181,7 +182,7 @@ export function AccountShell({
             </button>
           </div>
         </aside>
-        <div className="flex min-w-0 flex-1 flex-col pb-[72px] md:pb-0">
+        <div className="flex min-w-0 flex-1 flex-col pb-[calc(72px+env(safe-area-inset-bottom))] md:pb-0">
           <main id="main-content" tabIndex={-1} className="w-full flex-1">
             {children}
           </main>

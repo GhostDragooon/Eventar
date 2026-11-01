@@ -58,20 +58,47 @@ describe('AccountShell: portal', () => {
   });
 
   it('Sign out is a rail row that signs out and returns home', async () => {
+    const loc = { href: '/account' };
+    vi.stubGlobal('location', loc);
     render(<AccountShell>content</AccountShell>);
     fireEvent.click(within(rail()).getByRole('button', { name: 'Sign out' }));
     expect(signOut).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => expect(loc.href).toBe('/'));
+    vi.unstubAllGlobals();
+  });
+
+  it('marks the current place in the phone bar too', () => {
+    mockPathname = '/events';
+    render(<AccountShell>content</AccountShell>);
+    expect(within(bar()).getByRole('link', { name: /Events/ })).toHaveAttribute('aria-current', 'page');
+    expect(within(bar()).getByRole('link', { name: /Account/ })).not.toHaveAttribute('aria-current');
+  });
+
+  it.each(['/eventsfoo', '/accounts', '/'])('lights nothing on %s (prefix of a name is not the place)', (path) => {
+    mockPathname = path;
+    render(<AccountShell>content</AccountShell>);
+    expect(document.querySelectorAll('[aria-current="page"]')).toHaveLength(0);
+  });
+
+  it('keeps Events lit on a sub-route', () => {
+    mockPathname = '/events/abc';
+    render(<AccountShell>content</AccountShell>);
+    expect(within(rail()).getByRole('link', { name: /Events/ })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('tells assistive tech and touch users the three unbuilt tabs are coming soon', () => {
+    render(<AccountShell>content</AccountShell>);
+    for (const name of ['Check-in', 'Registrations', 'History']) {
+      const tab = within(bar()).getByText(name).closest('[aria-disabled="true"]') as HTMLElement;
+      expect(tab).toHaveAttribute('title', `${name} is coming soon`);
+      expect(within(tab).getByText(/coming soon/i)).toBeTruthy();
+    }
   });
 
   it('has a skip link and a main landmark holding the page', () => {
     render(<AccountShell>page content</AccountShell>);
     expect(screen.getByRole('link', { name: 'Skip to content' })).toHaveAttribute('href', '#main-content');
     expect(within(screen.getByRole('main')).getByText('page content')).toBeTruthy();
-  });
-
-  it('renders no marketing pill nav', () => {
-    render(<AccountShell>content</AccountShell>);
-    expect(screen.queryByRole('link', { name: 'Upcoming events' })).toBeNull();
   });
 });
 
@@ -87,7 +114,9 @@ describe('AccountShell: onboarding', () => {
     expect(screen.queryByRole('complementary')).toBeNull();
     expect(screen.queryByText('Registrations')).toBeNull();
     expect(screen.getByText('uma@sample.test')).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Eventar home' })).toHaveAttribute('href', '/account/complete');
+    // The mark is not a link: a link to /account/complete would drop the wizard's ?next=.
+    expect(screen.queryByRole('link', { name: 'Eventar home' })).toBeNull();
+    expect(within(screen.getByRole('banner')).getByText('Eventar')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
     expect(signOut).toHaveBeenCalledTimes(1);
   });
