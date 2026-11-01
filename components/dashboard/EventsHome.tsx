@@ -60,8 +60,10 @@ const SORT_ITEMS: Record<SortKey, string> = Object.fromEntries(SORTS.map((s) => 
 // fetchDecoratedEvents reads the newest 300 events; a list that long may have older ones behind it.
 const FETCH_CAP = 300;
 
+// A leading = + - @ makes Excel run the cell as a formula; an apostrophe keeps it text.
 function csvEscape(v: string): string {
-  return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+  const safe = /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
+  return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 }
 
 export type EventsHomeProps = {
@@ -255,17 +257,18 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
       return;
     }
     const n = ids.length;
+    const titleOf = (id: string) => events.find((e) => e.id === id)?.title ?? 'this event';
     setConfirm(
       kind === 'archive'
         ? {
             kind, ids, tone: 'danger', confirmLabel: `Delete ${n} event${n === 1 ? '' : 's'}`,
-            title: `Delete ${n} event${n === 1 ? '' : 's'}?`,
+            title: n === 1 ? `Delete "${titleOf(ids[0])}"?` : `Delete ${n} events?`,
             body: 'They move to the Deleted bucket and can be restored at any time.',
           }
         : {
             kind, ids, tone: 'danger', confirmLabel: `Cancel ${n} event${n === 1 ? '' : 's'}`,
-            title: `Cancel ${n} event${n === 1 ? '' : 's'}?`,
-            body: 'Registrants keep their records. The events move to the Cancelled tab.',
+            title: n === 1 ? `Cancel "${titleOf(ids[0])}"?` : `Cancel ${n} events?`,
+            body: 'Registrants keep their records and nobody is emailed. The events move to the Cancelled tab.',
           },
     );
   }
@@ -295,7 +298,7 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
         <div>
           <h1 className="text-[calc(28px*var(--text-scale))] font-bold tracking-[-0.02em] text-on-surface">Events</h1>
           <p className="text-[calc(13px*var(--text-scale))] text-on-surface-variant">
-            {total} event{total === 1 ? '' : 's'}. Finished events are in History.
+            {total} event{total === 1 ? '' : 's'}. Finished events are in <Link href="/analytics" className="underline underline-offset-2 hover:text-on-surface">History</Link>.
           </p>
         </div>
         <Link href="/events/new" className={cn(buttonVariants(), 'h-11 gap-xs px-lg font-label-md text-label-md')}>
@@ -303,15 +306,16 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
         </Link>
       </header>
 
-      <div role="tablist" aria-label="Event state" className="-mx-grid-margin mb-md flex items-center gap-lg overflow-x-auto border-b border-outline-variant px-grid-margin">
+      <div role="group" aria-label="Filter events by state" className="-mx-grid-margin mb-md flex items-center gap-lg overflow-x-auto border-b border-outline-variant px-grid-margin">
         {TABS.map((t) => {
           const on = tab === t.key;
           const n = counts[t.key];
           if (t.key === 'deleted' && n === 0) return null;
           return (
-            <button key={t.key} type="button" role="tab" aria-selected={on} onClick={() => pickTab(t.key)}
+            <button key={t.key} type="button" aria-pressed={on} onClick={() => pickTab(t.key)}
               className={cn('relative flex min-h-11 shrink-0 items-center font-label-md text-label-md', on ? 'text-on-surface' : 'text-on-surface-variant hover:text-on-surface')}>
               {t.label}
+              <span className="sr-only">, </span>
               {/* bg-primary + text-on-primary, not the shipped text-white on --on-primary-container (1.32:1 in dark). */}
               <span className={cn('ml-xs inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[calc(11px*var(--text-scale))] font-semibold', on ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant')}>{n}</span>
               {on && <span className="absolute -bottom-px left-0 right-0 h-[2px] rounded-full bg-[color:var(--on-primary-container)]" aria-hidden />}
@@ -381,7 +385,7 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
             {events.length === 0
               ? 'No events yet.'
               : query.trim()
-                ? 'No events match this search.'
+                ? `Nothing in ${TABS.find((t) => t.key === tab)?.label ?? 'this tab'} matches this search.`
                 : inBin
                   ? 'The Deleted bucket is empty.'
                   : tab === 'drafts'
@@ -406,7 +410,7 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
 
       {events.length >= FETCH_CAP && (
         <p className="mt-lg text-[calc(13px*var(--text-scale))] text-on-surface-variant">
-          Showing your newest {FETCH_CAP} events. Older ones are not listed here yet.
+          Showing the {FETCH_CAP} events with the latest dates. Finished events are in History.
         </p>
       )}
 
@@ -493,7 +497,7 @@ function EventRow({ e, nowMs, selected, onToggle, onRestore, inBin, pending }: {
             </div>
             {passed && <p className="mt-xs text-[calc(12.5px*var(--text-scale))] font-medium text-on-surface">The date has passed. Edit the date to publish this draft.</p>}
           </div>
-          <div className={cn('mt-xs grid gap-sm', e.lifecycle === 'drafted' ? 'grid-cols-2' : 'grid-cols-3')}>
+          <div className={cn('mt-xs grid gap-sm', e.lifecycle === 'drafted' || e.lifecycle === 'cancelled' ? 'grid-cols-2' : 'grid-cols-3')}>
             {inBin ? (
               <Button type="button" variant="outline" onClick={onRestore} disabled={pending} className={cn(link, 'col-span-3')}>
                 <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>restore_from_trash</span>Restore
@@ -502,8 +506,8 @@ function EventRow({ e, nowMs, selected, onToggle, onRestore, inBin, pending }: {
               <>
                 <Link href={`/events/${e.id}/details`} className={cn(buttonVariants({ variant: 'outline' }), link)}>Details</Link>
                 <Link href={`/events/${e.id}/edit`} className={cn(buttonVariants({ variant: 'outline' }), link)}>Edit</Link>
-                {/* Check-in is refused on a draft, so a draft has no Check-in button until it is published. */}
-                {e.lifecycle !== 'drafted' && (
+                {/* Check-in is refused on a draft until it is published, and closed on a cancelled event (checkInGateMessage). */}
+                {e.lifecycle !== 'drafted' && e.lifecycle !== 'cancelled' && (
                   <Link href={`/events/${e.id}/checkin`} className={cn(buttonVariants({ variant: doorNow ? 'default' : 'outline' }), link)}>Check-in</Link>
                 )}
               </>

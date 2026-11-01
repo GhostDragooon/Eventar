@@ -66,7 +66,9 @@ describe('EventsHome', () => {
   it('is titled Events, says where finished events went, and offers New event (CX-04R)', () => {
     renderManage([event({ id: 'e-1' })]);
     const title = screen.getByRole('heading', { level: 1, name: 'Events' });
-    expect(within(title.closest('header')!).getByText('1 event. Finished events are in History.')).toBeInTheDocument();
+    const header = within(title.closest('header')!);
+    expect(header.getByText(/^1 event\. Finished events are in/)).toBeInTheDocument();
+    expect(header.getByRole('link', { name: 'History' })).toHaveAttribute('href', '/analytics');
     expect(screen.getByRole('link', { name: /new event/i })).toHaveAttribute('href', '/events/new');
     expect(document.body.textContent).not.toMatch(/Programme|Manage/);
   });
@@ -94,32 +96,32 @@ describe('EventsHome', () => {
 
     it('counts Active, Drafts, Cancelled and Deleted; completed events belong to no tab', () => {
       renderManage(mixed);
-      const tabs = within(screen.getByRole('tablist', { name: 'Event state' }));
-      expect(tabs.getByRole('tab', { name: /^Active\s*2$/ })).toHaveAttribute('aria-selected', 'true');
-      expect(tabs.getByRole('tab', { name: /^Drafts\s*1$/ })).toBeInTheDocument();
-      expect(tabs.getByRole('tab', { name: /^Cancelled\s*1$/ })).toBeInTheDocument();
-      expect(tabs.getByRole('tab', { name: /^Deleted\s*1$/ })).toBeInTheDocument();
+      const tabs = within(screen.getByRole('group', { name: 'Filter events by state' }));
+      expect(tabs.getByRole('button', { name: /^Active,\s*2$/ })).toHaveAttribute('aria-pressed', 'true');
+      expect(tabs.getByRole('button', { name: /^Drafts,\s*1$/ })).toBeInTheDocument();
+      expect(tabs.getByRole('button', { name: /^Cancelled,\s*1$/ })).toBeInTheDocument();
+      expect(tabs.getByRole('button', { name: /^Deleted,\s*1$/ })).toBeInTheDocument();
       expect(screen.queryByText('Finished One')).toBeNull();
-      fireEvent.click(screen.getByRole('tab', { name: /^Drafts/ }));
+      fireEvent.click(screen.getByRole('button', { name: /^Drafts/ }));
       expect(screen.queryByText('Finished One')).toBeNull();
     });
 
     it('a draft is findable under Drafts, not under Active', () => {
       renderManage(mixed);
       expect(screen.queryByText('Draft One')).toBeNull();
-      fireEvent.click(screen.getByRole('tab', { name: /^Drafts/ }));
+      fireEvent.click(screen.getByRole('button', { name: /^Drafts/ }));
       expect(screen.getByText('Draft One')).toBeInTheDocument();
       expect(screen.queryByText('Open One')).toBeNull();
     });
 
     it('hides the Deleted tab while nothing is deleted', () => {
       renderManage([event({ id: 'a1' })]);
-      expect(screen.queryByRole('tab', { name: /^Deleted/ })).toBeNull();
+      expect(screen.queryByRole('button', { name: /^Deleted/ })).toBeNull();
     });
 
     it('a draft whose date has passed says so', () => {
       renderManage([event({ id: 'd1', title: 'Old Draft', lifecycle: 'drafted', startMs: NOW - 48 * HOUR })]);
-      fireEvent.click(screen.getByRole('tab', { name: /^Drafts/ }));
+      fireEvent.click(screen.getByRole('button', { name: /^Drafts/ }));
       expect(screen.getByText('The date has passed. Edit the date to publish this draft.')).toBeInTheDocument();
     });
 
@@ -127,7 +129,7 @@ describe('EventsHome', () => {
       renderManage([event({ id: 'a1', title: 'Open One' }), event({ id: 'd1', title: 'Draft One', lifecycle: 'drafted' })]);
       fireEvent.click(screen.getByLabelText('Select Open One'));
       expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
-      fireEvent.click(screen.getByRole('tab', { name: /^Drafts/ }));
+      fireEvent.click(screen.getByRole('button', { name: /^Drafts/ }));
       fireEvent.click(screen.getByLabelText('Select Draft One'));
       expect(screen.getByText('1 selected')).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();
@@ -135,7 +137,7 @@ describe('EventsHome', () => {
 
     it('the Deleted tab offers Restore for a row and for the selection', async () => {
       renderManage([event({ id: 'x1', title: 'Binned One', deleted: true })]);
-      fireEvent.click(screen.getByRole('tab', { name: /^Deleted/ }));
+      fireEvent.click(screen.getByRole('button', { name: /^Deleted/ }));
       fireEvent.click(screen.getByRole('button', { name: 'Restore' }));
       await waitFor(() => expect(restoreMock).toHaveBeenCalledWith(['x1']));
     });
@@ -150,22 +152,22 @@ describe('EventsHome', () => {
 
     it('opens the tab a link asked for', () => {
       renderManage(rows, { initialTab: 'drafts' });
-      expect(screen.getByRole('tab', { name: /^Drafts/ })).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByRole('button', { name: /^Drafts/ })).toHaveAttribute('aria-pressed', 'true');
       expect(screen.getByText('Draft One')).toBeInTheDocument();
       expect(screen.queryByText('Open One')).toBeNull();
     });
 
     it('writes ?tab= when a tab is clicked and drops it for Active', () => {
       renderManage(rows);
-      fireEvent.click(screen.getByRole('tab', { name: /^Drafts/ }));
+      fireEvent.click(screen.getByRole('button', { name: /^Drafts/ }));
       expect(window.location.search).toBe('?tab=drafts');
-      fireEvent.click(screen.getByRole('tab', { name: /^Active/ }));
+      fireEvent.click(screen.getByRole('button', { name: /^Active/ }));
       expect(window.location.search).toBe('');
     });
 
     it('falls back to Active when the asked-for Deleted tab is empty, instead of showing a tab that is not there', () => {
       renderManage(rows, { initialTab: 'deleted' });
-      expect(screen.getByRole('tab', { name: /^Active/ })).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByRole('button', { name: /^Active/ })).toHaveAttribute('aria-pressed', 'true');
       expect(screen.getByText('Open One')).toBeInTheDocument();
     });
   });
@@ -202,7 +204,7 @@ describe('EventsHome', () => {
       fireEvent.change(screen.getByLabelText('Search events'), { target: { value: 'bravo' } });
       expect(screen.getByText('1 selected')).toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
-      expect(screen.getByRole('dialog')).toHaveTextContent('Delete 1 event?');
+      expect(screen.getByRole('dialog')).toHaveTextContent('Delete "Bravo"?');
       fireEvent.click(screen.getByRole('button', { name: 'Delete 1 event' }));
       expect(softDeleteMock).toHaveBeenCalledWith(['b1']);
     });
@@ -227,7 +229,7 @@ describe('EventsHome', () => {
       renderManage([event({ id: 'e-1', title: 'Sample Event' })]);
       tickAndDelete();
       const dialog = screen.getByRole('dialog');
-      expect(dialog).toHaveTextContent('Delete 1 event?');
+      expect(dialog).toHaveTextContent('Delete "Sample Event"?');
       expect(dialog).toHaveTextContent('Deleted bucket');
       expect(softDeleteMock).not.toHaveBeenCalled();
     });
@@ -271,6 +273,79 @@ describe('EventsHome', () => {
       const titles = screen.getAllByRole('listitem').map((li) => li.textContent ?? '');
       expect(titles[0]).toContain('Bravo Live');
       expect(titles[1]).toContain('Alpha Soonest');
+    });
+  });
+
+  describe('what the page says about itself (follow-ups 1 to 4 and 6, 2026-11-01)', () => {
+    it('a cancelled event offers Details and Edit but no Check-in (the desk is closed for it)', () => {
+      renderManage([event({ id: 'x1', title: 'Called Off', lifecycle: 'cancelled' })], { initialTab: 'cancelled' });
+      expect(screen.getByRole('link', { name: /^details$/i })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /^edit$/i })).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /^check-in$/i })).toBeNull();
+    });
+
+    it('an empty search names the tab it searched', () => {
+      renderManage([event({ id: 'a1', title: 'Alpha' }), event({ id: 'd1', title: 'Draft One', lifecycle: 'drafted' })]);
+      fireEvent.click(screen.getByRole('button', { name: /^Drafts/ }));
+      fireEvent.change(screen.getByLabelText('Search events'), { target: { value: 'zzz' } });
+      expect(screen.getByText('Nothing in Drafts matches this search.')).toBeInTheDocument();
+    });
+
+    it('the Cancel dialog says nobody is emailed and names the event', () => {
+      renderManage([event({ id: 'c-1', title: 'Cancel Me' })]);
+      fireEvent.click(screen.getByLabelText('Select Cancel Me'));
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toHaveTextContent('Cancel "Cancel Me"?');
+      expect(dialog).toHaveTextContent('nobody is emailed');
+    });
+
+    it('several events are counted, not named', () => {
+      renderManage([event({ id: 'a1', title: 'Alpha' }), event({ id: 'b1', title: 'Bravo' })]);
+      fireEvent.click(screen.getByLabelText('Select Alpha'));
+      fireEvent.click(screen.getByLabelText('Select Bravo'));
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+      expect(screen.getByRole('dialog')).toHaveTextContent('Delete 2 events?');
+    });
+
+    it('says when the list stopped at 300 events, and points at History', () => {
+      renderManage(Array.from({ length: 300 }, (_, i) => event({ id: `e-${i}`, title: `Event ${i}` })));
+      expect(screen.getByText(/Showing the 300 events with the latest dates\. Finished events are in History\./)).toBeInTheDocument();
+    });
+
+    it('says nothing about a cap under 300', () => {
+      renderManage([event({ id: 'e-1' })]);
+      expect(screen.queryByText(/Showing the 300/)).toBeNull();
+    });
+  });
+
+  describe('Export CSV keeps spreadsheet formulas out of titles', () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    async function exportedCsv(events: ProgrammeEvent[], ticks: string[]) {
+      let blob: Blob | undefined;
+      URL.createObjectURL = vi.fn((b: Blob) => { blob = b; return 'blob:x'; });
+      URL.revokeObjectURL = vi.fn();
+      vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+      renderManage(events);
+      for (const t of ticks) fireEvent.click(screen.getByLabelText(`Select ${t}`));
+      fireEvent.click(screen.getByRole('button', { name: /export csv/i }));
+      return await new Promise<string>((resolve) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result));
+        r.readAsText(blob!);
+      });
+    }
+
+    it.each(['=HYPERLINK("http://x","y")', '+852 mixer', '-1 night', '@cmd'])('prefixes %s with an apostrophe', async (title) => {
+      const csv = await exportedCsv([event({ id: 'f1', title })], [title]);
+      const row = csv.split('\n')[1];
+      expect(row.replace(/^"/, '').startsWith(`'${title.slice(0, 1)}`)).toBe(true);
+    });
+
+    it('leaves an ordinary title alone and still quotes commas', async () => {
+      const csv = await exportedCsv([event({ id: 'f2', title: 'Plain, with comma' })], ['Plain, with comma']);
+      expect(csv.split('\n')[1].startsWith('"Plain, with comma",')).toBe(true);
     });
   });
 
@@ -363,7 +438,7 @@ describe('EventsHome', () => {
     it('does not offer Cancel on the Cancelled tab', () => {
       vi.useRealTimers();
       renderManage([event({ id: 'x-1', title: 'Already Off', lifecycle: 'cancelled' })]);
-      fireEvent.click(screen.getByRole('tab', { name: /^Cancelled/ }));
+      fireEvent.click(screen.getByRole('button', { name: /^Cancelled/ }));
       fireEvent.click(screen.getByLabelText('Select Already Off'));
       expect(screen.getByText('1 selected')).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();

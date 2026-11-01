@@ -16,6 +16,8 @@ export const metadata = {
 // cookie read that would otherwise force dynamic).
 export const dynamic = 'force-dynamic';
 
+const HISTORY_CAP = 100;
+
 // History (Doctrine 2026-10-30, CX-04R) — the nav item's target: what we ran. Completed events, most recent first; each
 // row opens the per-event post-event review. No points here (Q26 gate).
 export default async function AnalyticsIndexPage() {
@@ -42,7 +44,7 @@ export default async function AnalyticsIndexPage() {
     .in('status', ['published', 'completed'])
     .lt('end_time', new Date(nowMs).toISOString())
     .order('start_time', { ascending: false })
-    .limit(100);
+    .limit(HISTORY_CAP);
   if (eventsErr) throw eventsErr;
 
   const prelim = (events ?? [])
@@ -120,6 +122,12 @@ export default async function AnalyticsIndexPage() {
             </li>
           ))}
         </ul>
+      )}
+
+      {(events ?? []).length >= HISTORY_CAP && (
+        <p className="mt-lg text-[calc(13px*var(--text-scale))] text-on-surface-variant">
+          Showing the newest {HISTORY_CAP} completed events. Older ones are not listed here yet.
+        </p>
       )}
     </StaffShell>
   );

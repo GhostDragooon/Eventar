@@ -59,4 +59,12 @@ describe('/analytics — History: what we ran (CX-04R)', () => {
     expect(hrefsOf(tree)).toContain('/events/ev-a-ended/analytics');
     expect(hrefsOf(tree)).not.toContain('/events/ev-a-future/analytics');
   });
+
+  it('says so when the list stopped at 100, and says nothing below that', async () => {
+    h.staff = staff('organiser_admin', 'org-a');
+    h.tables = { events: Array.from({ length: 100 }, (_, i) => eventRow({ id: `ev-${i}`, title: `Ended ${i}`, organisation_id: 'org-a', ...ended })), registrations: [], survey_responses: [] };
+    expect(textOf(await treeOf(() => AnalyticsIndexPage()))).toMatch(/Showing the newest\s+100\s+completed events/);
+    h.tables = { events: [endedA], registrations: [], survey_responses: [] };
+    expect(textOf(await treeOf(() => AnalyticsIndexPage()))).not.toMatch(/Showing the newest/);
+  });
 });
