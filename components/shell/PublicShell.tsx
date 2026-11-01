@@ -72,7 +72,7 @@ export function PublicShell({
         aria-label="Primary"
         className="glass-nav sticky top-[10px] z-[5] mx-[18px] flex items-center justify-between gap-md rounded-full py-sm pl-md pr-sm"
       >
-        <BrandMark />
+        <BrandMark href={signedIn && !isStaff ? '/events' : '/'} />
 
         {/* Short/long label below sm (2026-09-23 user-lens, SiteShell parity):
             the Account control's shrink-0 now claims a guaranteed width on

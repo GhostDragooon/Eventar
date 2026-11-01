@@ -99,7 +99,7 @@ export function SiteShell({
         className="glass-nav sticky top-[10px] z-[5] mx-[18px] flex items-center justify-between gap-md rounded-full py-sm pl-md pr-sm"
       >
         <div className="shrink-0">
-          <BrandMark />
+          <BrandMark href={signedIn && !isStaff ? '/events' : '/'} />
         </div>
 
         {/* min-w-0 + overflow-x-auto: the safety net for narrow viewports.

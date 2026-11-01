@@ -103,3 +103,17 @@ describe('PublicShell: organiser door link', () => {
     expect(screen.queryByRole('link', { name: /^organiser log in$/i })).not.toBeInTheDocument();
   });
 });
+
+describe('PublicShell: brand link', () => {
+  it('goes to /events for a signed-in attendee, / for a visitor and for staff', () => {
+    const brand = () => screen.getByRole('link', { name: 'Eventar home' });
+    const { unmount } = render(<PublicShell signedIn accountComplete>content</PublicShell>);
+    expect(brand()).toHaveAttribute('href', '/events');
+    unmount();
+    const second = render(<PublicShell>content</PublicShell>);
+    expect(brand()).toHaveAttribute('href', '/');
+    second.unmount();
+    render(<PublicShell signedIn isStaff>content</PublicShell>);
+    expect(brand()).toHaveAttribute('href', '/');
+  });
+});

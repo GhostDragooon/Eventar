@@ -113,3 +113,17 @@ describe('SiteShell: organiser door link', () => {
     expect(screen.queryByRole('link', { name: /^organiser log in$/i })).not.toBeInTheDocument();
   });
 });
+
+describe('SiteShell: brand link', () => {
+  it('goes to /events for a signed-in attendee, / for a visitor and for staff', () => {
+    const brand = () => screen.getByRole('link', { name: 'Eventar home' });
+    const { unmount } = render(<SiteShell signedIn accountComplete>content</SiteShell>);
+    expect(brand()).toHaveAttribute('href', '/events');
+    unmount();
+    const second = render(<SiteShell>content</SiteShell>);
+    expect(brand()).toHaveAttribute('href', '/');
+    second.unmount();
+    render(<SiteShell signedIn isStaff>content</SiteShell>);
+    expect(brand()).toHaveAttribute('href', '/');
+  });
+});
