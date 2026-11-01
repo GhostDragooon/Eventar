@@ -30,7 +30,7 @@ const ROWS = [
 
 function renderPage(over: Partial<React.ComponentProps<typeof RegistrationsClient>> = {}) {
   return render(
-    <RegistrationsClient eventId={EVENT} rows={ROWS} initialRoles={{}} rolesUnavailable={false} canEdit {...over} />,
+    <RegistrationsClient eventId={EVENT} rows={ROWS} initialRoles={{}} rolesUnavailable={false} canEdit canEditRoles {...over} />,
   );
 }
 
@@ -123,6 +123,22 @@ describe('Roles', () => {
     expect(setRegistrationRole).toHaveBeenCalledWith({ registrationId: 'r1', eventId: EVENT, roleCode: 'chair' });
   });
 
+  // User-lens M-1: a disabled button drops keyboard focus to <body>, and nothing announced the result.
+  it('keeps focus on the chip while the call is in flight and announces the result', async () => {
+    let done!: (v: { ok: true; data: undefined }) => void;
+    setRegistrationRole.mockReturnValue(new Promise((r) => { done = r; }));
+    renderPage();
+    const chip = screen.getByRole('button', { name: 'chair — Alex Wong' });
+    chip.focus();
+    fireEvent.click(chip);
+    expect(chip.getAttribute('aria-disabled')).toBe('true');
+    expect(document.activeElement).toBe(chip);
+    fireEvent.click(chip);
+    expect(setRegistrationRole).toHaveBeenCalledTimes(1);
+    done({ ok: true, data: undefined });
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Alex Wong is now chair.'));
+  });
+
   it('shows the error and leaves the chip off when the action refuses', async () => {
     setRegistrationRole.mockResolvedValue({ error: 'Not authorised.' });
     renderPage();
@@ -134,13 +150,32 @@ describe('Roles', () => {
 
   it('locks the chips once the person has attended', () => {
     renderPage();
-    expect((screen.getByRole('button', { name: 'chair — Sam Ho' }) as HTMLButtonElement).disabled).toBe(true);
+    const chip = screen.getByRole('button', { name: 'chair — Sam Ho (locked: already attended)' }) as HTMLButtonElement;
+    expect(chip.disabled).toBe(true);
+    // The reason is in the accessible name, not only in a title on a disabled button (review UX-04 m3).
+    expect(screen.getByRole('button', { name: 'chair — Alex Wong' })).toHaveProperty('disabled', false);
+  });
+});
+
+describe('Cancelled registrations', () => {
+  it('lock their chips: a cancelled registration earns nothing, so a role would be meaningless', () => {
+    renderPage({ rows: [row({ id: 'r9', full_name: 'Kim Lee', email: 'kim@example.invalid', status: 'cancelled' })] });
+    expect((screen.getByRole('button', { name: 'presenter — Kim Lee (locked: cancelled)' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+});
+
+describe('Edit rights without role rights (not the creator of the event)', () => {
+  it('keeps Edit but shows roles as text, with no toggles that would always fail', () => {
+    renderPage({ canEditRoles: false, initialRoles: { r1: ['chair'] } });
+    expect(screen.getByRole('button', { name: 'Edit Alex Wong' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /chair —/ })).toBeNull();
+    expect(screen.getByText('chair')).toBeTruthy();
   });
 });
 
 describe('Read-only role', () => {
   it('sees the list and the roles as text, with no Edit button and no toggles', () => {
-    renderPage({ canEdit: false, initialRoles: { r1: ['chair'] } });
+    renderPage({ canEdit: false, canEditRoles: false, initialRoles: { r1: ['chair'] } });
     expect(screen.getByText('Alex Wong')).toBeTruthy();
     expect(screen.getByText('chair')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /^Edit / })).toBeNull();

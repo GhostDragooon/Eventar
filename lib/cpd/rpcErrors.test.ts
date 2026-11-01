@@ -30,3 +30,11 @@ describe('translateCpdRpcError 42501', () => {
     expect(translateCpdRpcError({ code: '42501' })).not.toMatch(/accreditation/i);
   });
 });
+
+describe('translateCpdRpcError 22023 role_locked_attended', () => {
+  it('says the person has checked in, not that credits are issued for the whole event', () => {
+    const msg = translateCpdRpcError({ code: '22023', details: 'role_locked_attended' });
+    expect(msg).toMatch(/already checked in/i);
+    expect(msg).not.toMatch(/accreditation/i);
+  });
+});

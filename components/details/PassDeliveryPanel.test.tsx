@@ -36,9 +36,9 @@ describe('PassDeliveryPanel', () => {
 
     expect(screen.getByText('Karen Lau')).toBeTruthy();
     expect(screen.getByText(/no pass sent/i)).toBeTruthy();
-    // Both the summary and the per-row hint point at the roster — that is the
+    // Both the summary and the per-row hint point at the Check-in page — that is the
     // recovery path, and it should be stated in both places.
-    expect(screen.getAllByText(/roster/i).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(/check-in page/i).length).toBeGreaterThanOrEqual(2);
     // The one who is fine is counted, never listed — a wall of ticks trains
     // people to skim past the row that matters.
     expect(screen.queryByText('Wing Yan Ho')).toBeNull();

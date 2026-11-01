@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 // UX-01 pick a1: where Publish lands (`/events/<id>/details?published=1`). Says in words that the event is
 // public, then three next steps. The banner takes focus so a screen reader announces the result.
@@ -57,7 +59,10 @@ export function PublishedNextSteps({ eventId, origin, checkinOpens }: { eventId:
           )}
           <li className="flex min-h-11 items-center gap-sm py-sm">
             <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] text-on-surface-variant" aria-hidden>groups</span>
-            <span className="font-body-md text-body-md text-on-surface">Registrations show in the Registered count as people sign up.</span>
+            <span className="min-w-0 flex-1 font-body-md text-body-md text-on-surface">Registrations show in the Registered count as people sign up.</span>
+            <Link href={`/events/${eventId}/registrations`} className={cn(buttonVariants({ variant: 'outline' }), 'min-h-11 px-md')}>
+              Open registrations
+            </Link>
           </li>
           <li className="flex min-h-11 items-center gap-sm py-sm">
             <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] text-on-surface-variant" aria-hidden>qr_code_scanner</span>

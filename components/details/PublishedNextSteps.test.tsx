@@ -29,10 +29,13 @@ describe('PublishedNextSteps', () => {
     expect(screen.getByText(checkin)).toBeInTheDocument();
   });
 
-  // Until the Registrations page exists (UX-04) no link here may land on the check-in desk under another name (O6).
-  it('links nowhere: no control called registrations lands on the check-in desk', () => {
+  // UX-04: the Registrations page exists; the only link here goes to it and never to the check-in desk (O6).
+  it('links to the Registrations page, never to the check-in desk', () => {
     render(<PublishedNextSteps eventId="e1" origin="https://events.example.test" checkinOpens={checkin} />);
-    expect(screen.queryByRole('link')).toBeNull();
+    const links = screen.getAllByRole('link');
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAccessibleName('Open registrations');
+    expect(links[0]).toHaveAttribute('href', '/events/e1/registrations');
   });
 
   it('copies the public registration link and confirms it, driven by the result', async () => {

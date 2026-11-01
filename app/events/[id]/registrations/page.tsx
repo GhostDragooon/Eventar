@@ -14,7 +14,9 @@ export const metadata = {
 };
 
 // UX-04: the people registered for an event and their records. Capturing arrivals is the Check-in page's job; this
-// page has no check-in action. Mirrors the check-in page's gate: owner-only, others are sent to /details.
+// page has no check-in action. Same gate as the check-in page: staff of the event's organisation (or Eventar staff);
+// anyone else is sent to /details. The role chips are narrower: the role RPCs accept only the event's creator or
+// Eventar staff, so only they get live chips (the contact edit is organisation-wide).
 export default async function RegistrationsPage({ params }: { params: Promise<{ id: string }> }) {
   let staff;
   try {
@@ -28,7 +30,7 @@ export default async function RegistrationsPage({ params }: { params: Promise<{ 
   const supabase = await supabaseServer();
   const { data: event, error: eventErr } = await supabase
     .from('events')
-    .select('id, title, start_time, end_time, timezone, organisation_id')
+    .select('id, title, start_time, end_time, timezone, organisation_id, created_by')
     .eq('id', id)
     .maybeSingle();
   if (eventErr) throw eventErr;
@@ -99,6 +101,7 @@ export default async function RegistrationsPage({ params }: { params: Promise<{ 
         initialRoles={roles}
         rolesUnavailable={Boolean(rolesRes.error)}
         canEdit={canEditRegistrations(staff.role)}
+        canEditRoles={canEditRegistrations(staff.role) && (staff.role === 'eventar_staff' || event.created_by === staff.id)}
       />
     </StaffShell>
   );

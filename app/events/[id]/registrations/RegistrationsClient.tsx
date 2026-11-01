@@ -36,6 +36,7 @@ export default function RegistrationsClient({
   initialRoles,
   rolesUnavailable,
   canEdit,
+  canEditRoles,
 }: {
   eventId: string;
   rows: RegistrationRow[];
@@ -43,6 +44,8 @@ export default function RegistrationsClient({
   initialRoles: Record<string, Role[]>;
   rolesUnavailable: boolean;
   canEdit: boolean;
+  /** Live role chips: the creator of the event or Eventar staff only (what the role RPCs accept). */
+  canEditRoles: boolean;
 }) {
   const [rows, setRows] = useState(initialRows);
   const [roles, setRoles] = useState(initialRoles);
@@ -51,6 +54,8 @@ export default function RegistrationsClient({
   const [filter, setFilter] = useState<'all' | Status>('all');
   const [editing, setEditing] = useState<RegistrationRow | null>(null);
   const [roleError, setRoleError] = useState<string | null>(null);
+  // Polite confirmation for screen readers: a toggled chip or a saved edit changes nothing else announceable.
+  const [notice, setNotice] = useState('');
 
   const counts = useMemo(() => {
     const c: Record<'all' | Status, number> = { all: rows.length, registered: 0, attended: 0, cancelled: 0 };
@@ -89,6 +94,7 @@ export default function RegistrationsClient({
       setRoleError(res.error);
       return;
     }
+    setNotice(`${r.full_name} ${has ? 'is no longer' : 'is now'} ${role === 'chair' ? 'chair' : 'a presenter'}.`);
     setRoles((prev) => {
       const current = prev[r.id] ?? [];
       return { ...prev, [r.id]: has ? current.filter((x) => x !== role) : [...current, role] };
@@ -102,6 +108,7 @@ export default function RegistrationsClient({
           Roles could not be loaded just now, so chair and presenter are not shown. The people listed are correct.
         </p>
       )}
+      <p role="status" className="sr-only">{notice}</p>
       {roleError && (
         <p role="alert" className="rounded-lg bg-error-container px-md py-sm font-body-md text-body-md text-on-error-container">
           {roleError}
@@ -146,6 +153,7 @@ export default function RegistrationsClient({
               roles={roles[r.id] ?? []}
               pending={pending}
               canEdit={canEdit}
+              canEditRoles={canEditRoles}
               onToggleRole={(role, has) => toggleRole(r, role, has)}
               onEdit={() => setEditing(r)}
             />
@@ -159,6 +167,7 @@ export default function RegistrationsClient({
           onClose={() => setEditing(null)}
           onSaved={(name, email) => {
             setRows((prev) => prev.map((r) => (r.id === editing.id ? { ...r, full_name: name, email } : r)));
+            setNotice(`Saved changes to ${name}.`);
             setEditing(null);
           }}
         />
@@ -172,6 +181,7 @@ function RegistrationItem({
   roles,
   pending,
   canEdit,
+  canEditRoles,
   onToggleRole,
   onEdit,
 }: {
@@ -179,6 +189,7 @@ function RegistrationItem({
   roles: Role[];
   pending: Set<string>;
   canEdit: boolean;
+  canEditRoles: boolean;
   onToggleRole: (role: Role, has: boolean) => void;
   onEdit: () => void;
 }) {
@@ -195,7 +206,7 @@ function RegistrationItem({
       <div className="flex flex-wrap items-center gap-xs">
         {(['chair', 'presenter'] as const).map((role) => {
           const has = roles.includes(role);
-          if (!canEdit) {
+          if (!canEditRoles) {
             return has ? (
               <span key={role} className="rounded-full bg-primary-container px-sm font-label-md text-label-md capitalize text-on-primary-container">
                 {role}
@@ -203,18 +214,21 @@ function RegistrationItem({
             ) : null;
           }
           // A role set after check-in cannot change the credit already posted (award_attendance_credit runs at
-          // check-in), so the chip locks once the person has attended.
-          const locked = r.status === 'attended';
+          // check-in; the database refuses it too), so the chip locks once the person has attended. A cancelled
+          // registration earns nothing, so its chips lock as well.
+          const locked = r.status === 'attended' || r.status === 'cancelled';
           return (
             <button
               // ui-primitive-allow: role toggle pill (aria-pressed), moved verbatim from the check-in desk's chip
               key={role}
               type="button"
-              disabled={pending.has(`${r.id}:${role}`) || locked}
+              // aria-disabled (not disabled) while the call is in flight, so keyboard focus stays on the chip.
+              disabled={locked}
+              aria-disabled={pending.has(`${r.id}:${role}`) || undefined}
               aria-pressed={has}
-              aria-label={`${role} — ${r.full_name}`}
-              title={locked ? 'Already attended: a role change now would not change the credit already posted.' : undefined}
-              onClick={() => onToggleRole(role, has)}
+              aria-label={`${role} — ${r.full_name}${locked ? ` (locked: ${r.status === 'attended' ? 'already attended' : 'cancelled'})` : ''}`}
+              title={locked ? (r.status === 'attended' ? 'Already attended: a role change now would not change the credit already posted.' : 'Cancelled registrations cannot take a role.') : undefined}
+              onClick={() => !pending.has(`${r.id}:${role}`) && onToggleRole(role, has)}
               className={`min-h-11 rounded-full px-md font-label-md text-label-md capitalize transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary-ink disabled:opacity-50 ${
                 has
                   ? 'bg-primary-container text-on-primary-container'
@@ -292,7 +306,7 @@ function EditDialog({
       <form onSubmit={submit} className="flex flex-col gap-sm">
         <label className="flex flex-col gap-xs font-label-md text-label-md text-on-surface">
           Full name
-          <input className={field} value={name} onChange={(e) => setName(e.target.value)} required maxLength={200} />
+          <input className={field} value={name} onChange={(e) => setName(e.target.value)} required maxLength={200} aria-invalid={error ? true : undefined} aria-describedby={error ? 'edit-error' : undefined} />
         </label>
         <label className="flex flex-col gap-xs font-label-md text-label-md text-on-surface">
           Email
@@ -304,7 +318,8 @@ function EditDialog({
             disabled={row.linked}
             required
             maxLength={254}
-            aria-describedby="edit-email-note"
+            aria-describedby={error ? 'edit-email-note edit-error' : 'edit-email-note'}
+            aria-invalid={error ? true : undefined}
           />
         </label>
         <p id="edit-email-note" className="font-body-md text-body-md text-on-surface-variant">
@@ -313,7 +328,7 @@ function EditDialog({
             : 'Their check-in code stays the same, so a pass already emailed to them keeps working.'}
         </p>
         {error && (
-          <p role="alert" className="font-body-md text-body-md text-error">
+          <p id="edit-error" role="alert" className="font-body-md text-body-md text-error">
             {error}
           </p>
         )}

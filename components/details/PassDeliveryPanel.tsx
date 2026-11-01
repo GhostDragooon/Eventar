@@ -46,11 +46,11 @@ const COPY: Record<DeliverySummary['state'], { label: string; hint: string } | n
     // and live states — so it is often not on the page at all. The roster is
     // the one recovery that always exists.
     label: 'no pass sent',
-    hint: 'the scheduler stopped retrying — use “Send reminders now”, or check them in from the roster',
+    hint: 'the scheduler stopped retrying — use “Send reminders now”, or check them in on the Check-in page',
   },
   logged_not_emailed: {
     label: 'logged, never emailed',
-    hint: 'recorded but not delivered — check them in from the roster',
+    hint: 'recorded but not delivered — check them in on the Check-in page',
   },
   not_sent: { label: 'not sent yet', hint: 'nothing has gone out to them' },
 };
@@ -118,7 +118,7 @@ export function PassDeliveryPanel({
         <>
           <p className="mt-sm text-body-sm text-[color:var(--error)]">
             {flagged.length} {flagged.length === 1 ? 'attendee has' : 'attendees have'} no usable pass. They can still
-            be checked in by name from the roster.
+            be checked in by name on the Check-in page.
           </p>
           <ul className="mt-sm divide-y divide-outline-variant">
             {flagged.map((s) => {

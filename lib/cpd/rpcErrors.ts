@@ -11,6 +11,9 @@ export function translateCpdRpcError(error: CpdRpcError): string {
   if (error.code === 'P0002') return 'That record could not be found — it may already have been removed.';
 
   if (error.code === '22023') {
+    if (error.details === 'role_locked_attended') {
+      return 'This person has already checked in, so their credit is posted and a role change now would not change it. Reload the page to see the current state.';
+    }
     if (error.details === 'cross_event_occurrence') {
       return 'That day belongs to a different event and can’t be linked here.';
     }

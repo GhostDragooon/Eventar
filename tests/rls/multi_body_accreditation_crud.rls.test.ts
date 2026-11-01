@@ -280,6 +280,26 @@ describe.skipIf(!process.env.RLS_TESTS)('multi-body accreditation CRUD functions
       const { data } = await admin.from('registration_roles').select('role_code').eq('registration_id', registrationId);
       expect(data).toHaveLength(0);
     });
+
+    // UX-04 review M1: the credit is posted at check-in, so a role change after attendance would silently change nothing.
+    it('refuses to set or remove a role once the registration has attended (22023, role_locked_attended)', async () => {
+      const set = await admin.rpc('set_registration_role', { p_registration_id: registrationId, p_role_code: 'presenter', p_actor_override: ownerId });
+      expect(set.error).toBeNull();
+      expect((await admin.from('registrations').update({ status: 'attended' }).eq('id', registrationId)).error).toBeNull();
+      try {
+        const again = await admin.rpc('set_registration_role', { p_registration_id: registrationId, p_role_code: 'chair', p_actor_override: ownerId });
+        expect(again.error?.code).toBe('22023');
+        expect(again.error?.details).toBe('role_locked_attended');
+        const remove = await admin.rpc('remove_registration_role', { p_registration_id: registrationId, p_role_code: 'presenter', p_actor_override: ownerId });
+        expect(remove.error?.code).toBe('22023');
+        expect(remove.error?.details).toBe('role_locked_attended');
+        const { data } = await admin.from('registration_roles').select('role_code').eq('registration_id', registrationId);
+        expect(data?.map((r) => r.role_code)).toEqual(['presenter']);
+      } finally {
+        await admin.from('registrations').update({ status: 'registered' }).eq('id', registrationId);
+        await admin.rpc('remove_registration_role', { p_registration_id: registrationId, p_role_code: 'presenter', p_actor_override: ownerId });
+      }
+    });
   });
 
   describe('every function denies anon/authenticated at the resolve_actor layer', () => {
