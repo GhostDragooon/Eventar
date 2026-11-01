@@ -492,18 +492,18 @@ describe('RegisterCard — account prompt on the success card (FR-003)', () => {
     await registerAs('alice@work.com');
     const create = screen.getByRole('link', { name: /^sign up$/i });
     expect(create).toHaveAttribute('href', '/account/sign-up?next=/account/claim');
-    expect(screen.queryByRole('link', { name: /^my record$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^registrations$/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/now on your record/i)).not.toBeInTheDocument();
     // The sign-in nudge belongs to the form; the success card swaps it out.
     expect(hrefs().filter((h) => /^\/(login|dashboard)/.test(h ?? ''))).toEqual([]);
   });
 
-  it('signed in and the registration was linked: says "This is now on your record." with a "My record" link, no create prompt', async () => {
+  it('signed in and the registration was linked: says "This is now on your record." with a "Registrations" link, no create prompt', async () => {
     render(<RegisterCard {...props} signedIn defaultName="Alice Wong" defaultEmail="alice@example.com" />);
     await registerAs(null, true);
 
     expect(screen.getByText('This is now on your record.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /^my record$/i })).toHaveAttribute('href', '/account/record');
+    expect(screen.getByRole('link', { name: /^registrations$/i })).toHaveAttribute('href', '/account/registrations');
     expect(screen.queryByRole('link', { name: /^sign up$/i })).not.toBeInTheDocument();
     expect(hrefs().filter((h) => /^\/(login|dashboard)/.test(h ?? ''))).toEqual([]);
   });
@@ -514,7 +514,7 @@ describe('RegisterCard — account prompt on the success card (FR-003)', () => {
     await registerAs(null, false);
 
     expect(screen.queryByText(/now on your record/i)).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /^my record$/i })).toHaveAttribute('href', '/account/record');
+    expect(screen.getByRole('link', { name: /^registrations$/i })).toHaveAttribute('href', '/account/registrations');
     expect(screen.queryByRole('link', { name: /^sign up$/i })).not.toBeInTheDocument();
   });
 
@@ -524,7 +524,7 @@ describe('RegisterCard — account prompt on the success card (FR-003)', () => {
 
     expect(screen.queryByText(/now on your record/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^sign up$/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /^my record$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^registrations$/i })).not.toBeInTheDocument();
   });
 
   it('staff never get the create prompt, even from a host that says nobody is signed in', async () => {

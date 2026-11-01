@@ -2,7 +2,7 @@
 import { vi } from 'vitest';
 
 // Both attendee doors short-circuit an ALREADY signed-in visitor with a client
-// router.replace(next ?? '/account/record'). That is a direct open-redirect
+// router.replace(next ?? '/account/registrations'). That is a direct open-redirect
 // sink: Next's router resolves the string against the page URL and does a hard
 // navigation when the origin differs, so a `next` of /\evil.example.com sent a
 // signed-in visitor off-site with no click. The unit test for the guard
@@ -42,11 +42,11 @@ describe.each([
   ['/account/sign-in', SignInPage],
   ['/account/sign-up', SignUpPage],
 ])('%s, visitor already signed in', (_path, Page) => {
-  it.each(HOSTILE)('a hostile next (%j) goes to the record, never off-site', async (hostile) => {
+  it.each(HOSTILE)('a hostile next (%j) falls back to Registrations, never off-site', async (hostile) => {
     nextParam.value = hostile;
     render(<Page />);
     await waitFor(() => expect(replace).toHaveBeenCalledTimes(1));
-    expect(replace).toHaveBeenCalledWith('/account/record');
+    expect(replace).toHaveBeenCalledWith('/account/registrations');
   });
 
   it('a safe next is still honoured (the walk-in round trip back to the event page)', async () => {

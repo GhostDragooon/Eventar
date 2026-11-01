@@ -43,8 +43,8 @@ describe('sendAttendeeMagicLink — next', () => {
   );
 
   it('defaults to the record when there is no destination', async () => {
-    expect(await landing()).toBe('/account/record');
-    expect(await landing('')).toBe('/account/record');
+    expect(await landing()).toBe('/account/registrations');
+    expect(await landing('')).toBe('/account/registrations');
   });
 
   it.each([
@@ -57,6 +57,6 @@ describe('sendAttendeeMagicLink — next', () => {
     '/settings',
     '/account/../dashboard',
   ])('a hostile or other-audience destination (%j) falls back to the record', async (next) => {
-    expect(await landing(next)).toBe('/account/record');
+    expect(await landing(next)).toBe('/account/registrations');
   });
 });

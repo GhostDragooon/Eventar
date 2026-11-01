@@ -100,13 +100,13 @@ describe('/account/complete — an account that is already complete is passed st
   });
 
   it('to the record by default', async () => {
-    expect((await run()).redirectedTo).toBe('/account/record');
+    expect((await run()).redirectedTo).toBe('/account/registrations');
   });
 
   it.each(['//evil.example', '/\\evil', '/dashboard', '/login', '/account/../dashboard', '/account/complete'])(
     'to the record, not %j',
     async (hostile) => {
-      expect((await run(hostile)).redirectedTo).toBe('/account/record');
+      expect((await run(hostile)).redirectedTo).toBe('/account/registrations');
     },
   );
 });

@@ -41,7 +41,7 @@ function AttendeeSignInForm() {
       const session = await checkDoorSession();
       if (cancelled) return;
       if (session === 'signed_in') {
-        router.replace(next ?? '/account/record');
+        router.replace(next ?? '/account/registrations');
         return;
       }
       if (session === 'ended') setEndedErr(resolveAuthError('session_ended', 'attendee'));

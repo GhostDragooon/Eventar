@@ -2,7 +2,7 @@
 import { vi } from 'vitest';
 
 // An already-signed-in visitor who reaches either attendee door is sent on with
-// a client router.replace(next ?? '/account/record'). nextRedirect.test.tsx
+// a client router.replace(next ?? '/account/registrations'). nextRedirect.test.tsx
 // (app/account) proves the off-site values; this proves the other audience's
 // pages are refused too (spec 001 FR-005: nothing from the other audience).
 const { replace, getSession, getUser, signOut, nextParam } = vi.hoisted(() => ({
@@ -36,12 +36,12 @@ describe.each([
   ['/account/sign-up', SignUpPage],
 ])('%s, visitor already signed in', (_path, Page) => {
   it.each(['/dashboard', '/dashboard?tab=programme', '/login', '/settings', '/account/../dashboard'])(
-    'the other audience\'s destination (%j) goes to the record',
+    'the other audience\'s destination (%j) falls back to Registrations',
     async (next) => {
       nextParam.value = next;
       render(<Page />);
       await waitFor(() => expect(replace).toHaveBeenCalledTimes(1));
-      expect(replace).toHaveBeenCalledWith('/account/record');
+      expect(replace).toHaveBeenCalledWith('/account/registrations');
     },
   );
 

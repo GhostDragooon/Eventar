@@ -75,7 +75,7 @@ export default async function CompleteAccountPage({
   const completeness = await isAccountComplete(authRes.user.id, emailConfirmed);
   const isActionRerender = (await headers()).has('next-action');
   if (completeness.complete && !isActionRerender) {
-    redirect(landing ?? '/account/record');
+    redirect(landing ?? '/account/registrations');
   }
 
   const [accountResult, licencesResult, bodiesResult, professionsResult, positionsResult, specialtiesResult] =

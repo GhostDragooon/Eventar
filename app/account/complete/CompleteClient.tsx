@@ -40,7 +40,7 @@ export function CompleteClient({
   professions,
   positions,
   specialties,
-  next = '/account/record',
+  next = '/account/registrations',
 }: {
   initialStep: number;
   initialAccount: AccountView;

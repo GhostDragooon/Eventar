@@ -72,10 +72,10 @@ describe('CompleteClient — where "Done" goes', () => {
     expect(push).toHaveBeenCalledExactlyOnceWith('/account/claim');
   });
 
-  it('defaults to the portal home (/account/record) when there is no destination', () => {
+  it('defaults to the portal home (/account/registrations) when there is no destination', () => {
     atLicenceStep(undefined);
     fireEvent.click(screen.getByRole('button', { name: /^done$/i }));
-    expect(push).toHaveBeenCalledExactlyOnceWith('/account/record');
+    expect(push).toHaveBeenCalledExactlyOnceWith('/account/registrations');
   });
 
   it('does not let a visitor finish without a licence, destination or not', () => {

@@ -197,8 +197,8 @@ export default function RegisterCard({
         {!isStaff && signedIn === true && (
           <div className="flex flex-col gap-sm">
             {state.linked && <p className="font-body-md text-body-md text-on-surface m-0">This is now on your record.</p>}
-            <Link href="/account/record" className={cn(buttonVariants({ variant: 'outline' }), 'min-h-11 w-full')}>
-              My record
+            <Link href="/account/registrations" className={cn(buttonVariants({ variant: 'outline' }), 'min-h-11 w-full')}>
+              Registrations
             </Link>
           </div>
         )}

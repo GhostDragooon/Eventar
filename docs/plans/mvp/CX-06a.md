@@ -52,3 +52,12 @@ Files: `REVIEW-CX06A-dev.md` (0 BLOCKER / 2 MAJOR / 3 minor / 6 nit), `REVIEW-CX
   - Front-end copy and naming for Ivan: U-03 one door has six names (Get started, Log in, Sign in, "Sign in or sign up first", "Create your Eventar record", "Send sign-up link"); U-02 the create button sits under cancellation boilerplate with no sentence saying why; U-04 the wizard's Identity step greys Continue with no message and marks no required field (outside the card); U-05 the magic-link email never names Eventar; U-06 "The response does not reveal whether an account already exists." is developer language; U-10 button says "sign-up link", confirmation says "sign-in link". The user lens did not reach the wizard's later steps, the signed-in card states, the record page, the staff card, keyboard, 375 px and dark: those are unwalked.
   - D-10: the hero CTA pills are about 38 px tall (existing shared class on the organiser pair).
 Gates [X]: tsc clean; eslint clean on the touched files; vitest `components` + `app/account` + the registration action 259 passed after the fixes; full run and the tip gate before the push.
+
+## Leftovers round (2026-11-01, after the Attendee surfaces card `a46a0a7`)
+STATUS: DONE locally, not committed.
+- Registration success card: link is now "Registrations" → `/account/registrations` (was "My record" → `/account/record`). The sentence "This is now on your record." is unchanged and still keys on `linked`.
+- Default post-auth landing is `/account/registrations` at all six sinks: `sendAttendeeMagicLink`, sign-in page, sign-up page, `/account/complete` redirect, `CompleteClient` default. Hostile `next` values fall back to it. `/account/record` (History) is still an honoured attendee `next`.
+- Tests: 8 files updated for the new fallback and link; no new files. Gates [X]: tsc 0, eslint 0 on touched paths, full vitest 217 files / 1943 passed / 544 skipped, `next build` OK.
+- Not changed on purpose: `AccountMenu` label "Record" (public chrome), `app/login/page.tsx` "Back to my record" (door copy), guard redirects that still pass `next=/account/record` for History itself.
+- Not run: live walk of sign-up → wizard → Registrations; the redirect is proved in unit tests only [I].
+Suggested commit message: `feat(funnel): Registrations is the post-sign-in landing and the registration-success link (CX-06a leftovers)`
