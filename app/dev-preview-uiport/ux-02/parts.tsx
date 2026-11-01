@@ -1,10 +1,12 @@
 import type { ComponentProps, ReactNode } from 'react';
 import { BrandMark } from '@/components/shell/BrandMark';
+import { NavRow } from '@/components/shell/StaffShell';
 import { cn } from '@/lib/utils';
 import { Frame, Icon } from '../ux-01/parts';
 
 // Specimen building blocks for the UX-02 round (the practitioner portal shell). Presentational only, sample data, shipped
-// tokens only. Rails, bars and sheets are drawn copies: AccountShell does not exist yet. BrandMark is the real component.
+// tokens only. Rails, bars and sheets are drawn copies: AccountShell does not exist yet. BrandMark and StaffShell's NavRow
+// (the inert "Soon" row) are the real components. Nav labels and order: Doctrine 2026-10-30 section 2.
 
 export { Icon };
 export { Frame };
@@ -15,7 +17,6 @@ const TITLE = 'Heart Failure in Primary Care: 2026 Update';
 
 export type Shape = 'lg' | 'pill' | 'bar';
 export type Heading = 'caps' | 'sentence' | 'none';
-export type Claim = 'always' | 'when-any' | 'action';
 export type Foot = 'row' | 'menu' | 'icon' | 'plain' | 'none';
 
 const ROW_TEXT = 'text-[calc(14px*var(--text-scale))] font-medium';
@@ -70,9 +71,12 @@ export function GroupHeading({ kind }: { kind: Heading }) {
   return <p className="px-md pb-xs pt-md text-[calc(12px*var(--text-scale))] font-semibold text-on-surface-variant">Account</p>;
 }
 
-export function Identity({ end, chevron }: { end?: ReactNode; chevron?: boolean }) {
+export function Identity({ end, chevron, current }: { end?: ReactNode; chevron?: boolean; current?: boolean }) {
   return (
-    <div className="mt-auto flex items-center gap-sm border-t border-outline-variant px-sm pt-md">
+    <div
+      aria-current={current ? 'page' : undefined}
+      className={cn('mt-auto flex min-h-11 items-center gap-sm rounded-lg border-t border-outline-variant px-sm py-sm', current && 'bg-primary-container')}
+    >
       <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-full bg-primary-container text-[calc(12px*var(--text-scale))] font-semibold text-on-primary-container">
         {ME.initials}
       </span>
@@ -89,92 +93,96 @@ export function Identity({ end, chevron }: { end?: ReactNode; chevron?: boolean 
 export function MenuPanel({ className }: { className?: string }) {
   return (
     <div className={cn('rounded-[14px] border border-outline-variant bg-surface-container-lowest p-xs shadow-xl', className)}>
-      <Row icon="settings" label="Account settings" />
-      <Row icon="logout" label="Sign out" />
+      <Row icon="account_circle" label="Account" />
+      <Row icon="logout" label="Sign out" tone="quiet" />
     </div>
   );
 }
 
+/** Doctrine 2026-10-30 section 2: the attendee nav, in its locked order. Only Check-in is a verb. */
+export const NAV: [icon: string, label: string][] = [
+  ['how_to_reg', 'Check-in'],
+  ['confirmation_number', 'Registrations'],
+  ['event', 'Events'],
+  ['history', 'History'],
+  ['account_circle', 'Account'],
+];
+
+/** flat: five rows in doctrine order. foot: Account leaves the list and becomes the identity row at the rail foot.
+ *  divider: four rows, a hairline, then Account. */
+export type Group = 'flat' | 'foot' | 'divider';
+
 export function Rail({
-  current = 'My record',
-  claim = 'always',
-  unlinked = 2,
-  heading = 'caps',
+  current = 'Registrations',
+  group = 'flat',
   shape = 'lg',
   foot = 'row',
   menuOpen,
+  soon = [],
   className,
 }: {
   current?: string;
-  claim?: Claim;
-  unlinked?: number;
-  heading?: Heading;
+  group?: Group;
   shape?: Shape;
   foot?: Foot;
   menuOpen?: boolean;
+  /** Labels drawn as the shipped inert "Soon" row (StaffShell NavRow with href null). */
+  soon?: string[];
   className?: string;
 }) {
-  const is = (l: string) => current === l;
-  const showClaim = claim === 'always' || (claim === 'when-any' && unlinked > 0);
-  const inMenu = foot === 'menu';
+  const rows = group === 'flat' ? NAV : NAV.slice(0, 4);
+  const row = ([icon, label]: [string, string]) =>
+    soon.includes(label) ? (
+      <NavRow key={label} label={label} href={null} icon={icon} active={false} />
+    ) : (
+      <Row key={label} shape={shape} icon={icon} label={label} current={current === label} />
+    );
   return (
     <aside
       aria-label="Your Eventar portal"
       className={cn('relative flex w-[232px] shrink-0 flex-col gap-xs border-r border-outline-variant bg-sidebar p-md', className)}
     >
       <div className="pb-sm">
-        <BrandMark compact href="/account/record" />
+        <BrandMark compact href="/account/registrations" />
       </div>
-      <Row shape={shape} icon="receipt_long" label="My record" current={is('My record')} />
-      <Row shape={shape} icon="badge" label="Profile and licences" current={is('Profile and licences')} />
-      {showClaim && <Row shape={shape} icon="link" label="Claim past events" current={is('Claim past events')} badge={unlinked || undefined} />}
-      <Row shape={shape} icon="event" label="Find events" current={is('Find events')} />
-      {!inMenu && (
+      {rows.map(row)}
+      {group === 'divider' && (
         <>
-          <GroupHeading kind={heading} />
-          <Row shape={shape} icon="settings" label="Account settings" current={is('Account settings')} />
-          {foot === 'row' && <Row shape={shape} icon="logout" label="Sign out" tone="quiet" />}
+          <GroupHeading kind="none" />
+          {row(NAV[4])}
         </>
       )}
-      {foot !== 'none' && (
-        <>
-          {inMenu && menuOpen && <MenuPanel className="mt-auto" />}
-          <Identity
-            chevron={inMenu}
-            end={
-              foot === 'icon' ? (
-                <span className="grid size-11 shrink-0 place-items-center rounded-full border border-outline-variant text-on-surface-variant" role="img" aria-label="Sign out">
-                  <Icon name="logout" />
-                </span>
-              ) : undefined
-            }
-          />
-        </>
+      {foot === 'row' && <Row shape={shape} icon="logout" label="Sign out" tone="quiet" />}
+      {group === 'foot' ? (
+        <div className="mt-auto">
+          {menuOpen && <MenuPanel className="mb-xs" />}
+          <Identity chevron={foot === 'menu'} current={current === 'Account'} />
+        </div>
+      ) : (
+        foot === 'menu' && (
+          <div className="mt-auto">
+            {menuOpen && <MenuPanel className="mb-xs" />}
+            <Identity chevron />
+          </div>
+        )
       )}
     </aside>
   );
 }
 
-export function RecordBody({ claimCard }: { claimCard?: boolean }) {
+/** Sample Registrations page: what you are signed up for (Doctrine section 2). No points or totals: Q26 gate. */
+export function RegistrationsBody() {
   return (
     <div className="min-w-0 flex-1 space-y-md p-md md:p-lg">
-      <h1 className="font-headline-sm text-headline-sm text-on-surface">My record</h1>
-      <div className="rounded-[20px] border border-outline-variant bg-surface-container-lowest p-md">
-        <p className="font-headline-sm text-headline-sm tabular-nums text-on-surface">9.0</p>
-        <p className="font-body-md text-body-md text-on-surface">points released through Eventar</p>
-        <p className="mt-xs font-body-md text-body-md text-on-surface-variant">From 2 events you attended.</p>
-      </div>
-      {claimCard && (
-        <div className="rounded-[20px] border border-outline-variant bg-surface-container-lowest p-md">
-          <p className="font-title-lg text-title-lg text-on-surface">Claim 2 past events</p>
-          <p className="font-body-md text-body-md text-on-surface-variant">Registered under uma@sample.test.</p>
-          <p className="mt-sm inline-flex min-h-11 items-center rounded-full bg-primary px-md font-label-md text-label-md text-on-primary">Claim past events</p>
-        </div>
-      )}
-      <ul className="rounded-[20px] border border-outline-variant bg-surface-container-lowest py-xs">
-        {['Advances in Interventional Radiology', 'MRI Safety and Governance Workshop'].map((t) => (
-          <li key={t} className="px-md py-sm font-body-md text-body-md text-on-surface">
-            {t}
+      <h1 className="font-headline-sm text-headline-sm text-on-surface">Registrations</h1>
+      <ul className="space-y-sm">
+        {[
+          [TITLE, 'Sat 14 Nov 2026, 09:00'],
+          ['MRI Safety and Governance Workshop', 'Thu 3 Dec 2026, 18:30'],
+        ].map(([t, d]) => (
+          <li key={t} className="rounded-[20px] border border-outline-variant bg-surface-container-lowest p-md">
+            <p className="font-title-lg text-title-lg leading-tight text-on-surface">{t}</p>
+            <p className="mt-xs font-body-md text-body-md text-on-surface-variant">{d}</p>
           </li>
         ))}
       </ul>
@@ -257,7 +265,7 @@ export function PhoneTop({ end = 'account' }: { end?: 'account' | 'menu' | 'sign
   const btn = 'inline-flex min-h-11 items-center gap-xs rounded-full border border-outline-variant px-md text-[calc(13px*var(--text-scale))] font-medium text-on-surface';
   return (
     <header className="flex min-h-14 items-center justify-between border-b border-outline-variant bg-surface px-md">
-      <BrandMark href="/account/record" />
+      <BrandMark href="/account/registrations" />
       {end === 'account' && <span className={btn}><Icon name="account_circle" />Account</span>}
       {end === 'menu' && <span className={btn}><Icon name="menu" />Menu</span>}
       {end === 'signout' && <span className={btn}><Icon name="logout" />Sign out</span>}
@@ -272,19 +280,22 @@ export function TabBar({
   tabs,
   current,
   px = 10,
+  fit,
 }: {
   tabs: [string, string, number?][];
   current: string;
   px?: number;
+  /** Columns sized to their labels instead of equal fifths, so the longest label keeps one line. */
+  fit?: boolean;
 }) {
   return (
-    <nav aria-label="Portal" className="mt-auto grid border-t border-outline-variant bg-surface px-xs pb-xs pt-xs" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
+    <nav aria-label="Portal" className="mt-auto grid border-t border-outline-variant bg-surface px-xs pb-xs pt-xs" style={fit ? { gridTemplateColumns: `repeat(${tabs.length}, auto)`, justifyContent: 'space-between' } : { gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
       {tabs.map(([icon, label, badge]) => (
         <span
           key={label}
           data-tab
           aria-current={label === current ? 'page' : undefined}
-          className={cn('relative flex min-h-12 flex-col items-center justify-center gap-[2px] font-semibold', label === current ? 'text-primary-ink' : 'text-on-surface-variant')}
+          className={cn('relative flex min-h-12 min-w-11 flex-col items-center justify-center gap-[2px] px-[2px] font-semibold', fit && 'whitespace-nowrap', label === current ? 'text-primary-ink' : 'text-on-surface-variant')}
           style={{ fontSize: `calc(${px}px * var(--text-scale))` }}
         >
           <span className="relative">
