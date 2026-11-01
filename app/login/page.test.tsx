@@ -233,7 +233,7 @@ describe('/login — signed-in practitioner (D1)', () => {
       visit('');
       fireEvent.click(await screen.findByRole('button', { name: /sign out and use another email/i }));
 
-      expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't sign you out. Try again.");
+      expect(await screen.findByRole('alert')).toHaveTextContent("Could not sign out. Try again.");
       expect(panelHeading()).toBeInTheDocument();
       expect(emailField()).not.toBeInTheDocument();
       // The button is usable again for a retry.
@@ -244,7 +244,7 @@ describe('/login — signed-in practitioner (D1)', () => {
       signOut.mockRejectedValue(new Error('boom'));
       visit('');
       fireEvent.click(await screen.findByRole('button', { name: /sign out and use another email/i }));
-      expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't sign you out. Try again.");
+      expect(await screen.findByRole('alert')).toHaveTextContent("Could not sign out. Try again.");
       expect(panelHeading()).toBeInTheDocument();
     });
 
@@ -256,7 +256,7 @@ describe('/login — signed-in practitioner (D1)', () => {
       await screen.findByRole('alert');
       fireEvent.click(screen.getByRole('button', { name: /sign out and use another email/i }));
       expect(await screen.findByLabelText(/email address/i)).toBeInTheDocument();
-      expect(screen.queryByText(/couldn't sign you out/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/could not sign out/i)).not.toBeInTheDocument();
     });
   });
 });

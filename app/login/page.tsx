@@ -12,6 +12,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { classifyPath, safeNextPath } from '@/lib/authDoor';
 import { supabaseBrowser } from '@/lib/supabase/browser';
+import { SIGN_OUT_FAILED } from '@/lib/signOut';
 import { getAccountMenuState } from '@/app/account/actions';
 
 export default function LoginPage() {
@@ -272,7 +273,7 @@ function PractitionerPanel({
         ) : (
           <>You&apos;re signed in. Organiser log in is for organiser emails only.</>
         )}{' '}
-        Attending events? Go to your account. Invited as an organiser? Open the invite link your admin sent you.
+        Attending events? Your account is below. Invited as an organiser? Open the invite link your admin sent you.
       </p>
       <div className="flex flex-col gap-sm">
         {hasRecord ? (
@@ -288,7 +289,7 @@ function PractitionerPanel({
         )}
       </div>
       {failed && (
-        <AuthStatusMessage status={{ kind: 'error', message: "Couldn't sign you out. Try again." }} />
+        <AuthStatusMessage status={{ kind: 'error', message: SIGN_OUT_FAILED }} />
       )}
     </>
   );

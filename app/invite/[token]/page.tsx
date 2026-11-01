@@ -7,6 +7,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { SiteShell } from '@/components/shell/SiteShell';
 import { cn } from '@/lib/utils';
 import { supabaseBrowser } from '@/lib/supabase/browser';
+import { SIGN_OUT_FAILED } from '@/lib/signOut';
 import { acceptInvite } from './actions';
 
 type View =
@@ -109,7 +110,7 @@ export default function InviteAcceptPage() {
       // Stay "pending" while the navigation completes.
     } catch {
       setPending(false);
-      setError({ error: "Couldn't sign you out. Try again." });
+      setError({ error: SIGN_OUT_FAILED });
     }
   }
 

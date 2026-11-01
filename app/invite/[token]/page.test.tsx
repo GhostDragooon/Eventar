@@ -215,7 +215,7 @@ describe('invite page — the email already has practitioner data (D3)', () => {
     signOut.mockResolvedValue({ error: new Error('network down') });
     fireEvent.click(screen.getByRole('button', { name: /^use a different email$/i }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't sign you out. Try again.");
+    expect(await screen.findByRole('alert')).toHaveTextContent("Could not sign out. Try again.");
     expect(router.push).not.toHaveBeenCalled();
     expect(await promptHeading()).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^use a different email$/i })).toBeEnabled();
@@ -308,7 +308,7 @@ describe('invite page — focus after a retryable error', () => {
     fireEvent.click(screen.getByRole('button', { name: /^use a different email$/i }));
 
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent("Couldn't sign you out. Try again.");
+    expect(alert).toHaveTextContent("Could not sign out. Try again.");
     await waitFor(() => expect(alert).toHaveFocus());
   });
 });
