@@ -14,7 +14,7 @@ Evidence tags: [X] executed this session, [R] read in code or docs, [I] inferred
 
 ## 0. Ivan's action list
 
-**Decide** (recommendation first; each is a frontend change, so none is applied)
+**Decide** (items 1 to 6 below were shown and APPLIED on 2026-11-01 at your word, in `cf9a2e1` (1 to 4, 6) and `f587bf6` (5); only item 7 is still open. Side finding: the `eventar-tz` cookie lost its only writer when DashboardWorkstation stopped rendering in `3e94ee6`, so `organiserTz` in `lib/tz.ts` now has no caller and `lib/tz.test.ts` pins dead code. Left for your call.)
 1. **Tab semantics** (dev review M3). The tabs have `role="tab"` and `aria-selected` but no `tabpanel`, arrow keys or roving focus, and read as "Active2" to a screen reader. Options: complete the pattern; or make them plain filter buttons (`aria-pressed`); either way add a hidden ", " before the count. Recommend plain filter buttons: smaller, and a list filter is not a tab panel.
 2. **Honest caps.** (a) History silently stops at 100 completed events: add "Showing the newest 100." when it hits 100 (rule 12). (b) The Events footer "Showing your newest 300 events" appears even when 16 rows show, because completed events use fetch slots but have no tab. Best fix: leave completed rows out of that fetch; else reword to "Only the newest 300 events by date were loaded, finished ones included." Recommend both, one small change each.
 3. **Small copy** from the user-lens walk: "Finished events are in History." becomes a link; the empty search says which tab it searched; the Cancel dialog says whether registrants are emailed; the Delete dialog names the event. The last two dialogs predate this card; recommend doing all four together.
@@ -54,7 +54,7 @@ Evidence tags: [X] executed this session, [R] read in code or docs, [I] inferred
 |---|---|
 | Tip gate on `b78190b` | tsc 0; eslint 0 errors, 11 warnings; next build 0; vitest 259 of 260 files, 2410 of 2411 tests |
 | The one failure | `tests/rls/registrations_link_immutability.rls.test.ts`: `deadlock detected` in a grant and policy probe. Rerun alone twice: 10 of 10 each time. Treated as a flake under peer DB load, not a pass |
-| `check:ui-colours` | 5 hits, unchanged: 3 in `AuthBackdropCard`, 2 in the unused `DashboardWorkstation` |
+| `check:ui-colours` | 3 hits, all in `AuthBackdropCard` (the 2 in the deleted `DashboardWorkstation` are gone, `f587bf6`) |
 | `check:ui-primitives` | 7 hits, unchanged |
 | Dev review | one HIGH (the RPC premise, now fixed), M1 and M2 fixed, M3 to M5 and L1 proposed above |
 | User-lens walk | 14 findings; 4 answered by you, 1 not a finding (the tick box is 44 px), the rest in Decide |
