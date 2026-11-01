@@ -6,7 +6,7 @@ vi.mock('@/app/events/[id]/details/cpdActions', () => ({
   setEventCpdConfig: vi.fn(),
 }));
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { CpdAccreditationSection, durationPrefill } from './CpdAccreditationSection';
 
@@ -92,18 +92,33 @@ describe('CpdAccreditationSection — prior-approval advisory suppressed when lo
     expect(screen.queryByText(/prior-approval/i)).toBeNull();
   });
 
-  it('still shows while the field is live and editable', () => {
-    render(
-      <CpdAccreditationSection
-        eventId="e1"
-        startTime="2026-12-01T09:00:00Z"
-        bodies={[hkcp]}
-        currentBodyId="b1"
-        currentHours={3}
-        creditsIssued={0}
-      />,
-    );
-    expect(screen.getByText(/apply to hkcp by/i)).toBeTruthy();
+  // The deadline is startTime minus lead_time_days (2026-11-01 here), compared
+  // with the real clock. A literal future date is a clock: unpinned, this test
+  // flipped from "Apply to" to "has passed" at midnight 2026-11-02. Pin Date
+  // on each side of the deadline.
+  describe.each([
+    ['before the deadline', '2026-10-15T00:00:00Z', /apply to hkcp by/i],
+    ['after the deadline', '2026-11-15T00:00:00Z', /deadline for hkcp was.*has passed/i],
+  ])('still shows while the field is live and editable, %s', (_label, now, text) => {
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(now));
+    });
+    afterEach(() => vi.useRealTimers());
+
+    it('renders the advisory', () => {
+      render(
+        <CpdAccreditationSection
+          eventId="e1"
+          startTime="2026-12-01T09:00:00Z"
+          bodies={[hkcp]}
+          currentBodyId="b1"
+          currentHours={3}
+          creditsIssued={0}
+        />,
+      );
+      expect(screen.getByText(text)).toBeTruthy();
+    });
   });
 });
 
