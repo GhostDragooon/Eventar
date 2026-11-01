@@ -10,11 +10,17 @@
 // there), so it has no attendee entry.
 export type AuthAudience = 'organizer' | 'attendee';
 
+// Wrong-door line (Ivan 2026-11-01): the same words for every reason an organiser log-in cannot proceed, so it never
+// says whether the email is on a staff list, and no password language (the door is magic-link only). The door page
+// carries the Attendee log in and Sign up links next to it.
+const ORGANISER_WRONG_DOOR =
+  "We couldn't log you in as an organiser. If you attend events, use Attendee log in or Sign up instead.";
+
 const AUTH_ERROR_MESSAGES_ORGANIZER: Readonly<Record<string, string>> = {
   missing_code: 'This log-in link has expired or was already used. Request a new one below.',
   exchange_failed:
     "This log-in link couldn't be completed. It may have expired, or been opened in a different browser or app from the one you asked for it in. Request a new link below and open it in the same browser.",
-  not_authorized: 'Your email is not on the organizer list. Contact an admin to be added.',
+  not_authorized: ORGANISER_WRONG_DOOR,
   unavailable:
     'We could not check your organizer access just now. This is on our side — please try again in a moment.',
   // `staff` allows one email in two organisations; the single-row read then fails (PGRST116) and proxy.ts
@@ -24,7 +30,7 @@ const AUTH_ERROR_MESSAGES_ORGANIZER: Readonly<Record<string, string>> = {
   // proxy.ts keeps the session of a signed-in non-organiser and sends them to
   // /login?error=not_organiser. With a session /login shows its practitioner
   // panel instead; this line is what a visitor with no session sees.
-  not_organiser: 'That page is for organisers. Log in with your organiser email.',
+  not_organiser: ORGANISER_WRONG_DOOR,
 };
 
 const AUTH_ERROR_MESSAGES_ATTENDEE: Readonly<Record<string, string>> = {

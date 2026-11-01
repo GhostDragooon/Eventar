@@ -158,8 +158,9 @@ describe('/login — signed-in practitioner (D1)', () => {
     expect(screen.getByText(EMAIL)).toBeInTheDocument();
     // True for any non-organiser session, and says how to become one: the old
     // line claimed a "practitioner account" the visitor may never have made.
-    expect(screen.getByText(/this email isn't on an organiser team\./i)).toBeInTheDocument();
-    expect(screen.getByText(/open the invite link your admin sent you, or ask an admin to add you/i)).toBeInTheDocument();
+    expect(screen.getByText(/organiser log in is for organiser emails only/i)).toBeInTheDocument();
+    expect(screen.getByText(/open the invite link your admin sent you/i)).toBeInTheDocument();
+    expect(screen.queryByText(/isn't on an organiser team|staff list|organizer list/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/a practitioner account/i)).not.toBeInTheDocument();
     // The form and the allowlist notice are hidden while the panel shows.
     expect(emailField()).not.toBeInTheDocument();
@@ -267,7 +268,7 @@ describe('/login — ?error= codes', () => {
     visit('error=not_organiser&next=%2Fevents%2Fnew');
     expect(await screen.findByLabelText(/email address/i)).toBeInTheDocument();
     expect(screen.getByRole('alert')).toHaveTextContent(
-      'That page is for organisers. Log in with your organiser email.',
+      "We couldn't log you in as an organiser. If you attend events, use Attendee log in or Sign up instead.",
     );
   });
 
@@ -360,7 +361,7 @@ describe('/login — failures fail visibly (rule 12)', () => {
     staff(false);
     visit('');
     expect(await screen.findByRole('heading', { name: /^organiser log in$/i })).toBeInTheDocument();
-    expect(screen.getByText(/this account isn't on an organiser team/i)).toBeInTheDocument();
+    expect(screen.getByText(/you're signed in\. organiser log in is for organiser emails only/i)).toBeInTheDocument();
   });
 });
 

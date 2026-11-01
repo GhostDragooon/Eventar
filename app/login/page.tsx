@@ -267,12 +267,12 @@ function PractitionerPanel({
           <>
             You&apos;re signed in as{' '}
             <strong className="font-semibold text-on-surface [overflow-wrap:anywhere]">{email}</strong>.
-            This email isn&apos;t on an organiser team.
+            Organiser log in is for organiser emails only.
           </>
         ) : (
-          <>You&apos;re signed in, but this account isn&apos;t on an organiser team.</>
+          <>You&apos;re signed in. Organiser log in is for organiser emails only.</>
         )}{' '}
-        To join one, open the invite link your admin sent you, or ask an admin to add you.
+        Attending events? Go to your account. Invited as an organiser? Open the invite link your admin sent you.
       </p>
       <div className="flex flex-col gap-sm">
         {hasRecord ? (
