@@ -15,7 +15,7 @@ export function formatInTz(iso: string, timeZone: string): string {
 }
 
 // The organiser's zone arrives in the eventar-tz cookie, which the browser
-// writes (DashboardWorkstation) and the client fully controls: accept only a
+// wrote (the old DashboardWorkstation; nothing writes it now) and the client fully controls: accept only a
 // zone Intl recognises. Missing or invalid falls back to UTC until the
 // browser sets it.
 export function organiserTz(cookieValue: string | undefined): string {

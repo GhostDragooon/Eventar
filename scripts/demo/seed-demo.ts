@@ -355,7 +355,7 @@ async function findOrCreateEvent(
     latitude: VENUE_LAT,
     longitude: VENUE_LNG,
     // WP5 E1 taxonomy — was 'life_sciences' (retired 2026-09-05 by 1017c78,
-    // when the finder tabs, Zod enum, NewEventForm picker, and DashboardWorkstation
+    // when the finder tabs, Zod enum, NewEventForm picker, and the dashboard
     // labels all moved to medicine_dentistry / allied_health / other). The seed
     // was the one site the sweep missed, so every seed-created demo event was
     // invisible on non-All finder tabs and wrote an invalid taxonomy row.

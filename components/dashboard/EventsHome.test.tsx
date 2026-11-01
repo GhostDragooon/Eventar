@@ -16,7 +16,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { ToastProvider } from '@/components/ui/toast';
 import { EventsHome } from './EventsHome';
-import type { ProgrammeEvent } from './DashboardWorkstation';
+import type { ProgrammeEvent } from './programmeEvent';
 
 afterEach(cleanup);
 beforeEach(() => {

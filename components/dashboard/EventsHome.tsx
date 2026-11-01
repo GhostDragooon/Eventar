@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { StatusPill } from '@/components/lifecycle/StatusPill';
-import type { ProgrammeEvent } from './DashboardWorkstation';
+import type { ProgrammeEvent } from './programmeEvent';
 import type { TabKey } from './eventTabs';
 
 const PILL: Record<Lifecycle, { label: string }> = {

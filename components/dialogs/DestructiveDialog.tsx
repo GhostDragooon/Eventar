@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
  * Stricter than ConfirmDialog(tone="danger"): the confirm action stays
  * disabled until the operator checks an explicit acknowledgement. Reach for
  * this only where a plain confirm is too easy to click through — ConfirmDialog
- * covers ordinary deletes (see DashboardWorkstation) and is left alone.
+ * covers ordinary deletes (see EventsHome) and is left alone.
  */
 export function DestructiveDialog({
   open,

@@ -5,7 +5,7 @@
 // organiser's own Programme/Manage dashboard. This file tests one thing —
 // that the query is scoped to the caller's own org unless they're
 // eventar_staff (same exception as canManageEvent in lib/auth.ts).
-import { vi, describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { vi, describe, it, expect } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 
@@ -36,7 +36,7 @@ function makeQueryMock(rows: unknown[], regs: unknown[] = []) {
 }
 
 import { fakeSupabase } from '@/tests/helpers/staffPageFakes';
-import { countCreditsIssued, fetchDecoratedEvents, ownEvents } from './data';
+import { fetchDecoratedEvents, ownEvents } from './data';
 
 describe('fetchDecoratedEvents — org scoping (regression, 2026-09-17 cross-org leak)', () => {
   it('filters by organisation_id for a non-eventar_staff caller', async () => {
@@ -46,7 +46,7 @@ describe('fetchDecoratedEvents — org scoping (regression, 2026-09-17 cross-org
     await fetchDecoratedEvents(supabase, Date.now(), {
       role: 'organiser_admin',
       organisation_id: 'org-mine',
-    }, 'Asia/Hong_Kong');
+    });
 
     expect(calls.some((c) => c.method === 'eq' && c.args[0] === 'organisation_id' && c.args[1] === 'org-mine')).toBe(
       true,
@@ -60,7 +60,7 @@ describe('fetchDecoratedEvents — org scoping (regression, 2026-09-17 cross-org
     await fetchDecoratedEvents(supabase, Date.now(), {
       role: 'eventar_staff',
       organisation_id: null,
-    }, 'Asia/Hong_Kong');
+    });
 
     expect(calls.some((c) => c.method === 'eq' && c.args[0] === 'organisation_id')).toBe(false);
   });
@@ -96,7 +96,7 @@ describe('fetchDecoratedEvents — the registrations lookup stays under the URL 
     };
     const supabase = { from: (t: string) => (t === 'events' ? eventsBuilder : regsBuilder) } as never;
 
-    const { events: out } = await fetchDecoratedEvents(supabase, Date.now(), { role: 'organiser_admin', organisation_id: 'org-mine' }, 'Asia/Hong_Kong');
+    const { events: out } = await fetchDecoratedEvents(supabase, Date.now(), { role: 'organiser_admin', organisation_id: 'org-mine' });
 
     expect(idLists.length).toBeGreaterThan(1);
     // 37 characters per id in the URL: 100 ids is about 3.7 KB, well under the 8 KB gateway limit.
@@ -116,48 +116,8 @@ describe('fetchDecoratedEvents — the registrations lookup stays under the URL 
     };
     const supabase = { from: (t: string) => (t === 'events' ? eventsBuilder : regsBuilder) } as never;
     await expect(
-      fetchDecoratedEvents(supabase, Date.now(), { role: 'organiser_admin', organisation_id: 'org-mine' }, 'Asia/Hong_Kong'),
+      fetchDecoratedEvents(supabase, Date.now(), { role: 'organiser_admin', organisation_id: 'org-mine' }),
     ).rejects.toThrow('boom');
-  });
-});
-
-// The "Credits issued" tile counts credit_ledger rows for the organisation's events with one `.in()`. Same 414 at
-// about 220 ids, but its error is logged and the tile falls back to 0, so after the registrations fix the page loaded
-// and the tile quietly said 0 (dev lens F1, CX-04).
-describe('countCreditsIssued — the credit count stays under the URL limit', () => {
-  const ids = Array.from({ length: 250 }, (_, i) => `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`);
-  const adminWith = (inResult: (call: number, list: string[]) => { count: number | null; error: Error | null }) => {
-    const lists: string[][] = [];
-    const builder = {
-      select: () => builder,
-      eq: () => builder,
-      in: async (_col: string, list: string[]) => {
-        lists.push(list);
-        return inResult(lists.length, list);
-      },
-    };
-    return { admin: { from: () => builder } as never, lists };
-  };
-
-  it('counts in batches of at most 100 ids and adds the batches up', async () => {
-    const { admin, lists } = adminWith((_c, list) => ({ count: list.length, error: null }));
-    const res = await countCreditsIssued(admin, ids);
-    expect(res).toEqual({ count: 250, error: null });
-    expect(Math.max(...lists.map((l) => l.length))).toBeLessThanOrEqual(100);
-    expect(lists.flat().sort()).toEqual([...ids].sort());
-  });
-
-  it('a failing batch gives an error and no total, never a partial count', async () => {
-    const { admin } = adminWith((call, list) => (call === 2 ? { count: null, error: new Error('boom') } : { count: list.length, error: null }));
-    const res = await countCreditsIssued(admin, ids);
-    expect(res.count).toBeNull();
-    expect(res.error?.message).toBe('boom');
-  });
-
-  it('asks nothing for an organisation with no events', async () => {
-    const { admin, lists } = adminWith(() => ({ count: 99, error: null }));
-    expect(await countCreditsIssued(admin, [])).toEqual({ count: 0, error: null });
-    expect(lists).toHaveLength(0);
   });
 });
 
@@ -191,52 +151,23 @@ describe('ownEvents — the scope rule every staff event list goes through', () 
   });
 });
 
-// Regression (2026-10-15): "today" used the server process's local midnight
-// (setHours(0,0,0,0)), so on a UTC host (Vercel) the "Checked in today" tile
-// reset at 08:00 HKT for every organiser. It must follow the calendar day
-// where the organiser is, whatever zone the server runs in.
-describe('fetchDecoratedEvents — checkedInToday follows the organiser zone, not the server', () => {
-  beforeAll(() => {
-    vi.stubEnv('TZ', 'UTC');
-  });
-  afterAll(() => {
-    vi.unstubAllEnvs();
-  });
-
+// Each event is stamped with its own local date (dayKey), not the organiser's or the server's.
+describe('fetchDecoratedEvents: dayKey', () => {
   const event = {
     id: 'ev1', title: 't', description: null,
-    start_time: '2026-10-14T01:00:00Z', end_time: '2026-10-16T10:00:00Z', timezone: 'Asia/Hong_Kong',
+    start_time: '2026-10-20T02:00:00Z', end_time: '2026-10-20T04:00:00Z', timezone: 'America/New_York',
     status: 'published', venue_name: null, max_attendees: null, registration_close_at: null,
     registration_open_at: null, created_by: null, category: null, deleted_at: null, format: null,
     hero_image_url: null, city: null, organized_by: [],
   };
-  // Check-ins at Tue 09:00, Tue 23:30, Wed 01:00, Wed 07:59 and Wed 08:00 HKT.
-  const regs = ['2026-10-14T01:00:00Z', '2026-10-14T15:30:00Z', '2026-10-14T17:00:00Z', '2026-10-14T23:59:00Z', '2026-10-15T00:00:00Z']
-    .map((t) => ({ event_id: 'ev1', status: 'attended', registered_at: null, check_in_at: t }));
-  const nowMs = Date.parse('2026-10-15T02:00:00Z'); // Wed 10:00 HKT = Wed 03:00 London = Tue 22:00 New York
 
-  it.each([
-    ['Asia/Hong_Kong', 3], // Wed: 01:00, 07:59, 08:00
-    ['Europe/London', 2], // Wed from 00:00 BST: 07:59 and 08:00 HKT only
-    ['America/New_York', 4], // Tue from 00:00 EDT: all but Tue 09:00 HKT
-  ])('organiser in %s sees %i', async (tz, expected) => {
-    expect(new Date(nowMs).getHours()).toBe(2); // guard: host really is UTC
-    const { builder } = makeQueryMock([event], regs);
-    const { checkedInToday } = await fetchDecoratedEvents({ from: () => builder } as never, nowMs, {
+  it("stamps each event with its own local date", async () => {
+    // 2026-10-20T02:00Z is Mon 19 Oct 22:00 in New York.
+    const { builder } = makeQueryMock([event]);
+    const { events } = await fetchDecoratedEvents({ from: () => builder } as never, Date.parse('2026-10-15T02:00:00Z'), {
       role: 'organiser_admin',
       organisation_id: 'org-mine',
-    }, tz);
-    expect(checkedInToday).toBe(expected);
-  });
-
-  it("stamps each event with its own local date (dayKey), not the organiser's", async () => {
-    // 2026-10-20T02:00Z is Mon 19 Oct 22:00 in New York but Tue 20 Oct in Hong Kong.
-    const nyEvent = { ...event, timezone: 'America/New_York', start_time: '2026-10-20T02:00:00Z', end_time: '2026-10-20T04:00:00Z' };
-    const { builder } = makeQueryMock([nyEvent]);
-    const { events } = await fetchDecoratedEvents({ from: () => builder } as never, nowMs, {
-      role: 'organiser_admin',
-      organisation_id: 'org-mine',
-    }, 'Asia/Hong_Kong');
+    });
     expect(events[0].dayKey).toBe('2026-10-19');
   });
 });

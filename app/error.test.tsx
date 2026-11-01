@@ -41,7 +41,7 @@ describe('app error boundary, organiser workspace paths', () => {
     expect(container.textContent).not.toMatch(/tell the organiser/i);
     expect(container.textContent).toMatch(/if you were saving or publishing, check your events before you repeat it/i);
     // The exit is Events: it lists drafts, so a half-saved draft can be found
-    // there (DashboardWorkstation.test.tsx pins that). The body names no page.
+    // there (EventsHome.test.tsx pins that). The body names no page.
     expect(screen.getByRole('link', { name: 'Back to Events' })).toHaveAttribute('href', '/dashboard');
   });
 

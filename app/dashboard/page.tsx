@@ -1,4 +1,3 @@
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { requireStaff, NotAuthorizedError } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
@@ -9,7 +8,6 @@ import { TAB_KEYS } from '@/components/dashboard/eventTabs';
 import { NeedsAttention, type AttentionItem } from '@/components/dashboard/NeedsAttention';
 import { fetchDecoratedEvents } from '@/app/dashboard/data';
 import { DevEmailStubBanner } from '@/components/dev/DevEmailStubBanner';
-import { organiserTz } from '@/lib/tz';
 
 export const metadata = {
   title: 'Events',
@@ -36,8 +34,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
   // eslint-disable-next-line react-hooks/purity
   const nowMs = Date.now();
-  const tz = organiserTz((await cookies()).get('eventar-tz')?.value);
-  const { events: decorated } = await fetchDecoratedEvents(supabase, nowMs, staff, tz);
+  const { events: decorated } = await fetchDecoratedEvents(supabase, nowMs, staff);
   const admin = supabaseAdmin();
   const isOpen = (d: (typeof decorated)[number]) =>
     !d.deleted && (d.lifecycle === 'registering' || d.lifecycle === 'upcoming' || d.lifecycle === 'live');
@@ -123,7 +120,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     <StaffShell staff={{ email: staff.email, role: staff.role, full_name: staff.full_name }}>
       <DevEmailStubBanner />
       {attention.length > 0 && <div className="mb-lg"><NeedsAttention items={attention} limit={3} /></div>}
-      <EventsHome key={tz} events={decorated} nowMs={nowMs} initialTab={initialTab} />
+      <EventsHome events={decorated} nowMs={nowMs} initialTab={initialTab} />
     </StaffShell>
   );
 }

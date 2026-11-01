@@ -2,7 +2,7 @@ import 'server-only';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Staff } from '@/lib/auth';
-import type { ProgrammeEvent } from '@/components/dashboard/DashboardWorkstation';
+import type { ProgrammeEvent } from '@/components/dashboard/programmeEvent';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 import { idBatches } from '@/lib/supabase/inBatches';
 
@@ -49,27 +49,11 @@ export function ownEvents<Cols extends string>(
   return query;
 }
 
-// credit_ledger has no organisation_id, so "credits issued" is counted over the organisation's event ids. Any failed
-// batch gives an error and no total, never a partial count.
-export async function countCreditsIssued(
-  admin: SupabaseClient,
-  eventIds: string[],
-): Promise<{ count: number | null; error: { code?: string; message?: string } | null }> {
-  const results = await Promise.all(
-    idBatches(eventIds).map((ids) =>
-      admin.from('credit_ledger').select('id', { count: 'exact', head: true }).eq('entry_type', 'credit_earned').in('event_id', ids),
-    ),
-  );
-  const error = results.find((r) => r.error)?.error ?? null;
-  return { count: error ? null : results.reduce((n, r) => n + (r.count ?? 0), 0), error };
-}
-
 export async function fetchDecoratedEvents(
   supabase: SupabaseClient,
   nowMs: number,
   staff: Pick<Staff, 'role' | 'organisation_id'>,
-  tz: string,
-): Promise<{ events: ProgrammeEvent[]; registered7d: number; checkedInToday: number }> {
+): Promise<{ events: ProgrammeEvent[] }> {
   const { data: events, error: eventsErr } = await ownEvents(
     supabase,
     staff,
@@ -82,32 +66,21 @@ export async function fetchDecoratedEvents(
   // ponytail: a batch of 100 events with over 1000 registrations is still cut by PostgREST's row cap.
   const eventIds = (events ?? []).map((e) => e.id);
   const regsRes = await Promise.all(
-    idBatches(eventIds).map((ids) => supabase.from('registrations').select('event_id, status, registered_at, check_in_at').in('event_id', ids)),
+    idBatches(eventIds).map((ids) => supabase.from('registrations').select('event_id, status, registered_at').in('event_id', ids)),
   );
   const regsErr = regsRes.find((r) => r.error)?.error;
   if (regsErr) throw regsErr;
   const regs = regsRes.flatMap((r) => r.data ?? []);
 
   const weekAgoMs = nowMs - 7 * DAY_MS;
-  // "Today" is the calendar day where the organiser is (tz, from the
-  // eventar-tz cookie), never the server process's local midnight, which is
-  // UTC on Vercel.
-  const orgDay = new Intl.DateTimeFormat('en-CA', { timeZone: tz });
-  const todayKey = orgDay.format(nowMs);
   const counts = new Map<string, { registered: number; attended: number; delta7: number }>();
   for (const e of events ?? []) counts.set(e.id, { registered: 0, attended: 0, delta7: 0 });
-  let registered7d = 0;
-  let checkedInToday = 0;
   for (const r of regs) {
     const c = counts.get(r.event_id);
     if (!c) continue;
     c.registered++;
     if (r.status === 'attended') c.attended++;
-    if (r.registered_at && new Date(r.registered_at).getTime() >= weekAgoMs) {
-      c.delta7++;
-      registered7d++;
-    }
-    if (r.check_in_at && orgDay.format(new Date(r.check_in_at)) === todayKey) checkedInToday++;
+    if (r.registered_at && new Date(r.registered_at).getTime() >= weekAgoMs) c.delta7++;
   }
 
   const decorated: ProgrammeEvent[] = (events ?? []).map((e) => {
@@ -140,5 +113,5 @@ export async function fetchDecoratedEvents(
     };
   });
 
-  return { events: decorated, registered7d, checkedInToday };
+  return { events: decorated };
 }
