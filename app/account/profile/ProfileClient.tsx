@@ -399,7 +399,7 @@ export function ProfileClient({
                     {f4Ready ? 'done' : 'not yet'}
                   </span>.
                 </li>
-                <li>Confirmed email address, and platform + privacy consents accepted (handled at sign-in).</li>
+                <li>Confirmed email address, and platform + privacy consents accepted (handled when you log in).</li>
               </ul>
             </>
           )}

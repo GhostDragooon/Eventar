@@ -162,7 +162,7 @@ describe('acceptInvite — signed out', () => {
   it('asks the caller to sign in, flagged so the page can offer the link; touches nothing else', async () => {
     getUser.mockResolvedValue({ data: { user: null }, error: new AuthSessionMissingError() });
     const res = await acceptInvite('tok-1', { confirmed: false });
-    expect(res).toEqual({ error: 'You must be signed in to accept an invite.', needsSignIn: true });
+    expect(res).toEqual({ error: 'You must be logged in to accept an invite.', needsSignIn: true });
     expect(reads.filters).toHaveLength(0);
     expect(rpc).not.toHaveBeenCalled();
   });
@@ -175,7 +175,7 @@ describe('acceptInvite — signed out', () => {
       error: Object.assign(new Error('fetch failed'), { name: 'AuthRetryableFetchError', status: 0 }),
     });
     const res = await acceptInvite('tok-1', { confirmed: false });
-    expect(res).toEqual({ error: "We couldn't verify your sign-in just now. Try again." });
+    expect(res).toEqual({ error: "We couldn't verify your log-in just now. Try again." });
     expect(res).not.toHaveProperty('needsSignIn');
     expect(rpc).not.toHaveBeenCalled();
   });

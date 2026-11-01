@@ -9,6 +9,6 @@ export function isSignedOutError(error: string): boolean {
 
 export function signedOutCopy(error: string): string {
   return error === 'session_revoked'
-    ? "For your security, you've been signed out on all your devices after repeated rapid attempts. Please sign in again."
-    : "You're signed out. Sign in again to continue.";
+    ? "For your security, you've been signed out on all your devices after repeated rapid attempts. Please log in again."
+    : "You're signed out. Log in again to continue.";
 }

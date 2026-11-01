@@ -145,7 +145,7 @@ describe('walkInRegisterAndCheckIn', () => {
 
   // Q45, 2026-10-14: a server-side sign-out mid-event must come back as a
   // message, not a throw that froze the dialog on "Registering…".
-  const SIGNED_OUT = "You've been signed out. This walk-in was not saved. Reload and sign in again.";
+  const SIGNED_OUT = "You've been signed out. This walk-in was not saved. Reload and log in again.";
 
   it('signed out (session ended server-side): returns the signed-out message instead of throwing', async () => {
     mockRequireStaff.mockRejectedValueOnce(new MockNotAuthorizedError('no session'));

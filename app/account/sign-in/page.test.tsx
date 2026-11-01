@@ -72,7 +72,7 @@ describe('AttendeeSignInPage — trouble-signing-in help', () => {
     // /account/sign-in?error=..., which re-triggered the same redirect).
     mockSearchParams = new URLSearchParams('error=missing_code');
     render(<AttendeeSignInPage />);
-    expect(screen.getByText(/this sign-in link has expired or was already used/i)).toBeInTheDocument();
+    expect(screen.getByText(/this log-in link has expired or was already used/i)).toBeInTheDocument();
   });
 });
 
@@ -96,4 +96,13 @@ describe('AttendeeSignInPage — next', () => {
       expect(await formNext(hostile)).toBeNull();
     },
   );
+});
+
+describe('AttendeeSignInPage — door switch', () => {
+  it('offers Sign up on this door, pointing at the sign-up door', async () => {
+    mockSearchParams = new URLSearchParams();
+    render(<AttendeeSignInPage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: /^next$/i })).toBeInTheDocument());
+    expect(screen.getByRole('link', { name: /^sign up$/i })).toHaveAttribute('href', '/account/sign-up');
+  });
 });

@@ -12,6 +12,14 @@ configure({ asyncUtilTimeout: 3000 });
 afterEach(cleanup);
 
 describe('MagicLinkSignInForm', () => {
+  // The button reads "Next", which does not say an email is sent; the help line does, so the button points at it.
+  it('describes the submit button with the line that says a link is emailed', () => {
+    render(<MagicLinkSignInForm submitMagicLink={async () => ({ ok: true as const })} submitLabel="Next" />);
+    const help = document.getElementById('magic-link-help');
+    expect(help?.textContent).toMatch(/one-time log-in link/i);
+    expect(screen.getByRole('button', { name: /^next$/i })).toHaveAttribute('aria-describedby', 'magic-link-help');
+  });
+
   it('passes form data to the host action and reports a neutral success message', async () => {
     const submitMagicLink = vi.fn(async () => ({ ok: true as const }));
     render(<MagicLinkSignInForm submitMagicLink={submitMagicLink} />);

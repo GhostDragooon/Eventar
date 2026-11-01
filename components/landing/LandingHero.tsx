@@ -137,7 +137,7 @@ export function LandingHero({
                     the pill scroll the page sideways; the full phrase returns
                     as soon as there is room for it. */}
                 {k === 'practitioner' ? (
-                  'Practitioner'
+                  'Attendee'
                 ) : (
                   <>
                     <span className="sm:hidden">Organiser</span>

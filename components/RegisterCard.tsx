@@ -191,7 +191,7 @@ export default function RegisterCard({
             href="/account/sign-up?next=/account/claim"
             className={cn(buttonVariants({ variant: 'outline' }), 'min-h-11 w-full')}
           >
-            Create your Eventar record
+            Sign up
           </Link>
         )}
         {!isStaff && signedIn === true && (

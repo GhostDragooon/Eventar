@@ -93,7 +93,7 @@ function summariseCredit(outcomes: AwardOutcome[]): CreditSummary {
   };
 }
 
-const CHECKIN_SIGNED_OUT = "You've been signed out. This check-in was not saved. Sign in again to continue.";
+const CHECKIN_SIGNED_OUT = "You've been signed out. This check-in was not saved. Log in again to continue.";
 
 /**
  * requireStaff(), but a server-side sign-out (the §4 abuse tier, or "sign out
@@ -246,7 +246,7 @@ const walkInSchema = z.object({
  * immediately. Skips the registration window check (the person is physically
  * present) and skips the confirmation email (they're at the desk).
  */
-const WALKIN_SIGNED_OUT = "You've been signed out. This walk-in was not saved. Reload and sign in again.";
+const WALKIN_SIGNED_OUT = "You've been signed out. This walk-in was not saved. Reload and log in again.";
 
 export async function walkInRegisterAndCheckIn(input: {
   eventId: string;

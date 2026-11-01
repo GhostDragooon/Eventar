@@ -168,7 +168,7 @@ describe('markAttended — signed out mid-event', () => {
   it('returns the signed-out message instead of throwing', async () => {
     vi.mocked(requireStaff).mockRejectedValueOnce(new MockNotAuthorizedError('no session'));
     await expect(markAttended('ABC-1234', 'qr')).resolves.toEqual({
-      error: "You've been signed out. This check-in was not saved. Sign in again to continue.",
+      error: "You've been signed out. This check-in was not saved. Log in again to continue.",
     });
   });
 

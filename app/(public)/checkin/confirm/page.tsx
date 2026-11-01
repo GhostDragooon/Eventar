@@ -551,7 +551,7 @@ function CheckedInView({
               href={signedIn ? '/account/claim' : '/account/sign-in?next=/account/claim'}
               className="text-primary-ink hover:underline font-semibold"
             >
-              {signedIn ? 'Link this attendance to your account' : 'Sign in or sign up'}
+              {signedIn ? 'Link this attendance to your account' : 'Log in or sign up'}
             </Link>{' '}
             {signedIn
               ? 'to release points — reception can’t do this for you.'

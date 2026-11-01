@@ -63,9 +63,9 @@ export async function acceptInvite(
         status: userErr.status,
         code: userErr.code,
       });
-      return { error: "We couldn't verify your sign-in just now. Try again." };
+      return { error: "We couldn't verify your log-in just now. Try again." };
     }
-    return { error: 'You must be signed in to accept an invite.', needsSignIn: true };
+    return { error: 'You must be logged in to accept an invite.', needsSignIn: true };
   }
 
   // D3: an invitee whose email already holds practitioner records is asked to

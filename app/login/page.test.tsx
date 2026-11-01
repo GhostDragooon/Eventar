@@ -267,7 +267,7 @@ describe('/login — ?error= codes', () => {
     visit('error=not_organiser&next=%2Fevents%2Fnew');
     expect(await screen.findByLabelText(/email address/i)).toBeInTheDocument();
     expect(screen.getByRole('alert')).toHaveTextContent(
-      'That page is for organisers. Sign in with your organiser email.',
+      'That page is for organisers. Log in with your organiser email.',
     );
   });
 
@@ -388,13 +388,13 @@ describe('/login — arriving from an invite link', () => {
     expect(screen.queryByText(/organizer list/i)).not.toBeInTheDocument();
   });
 
-  it('the "Trouble signing in?" list no longer says only listed organizers can sign in', async () => {
+  it('the "Trouble logging in?" list no longer says only listed organizers can log in', async () => {
     visit(INVITE);
     await screen.findByLabelText(/email address/i);
-    expect(screen.queryByText(/only organizer emails can sign in/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/your invite link is separate from the sign-in link, and works once/i)).toBeInTheDocument();
+    expect(screen.queryByText(/only organizer emails can log in/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/your invite link is separate from the log-in link, and works once/i)).toBeInTheDocument();
     // Sign-in links and the invite link are different things; the list says so.
-    expect(screen.getByText(/sign-in links expire after 15 minutes/i)).toBeInTheDocument();
+    expect(screen.getByText(/log-in links expire after 15 minutes/i)).toBeInTheDocument();
   });
 
   it('keeps the invite in the form so the magic link lands back on it', async () => {
@@ -409,7 +409,7 @@ describe('/login — arriving from an invite link', () => {
     await screen.findByLabelText(/email address/i);
     expect(screen.getByRole('heading', { name: /^log in$/i })).toBeInTheDocument();
     expect(screen.getByText(/organizer access only/i)).toBeInTheDocument();
-    expect(screen.getByText(/only organizer emails can sign in/i)).toBeInTheDocument();
+    expect(screen.getByText(/only organizer emails can log in/i)).toBeInTheDocument();
   });
 });
 
@@ -486,7 +486,7 @@ describe('/login — a bare /invite is not an invite', () => {
 
 // User-lens round 2, M2: a link opened in another browser, device or a mail app's
 // built-in browser fails like an expired one; the help list has to say how to avoid it.
-describe('/login — the "Trouble signing in?" list names the different-browser cause', () => {
+describe('/login — the "Trouble logging in?" list names the different-browser cause', () => {
   it.each([['ordinary door', ''], ['invite door', 'next=%2Finvite%2Ftok-1']])('%s', async (_name, query) => {
     noSession();
     visit(query);

@@ -485,12 +485,12 @@ describe('RegisterCard — account prompt on the success card (FR-003)', () => {
 
   const hrefs = () => screen.queryAllByRole('link').map((a) => a.getAttribute('href'));
 
-  it('signed out: offers "Create your Eventar record" -> sign-up with the claim page as next, only after the registration succeeds', async () => {
+  it('signed out: offers "Sign up" -> sign-up with the claim page as next, only after the registration succeeds', async () => {
     render(<RegisterCard {...props} signedIn={false} signInHref="/account/sign-in?next=/events/e1" />);
-    expect(screen.queryByRole('link', { name: /create your eventar record/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^sign up$/i })).not.toBeInTheDocument();
 
     await registerAs('alice@work.com');
-    const create = screen.getByRole('link', { name: /^create your eventar record$/i });
+    const create = screen.getByRole('link', { name: /^sign up$/i });
     expect(create).toHaveAttribute('href', '/account/sign-up?next=/account/claim');
     expect(screen.queryByRole('link', { name: /^my record$/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/now on your record/i)).not.toBeInTheDocument();
@@ -504,7 +504,7 @@ describe('RegisterCard — account prompt on the success card (FR-003)', () => {
 
     expect(screen.getByText('This is now on your record.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^my record$/i })).toHaveAttribute('href', '/account/record');
-    expect(screen.queryByRole('link', { name: /create your eventar record/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^sign up$/i })).not.toBeInTheDocument();
     expect(hrefs().filter((h) => /^\/(login|dashboard)/.test(h ?? ''))).toEqual([]);
   });
 
@@ -515,7 +515,7 @@ describe('RegisterCard — account prompt on the success card (FR-003)', () => {
 
     expect(screen.queryByText(/now on your record/i)).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^my record$/i })).toHaveAttribute('href', '/account/record');
-    expect(screen.queryByRole('link', { name: /create your eventar record/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^sign up$/i })).not.toBeInTheDocument();
   });
 
   it('a host that does not know the session (the poster page) shows no account prompt at all, even after a linked registration', async () => {
@@ -523,7 +523,7 @@ describe('RegisterCard — account prompt on the success card (FR-003)', () => {
     await registerAs('alice@work.com', true);
 
     expect(screen.queryByText(/now on your record/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /create your eventar record/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^sign up$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^my record$/i })).not.toBeInTheDocument();
   });
 
@@ -531,7 +531,7 @@ describe('RegisterCard — account prompt on the success card (FR-003)', () => {
     render(<RegisterCard {...props} signedIn={false} isStaff />);
     await registerAs('alice@work.com');
 
-    expect(screen.queryByRole('link', { name: /create your eventar record/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^sign up$/i })).not.toBeInTheDocument();
   });
 
   it('organiser: no account prompt at all, and the organiser line stays (even if the session email were passed in)', async () => {

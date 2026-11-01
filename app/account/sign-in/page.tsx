@@ -101,7 +101,7 @@ function AttendeeSignInForm() {
           <li>Check spam, and make sure you opened the newest email.</li>
           <li>
             Open the link in the same browser you asked for it in. A link opened on another device,
-            or inside a mail app&apos;s built-in browser, won&apos;t sign you in.
+            or inside a mail app&apos;s built-in browser, won&apos;t log you in.
           </li>
           <li>
             Use the same address you registered with — we look up the account by that address.

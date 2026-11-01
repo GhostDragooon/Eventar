@@ -170,34 +170,34 @@ function LoginForm() {
 
       <details className="group">
         <summary className="cursor-pointer font-body-md text-body-md text-[color:var(--on-primary-container)] hover:underline list-none">
-          Trouble signing in?
+          Trouble logging in?
         </summary>
         <ul className="mt-sm font-body-md text-[calc(13px*var(--text-scale))] text-on-surface-variant leading-relaxed list-disc pl-lg flex flex-col gap-xs">
           <li>
             {isInvite
-              ? 'Sign-in links expire after 15 minutes and work once. Request a fresh one above.'
+              ? 'Log-in links expire after 15 minutes and work once. Request a fresh one above.'
               : 'Links expire after 15 minutes and work once — request a fresh one above.'}
           </li>
           <li>Check spam, and make sure you opened the newest email.</li>
           <li>
             Open the link in the same browser you asked for it in. A link opened on another device,
-            or inside a mail app&apos;s built-in browser, won&apos;t sign you in.
+            or inside a mail app&apos;s built-in browser, won&apos;t log you in.
           </li>
           {isInvite ? (
             <li>
-              Your invite link is separate from the sign-in link, and works once. If it stops
+              Your invite link is separate from the log-in link, and works once. If it stops
               working, ask your admin for a new one.
             </li>
           ) : (
             <>
               <li>
-                Only organizer emails can sign in. If yours isn&apos;t on the list, ask an admin to
+                Only organizer emails can log in. If yours isn&apos;t on the list, ask an admin to
                 add you.
               </li>
-              <li>Changing address? Sign in with your current one, then update it from Settings.</li>
+              <li>Changing address? Log in with your current one, then update it from Settings.</li>
               <li>
                 Lost access to your inbox entirely? Ask an admin to update your organizer record —
-                magic-link-only sign-in means we can&apos;t self-serve you back in from this screen.
+                magic-link-only log-in means we can&apos;t self-serve you back in from this screen.
               </li>
             </>
           )}

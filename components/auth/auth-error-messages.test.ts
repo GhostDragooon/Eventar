@@ -3,7 +3,7 @@ import { resolveAuthError } from './auth-error-messages';
 
 describe('resolveAuthError', () => {
   it('does not reflect an unknown query value back to the user', () => {
-    expect(resolveAuthError('unexpected-secret')).toBe('Sign-in could not be completed. Request a new link below.');
+    expect(resolveAuthError('unexpected-secret')).toBe('Log-in could not be completed. Request a new link below.');
   });
 
   it('returns null for no code', () => {
@@ -28,13 +28,13 @@ describe('resolveAuthError', () => {
   // its practitioner panel; this line is for a visitor with none (a pasted URL).
   it('resolves not_organiser to organiser-door copy that names the next step', () => {
     expect(resolveAuthError('not_organiser')).toBe(
-      'That page is for organisers. Sign in with your organiser email.',
+      'That page is for organisers. Log in with your organiser email.',
     );
   });
 
   it('keeps not_organiser off the attendee door (generic line, never reflected)', () => {
     expect(resolveAuthError('not_organiser', 'attendee')).toBe(
-      'Sign-in could not be completed. Request a new link below.',
+      'Log-in could not be completed. Request a new link below.',
     );
   });
 
@@ -61,7 +61,7 @@ describe('multiple_organisations', () => {
   });
 
   it('is organiser-door only: the attendee door never receives it and falls back to the generic line', () => {
-    expect(resolveAuthError('multiple_organisations', 'attendee')).toBe('Sign-in could not be completed. Request a new link below.');
+    expect(resolveAuthError('multiple_organisations', 'attendee')).toBe('Log-in could not be completed. Request a new link below.');
   });
 });
 

@@ -24,7 +24,7 @@ export function claimErrorCopy(error: ClaimActionError | string): string {
     case 'rate_limited':
       return 'Too many attempts in a short window. Please wait a moment.';
     case 'not_authorized':
-      return 'You need to sign in first.';
+      return 'You need to log in first.';
     case 'session_revoked':
       return signedOutCopy('session_revoked');
     default:

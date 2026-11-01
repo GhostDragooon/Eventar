@@ -11,9 +11,9 @@
 export type AuthAudience = 'organizer' | 'attendee';
 
 const AUTH_ERROR_MESSAGES_ORGANIZER: Readonly<Record<string, string>> = {
-  missing_code: 'This sign-in link has expired or was already used. Request a new one below.',
+  missing_code: 'This log-in link has expired or was already used. Request a new one below.',
   exchange_failed:
-    "This sign-in link couldn't be completed. It may have expired, or been opened in a different browser or app from the one you asked for it in. Request a new link below and open it in the same browser.",
+    "This log-in link couldn't be completed. It may have expired, or been opened in a different browser or app from the one you asked for it in. Request a new link below and open it in the same browser.",
   not_authorized: 'Your email is not on the organizer list. Contact an admin to be added.',
   unavailable:
     'We could not check your organizer access just now. This is on our side — please try again in a moment.',
@@ -24,13 +24,13 @@ const AUTH_ERROR_MESSAGES_ORGANIZER: Readonly<Record<string, string>> = {
   // proxy.ts keeps the session of a signed-in non-organiser and sends them to
   // /login?error=not_organiser. With a session /login shows its practitioner
   // panel instead; this line is what a visitor with no session sees.
-  not_organiser: 'That page is for organisers. Sign in with your organiser email.',
+  not_organiser: 'That page is for organisers. Log in with your organiser email.',
 };
 
 const AUTH_ERROR_MESSAGES_ATTENDEE: Readonly<Record<string, string>> = {
-  missing_code: 'This sign-in link has expired or was already used. Request a new one below.',
+  missing_code: 'This log-in link has expired or was already used. Request a new one below.',
   exchange_failed:
-    "This sign-in link couldn't be completed. It may have expired, or been opened in a different browser or app from the one you asked for it in. Request a new link below and open it in the same browser.",
+    "This log-in link couldn't be completed. It may have expired, or been opened in a different browser or app from the one you asked for it in. Request a new link below and open it in the same browser.",
   not_authorized: 'This email is not recognised. Sign up first by registering for an event.',
   unavailable:
     'We could not verify your account just now. This is on our side — please try again in a moment.',
@@ -38,7 +38,7 @@ const AUTH_ERROR_MESSAGES_ATTENDEE: Readonly<Record<string, string>> = {
   // session the server had already ended (abuse-tier revoke, sign-out on
   // another device, expiry). Q45, 2026-10-14.
   session_ended:
-    'Your previous session has ended (for example, for your security after repeated rapid attempts, or after signing out on another device). Sign in again to continue.',
+    'Your previous session has ended (for example, for your security after repeated rapid attempts, or after signing out on another device). Log in again to continue.',
 };
 
 /** @deprecated Prefer `resolveAuthError(code, audience)`. Kept for callers that predate the audience param. */
@@ -47,5 +47,5 @@ export const AUTH_ERROR_MESSAGES = AUTH_ERROR_MESSAGES_ORGANIZER;
 export function resolveAuthError(code: string | null, audience: AuthAudience = 'organizer'): string | null {
   if (!code) return null;
   const dict = audience === 'attendee' ? AUTH_ERROR_MESSAGES_ATTENDEE : AUTH_ERROR_MESSAGES_ORGANIZER;
-  return dict[code] ?? 'Sign-in could not be completed. Request a new link below.';
+  return dict[code] ?? 'Log-in could not be completed. Request a new link below.';
 }
