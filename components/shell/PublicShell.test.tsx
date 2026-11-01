@@ -6,13 +6,13 @@ import { PublicShell } from './PublicShell';
 afterEach(cleanup);
 
 describe('PublicShell — state-aware right-side CTA (SiteShell parity)', () => {
-  it('signed-out renders a "Sign in" pill pointing at the attendee door', () => {
+  it('signed-out renders a "Log in" pill pointing at the attendee door', () => {
     render(
       <PublicShell>
         <div>content</div>
       </PublicShell>,
     );
-    const cta = screen.getByRole('link', { name: /^sign in$/i });
+    const cta = screen.getByRole('link', { name: /^log in$/i });
     expect(cta).toHaveAttribute('href', '/account/sign-in');
     expect(screen.queryByRole('link', { name: /^account$/i })).not.toBeInTheDocument();
   });
@@ -27,7 +27,7 @@ describe('PublicShell — state-aware right-side CTA (SiteShell parity)', () => 
     );
     const cta = screen.getByRole('button', { name: /^account$/i });
     expect(cta).toHaveAttribute('aria-haspopup', 'menu');
-    expect(screen.queryByRole('link', { name: /^sign in$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^log in$/i })).not.toBeInTheDocument();
   });
 
   it('CTA does NOT point at /login — the staff door is unlinked from the public chrome (Q32 audience boundary)', () => {
@@ -49,7 +49,7 @@ describe('PublicShell — state-aware right-side CTA (SiteShell parity)', () => 
         <div>content</div>
       </PublicShell>,
     );
-    expect(screen.getByRole('link', { name: /^sign in$/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^log in$/i })).toBeInTheDocument();
   });
 
   it('signed-in + isStaff renders StaffProgrammePill (Events -> /dashboard), NOT the AccountMenu', () => {
@@ -63,7 +63,7 @@ describe('PublicShell — state-aware right-side CTA (SiteShell parity)', () => 
     const events = screen.getByRole('link', { name: /^events$/i });
     expect(events).toHaveAttribute('href', '/dashboard');
     expect(screen.queryByRole('button', { name: /^account$/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /^sign in$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^log in$/i })).not.toBeInTheDocument();
   });
 
   it('renders a state pill alongside the CTA when `pill` is passed (does not replace the CTA)', () => {

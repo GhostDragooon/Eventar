@@ -138,7 +138,7 @@ export function SiteShell({
             aria-current={active === 'signin' ? 'page' : undefined}
             className="shrink-0 whitespace-nowrap rounded-full bg-primary px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary transition-transform duration-150 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
           >
-            Sign in
+            Log in
           </Link>
         )}
       </nav>

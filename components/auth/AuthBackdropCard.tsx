@@ -37,7 +37,7 @@ export function AuthBackdropCard({
   const otherDoor =
     door === 'attendee'
       ? { href: '/login', label: 'Organiser log in' }
-      : { href: '/account/sign-in', label: 'Attendee sign in' };
+      : { href: '/account/sign-in', label: 'Attendee log in' };
 
   return (
     <div className="relative min-h-dvh w-full overflow-hidden text-on-surface">

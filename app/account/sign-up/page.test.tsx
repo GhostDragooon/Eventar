@@ -30,14 +30,14 @@ afterEach(() => {
   mockSearchParams = new URLSearchParams('');
 });
 
-// SiteShell's own nav also renders a "Sign in" link (the signed-out CTA), so
-// once the form mounts there are two links named "Sign in" on the page —
+// SiteShell's own nav also renders a "Log in" link (the signed-out CTA), so
+// once the form mounts there are two links named "Log in" on the page —
 // the nav pill and the in-page "Already have an account?" link. Rather than
 // pick one element out ambiguously, wait for both to exist (2 links) and
 // assert against the full set of hrefs.
 async function signInLinkHrefs(): Promise<(string | null)[]> {
-  await waitFor(() => expect(screen.getAllByRole('link', { name: /sign in/i })).toHaveLength(2));
-  return screen.getAllByRole('link', { name: /sign in/i }).map((l) => l.getAttribute('href'));
+  await waitFor(() => expect(screen.getAllByRole('link', { name: /log in/i })).toHaveLength(2));
+  return screen.getAllByRole('link', { name: /log in/i }).map((l) => l.getAttribute('href'));
 }
 
 describe('AttendeeSignUpPage', () => {
@@ -50,18 +50,18 @@ describe('AttendeeSignUpPage', () => {
     expect(screen.queryByText(/sign in to your account/i)).not.toBeInTheDocument();
   });
 
-  it('submit button reads "Send sign-up link"', async () => {
+  it('submit button reads "Next"', async () => {
     render(<AttendeeSignUpPage />);
-    await waitFor(() => expect(screen.getByRole('button', { name: /send sign-up link/i })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: /^next$/i })).toBeInTheDocument());
   });
 
-  it('renders a quiet "Already have an account? Sign in" link to /account/sign-in', async () => {
+  it('renders a quiet "Already have an account? Log in" link to /account/sign-in', async () => {
     render(<AttendeeSignUpPage />);
     const hrefs = await signInLinkHrefs();
     expect(hrefs).toContain('/account/sign-in');
   });
 
-  it('forwards ?next= onto the Sign in link', async () => {
+  it('forwards ?next= onto the Log in link', async () => {
     // A real event path: events.id is a uuid, and only attendee paths are forwarded (FR-005).
     mockSearchParams = new URLSearchParams(`next=/events/${EVENT}`);
     render(<AttendeeSignUpPage />);
@@ -82,7 +82,7 @@ describe('AttendeeSignUpPage — next', () => {
   async function render_(search: URLSearchParams) {
     mockSearchParams = search;
     const { container } = render(<AttendeeSignUpPage />);
-    await waitFor(() => expect(screen.getByRole('button', { name: /send sign-up link/i })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: /^next$/i })).toBeInTheDocument());
     return container;
   }
   const formNext = (c: HTMLElement) => c.querySelector<HTMLInputElement>('input[name="next"]')?.value ?? null;
@@ -116,7 +116,7 @@ describe('AttendeeSignUpPage — next', () => {
   });
 
   it.each(['//evil.example', '/\\evil', '/dashboard', '/login', '/account/../dashboard'])(
-    'ignores a hostile or other-audience destination (%j): no hidden field, no next on the Sign in link',
+    'ignores a hostile or other-audience destination (%j): no hidden field, no next on the Log in link',
     async (hostile) => {
       const c = await render_(new URLSearchParams({ next: hostile }));
       expect(formNext(c)).toBeNull();
@@ -127,5 +127,14 @@ describe('AttendeeSignUpPage — next', () => {
   it('does not wrap a destination that is already the wizard', async () => {
     const c = await render_(new URLSearchParams({ next: '/account/complete' }));
     expect(formNext(c)).toBe('/account/complete');
+  });
+});
+
+describe('AttendeeSignUpPage: door labels its side', () => {
+  it('reads Attendee · Sign up above the heading, as the log-in doors read Attendee · Log in and Organiser · Log in', async () => {
+    render(<AttendeeSignUpPage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: /^next$/i })).toBeInTheDocument());
+    expect(screen.getByText('Attendee')).toBeInTheDocument();
+    expect(screen.getByText(/· Sign up/)).toBeInTheDocument();
   });
 });

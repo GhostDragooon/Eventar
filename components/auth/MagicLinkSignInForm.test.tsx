@@ -27,7 +27,7 @@ describe('MagicLinkSignInForm', () => {
     render(<MagicLinkSignInForm submitMagicLink={async () => ({ ok: true as const })} />);
     fireEvent.change(screen.getByRole('textbox', { name: /email address/i }), { target: { value: '  Staff@Example.com ' } });
     fireEvent.click(screen.getByRole('button', { name: /send magic link/i }));
-    expect(await screen.findByText(/check your inbox \(Staff@Example\.com\) for a sign-in link/i)).toBeInTheDocument();
+    expect(await screen.findByText(/check your inbox \(Staff@Example\.com\) for a log-in link/i)).toBeInTheDocument();
   });
 
   it('renders the host action error without claiming success', async () => {

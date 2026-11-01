@@ -54,9 +54,9 @@ afterEach(cleanup);
 describe('invite page — signed out', () => {
   beforeEach(signedOut);
 
-  it('offers "Sign in to accept" through the organiser door, carrying the invite', async () => {
+  it('offers "Log in to accept" through the organiser door, carrying the invite', async () => {
     render(<InviteAcceptPage />);
-    const link = await screen.findByRole('link', { name: /^sign in to accept$/i });
+    const link = await screen.findByRole('link', { name: /^log in to accept$/i });
     expect(link).toHaveAttribute('href', SIGN_IN_HREF);
     // The accept button would only lead to a "must be signed in" error.
     expect(screen.queryByRole('button', { name: /^accept invite$/i })).not.toBeInTheDocument();
@@ -66,13 +66,13 @@ describe('invite page — signed out', () => {
   it('offers the sign-in link when the browser session cannot be read at all (getSession rejects)', async () => {
     getSession.mockRejectedValue(new Error('storage unavailable'));
     render(<InviteAcceptPage />);
-    const link = await screen.findByRole('link', { name: /^sign in to accept$/i });
+    const link = await screen.findByRole('link', { name: /^log in to accept$/i });
     expect(link).toHaveAttribute('href', SIGN_IN_HREF);
   });
 
   it('decodes to the invite path: /login?next=/invite/<token>', async () => {
     render(<InviteAcceptPage />);
-    const link = await screen.findByRole('link', { name: /^sign in to accept$/i });
+    const link = await screen.findByRole('link', { name: /^log in to accept$/i });
     const url = new URL(link.getAttribute('href')!, 'http://localhost');
     expect(url.pathname).toBe('/login');
     expect(url.searchParams.get('next')).toBe('/invite/tok-123');
@@ -84,9 +84,9 @@ describe('invite page — signed out', () => {
     render(<InviteAcceptPage />);
     expect(screen.getByRole('heading', { name: /join your team/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^accept invite$/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /^sign in to accept$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^log in to accept$/i })).not.toBeInTheDocument();
     resolveSession({ data: { session: null }, error: null });
-    expect(await screen.findByRole('link', { name: /^sign in to accept$/i })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /^log in to accept$/i })).toBeInTheDocument();
   });
 });
 
@@ -96,7 +96,7 @@ describe('invite page — signed in', () => {
   it('"Accept invite" calls the action unconfirmed and shows the success screen', async () => {
     acceptInvite.mockResolvedValue({ orgName: 'Acme Training' });
     render(<InviteAcceptPage />);
-    expect(screen.queryByRole('link', { name: /^sign in to accept$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^log in to accept$/i })).not.toBeInTheDocument();
     fireEvent.click(await acceptButton());
 
     expect(await screen.findByRole('heading', { name: /you're in/i })).toBeInTheDocument();
@@ -113,7 +113,7 @@ describe('invite page — signed in', () => {
     render(<InviteAcceptPage />);
     fireEvent.click(await acceptButton());
     expect(await screen.findByRole('alert')).toHaveTextContent('This invite link has expired.');
-    expect(screen.queryByRole('link', { name: /^sign in to accept$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^log in to accept$/i })).not.toBeInTheDocument();
   });
 
   // The browser session can look present while the server has already lost it.
@@ -125,7 +125,7 @@ describe('invite page — signed in', () => {
     render(<InviteAcceptPage />);
     fireEvent.click(await acceptButton());
     expect(await screen.findByRole('alert')).toHaveTextContent('You must be signed in to accept an invite.');
-    expect(screen.getByRole('link', { name: /^sign in to accept$/i })).toHaveAttribute('href', SIGN_IN_HREF);
+    expect(screen.getByRole('link', { name: /^log in to accept$/i })).toHaveAttribute('href', SIGN_IN_HREF);
   });
 
   // Rule 12: a rejected Server Action (network down) must not become a
@@ -345,7 +345,7 @@ describe('invite page — card spacing', () => {
   it('uses a spacing class that exists (py-xl, like the door pages)', async () => {
     signedOut();
     const { container } = render(<InviteAcceptPage />);
-    await screen.findByRole('link', { name: /^sign in to accept$/i });
+    await screen.findByRole('link', { name: /^log in to accept$/i });
     expect(container.querySelector('.py-xl')).not.toBeNull();
     expect(container.querySelector('.py-2xl')).toBeNull();
   });
@@ -366,7 +366,7 @@ describe('invite page — who, where the error sits, target size', () => {
   it('says nothing about an account when signed out', async () => {
     signedOut();
     render(<InviteAcceptPage />);
-    await screen.findByRole('link', { name: /^sign in to accept$/i });
+    await screen.findByRole('link', { name: /^log in to accept$/i });
     expect(screen.queryByText(/you're signed in as/i)).not.toBeInTheDocument();
   });
 

@@ -60,16 +60,16 @@ function AttendeeSignInForm() {
     <AttendeeSignInShell>
       <p className="text-label-md font-semibold uppercase tracking-[0.18em] m-0">
         <span className="text-[color:var(--on-primary-container)]">Attendee</span>
-        <span className="text-on-surface-variant"> · Sign in</span>
+        <span className="text-on-surface-variant"> · Log in</span>
       </p>
-      <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">Sign in</h1>
+      <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">Log in</h1>
       <p className="font-body-md text-body-md text-on-surface-variant m-0">
         New user?{' '}
         <Link
           href="/account/sign-up"
           className="font-semibold text-[color:var(--on-primary-container)] hover:underline"
         >
-          Create an account
+          Sign up
         </Link>
         . We&apos;ll email a one-time link — no password.
       </p>
@@ -81,7 +81,7 @@ function AttendeeSignInForm() {
         submitMagicLink={sendAttendeeMagicLink}
         initialError={urlErr ?? endedErr}
         placeholder="you@example.com"
-        submitLabel="Continue"
+        submitLabel="Next"
         next={next}
         audience="attendee"
       />
@@ -94,7 +94,7 @@ function AttendeeSignInForm() {
 
       <details className="group">
         <summary className="cursor-pointer font-body-md text-body-md text-[color:var(--on-primary-container)] hover:underline list-none">
-          Trouble signing in?
+          Trouble logging in?
         </summary>
         <ul className="mt-sm font-body-md text-[calc(13px*var(--text-scale))] text-on-surface-variant leading-relaxed list-disc pl-lg flex flex-col gap-xs">
           <li>Links expire after 15 minutes and work once — request a fresh one above.</li>

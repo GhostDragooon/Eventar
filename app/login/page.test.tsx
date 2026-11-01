@@ -70,7 +70,7 @@ describe('/login — no session', () => {
     noSession();
     visit('');
     expect(await screen.findByLabelText(/email address/i)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /^sign in$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^log in$/i })).toBeInTheDocument();
     expect(screen.getByText(/organizer access only/i)).toBeInTheDocument();
     expect(panelHeading()).not.toBeInTheDocument();
     expect(getAccountMenuState).not.toHaveBeenCalled();
@@ -103,7 +103,7 @@ describe('/login — no session', () => {
     noSession();
     visit('');
     await screen.findByLabelText(/email address/i);
-    const links = screen.getAllByRole('link', { name: /^attendee sign in$/i });
+    const links = screen.getAllByRole('link', { name: /^attendee log in$/i });
     for (const link of links) {
       expect(link).toHaveAttribute('href', '/account/sign-in');
       expect(link).not.toHaveAttribute('aria-current');
@@ -175,11 +175,11 @@ describe('/login — signed-in practitioner (D1)', () => {
     expect(back).toHaveAttribute('href', '/account/record');
   });
 
-  // The card must agree with itself: no "Sign in" heading above "you're signed in".
-  it('shows the panel heading rather than the "Sign in" heading', async () => {
+  // The card must agree with itself: no "Log in" heading above "you're signed in".
+  it('shows the panel heading rather than the "Log in" heading', async () => {
     visit('');
     await screen.findByRole('heading', { name: /^organiser log in$/i });
-    expect(screen.queryByRole('heading', { name: /^sign in$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /^log in$/i })).not.toBeInTheDocument();
   });
 
   it('?error=not_organiser (the proxy bounce) shows the same panel, not the error banner', async () => {
@@ -215,15 +215,15 @@ describe('/login — signed-in practitioner (D1)', () => {
       expect(panelHeading()).not.toBeInTheDocument();
       expect(screen.getByText(/organizer access only/i)).toBeInTheDocument();
       expect(container.querySelector('input[name="next"]')).toHaveValue('/events/new');
-      // The "Sign in" heading is back.
-      expect(screen.getByRole('heading', { name: /^sign in$/i })).toBeInTheDocument();
+      // The "Log in" heading is back.
+      expect(screen.getByRole('heading', { name: /^log in$/i })).toBeInTheDocument();
     });
 
     it('moves focus to the form heading so keyboard users are not dropped on the page', async () => {
       signOut.mockResolvedValue({ error: null });
       visit('');
       fireEvent.click(await screen.findByRole('button', { name: /sign out and use another email/i }));
-      const heading = await screen.findByRole('heading', { name: /^sign in$/i });
+      const heading = await screen.findByRole('heading', { name: /^log in$/i });
       await waitFor(() => expect(heading).toHaveFocus());
     });
 
@@ -374,11 +374,11 @@ describe('/login — arriving from an invite link', () => {
 
   it('says what this sign-in is for, and drops the "contact an admin" notice', async () => {
     visit(INVITE);
-    expect(await screen.findByRole('heading', { name: /sign in to accept your invite/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /log in to accept your invite/i })).toBeInTheDocument();
     expect(screen.getByText(/return you to your invite/i)).toBeInTheDocument();
     expect(screen.queryByText(/organizer access only/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/contact an admin to be added/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /^sign in$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /^log in$/i })).not.toBeInTheDocument();
   });
 
   it('tells them which address to use instead of mentioning an organizer list', async () => {
@@ -405,9 +405,9 @@ describe('/login — arriving from an invite link', () => {
 
   it('every other organiser destination keeps the original door copy', async () => {
     visit('next=%2Fevents%2Fnew');
-    // The loading card has a "Sign in" heading too, so wait for the form before asserting on it.
+    // The loading card has a "Log in" heading too, so wait for the form before asserting on it.
     await screen.findByLabelText(/email address/i);
-    expect(screen.getByRole('heading', { name: /^sign in$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^log in$/i })).toBeInTheDocument();
     expect(screen.getByText(/organizer access only/i)).toBeInTheDocument();
     expect(screen.getByText(/only organizer emails can sign in/i)).toBeInTheDocument();
   });
@@ -470,8 +470,8 @@ describe('/login — a bare /invite is not an invite', () => {
     noSession();
     visit(`next=${encodeURIComponent(next)}`);
     await screen.findByLabelText(/email address/i);
-    expect(screen.getByRole('heading', { name: /^sign in$/i })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /sign in to accept your invite/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^log in$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /log in to accept your invite/i })).not.toBeInTheDocument();
   });
 
   it.each(['/invite', '/invite/'])('%s signed in as a practitioner is not forwarded', async (next) => {

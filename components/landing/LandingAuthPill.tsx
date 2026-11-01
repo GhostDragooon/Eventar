@@ -51,7 +51,7 @@ export function LandingAuthPill() {
   if (!signedIn) {
     return (
       <Link href="/account/sign-in" className={PILL_CLASS}>
-        Sign in
+        Log in
       </Link>
     );
   }

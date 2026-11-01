@@ -62,7 +62,7 @@ const COPY = {
     head: ['Your CME/CPD log', 'should keep itself.'],
     sub: 'Find accredited events, register, check in on the day. Your Eventar record captures what you attended and the points released — alongside iCMECPD and your college, not instead of them.',
     ctas: [
-      { label: 'Get started', href: '/account/sign-up' },
+      { label: 'Sign up', href: '/account/sign-up' },
       { label: 'Log in', href: '/account/sign-in' },
     ],
   },

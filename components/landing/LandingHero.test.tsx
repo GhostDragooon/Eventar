@@ -6,16 +6,16 @@ import { LandingHero } from './LandingHero';
 afterEach(cleanup);
 
 // Two audiences, one shape (spec 001 FR-001): practitioner mode offers the pair
-// "Get started" (sign-up) and "Log in" (sign-in), mirroring the organiser pair,
+// "Sign up" (sign-up) and "Log in" (sign-in), mirroring the organiser pair,
 // which is deliberately unchanged. This reverses the 2026-09-25 single-CTA
 // ("Get started" -> /events) shape of e6c2dc0; the lock below fails loudly if a
 // future edit collapses the practitioner pair again or drops the organiser pair.
 describe('LandingHero — audience CTAs', () => {
-  it('practitioner view renders the pair: "Get started" -> /account/sign-up and "Log in" -> /account/sign-in', () => {
+  it('practitioner view renders the pair: "Sign up" -> /account/sign-up and "Log in" -> /account/sign-in', () => {
     render(<LandingHero audience="practitioner" onAudienceChange={vi.fn()} />);
     const ctas = screen.getAllByRole('link').filter((el) => el.closest('.hero-copy'));
     expect(ctas).toHaveLength(2);
-    expect(ctas[0]).toHaveAccessibleName('Get started');
+    expect(ctas[0]).toHaveAccessibleName('Sign up');
     expect(ctas[0]).toHaveAttribute('href', '/account/sign-up');
     expect(ctas[1]).toHaveAccessibleName('Log in');
     expect(ctas[1]).toHaveAttribute('href', '/account/sign-in');

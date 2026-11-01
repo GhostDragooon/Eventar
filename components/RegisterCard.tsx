@@ -305,7 +305,7 @@ export default function RegisterCard({
           <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>account_circle</span>
           <span className="flex-1">
             <Link href={signInHref} className="text-primary-ink hover:underline font-semibold">
-              Sign in or sign up first
+              Log in or sign up first
             </Link>{' '}
             to link this registration to your account — required to release CME/CPD points for accredited events.
           </span>

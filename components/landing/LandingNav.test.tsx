@@ -34,9 +34,9 @@ vi.mock('@/app/account/actions', () => ({
 // browser session on mount and starts from a signed-out first paint so the
 // landing page stays a static prerender.
 describe('LandingNav — state-aware attendee-first CTA (shell parity)', () => {
-  it('signedIn={false} renders a "Sign in" pill pointing at the attendee door', () => {
+  it('signedIn={false} renders a "Log in" pill pointing at the attendee door', () => {
     render(<LandingNav signedIn={false} />);
-    const cta = screen.getByRole('link', { name: /^sign in$/i });
+    const cta = screen.getByRole('link', { name: /^log in$/i });
     expect(cta).toHaveAttribute('href', '/account/sign-in');
     expect(screen.queryByRole('link', { name: /^account$/i })).not.toBeInTheDocument();
   });
@@ -47,7 +47,7 @@ describe('LandingNav — state-aware attendee-first CTA (shell parity)', () => {
     render(<LandingNav signedIn />);
     const cta = screen.getByRole('button', { name: /^account$/i });
     expect(cta).toHaveAttribute('aria-haspopup', 'menu');
-    expect(screen.queryByRole('link', { name: /^sign in$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^log in$/i })).not.toBeInTheDocument();
   });
 
   it('top-right CTA does NOT point at /login — Q32 audience-boundary regression guard', () => {
@@ -55,7 +55,7 @@ describe('LandingNav — state-aware attendee-first CTA (shell parity)', () => {
     // pill (requireStaff() redirects an anon caller there) — but the primary
     // top-right auth CTA must be the attendee door, never staff /login.
     render(<LandingNav signedIn={false} />);
-    const cta = screen.getByRole('link', { name: /^sign in$/i });
+    const cta = screen.getByRole('link', { name: /^log in$/i });
     expect(cta.getAttribute('href')).not.toBe('/login');
   });
 
@@ -65,7 +65,7 @@ describe('LandingNav — state-aware attendee-first CTA (shell parity)', () => {
     // "Account" only fires if the mocked getSession returns a real session
     // (mock above returns null).
     render(<LandingNav />);
-    expect(screen.getByRole('link', { name: /^sign in$/i })).toHaveAttribute('href', '/account/sign-in');
+    expect(screen.getByRole('link', { name: /^log in$/i })).toHaveAttribute('href', '/account/sign-in');
   });
 
   it('"Start an Event" pill routes through /login?next=/events/new (never direct-to-/events/new)', () => {

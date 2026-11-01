@@ -89,8 +89,8 @@ function AttendeeSignUpForm() {
   return (
     <AttendeeSignUpShell>
       <p className="text-label-md font-semibold uppercase tracking-[0.18em] m-0">
-        <span className="text-[color:var(--on-primary-container)]">Sign up</span>
-        <span className="text-on-surface-variant"> · Create your Eventar record</span>
+        <span className="text-[color:var(--on-primary-container)]">Attendee</span>
+        <span className="text-on-surface-variant"> · Sign up</span>
       </p>
       <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">
         Create your Eventar record
@@ -114,7 +114,7 @@ function AttendeeSignUpForm() {
         submitMagicLink={sendAttendeeMagicLink}
         initialError={urlErr ?? endedErr}
         placeholder="you@example.com"
-        submitLabel="Send sign-up link"
+        submitLabel="Next"
         next={emailedNext}
         audience="attendee"
       />
@@ -129,7 +129,7 @@ function AttendeeSignUpForm() {
           href={next ? `/account/sign-in?next=${encodeURIComponent(next)}` : '/account/sign-in'}
           className="text-[color:var(--on-primary-container)] hover:underline"
         >
-          Sign in
+          Log in
         </Link>
       </p>
     </AttendeeSignUpShell>

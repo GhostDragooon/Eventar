@@ -129,7 +129,7 @@ function LoginForm() {
         tabIndex={-1}
         className="font-headline-lg text-headline-lg text-on-surface m-0 outline-none"
       >
-        {isInvite ? 'Sign in to accept your invite' : 'Sign in'}
+        {isInvite ? 'Log in to accept your invite' : 'Log in'}
       </h1>
       <p className="font-body-md text-body-md text-on-surface-variant m-0">
         {isInvite ? (
@@ -161,7 +161,7 @@ function LoginForm() {
         }
         next={next}
         audience={isInvite ? 'invitee' : 'organizer'}
-        submitLabel="Continue"
+        submitLabel="Next"
       />
 
       <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant text-center m-0">
@@ -297,7 +297,7 @@ function PractitionerPanel({
 function LoginShell() {
   return (
     <LoginLayout>
-      <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">Sign in</h1>
+      <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">Log in</h1>
       <p className="font-body-md text-body-md text-on-surface-variant m-0">Loading…</p>
     </LoginLayout>
   );

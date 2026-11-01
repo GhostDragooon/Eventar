@@ -75,11 +75,11 @@ describe('RegisterCard — self-serve walk-in orchestration', () => {
     expect(email.value).toBe('alice@example.com');
   });
 
-  it('renders the "Sign in or sign up first" nudge only when signInHref is passed', () => {
+  it('renders the "Log in or sign up first" nudge only when signInHref is passed', () => {
     const { rerender } = render(
       <RegisterCard {...baseProps} lifecycle="registering" />,
     );
-    expect(screen.queryByRole('link', { name: /sign in or sign up first/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /log in or sign up first/i })).not.toBeInTheDocument();
 
     rerender(
       <RegisterCard
@@ -88,7 +88,7 @@ describe('RegisterCard — self-serve walk-in orchestration', () => {
         signInHref="/account/sign-in?next=/events/xyz"
       />,
     );
-    const link = screen.getByRole('link', { name: /sign in or sign up first/i });
+    const link = screen.getByRole('link', { name: /log in or sign up first/i });
     expect(link).toHaveAttribute('href', '/account/sign-in?next=/events/xyz');
   });
 
@@ -100,7 +100,7 @@ describe('RegisterCard — self-serve walk-in orchestration', () => {
         signInHref="/account/sign-in?next=/events/xyz"
       />,
     );
-    expect(screen.queryByRole('link', { name: /sign in or sign up first/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /log in or sign up first/i })).not.toBeInTheDocument();
   });
 
   it('renders the "Registering as" attribution line when signed-in defaults are present', () => {

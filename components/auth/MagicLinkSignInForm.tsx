@@ -61,7 +61,7 @@ export function MagicLinkSignInForm({
           ? { kind: 'error', message: result.error }
           : {
               kind: 'success',
-              message: sentTo ? `Check your inbox (${sentTo}) for a sign-in link.` : 'Check your inbox for a sign-in link.',
+              message: sentTo ? `Check your inbox (${sentTo}) for a log-in link.` : 'Check your inbox for a log-in link.',
             },
       );
     });
@@ -93,7 +93,7 @@ export function MagicLinkSignInForm({
         />
       </label>
       <p id="magic-link-help" className="font-body-md text-body-md text-on-surface-variant">
-        Eventar will send a one-time sign-in link.{' '}
+        Eventar will send a one-time log-in link.{' '}
         {audience === 'attendee'
           ? 'The response does not reveal whether an account already exists.'
           : audience === 'invitee'

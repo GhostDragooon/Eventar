@@ -384,7 +384,7 @@ export default function RosterClient({
             <>
               {' '}
               <a href={toast.signInHref} className="underline font-semibold">
-                Sign in
+                Log in
               </a>
             </>
           )}
@@ -616,7 +616,7 @@ function WalkInDialog({
               <>
                 {' '}
                 <a href={signInHref} className="underline font-semibold">
-                  Sign in
+                  Log in
                 </a>
               </>
             )}

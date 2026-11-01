@@ -24,3 +24,5 @@ UX-02 re-cut (6) Account in the rail: a (flat list of five), 2026-11-01
 UX-02 re-cut (7) row shape: a (rounded rows, tinted fill, D0), 2026-11-01 (Ivan: "Accept all picks")
 UX-02 review follow-up (dead phone tabs): a (tiny "Soon" under each unbuilt tab), 2026-11-01
 UX-02 review follow-up (current-place cue, non-colour): a (2 px top rule on the current phone tab; rail keeps its tinted fill), 2026-11-01
+Door copy (words): a (Log in + Sign up, sentence case; hero "Get started" becomes "Sign up"), 2026-11-01
+Door copy (button): a (Next on both doors and the sign-up door, with a line saying a link is emailed), 2026-11-01

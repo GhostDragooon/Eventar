@@ -31,12 +31,12 @@ afterEach(() => {
 });
 
 describe('AttendeeSignInPage — trouble-signing-in help', () => {
-  it('renders the "Trouble signing in?" details block once the form is shown', async () => {
+  it('renders the "Trouble logging in?" details block once the form is shown', async () => {
     render(<AttendeeSignInPage />);
     // The page holds the form out of the tree until the getSession() check
     // resolves; wait for the summary to appear.
     await waitFor(() =>
-      expect(screen.getByText(/trouble signing in\?/i)).toBeInTheDocument(),
+      expect(screen.getByText(/trouble logging in\?/i)).toBeInTheDocument(),
     );
     // Bullets — first two ported from /login (link expiry, spam). Bullet 3
     // guides at the actual common failure (typo/wrong address at signup).
@@ -82,7 +82,7 @@ describe('AttendeeSignInPage — next', () => {
   async function formNext(next: string) {
     mockSearchParams = new URLSearchParams({ next });
     const { container } = render(<AttendeeSignInPage />);
-    await waitFor(() => expect(screen.getByRole('button', { name: /^continue$/i })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: /^next$/i })).toBeInTheDocument());
     return container.querySelector<HTMLInputElement>('input[name="next"]')?.value ?? null;
   }
 

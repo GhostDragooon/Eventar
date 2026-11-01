@@ -115,7 +115,7 @@ export default function InviteAcceptPage() {
 
   const signInLink = (
     <Link href={signInHref} className={cn(buttonVariants(), 'min-h-11 w-full')}>
-      Sign in to accept
+      Log in to accept
     </Link>
   );
 
