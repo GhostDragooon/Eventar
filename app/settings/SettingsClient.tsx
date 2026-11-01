@@ -4,7 +4,7 @@ import { useState, useSyncExternalStore, useTransition } from 'react';
 import { readTheme, writeTheme, type Theme } from '@/lib/theme';
 import { readTextSize, writeTextSize, type TextSize } from '@/lib/textSize';
 import { SignOutAction } from '@/components/auth/SignOutAction';
-import { supabaseBrowser } from '@/lib/supabase/browser';
+import { signOutAndLeave } from '@/lib/signOut';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { changeEmail } from '@/app/account/actions';
@@ -212,10 +212,7 @@ function ChangeEmailForm({ currentEmail }: { currentEmail: string }) {
 export function SettingsSignOut() {
   return (
     <SignOutAction
-      signOut={async () => {
-        await supabaseBrowser().auth.signOut();
-        window.location.href = '/login';
-      }}
+      signOut={() => signOutAndLeave('/login')}
     />
   );
 }

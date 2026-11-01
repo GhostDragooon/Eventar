@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { supabaseBrowser } from '@/lib/supabase/browser';
+import { signOutAndLeave } from '@/lib/signOut';
 
 // Signed-in Account disclosure menu — replaces the plain "Account" link on
 // SiteShell / PublicShell / LandingNav / LandingAuthPill (2026-09-21
@@ -12,8 +12,8 @@ import { supabaseBrowser } from '@/lib/supabase/browser';
 // combined with RecordActionsMenu's labelled-item-list shape.
 //
 // Item set depends on account completeness (Ivan, 2026-09-21
-// AskUserQuestion): an incomplete account only sees Account settings + Sign
-// out — My record, Profile & memberships, and Claim past events all point
+// AskUserQuestion): an incomplete account only sees Account + Sign
+// out — Record, Profile, and Claim past events all point
 // at surfaces that would just bounce back to /account/complete, so they're
 // hidden rather than shown-then-redirected. Claim past events is itself
 // conditional on unlinkedCount > 0 (Ivan's second call).
@@ -36,6 +36,8 @@ export function AccountMenu({
   active?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [signOutError, setSignOutError] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -56,12 +58,12 @@ export function AccountMenu({
 
   const items: { label: string; href: string }[] = complete
     ? [
-        { label: 'My record', href: '/account/record' },
-        { label: 'Profile & memberships', href: '/account/profile' },
-        { label: 'Account settings', href: '/account' },
+        { label: 'Record', href: '/account/record' },
+        { label: 'Profile', href: '/account/profile' },
+        { label: 'Account', href: '/account' },
         ...(unlinkedCount > 0 ? [{ label: 'Claim past events', href: '/account/claim' }] : []),
       ]
-    : [{ label: 'Account settings', href: '/account' }];
+    : [{ label: 'Account', href: '/account' }];
 
   return (
     <div className="relative" ref={rootRef}>
@@ -102,18 +104,23 @@ export function AccountMenu({
             // Link items above and RecordActionsMenu's menu-row buttons.
             type="button"
             role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              void supabaseBrowser()
-                .auth.signOut()
-                .then(() => {
-                  window.location.href = '/';
-                });
+            disabled={signingOut}
+            // Stays open on failure so the error and the retry are in view (lib/signOut.ts).
+            onClick={async () => {
+              setSigningOut(true);
+              setSignOutError(null);
+              setSignOutError(await signOutAndLeave('/'));
+              setSigningOut(false);
             }}
             className="block w-full rounded-lg px-sm py-sm text-left text-body-md text-on-surface hover:bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary"
           >
-            Sign out
+            {signingOut ? 'Signing out…' : 'Sign out'}
           </button>
+          {signOutError && (
+            <p role="alert" className="m-0 px-sm py-xs text-body-md text-error">
+              {signOutError}
+            </p>
+          )}
         </div>
       )}
     </div>

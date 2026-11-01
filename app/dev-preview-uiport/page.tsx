@@ -136,7 +136,7 @@ export default function DevPreview() {
       </Section>
 
       <Section title="SignOutAction">
-        <SignOutAction signOut={async () => undefined} />
+        <SignOutAction signOut={async () => null} />
       </Section>
 
       <Section title="CreateEventWizard (full 3-step flow)">

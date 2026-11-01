@@ -18,7 +18,7 @@ import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { SignOutAction } from '@/components/auth/SignOutAction';
-import { supabaseBrowser } from '@/lib/supabase/browser';
+import { signOutAndLeave } from '@/lib/signOut';
 import { changeEmail, claimMyRegistrations, resendVerificationEmail, updateMyAccount } from './actions';
 import { claimErrorCopy } from './claimErrorCopy';
 import type { AccountView, ProfessionalProfileView } from './schema';
@@ -598,10 +598,7 @@ export function AccountClient({
           </p>
         )}
         <SignOutAction
-          signOut={async () => {
-            await supabaseBrowser().auth.signOut();
-            window.location.href = '/';
-          }}
+          signOut={() => signOutAndLeave('/')}
         />
         <p className="mt-md font-body-md text-body-md text-on-surface-variant m-0">
           Appearance and text size follow your device settings.

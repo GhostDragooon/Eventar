@@ -67,6 +67,20 @@ describe('AccountShell: portal', () => {
     vi.unstubAllGlobals();
   });
 
+  it('Sign out failure stays on the page, says so, and the retry can succeed', async () => {
+    const loc = { href: '/account' };
+    vi.stubGlobal('location', loc);
+    signOut.mockResolvedValueOnce({ error: { message: 'network' } });
+    render(<AccountShell>content</AccountShell>);
+    fireEvent.click(within(rail()).getByRole('button', { name: 'Sign out' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not sign out. Try again.');
+    expect(loc.href).toBe('/account');
+    fireEvent.click(within(rail()).getByRole('button', { name: 'Sign out' }));
+    await vi.waitFor(() => expect(loc.href).toBe('/'));
+    expect(screen.queryByRole('alert')).toBeNull();
+    vi.unstubAllGlobals();
+  });
+
   it('marks the current place in the phone bar too', () => {
     mockPathname = '/events';
     render(<AccountShell>content</AccountShell>);

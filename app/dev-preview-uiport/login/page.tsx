@@ -47,7 +47,7 @@ export default function LoginPreview() {
 
         <div className="flex items-center justify-between rounded-[16px] border border-outline-variant bg-surface-container-lowest p-md">
           <span className="font-body-sm text-body-sm text-on-surface-variant">Already signed in, as a demo:</span>
-          <SignOutAction signOut={async () => undefined} />
+          <SignOutAction signOut={async () => null} />
         </div>
       </div>
     </SiteShell>

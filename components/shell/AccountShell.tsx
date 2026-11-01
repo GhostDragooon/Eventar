@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 import { BrandMark } from './BrandMark';
 import { SiteFooter } from './SiteFooter';
-import { supabaseBrowser } from '@/lib/supabase/browser';
+import { signOutAndLeave } from '@/lib/signOut';
 import { cn } from '@/lib/utils';
 
 // Attendee portal shell (UX-02 re-cut). Picks 1b 2a 3b 4a 5a 6a 7a, docs/plans/mvp/PICKS.md, 2026-11-01.
@@ -26,12 +27,25 @@ const NAV: { label: string; icon: string; href: string | null; match: string }[]
 
 const isCurrent = (pathname: string, match: string) => match !== '' && (pathname === match || pathname.startsWith(`${match}/`));
 
-function signOut() {
-  void supabaseBrowser()
-    .auth.signOut()
-    .then(() => {
-      window.location.href = '/';
-    });
+// One sign-out for the rail and the onboarding bar (lib/signOut.ts): leaves only after the server revoke worked.
+function useSignOut() {
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const signOut = async () => {
+    setPending(true);
+    setError(null);
+    setError(await signOutAndLeave('/'));
+    setPending(false);
+  };
+  return { signOut, error, pending };
+}
+
+function SignOutError({ message }: { message: string | null }) {
+  return message ? (
+    <p role="alert" className="m-0 px-md text-[calc(13px*var(--text-scale))] text-error">
+      {message}
+    </p>
+  ) : null;
 }
 
 function Icon({ name, className }: { name: string; className?: string }) {
@@ -133,6 +147,7 @@ export function AccountShell({
   email?: string;
 }) {
   const pathname = usePathname() ?? '';
+  const { signOut, error: signOutError, pending: signingOut } = useSignOut();
 
   if (variant === 'onboarding') {
     return (
@@ -147,13 +162,19 @@ export function AccountShell({
             <button
               // ui-primitive-allow: bar action beside the brand, an outline pill (the rail's Sign out is a borderless nav row)
               type="button"
+              disabled={signingOut}
               onClick={signOut}
               className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-outline-variant px-md font-medium text-on-surface hover:bg-surface-container-high"
             >
-              Sign out
+              {signingOut ? 'Signing out…' : 'Sign out'}
             </button>
           </span>
         </header>
+        {signOutError && (
+          <div className="border-b border-outline-variant bg-surface py-xs">
+            <SignOutError message={signOutError} />
+          </div>
+        )}
         {email && (
           <p className="truncate border-b border-outline-variant bg-surface px-md py-xs text-[calc(12px*var(--text-scale))] text-on-surface-variant sm:hidden">
             Signed in as {email}
@@ -189,12 +210,14 @@ export function AccountShell({
             <button
               // ui-primitive-allow: rail row, shaped like the nav rows above it (2a: quiet row under the nav)
               type="button"
+              disabled={signingOut}
               onClick={signOut}
               className="nav-item mt-xs flex min-h-11 w-full items-center gap-sm rounded-lg px-md text-[calc(14px*var(--text-scale))] font-medium text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
             >
               <Icon name="logout" className="text-[calc(20px*var(--text-scale))]" />
-              Sign out
+              {signingOut ? 'Signing out…' : 'Sign out'}
             </button>
+            <SignOutError message={signOutError} />
           </div>
         </aside>
         <div className="flex min-w-0 flex-1 flex-col pb-[calc(84px+env(safe-area-inset-bottom))] md:pb-0">
