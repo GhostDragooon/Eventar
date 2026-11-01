@@ -56,7 +56,7 @@ function RailRow({ item, current }: { item: (typeof NAV)[number]; current: boole
     return (
       <span aria-disabled="true" title={`${item.label} is coming soon`} className={cn(base, 'cursor-default', SOON)}>
         {inner}
-        <span className="rounded-full border border-outline-variant px-sm py-[1px] text-[calc(10px*var(--text-scale))] font-semibold text-on-surface-variant/70">
+        <span className="rounded-full border border-outline-variant px-sm py-[1px] text-[calc(10px*var(--text-scale))] font-semibold text-on-surface-variant">
           Soon
         </span>
       </span>
@@ -84,14 +84,24 @@ function TabBar({ pathname }: { pathname: string }) {
       {NAV.map((item) => {
         const current = item.href !== null && isCurrent(pathname, item.match);
         const cls = cn(
-          'nav-item flex min-h-12 min-w-11 flex-col items-center justify-center gap-[2px] whitespace-nowrap px-[2px] text-[calc(11px*var(--text-scale))] font-semibold',
+          'nav-item relative flex min-h-12 min-w-11 flex-col items-center justify-center gap-[2px] whitespace-nowrap px-[2px] text-[calc(11px*var(--text-scale))] font-semibold',
           current ? 'text-primary-ink' : 'text-on-surface-variant',
         );
         const inner = (
           <>
+            {/* UX-02 review: the current tab needs a cue that is not colour (WCAG 1.4.1), so it gets a 2 px top rule. */}
+            {current && <span aria-hidden data-current-rule className="absolute inset-x-1 -top-xs h-[2px] rounded-full bg-primary-ink" />}
             <Icon name={item.icon} className="text-[calc(22px*var(--text-scale))]" />
             <span>{item.label}</span>
-            {!item.href && <span className="sr-only"> (coming soon)</span>}
+            {/* The rail shows a Soon chip; a phone user cannot hover a title, so the bar prints it. */}
+            {!item.href && (
+              <>
+                <span aria-hidden className="text-[calc(10px*var(--text-scale))] font-medium leading-none">
+                  Soon
+                </span>
+                <span className="sr-only"> (coming soon)</span>
+              </>
+            )}
           </>
         );
         return item.href ? (
@@ -144,6 +154,11 @@ export function AccountShell({
             </button>
           </span>
         </header>
+        {email && (
+          <p className="truncate border-b border-outline-variant bg-surface px-md py-xs text-[calc(12px*var(--text-scale))] text-on-surface-variant sm:hidden">
+            Signed in as {email}
+          </p>
+        )}
         <main id="main-content" tabIndex={-1} className="w-full flex-1">
           {children}
         </main>
@@ -182,7 +197,7 @@ export function AccountShell({
             </button>
           </div>
         </aside>
-        <div className="flex min-w-0 flex-1 flex-col pb-[calc(72px+env(safe-area-inset-bottom))] md:pb-0">
+        <div className="flex min-w-0 flex-1 flex-col pb-[calc(84px+env(safe-area-inset-bottom))] md:pb-0">
           <main id="main-content" tabIndex={-1} className="w-full flex-1">
             {children}
           </main>

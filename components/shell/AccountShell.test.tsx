@@ -86,6 +86,19 @@ describe('AccountShell: portal', () => {
     expect(within(rail()).getByRole('link', { name: /Events/ })).toHaveAttribute('aria-current', 'page');
   });
 
+  it('marks the current phone tab with a rule that is not colour, on that tab only', () => {
+    mockPathname = '/events';
+    render(<AccountShell>content</AccountShell>);
+    const rules = bar().querySelectorAll('[data-current-rule]');
+    expect(rules).toHaveLength(1);
+    expect(rules[0].closest('a')).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('prints Soon under each unbuilt phone tab, not only in a hover title', () => {
+    render(<AccountShell>content</AccountShell>);
+    expect(within(bar()).getAllByText('Soon')).toHaveLength(3);
+  });
+
   it('tells assistive tech and touch users the three unbuilt tabs are coming soon', () => {
     render(<AccountShell>content</AccountShell>);
     for (const name of ['Check-in', 'Registrations', 'History']) {
@@ -113,7 +126,8 @@ describe('AccountShell: onboarding', () => {
     expect(screen.queryByRole('navigation', { name: 'Portal' })).toBeNull();
     expect(screen.queryByRole('complementary')).toBeNull();
     expect(screen.queryByText('Registrations')).toBeNull();
-    expect(screen.getByText('uma@sample.test')).toBeTruthy();
+    // Shown in the bar from sm up and under it on phones (a wrong-address sign-in must be visible at 375 px).
+    expect(screen.getAllByText(/uma@sample\.test/)).toHaveLength(2);
     // The mark is not a link: a link to /account/complete would drop the wizard's ?next=.
     expect(screen.queryByRole('link', { name: 'Eventar home' })).toBeNull();
     expect(within(screen.getByRole('banner')).getByText('Eventar')).toBeTruthy();
