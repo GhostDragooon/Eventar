@@ -22,7 +22,7 @@ A practitioner who has never created an Eventar record arrives at the landing pa
 
 **Acceptance Scenarios**:
 
-1. **Given** a signed-out visitor on the landing page in practitioner mode, **When** they look at the hero, **Then** it offers two actions, "Get started" (to sign-up) and "Log in" (to sign-in), mirroring the organiser pair, and the organiser pair is unchanged.
+1. **Given** a signed-out visitor on the landing page in practitioner mode, **When** they look at the hero, **Then** it offers two actions, "Sign up" (to sign-up) and "Log in" (to sign-in), mirroring the organiser pair, and the organiser pair is unchanged.
 2. **Given** a signed-out visitor on the public events list, **When** the page loads, **Then** a practitioner band offers sign-up and sign-in, and the list itself stays fully visible without signing in.
 3. **Given** a signed-in organiser on the public events list, **When** the page loads, **Then** no practitioner band is shown.
 4. **Given** a signed-out visitor who has just registered for an event as a guest, **When** the success card appears, **Then** it offers "Create your Eventar record", which leads to sign-up and, once the record exists, to claiming the registration they just made.
@@ -69,7 +69,7 @@ Once signed in and onboarded, a practitioner uses a portal with its own navigati
 
 ### User Story 4 - The same signed-in chrome on every page a practitioner touches (Priority: P2)
 
-Around the portal, a practitioner also uses public pages: the landing page, the survey, pricing, the not-found page, an invite page. On several of them the header still says "Sign in" to a person who is signed in, the account menu reads oddly, and on a phone an organiser loses the line that says they are looking at the public page (it is hidden below 640 px and from screen readers; the workspace button itself stays). Each page should tell the truth about who is signed in.
+Around the portal, a practitioner also uses public pages: the landing page, the survey, pricing, the not-found page, an invite page. On several of them the header still says "Log in" to a person who is signed in, the account menu reads oddly, and on a phone an organiser loses the line that says they are looking at the public page (it is hidden below 640 px and from screen readers; the workspace button itself stays). Each page should tell the truth about who is signed in.
 
 **Why this priority**: it removes the "which site am I on" feeling that makes the portal feel unfinished, but each fix is independent of the stories above and can ship after them.
 
@@ -77,7 +77,7 @@ Around the portal, a practitioner also uses public pages: the landing page, the 
 
 **Acceptance Scenarios**:
 
-1. **Given** a signed-in practitioner, **When** they open the survey, pricing or the not-found page, **Then** the header shows their signed-in state (the account menu), never "Sign in". On the landing page it does so as soon as the session resolves: its first paint is the signed-out default, so the page can stay static, and a signed-in visitor sees one correction.
+1. **Given** a signed-in practitioner, **When** they open the survey, pricing or the not-found page, **Then** the header shows their signed-in state (the account menu), never "Log in". On the landing page it does so as soon as the session resolves: its first paint is the signed-out default, so the page can stay static, and a signed-in visitor sees one correction.
    - On an invite page (an organiser-door page, Constitution I) the header says who is signed in without offering attendee-only destinations; its exact form belongs to the portal's design pass.
 2. **Given** the account menu, **When** a person opens it with a mouse, a keyboard or a screen reader, **Then** it behaves as a plain disclosure with plain labels and a visible way to sign out.
 3. **Given** a signed-in organiser on a phone-width screen of a public page, **When** the page loads, **Then** the workspace button and a label saying this is the public view are both visible, and the label is announced by assistive technology.
@@ -116,16 +116,16 @@ The boundary the product already holds (Q32) must hold on every new surface here
 
 ### Functional Requirements
 
-- **FR-001**: The landing page, in practitioner mode, MUST offer two actions: "Get started" leading to sign-up and "Log in" leading to sign-in, mirroring the organiser pair; the organiser pair MUST be unchanged.
+- **FR-001**: The landing page, in practitioner mode, MUST offer two actions: "Sign up" leading to sign-up and "Log in" leading to sign-in, mirroring the organiser pair; the organiser pair MUST be unchanged.
 - **FR-002**: The public events list MUST show signed-out visitors a practitioner band offering sign-up and sign-in; a signed-in practitioner MUST see a shortcut to their record instead; an organiser MUST see neither; the list MUST remain visible without signing in.
 - **FR-003**: After a guest registration succeeds, the success card MUST offer a signed-out visitor "Create your Eventar record" (leading to sign-up with the claim page as the destination), a signed-in practitioner "My record", and an organiser nothing.
 - **FR-004**: The practitioner's record, when it has no attendance, MUST link to the public events list.
 - **FR-005**: The sign-up and first-run flow MUST carry the visitor's original destination through every step and land them there on completion, defaulting to the portal home; only destinations inside the attendee area MUST be honoured, under the same rule as every other redirect target (nothing off-site, nothing from the other audience).
-- **FR-006**: A signed-in practitioner MUST see the record, profile, claim and account-settings pages inside a portal shell whose navigation lists My record, Profile and licences, Account settings and Find events, plus Claim past events whenever the account has registrations to claim (the visibility rule Ivan set on 2026-09-21 for the account menu; see Assumptions), indicating the current page.
+- **FR-006**: A signed-in practitioner MUST see the record, profile, claim and account-settings pages inside a portal shell whose navigation lists, per Doctrine 2026-10-30 section 2, Check-in, Registrations, Events, History and Account (built 2026-11-01 as `AccountShell`), indicating the current page. Until the Attendee surfaces card lands, Check-in, Registrations and History are inert "Soon" rows; the public pages' Account menu lists Account, Profile, Record and, whenever the account has registrations to claim (the visibility rule Ivan set on 2026-09-21), Claim past events.
   - **Superseded in part (Doctrine 2026-10-30):** the navigation is Check-in, Registrations, Events, History, Account. Claim past events lives under History. See `docs/plans/mvp/DOCTRINE-CONFLICT-MAP.md`.
 - **FR-007**: The sign-in and sign-up doors MUST use the public shell; the first-run onboarding wizard MUST use a variant with no portal navigation.
 - **FR-008**: No portal page, shell, menu or prompt MUST contain a link, label or navigation item for the organiser log-in or workspace; an organiser requesting a portal page MUST be redirected to the organiser home.
-- **FR-009**: The header of every public page a signed-in practitioner can reach (survey, pricing, not-found) MUST show the signed-in state and MUST NOT show "Sign in"; the landing page MUST show it as soon as the session resolves and MUST fall back to a neutral state, never the wrong identity, if the account-state read fails; an invite page MUST say who is signed in without offering attendee-only destinations.
+- **FR-009**: The header of every public page a signed-in practitioner can reach (survey, pricing, not-found) MUST show the signed-in state and MUST NOT show "Log in"; the landing page MUST show it as soon as the session resolves and MUST fall back to a neutral state, never the wrong identity, if the account-state read fails; an invite page MUST say who is signed in without offering attendee-only destinations.
 - **FR-010**: The account menu MUST use plain labels, MUST be operable by keyboard and screen reader as a disclosure, and MUST always include a way to sign out.
 - **FR-011**: At phone widths a signed-in organiser on a public page MUST see both the workspace button and the label that says this is the public view, and the label MUST be exposed to assistive technology.
 - **FR-012**: The "claim past events" link MUST NOT be shown to a signed-in organiser on the check-in confirmation page.
@@ -149,7 +149,7 @@ The boundary the product already holds (Q32) must hold on every new surface here
 - **SC-001**: In the acceptance walk (landing, Get started, sign-up, emailed link, all wizard steps, portal home), a first-time practitioner reaches a finished record in under 5 minutes without typing any piece of information twice.
 - **SC-002**: Every entry point in FR-001 to FR-004 is present and leads to the specified place: 4 of 4 verified in the walk, signed out, signed in as a practitioner and signed in as an organiser.
 - **SC-003**: A crawl of every portal page as a practitioner finds 0 links to the organiser log-in or workspace, and a crawl of every portal URL as an organiser finds 0 pages rendered in the portal shell.
-- **SC-004**: From any portal page, each of the five destinations is reachable in one action, at desktop width and at 375 px.
+- **SC-004**: From any portal page, each of the five destinations is reachable in one action, at desktop width and at 375 px. (Today only Events and Account are; the other three become reachable with the Attendee surfaces card.)
 - **SC-005**: On every page this feature adds or changes, a reviewer who has never seen the product can answer "where am I", "what can I do here", "what just happened" and "what do I do next" without help, at desktop width and at 375 px (the intuitive-test questions from the core-UX instruction).
 - **SC-006**: Every page this feature adds or changes is fully operable with the keyboard alone, has no text below 4.5:1 contrast, no touch target below 44 px, and no horizontal page scroll at 320 px.
 - **SC-007**: After a guest registration, 100% of signed-out visitors are offered a way to create the record, and 0% of organisers are offered one.
