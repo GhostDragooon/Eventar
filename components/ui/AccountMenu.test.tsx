@@ -102,4 +102,17 @@ describe('AccountMenu', () => {
     await vi.waitFor(() => expect(loc.href).toBe('/'));
     expect(signOut).toHaveBeenCalledTimes(2);
   });
+
+  it('the failure alert is not inside role="menu", and an outside click while signing out does not close the menu', async () => {
+    let finish!: (v: { error: { message: string } }) => void;
+    signOut.mockReturnValueOnce(new Promise((r) => (finish = r)));
+    render(<AccountMenu complete />);
+    fireEvent.click(screen.getByRole('button', { name: /^account$/i }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /sign out/i }));
+    fireEvent.mouseDown(document.body);
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+    finish({ error: { message: 'network' } });
+    const alert = await screen.findByRole('alert');
+    expect(screen.getByRole('menu')).not.toContainElement(alert);
+  });
 });

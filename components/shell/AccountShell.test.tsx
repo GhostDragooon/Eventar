@@ -10,7 +10,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { AccountShell } from './AccountShell';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 beforeEach(() => {
   mockPathname = '/account';
   signOut.mockClear();
@@ -64,7 +67,6 @@ describe('AccountShell: portal', () => {
     fireEvent.click(within(rail()).getByRole('button', { name: 'Sign out' }));
     expect(signOut).toHaveBeenCalledTimes(1);
     await vi.waitFor(() => expect(loc.href).toBe('/'));
-    vi.unstubAllGlobals();
   });
 
   it('Sign out failure stays on the page, says so, and the retry can succeed', async () => {
@@ -78,7 +80,6 @@ describe('AccountShell: portal', () => {
     fireEvent.click(within(rail()).getByRole('button', { name: 'Sign out' }));
     await vi.waitFor(() => expect(loc.href).toBe('/'));
     expect(screen.queryByRole('alert')).toBeNull();
-    vi.unstubAllGlobals();
   });
 
   it('marks the current place in the phone bar too', () => {

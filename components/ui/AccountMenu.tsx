@@ -43,10 +43,10 @@ export function AccountMenu({
   useEffect(() => {
     if (!open) return;
     function onDocClick(e: MouseEvent) {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+      if (!signingOut && !rootRef.current?.contains(e.target as Node)) setOpen(false);
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape' && !signingOut) setOpen(false);
     }
     document.addEventListener('mousedown', onDocClick);
     document.addEventListener('keydown', onKey);
@@ -54,7 +54,7 @@ export function AccountMenu({
       document.removeEventListener('mousedown', onDocClick);
       document.removeEventListener('keydown', onKey);
     };
-  }, [open]);
+  }, [open, signingOut]);
 
   const items: { label: string; href: string }[] = complete
     ? [
@@ -72,50 +72,52 @@ export function AccountMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-current={active ? 'page' : undefined}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setSignOutError(null);
+          setOpen((v) => !v);
+        }}
         className={TRIGGER_CLASS}
       >
         Account
       </button>
       {open && (
-        <div
-          role="menu"
-          aria-label="Account menu"
-          className="absolute right-0 z-30 mt-xs w-64 rounded-[12px] border border-outline-variant bg-surface-container-lowest p-xs shadow-lg"
-        >
-          {items.map((item) => (
-            <Link
+        <div className="absolute right-0 z-30 mt-xs w-64 rounded-[12px] border border-outline-variant bg-surface-container-lowest p-xs shadow-lg">
+        <div role="menu" aria-label="Account menu">
+            {items.map((item) => (
+              <Link
+                // ui-primitive-allow: menu item inside an open AccountMenu
+                // popover, not a standalone action — same convention as
+                // RecordActionsMenu / WorkspaceSwitcher's listbox options.
+                key={item.href}
+                href={item.href}
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                className="block rounded-lg px-sm py-sm text-body-md text-on-surface hover:bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                {item.label}
+              </Link>
+            ))}
+            <div className="my-xs h-px bg-outline-variant" role="separator" />
+            <button
               // ui-primitive-allow: menu item inside an open AccountMenu
-              // popover, not a standalone action — same convention as
-              // RecordActionsMenu / WorkspaceSwitcher's listbox options.
-              key={item.href}
-              href={item.href}
+              // popover, not a standalone action — same convention as the
+              // Link items above and RecordActionsMenu's menu-row buttons.
+              type="button"
               role="menuitem"
-              onClick={() => setOpen(false)}
-              className="block rounded-lg px-sm py-sm text-body-md text-on-surface hover:bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary"
+              disabled={signingOut}
+              // Stays open on failure so the error and the retry are in view (lib/signOut.ts).
+              onClick={async () => {
+                setSigningOut(true);
+                setSignOutError(null);
+                setSignOutError(await signOutAndLeave('/'));
+                setSigningOut(false);
+              }}
+              className="block w-full rounded-lg px-sm py-sm text-left text-body-md text-on-surface hover:bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary"
             >
-              {item.label}
-            </Link>
-          ))}
-          <div className="my-xs h-px bg-outline-variant" role="separator" />
-          <button
-            // ui-primitive-allow: menu item inside an open AccountMenu
-            // popover, not a standalone action — same convention as the
-            // Link items above and RecordActionsMenu's menu-row buttons.
-            type="button"
-            role="menuitem"
-            disabled={signingOut}
-            // Stays open on failure so the error and the retry are in view (lib/signOut.ts).
-            onClick={async () => {
-              setSigningOut(true);
-              setSignOutError(null);
-              setSignOutError(await signOutAndLeave('/'));
-              setSigningOut(false);
-            }}
-            className="block w-full rounded-lg px-sm py-sm text-left text-body-md text-on-surface hover:bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            {signingOut ? 'Signing out…' : 'Sign out'}
-          </button>
+              {signingOut ? 'Signing out…' : 'Sign out'}
+            </button>
+        </div>
+          {/* Outside role="menu" (ARIA allows only items there). */}
           {signOutError && (
             <p role="alert" className="m-0 px-sm py-xs text-body-md text-error">
               {signOutError}
