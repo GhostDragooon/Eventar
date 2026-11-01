@@ -1,7 +1,7 @@
 # Handoff, 2026-11-01: door copy built and reviewed; nothing pushed
 
 **Date:** 2026-11-01
-**Status:** Door copy DONE for the picked scope (dev and user lenses run, fixes applied). Five open questions for you in §0.
+**Status:** Door copy DONE (dev and user lenses run, fixes applied, and your "Apply both" on the two door questions built). Open questions for you in §0.
 **Chain:** `mvp-execution` seq `11` · **Parent:** `handoff_20261101-mvp-execution-10.md`
 Evidence tags: [X] executed this session, [R] read in code or docs, [I] inferred.
 
@@ -10,8 +10,8 @@ Evidence tags: [X] executed this session, [R] read in code or docs, [I] inferred
 ## 0. Ivan's action list
 
 **Decide** (recommendation first)
-1. **Invite page has two "Log in" controls that go to different doors** (user lens M1). The header pill goes to the attendee door; the body button "Log in to accept" goes to `/login?next=/invite/<token>`. Tapping the pill makes an attendee account and loses the invite. Recommend: on `/invite/*` point the shell pill at the same `/login?next=` href (one prop on `SiteShell`).
-2. **Organiser door is not visible outside the landing** (M5). `/events` and the sign-up door show only the attendee "Log in"; the organiser door appears only after flipping the landing pill. Recommend one extra link, "Organiser log in", in the public header for signed-out visitors and under "Already have an account? Log in" on sign-up.
+1. ~~Invite page has two "Log in" controls that go to different doors~~ **DONE** (`1bab723`, "Apply both"): `SiteShell` takes `loginHref`; the invite page passes `/login?next=/invite/<token>`, so the header pill keeps the invite.
+2. ~~Organiser door is not visible outside the landing~~ **DONE** (`1bab723`): "Organiser log in" in the `SiteShell` and `PublicShell` header for signed-out visitors from `sm` up (measured at 640 px: fits, no overflow), and under "Already have an account? Log in" on the sign-up door. Not shown on a phone header (no room); the landing pill and the sign-up link cover a phone. The two Q32 tests that said "staff door unlinked from the public chrome" now guard the plain Log in CTA instead (Doctrine 2026-10-30 supersedes Q32 on doors).
 3. **"Sign out" vs "Log in".** The verb pair is log in / sign out. Recommend leaving "Sign out" (it is the universal pairing) and recording that as the ruling.
 4. **Wrong-door message for the magic-link organiser door.** R1's text ("The email or password you entered is not correct.") assumed a password door; you withdrew that. Today the door says the response "does not reveal whether an address is on the organizer list". Recommend one line for a non-staff email that stays bland and points to the Attendee door and Sign up, with no limbo (doctrine section 1). Needs your wording.
 5. **Sign-up door names:** the H1 still says "Create your Eventar record" (kept as the page's promise); tab title and buttons say "Sign up". Recommend leaving it.
@@ -34,6 +34,8 @@ Evidence tags: [X] executed this session, [R] read in code or docs, [I] inferred
 - **Left on purpose:** state lines ("Signed in as …", "You're signed in as an organiser"), "Sign out", the `signInHref` / `active="signin"` identifiers, code comments, `/login` page's "organizer" spelling (the card mixes organiser and organizer; a separate sweep), the Supabase email template (outside the repo [I]).
 
 ## Checks
+
+**Final tip gate on `1bab723`:** tsc 0, eslint 0, `next build` 0, vitest 210 files, 1883 passed (544 skipped) on the second full run. The first full run failed one test, `app/events/[id]/edit/PublishDraftButton.test.tsx` ("shows a refusal inside the confirm"): a known load flake, recorded in the 10-23 and 10-24 handoffs, passes 3/3 alone, and none of its files changed [X]. Mutation check: `loginHref` back to the fixed href failed 2 tests.
 
 | Check | Result |
 |---|---|
