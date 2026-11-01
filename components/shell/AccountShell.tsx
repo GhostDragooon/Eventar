@@ -93,10 +93,10 @@ function TabBar({ pathname }: { pathname: string }) {
             {current && <span aria-hidden data-current-rule className="absolute inset-x-1 -top-xs h-[2px] rounded-full bg-primary-ink" />}
             <Icon name={item.icon} className="text-[calc(22px*var(--text-scale))]" />
             <span>{item.label}</span>
-            {/* The rail shows a Soon chip; a phone user cannot hover a title, so the bar prints it. */}
+            {/* The rail shows a Soon chip; a phone user cannot hover a title, so the bar prints it. Solid colour: the word is the explanation, the dimmed label is not. */}
             {!item.href && (
               <>
-                <span aria-hidden className="text-[calc(10px*var(--text-scale))] font-medium leading-none">
+                <span aria-hidden className="text-[calc(10px*var(--text-scale))] font-medium leading-none text-on-surface-variant">
                   Soon
                 </span>
                 <span className="sr-only"> (coming soon)</span>
