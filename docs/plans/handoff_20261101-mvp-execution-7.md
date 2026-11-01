@@ -1,7 +1,7 @@
 # Handoff, 2026-11-01: CX-04R built to your picks (1f + 2a), reviews and live backtest done; a few frontend proposals wait on you; main not pushed
 
 **Date:** 2026-11-01
-**Status:** DONE for the build; OPEN proposals in §0 Decide
+**Status:** SUPERSEDED by `handoff_20261101-mvp-execution-8.md` (the proposals below were applied and pushed)
 **Bead(s):** none (`bd` is not installed here)
 **Epic:** MVP execution plan, `docs/plans/2026-10-11-mvp-execution-plan.md`
 **Chain:** `mvp-execution` seq `7`
