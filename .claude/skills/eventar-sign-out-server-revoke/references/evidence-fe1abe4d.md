@@ -1,0 +1,1 @@
+(1) Sign-out is security-critical: server revoke is authoritative; on success clear client session and hard-navigate; on failure do NOT navigate as signed-out, stay, show clear error + retry; never ignore { error } from signOut; ONE shared helper used by AccountShell, AccountMenu, AccountClient (and staff equivalent).

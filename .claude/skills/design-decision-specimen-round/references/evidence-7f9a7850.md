@@ -1,0 +1,2 @@
+{"type":"user","message":{"role":"user","content":"the card is too tall, compress the space taken by the date. fit in the status pill more natural"}}
+{"type":"user","message":{"role":"user","content":"status pill yes, but dont have other component spillover to the date section"}}

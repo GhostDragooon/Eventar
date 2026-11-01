@@ -1,0 +1,1 @@
+Set 5 renders correctly in dark mode, but I found a copy conflict: the intro says the brand links to Registrations, while 5a says it links to Events since Registrations isn't built yet. ... ** RE-CUT 2026-11-01 (supersedes everything below it)** STATUS: DONE (specimens), awaiting picks.

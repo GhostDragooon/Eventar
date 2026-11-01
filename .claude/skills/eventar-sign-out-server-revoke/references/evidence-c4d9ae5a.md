@@ -1,0 +1,3 @@
+- The exception is a rejected token refresh. `_callRefreshToken` removes the session first, then `_signOut` returns `{error}` (lines 3796-3797, 4690-4697).
+- So no path navigates away while still signed in. One path stays on the page saying "Could not sign out" while the user is already signed out locally. Retry fixes it.
+- | F1 | MINOR | lib/signOut.ts:6-10,15 | The JSDoc says the session is "still in place" on error. That is false when a token refresh is rejected

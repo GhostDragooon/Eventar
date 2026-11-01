@@ -1,0 +1,2 @@
+{"action": "create", "reason": "A rebase changed the tip, so an earlier \"push main up to <sha>\" approval named a SHA that no longer exists; push consent must be re-asked against the current tip. Class-level: any git push approval.", "evidence": "references/evidence-6f621090.md"}
+{"action": "patch", "reason": "Ivan approved \"push main up to b8968a8\" while a local commit sat above it. The refspec push sent only b8968a8, and the read-back confirmed origin/main and one commit still ahead. The skill should name this method.", "evidence": "references/evidence-706c429f.md"}

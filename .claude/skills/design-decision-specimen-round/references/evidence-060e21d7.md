@@ -1,0 +1,3 @@
+{"type":"tool_use","name":"mcp__Claude_Browser__javascript_tool","input":{"text":"...const a=document.getAnimations().map(x=>x.animationName||x.transitionProperty)...out[m]={anims:a.length, names:[...new Set(a)]}..."}}
+tool_result: "2a Almost none": { "anims": 23, "names": ["border-bottom-color", ..., "livePillBgPulse"] }, "2b Slow and weighted": { "anims": 26, "names": [..., "m-rise-b"] }, "2c Scroll-driven": { "anims": 26, "names": [..., "m-scrub-c"] }, "bar2b": ["m-rise-b 700", "m-rise-b 800", "m-rise-b 800"], "cards": 5
+assistant: "I checked in the pane that the motion actually starts: 2a has no entrance animation on a tab change, 2b runs the rise, and 2c runs the scroll fade."

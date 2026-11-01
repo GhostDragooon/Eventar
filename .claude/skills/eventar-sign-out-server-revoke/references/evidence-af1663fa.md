@@ -1,0 +1,4 @@
+- | F2 | MINOR | components/ui/AccountMenu.tsx:44-50,107-123 | Outside click or Escape while signing out closes the menu, so a failure is invisible (breaks rule 12). Reopening shows a stale error.
+- | F3 | MINOR | AccountMenu.tsx:120 | `role="alert"` is a child of `role="menu"`, which ARIA does not allow.
+- | F4 | MAJOR | components/auth/SignOutAction.tsx (no test) | The new failure path has no test (M3 survived).
+- **M3:** removing the error display from SignOutAction (`setError(await signOut())` → `await signOut()`) **survived**. No test failed.

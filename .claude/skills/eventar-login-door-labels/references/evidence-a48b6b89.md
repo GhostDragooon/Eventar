@@ -1,0 +1,1 @@
+**Wrong door:** one line for every organiser failure: "We couldn't log you in as an organiser. If you attend events, use Attendee log in or Sign up instead." It has no password language and says nothing about staff-list status. I applied the same blandness to the signed-in non-organiser panel on `/login`.

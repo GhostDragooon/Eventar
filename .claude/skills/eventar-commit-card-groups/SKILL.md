@@ -12,7 +12,7 @@ Commit from the main checkout with `GIT_LITERAL_PATHSPECS=1` and list the group'
 2. `export GIT_LITERAL_PATHSPECS=1`, then `git reset -q -- <group paths>` to clear this group's stale index entries only.
 3. `git add -- <group paths>`, then `git diff --cached --stat`. The stat must list exactly the group. If it does not, stop and fix it before committing.
 4. Quote Next routes that contain brackets, for example `'app/events/[id]/details/page.tsx'`.
-5. `git commit -q -m "<msg>" -- <group paths>`, then `git log --oneline -1`.
+5. `git commit -q -m "<msg>" -- <group paths>`, then `git log --oneline -1`. A new, untracked file must be `git add -- <path>` first: `git commit -- <path>` on an untracked path fails with "did not match any file(s) known to git".
 6. A file two cards both changed: commit the earlier card's hunk alone (filtered patch into `git apply --cached`), then the rest for the later card. Verify each with `git show --stat <sha>` and `git show <sha> -- <file>`.
 7. A split commit is not compiled by itself. Before calling it green, run `pnpm exec tsc --noEmit` at that SHA in a detached worktree (`git worktree add --detach $S/wt <sha>`) and remove the worktree. Otherwise report "not compiled alone".
 8. Push only on Ivan's explicit go. Report SHAs, not outcomes you did not check.

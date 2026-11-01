@@ -1,0 +1,1 @@
+{"type":"text","text":"Source is updated; the pane was showing the old render. Reloading and measuring."} ... "Note: /Users/ivan/Eventar/app/dev-preview-uiport/cx-04r/parts.tsx changed on disk since you last read it."

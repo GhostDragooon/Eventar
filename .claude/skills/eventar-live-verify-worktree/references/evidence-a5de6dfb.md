@@ -1,0 +1,1 @@
+/account/complete never hydrated in my browser pane (0 of 3 buttons/links had React props after 12 s), so a click did nothing. I proved the server side instead: logout 204, old token 403 session_not_found, fresh GET redirects to /account/sign-in.
