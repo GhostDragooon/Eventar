@@ -22,3 +22,5 @@ UX-02 re-cut (4) onboarding bar: a (brand, email, Sign out), 2026-11-01
 UX-02 re-cut (5) unbuilt destinations: a (Check-in, Registrations, History as inert Soon rows), 2026-11-01
 UX-02 re-cut (6) Account in the rail: a (flat list of five), 2026-11-01
 UX-02 re-cut (7) row shape: a (rounded rows, tinted fill, D0), 2026-11-01 (Ivan: "Accept all picks")
+UX-02 review follow-up (dead phone tabs): a (tiny "Soon" under each unbuilt tab), 2026-11-01
+UX-02 review follow-up (current-place cue, non-colour): a (2 px top rule on the current phone tab; rail keeps its tinted fill), 2026-11-01
