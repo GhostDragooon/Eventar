@@ -84,6 +84,15 @@ export function PublicShell({
           <span className="sm:hidden">Events</span>
           <span className="hidden sm:inline">Upcoming events</span>
         </Link>
+        {/* Organiser door from any public page (doctrine section 1); hidden below sm for room. */}
+        {!signedIn && (
+          <Link
+            href="/login"
+            className="nav-item hidden shrink-0 whitespace-nowrap rounded-full px-[11px] py-[7px] text-[calc(13px*var(--text-scale))] font-medium text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface sm:inline-block"
+          >
+            Organiser log in
+          </Link>
+        )}
 
         <div className="flex items-center gap-sm">
           {pill && (

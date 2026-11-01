@@ -36,8 +36,8 @@ afterEach(() => {
 // pick one element out ambiguously, wait for both to exist (2 links) and
 // assert against the full set of hrefs.
 async function signInLinkHrefs(): Promise<(string | null)[]> {
-  await waitFor(() => expect(screen.getAllByRole('link', { name: /log in/i })).toHaveLength(2));
-  return screen.getAllByRole('link', { name: /log in/i }).map((l) => l.getAttribute('href'));
+  await waitFor(() => expect(screen.getAllByRole('link', { name: /^log in$/i })).toHaveLength(2));
+  return screen.getAllByRole('link', { name: /^log in$/i }).map((l) => l.getAttribute('href'));
 }
 
 describe('AttendeeSignUpPage', () => {
@@ -136,5 +136,17 @@ describe('AttendeeSignUpPage: door labels its side', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: /^next$/i })).toBeInTheDocument());
     expect(screen.getByText('Attendee')).toBeInTheDocument();
     expect(screen.getByText(/· Sign up/)).toBeInTheDocument();
+  });
+});
+
+describe('AttendeeSignUpPage: organiser door', () => {
+  it('offers Organiser log in to /login under the attendee Log in link', async () => {
+    render(<AttendeeSignUpPage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: /^next$/i })).toBeInTheDocument());
+    // One in the header (SiteShell, from sm up) and one in the page under "Already have an account?".
+    const links = screen.getAllByRole('link', { name: /^organiser log in$/i });
+    expect(links).toHaveLength(2);
+    for (const l of links) expect(l).toHaveAttribute('href', '/login');
+    expect(screen.getByRole('main').contains(links[links.length - 1])).toBe(true);
   });
 });

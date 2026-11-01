@@ -132,6 +132,13 @@ function AttendeeSignUpForm() {
           Log in
         </Link>
       </p>
+
+      <p className="font-body-md text-body-md text-on-surface-variant text-center m-0">
+        Running events?{' '}
+        <Link href="/login" className="text-[color:var(--on-primary-container)] hover:underline">
+          Organiser log in
+        </Link>
+      </p>
     </AttendeeSignUpShell>
   );
 }

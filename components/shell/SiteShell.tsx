@@ -47,6 +47,7 @@ export function SiteShell({
   isStaff = false,
   accountComplete = false,
   unlinkedCount = 0,
+  loginHref,
 }: {
   children: React.ReactNode;
   // 'account' no longer changes the CTA's visual state (it's a menu
@@ -84,6 +85,12 @@ export function SiteShell({
   accountComplete?: boolean;
   /** Shows "Claim past events" in the menu only when > 0. */
   unlinkedCount?: number;
+  /**
+   * Where the signed-out "Log in" pill goes. Default is the attendee door; the invite page passes the organiser door with
+   * its own `?next=` so the pill cannot drop the invite. When set, the header's separate "Organiser log in" link is not
+   * shown (the pill already is that door).
+   */
+  loginHref?: string;
 }) {
   return (
     <div className="app-atmo flex min-h-screen flex-col text-on-surface">
@@ -124,6 +131,16 @@ export function SiteShell({
             <span className="sm:hidden">Events</span>
             <span className="hidden sm:inline">Upcoming events</span>
           </Link>
+          {/* Door choice outside the landing (doctrine section 1): a signed-out visitor can reach the organiser door from
+              any public page. Hidden below sm like Home; the sign-up door and the landing pill cover a phone. */}
+          {!signedIn && !loginHref && (
+            <Link
+              href="/login"
+              className={`${NAV_ITEM} hidden sm:inline-block ${NAV_IDLE}`}
+            >
+              Organiser log in
+            </Link>
+          )}
         </div>
 
         {signedIn ? (
@@ -134,7 +151,7 @@ export function SiteShell({
           )
         ) : (
           <Link
-            href="/account/sign-in"
+            href={loginHref ?? '/account/sign-in'}
             aria-current={active === 'signin' ? 'page' : undefined}
             className="shrink-0 whitespace-nowrap rounded-full bg-primary px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary transition-transform duration-150 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
           >

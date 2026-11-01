@@ -31,18 +31,18 @@ describe('SiteShell — state-aware right-side CTA', () => {
     expect(screen.queryByRole('link', { name: /^log in$/i })).not.toBeInTheDocument();
   });
 
-  it('CTA does NOT point at /login — the staff door is unlinked from the public chrome', () => {
-    // Q32 audience boundary: the shell's outbound CTA is for attendees.
-    // Staff /login stays reachable via direct URL. This test guards against
-    // a future "one Log in for everyone" regression that would put a
-    // signed-out attendee on the wrong door.
+  it('the Log in CTA does NOT point at /login; the only /login link is the labelled organiser one', () => {
+    // Q32 audience boundary, as amended by Doctrine 2026-10-30 section 1 (two doors, both reachable, each labelled):
+    // the plain CTA is the attendee door. The organiser door is a separate link that says so. This still guards a
+    // "one Log in for everyone" regression that would put a signed-out attendee on the wrong door.
     render(
       <SiteShell active="home">
         <div>content</div>
       </SiteShell>,
     );
-    const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'));
-    expect(hrefs).not.toContain('/login');
+    expect(screen.getByRole('link', { name: /^log in$/i })).not.toHaveAttribute('href', '/login');
+    const toLogin = screen.getAllByRole('link').filter((a) => a.getAttribute('href') === '/login');
+    expect(toLogin.map((a) => a.textContent)).toEqual(['Organiser log in']);
   });
 
   it('signed-in Account menu trigger marks itself active via aria-current when active="account"', () => {
@@ -92,5 +92,24 @@ describe('SiteShell — state-aware right-side CTA', () => {
     expect(screen.queryByRole('button', { name: /^account$/i })).not.toBeInTheDocument();
     // Sign-in pill MUST NOT render either — this is a signed-in state.
     expect(screen.queryByRole('link', { name: /^log in$/i })).not.toBeInTheDocument();
+  });
+});
+
+// Doctrine section 1: the organiser door is reachable from every public page, not only after flipping the landing pill.
+describe('SiteShell: organiser door link', () => {
+  it('shows "Organiser log in" to /login for a signed-out visitor', () => {
+    render(<SiteShell active="events">content</SiteShell>);
+    expect(screen.getByRole('link', { name: /^organiser log in$/i })).toHaveAttribute('href', '/login');
+  });
+
+  it('does not show it to a signed-in attendee', () => {
+    render(<SiteShell active="events" signedIn accountComplete>content</SiteShell>);
+    expect(screen.queryByRole('link', { name: /^organiser log in$/i })).not.toBeInTheDocument();
+  });
+
+  it('loginHref redirects the Log in pill and drops the separate organiser link (the pill is that door)', () => {
+    render(<SiteShell loginHref="/login?next=%2Finvite%2Fabc">content</SiteShell>);
+    expect(screen.getByRole('link', { name: /^log in$/i })).toHaveAttribute('href', '/login?next=%2Finvite%2Fabc');
+    expect(screen.queryByRole('link', { name: /^organiser log in$/i })).not.toBeInTheDocument();
   });
 });

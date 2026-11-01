@@ -54,6 +54,13 @@ afterEach(cleanup);
 describe('invite page — signed out', () => {
   beforeEach(signedOut);
 
+  // M1 of the door-copy user lens: the header pill read "Log in" like the body button but went to the attendee door.
+  it('points the header Log in pill at the same organiser door as the body button', async () => {
+    render(<InviteAcceptPage />);
+    await screen.findByRole('link', { name: /^log in to accept$/i });
+    expect(screen.getByRole('link', { name: /^log in$/i })).toHaveAttribute('href', SIGN_IN_HREF);
+  });
+
   it('offers "Log in to accept" through the organiser door, carrying the invite', async () => {
     render(<InviteAcceptPage />);
     const link = await screen.findByRole('link', { name: /^log in to accept$/i });

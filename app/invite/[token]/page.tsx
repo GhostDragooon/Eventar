@@ -137,7 +137,7 @@ export default function InviteAcceptPage() {
   // it, so say why and what to do next instead of leaving a live button.
   if (error?.final) {
     return (
-      <InviteFrame>
+      <InviteFrame token={token}>
         <span className="material-symbols-outlined text-[48px] text-on-surface-variant mb-md" aria-hidden>
           {error.alreadyMember ? 'group' : 'link_off'}
         </span>
@@ -165,7 +165,7 @@ export default function InviteAcceptPage() {
 
   if (view.kind === 'success') {
     return (
-      <InviteFrame>
+      <InviteFrame token={token}>
         <span className="material-symbols-outlined text-[48px] text-success mb-md" aria-hidden>check_circle</span>
         <h1 ref={headingRef} tabIndex={-1} className="font-headline-md text-headline-md text-on-surface mb-sm text-balance outline-none">You&apos;re in!</h1>
         <p className="font-body-lg text-body-lg text-on-surface-variant mb-lg [overflow-wrap:anywhere]">
@@ -181,7 +181,7 @@ export default function InviteAcceptPage() {
 
   if (view.kind === 'confirm') {
     return (
-      <InviteFrame>
+      <InviteFrame token={token}>
         <span className="material-symbols-outlined text-[48px] text-primary mb-md" aria-hidden>info</span>
         <h1 ref={headingRef} tabIndex={-1} className="font-headline-md text-headline-md text-on-surface mb-md text-balance outline-none">
           This email already has practitioner records
@@ -213,7 +213,7 @@ export default function InviteAcceptPage() {
   }
 
   return (
-    <InviteFrame>
+    <InviteFrame token={token}>
       <span className="material-symbols-outlined text-[48px] text-primary mb-md" aria-hidden>group_add</span>
       <h1 className="font-headline-md text-headline-md text-on-surface mb-sm text-balance">Join your team</h1>
       <p className="font-body-lg text-body-lg text-on-surface-variant mb-lg">
@@ -235,11 +235,11 @@ export default function InviteAcceptPage() {
   );
 }
 
-function InviteFrame({ children }: { children: React.ReactNode }) {
+function InviteFrame({ token, children }: { token: string; children: React.ReactNode }) {
   return (
     // No `active` item: this page belongs to none of the nav entries, and
     // marking Home as "you are here" was wrong (as the organiser door, M1).
-    <SiteShell>
+    <SiteShell loginHref={`/login?next=${encodeURIComponent(`/invite/${token}`)}`}>
       {/* py-xl, as the door pages have: the spacing token is xxl, so the py-2xl
           this had set no padding at all and the card sat under the sticky header. */}
       <div className="mx-auto max-w-md px-md py-xl text-center">

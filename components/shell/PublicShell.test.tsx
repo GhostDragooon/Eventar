@@ -30,17 +30,17 @@ describe('PublicShell — state-aware right-side CTA (SiteShell parity)', () => 
     expect(screen.queryByRole('link', { name: /^log in$/i })).not.toBeInTheDocument();
   });
 
-  it('CTA does NOT point at /login — the staff door is unlinked from the public chrome (Q32 audience boundary)', () => {
-    // Mirror of the SiteShell regression guard. This shell is attendee-facing
-    // (event pages, check-in pass, survey), so a signed-out visitor's CTA must
-    // route to the attendee door, never the staff /login.
+  it('the Log in CTA does NOT point at /login; the only /login link is the labelled organiser one', () => {
+    // Mirror of the SiteShell regression guard (Q32 as amended by Doctrine 2026-10-30 section 1). This shell is
+    // attendee-facing (event pages, check-in pass, survey), so the plain CTA routes to the attendee door.
     render(
       <PublicShell>
         <div>content</div>
       </PublicShell>,
     );
-    const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'));
-    expect(hrefs).not.toContain('/login');
+    expect(screen.getByRole('link', { name: /^log in$/i })).not.toHaveAttribute('href', '/login');
+    const toLogin = screen.getAllByRole('link').filter((a) => a.getAttribute('href') === '/login');
+    expect(toLogin.map((a) => a.textContent)).toEqual(['Organiser log in']);
   });
 
   it('defaults to signed-out when `signedIn` prop is omitted', () => {
@@ -91,5 +91,15 @@ describe('PublicShell — state-aware right-side CTA (SiteShell parity)', () => 
     const events = Array.from(nav.querySelectorAll('a')).find((a) => /upcoming events/i.test(a.textContent || ''));
     expect(events).toBeTruthy();
     expect(events!.getAttribute('href')).toBe('/events');
+  });
+});
+
+describe('PublicShell: organiser door link', () => {
+  it('shows "Organiser log in" to /login for a signed-out visitor, not for a signed-in one', () => {
+    const { unmount } = render(<PublicShell>content</PublicShell>);
+    expect(screen.getByRole('link', { name: /^organiser log in$/i })).toHaveAttribute('href', '/login');
+    unmount();
+    render(<PublicShell signedIn accountComplete>content</PublicShell>);
+    expect(screen.queryByRole('link', { name: /^organiser log in$/i })).not.toBeInTheDocument();
   });
 });
