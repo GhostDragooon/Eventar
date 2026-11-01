@@ -11,21 +11,28 @@ import { cn } from '@/lib/utils';
 // Attendee portal shell (UX-02 re-cut). Picks 1b 2a 3b 4a 5a 6a 7a, docs/plans/mvp/PICKS.md, 2026-11-01.
 // Nav labels and order: Doctrine 2026-10-30 section 2 (Check-in, Registrations, Events, History, Account).
 //
-// 5a: only Events and Account have a page today. Check-in, Registrations and History render as inert "Soon" rows
-// (aria-disabled, not links), as StaffShell's NavRow does for an unbuilt surface. When the Attendee surfaces card
-// lands, give each row its `href` here and nothing else changes. Until History exists, /account/record is reached
-// from the Account page (AccountClient links it).
+// Every destination has a page (Attendee surfaces card, 2026-11-01). Check-in and Registrations are their own
+// routes under /account; History is /account/record (the log: past events and points). Events is the public list.
 //
-// The brand links to Events, the one list-like page that works; point it at Registrations when that exists.
-const NAV: { label: string; icon: string; href: string | null; match: string }[] = [
-  { label: 'Check-in', icon: 'how_to_reg', href: null, match: '' },
-  { label: 'Registrations', icon: 'confirmation_number', href: null, match: '' },
+// The brand links to Events, the one list-like page open to a signed-out visitor too.
+const NAV: { label: string; icon: string; href: string; match: string }[] = [
+  { label: 'Check-in', icon: 'how_to_reg', href: '/account/check-in', match: '/account/check-in' },
+  { label: 'Registrations', icon: 'confirmation_number', href: '/account/registrations', match: '/account/registrations' },
   { label: 'Events', icon: 'event', href: '/events', match: '/events' },
-  { label: 'History', icon: 'history', href: null, match: '' },
+  { label: 'History', icon: 'history', href: '/account/record', match: '/account/record' },
   { label: 'Account', icon: 'account_circle', href: '/account', match: '/account' },
 ];
 
-const isCurrent = (pathname: string, match: string) => match !== '' && (pathname === match || pathname.startsWith(`${match}/`));
+const matches = (pathname: string, match: string) => pathname === match || pathname.startsWith(`${match}/`);
+
+// The longest matching prefix wins: /account/registrations is Registrations, not Account (which is its prefix).
+function currentLabel(pathname: string): string | null {
+  let best: (typeof NAV)[number] | null = null;
+  for (const item of NAV) {
+    if (matches(pathname, item.match) && (!best || item.match.length > best.match.length)) best = item;
+  }
+  return best?.label ?? null;
+}
 
 // One sign-out for the rail and the onboarding bar (lib/signOut.ts): leaves only after the server revoke worked.
 function useSignOut() {
@@ -56,8 +63,6 @@ function Icon({ name, className }: { name: string; className?: string }) {
   );
 }
 
-const SOON = 'text-on-surface-variant/45';
-
 function RailRow({ item, current }: { item: (typeof NAV)[number]; current: boolean }) {
   const base = 'nav-item flex min-h-11 w-full items-center gap-sm rounded-lg px-md text-[calc(14px*var(--text-scale))] font-medium';
   const inner = (
@@ -66,16 +71,6 @@ function RailRow({ item, current }: { item: (typeof NAV)[number]; current: boole
       <span className="flex-1 whitespace-nowrap text-left">{item.label}</span>
     </>
   );
-  if (!item.href) {
-    return (
-      <span aria-disabled="true" title={`${item.label} is coming soon`} className={cn(base, 'cursor-default', SOON)}>
-        {inner}
-        <span className="rounded-full border border-outline-variant px-sm py-[1px] text-[calc(10px*var(--text-scale))] font-semibold text-on-surface-variant">
-          Soon
-        </span>
-      </span>
-    );
-  }
   return (
     <Link
       href={item.href}
@@ -96,7 +91,7 @@ function TabBar({ pathname }: { pathname: string }) {
       style={{ gridTemplateColumns: `repeat(${NAV.length}, auto)`, justifyContent: 'space-between' }}
     >
       {NAV.map((item) => {
-        const current = item.href !== null && isCurrent(pathname, item.match);
+        const current = currentLabel(pathname) === item.label;
         const cls = cn(
           'nav-item relative flex min-h-12 min-w-11 flex-col items-center justify-center gap-[2px] whitespace-nowrap px-[2px] text-[calc(11px*var(--text-scale))] font-semibold',
           current ? 'text-primary-ink' : 'text-on-surface-variant',
@@ -107,25 +102,12 @@ function TabBar({ pathname }: { pathname: string }) {
             {current && <span aria-hidden data-current-rule className="absolute inset-x-1 -top-xs h-[2px] rounded-full bg-primary-ink" />}
             <Icon name={item.icon} className="text-[calc(22px*var(--text-scale))]" />
             <span>{item.label}</span>
-            {/* The rail shows a Soon chip; a phone user cannot hover a title, so the bar prints it. Solid colour: the word is the explanation, the dimmed label is not. */}
-            {!item.href && (
-              <>
-                <span aria-hidden className="text-[calc(10px*var(--text-scale))] font-medium leading-none text-on-surface-variant">
-                  Soon
-                </span>
-                <span className="sr-only"> (coming soon)</span>
-              </>
-            )}
           </>
         );
-        return item.href ? (
+        return (
           <Link key={item.label} href={item.href} aria-current={current ? 'page' : undefined} className={cls}>
             {inner}
           </Link>
-        ) : (
-          <span key={item.label} aria-disabled="true" title={`${item.label} is coming soon`} className={cn(cls, SOON)}>
-            {inner}
-          </span>
         );
       })}
     </nav>
@@ -204,7 +186,7 @@ export function AccountShell({
             </div>
             <nav aria-label="Primary" className="flex flex-col gap-xs">
               {NAV.map((item) => (
-                <RailRow key={item.label} item={item} current={item.href !== null && isCurrent(pathname, item.match)} />
+                <RailRow key={item.label} item={item} current={currentLabel(pathname) === item.label} />
               ))}
             </nav>
             <button

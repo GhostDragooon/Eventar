@@ -15,10 +15,11 @@ import { supabaseServer } from '@/lib/supabase/server';
 import { isAccountComplete } from '@/lib/accountCompleteness';
 import { listMyAttendanceRecords, listMyCreditRecords } from '../actions';
 import { RecordClient } from './RecordClient';
+import { splitRegistrations } from '../myRegistrations';
 import { AccountShell } from '@/components/shell/AccountShell';
 
 export const metadata = {
-  title: 'Your record',
+  title: 'History',
 };
 
 export default async function AccountRecordPage() {
@@ -47,7 +48,9 @@ export default async function AccountRecordPage() {
     redirect(`/account/sign-in?next=${encodeURIComponent('/account/record')}`);
   }
 
-  const attendance = attendanceResult.ok ? attendanceResult.data.items : [];
+  // History is what is over (Doctrine 2026-10-30 section 2); live and upcoming sign-ups are under Registrations.
+  // eslint-disable-next-line react-hooks/purity -- the server's clock at render
+  const attendance = splitRegistrations(attendanceResult.ok ? attendanceResult.data.items : [], Date.now()).past;
   const credits = creditsResult.ok ? creditsResult.data.items : [];
 
   return (

@@ -35,22 +35,22 @@ export function RecordClient({
   return (
     <div className="space-y-md">
       <header className="space-y-xs">
-        <p className="text-label-md font-semibold uppercase tracking-[0.18em] m-0">
-          <span className="text-[color:var(--on-primary-container)]">Record</span>
-          <span className="text-on-surface-variant"> · Eventar</span>
-        </p>
         <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">
-          Your Eventar record
+          History
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant m-0">
-          Attendance and points through Eventar — a running log, not a substitute for iCMECPD or your college.
+          Past events and points through Eventar — a running log, not a substitute for iCMECPD or your college.
         </p>
       </header>
 
       <SectionCard icon="event_available" title="Attendance">
         {attendance.length === 0 ? (
           <p className="font-body-md text-body-md text-on-surface-variant m-0">
-            No linked events yet.{' '}
+            No past events yet. Events you have signed up for are under{' '}
+            <Link href="/account/registrations" className="text-primary-ink font-medium hover:underline">
+              Registrations
+            </Link>
+            .{' '}
             <Link href="/events" className="text-primary-ink font-medium hover:underline">
               Browse events
             </Link>{' '}

@@ -15,6 +15,9 @@ function attendanceRow(overrides: Partial<AttendanceRecordView> = {}): Attendanc
     event_id: 'event-1',
     event_title: 'HK Cardiology Update 2026',
     event_start: '2026-08-15T01:00:00.000Z',
+    event_end: '2026-08-15T03:00:00.000Z',
+    event_published: true,
+    registration_code: 'ABC234',
     event_timezone: 'Asia/Hong_Kong',
     status: 'attended',
     check_in_at: '2026-08-15T01:05:00.000Z',
@@ -46,7 +49,7 @@ function creditRow(overrides: Partial<CreditRecordView> = {}): CreditRecordView 
 describe('RecordClient — empty states', () => {
   it('shows the honest empty-state copy for both sections when there is nothing to show', () => {
     render(<RecordClient attendance={[]} credits={[]} />);
-    expect(screen.getByText(/no linked events yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/no past events yet/i)).toBeInTheDocument();
     expect(screen.getByText(/no points on your eventar record yet/i)).toBeInTheDocument();
   });
 });
@@ -61,11 +64,11 @@ describe('RecordClient — empty attendance links to the events list (FR-004)', 
     expect(screen.getByRole('link', { name: 'Account' })).toHaveAttribute('href', '/account');
   });
 
-  it('puts it in one clear sentence after the lead-in, with no em-dash', () => {
+  it('puts it in clear sentences after the lead-in, with no em-dash', () => {
     render(<RecordClient attendance={[]} credits={[]} />);
     const line = screen.getByRole('link', { name: 'Browse events' }).closest('p');
     expect(line).toHaveTextContent(
-      'No linked events yet. Browse events to register, or link past registrations from Account.',
+      'No past events yet. Events you have signed up for are under Registrations. Browse events to register, or link past registrations from Account.',
     );
     expect(line?.textContent).not.toMatch(/[\u2014\u2013]/);
   });

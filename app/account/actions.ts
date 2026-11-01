@@ -493,7 +493,7 @@ export async function listMyAttendanceRecords(): Promise<
   const supabase = await supabaseServer();
   const { data, error } = await supabase
     .from('registrations')
-    .select('id, event_id, status, check_in_at, check_in_method, source, registered_at')
+    .select('id, event_id, status, check_in_at, check_in_method, source, registered_at, registration_code')
     .eq('user_id', auth.userId)
     .order('registered_at', { ascending: false })
     .limit(100);
@@ -517,12 +517,12 @@ export async function listMyAttendanceRecords(): Promise<
   // since have been un-published/archived. Titles come from a narrow
   // service-role lookup scoped to exactly these event_ids, never widened
   // (same shape as getUnlinkedRegistrationCount's admin read above).
-  const eventById = new Map<string, { title: string; start_time: string; timezone: string }>();
+  const eventById = new Map<string, { title: string; start_time: string; end_time: string; timezone: string; status: string; deleted_at: string | null }>();
   if (eventIds.length > 0) {
     // eslint-disable-next-line no-restricted-syntax -- join failure downgrades event fields to null, list still renders
     const { data: events } = await supabaseAdmin()
       .from('events')
-      .select('id, title, start_time, timezone')
+      .select('id, title, start_time, end_time, timezone, status, deleted_at')
       .in('id', eventIds);
     for (const e of events ?? []) eventById.set(e.id, e);
   }
@@ -534,7 +534,10 @@ export async function listMyAttendanceRecords(): Promise<
       event_id: r.event_id,
       event_title: event?.title ?? null,
       event_start: event?.start_time ?? null,
+      event_end: event?.end_time ?? null,
+      event_published: event != null && event.status === 'published' && event.deleted_at == null,
       event_timezone: event?.timezone ?? null,
+      registration_code: r.registration_code,
       status: r.status,
       check_in_at: r.check_in_at,
       check_in_method: r.check_in_method,

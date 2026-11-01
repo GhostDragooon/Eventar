@@ -224,7 +224,13 @@ export type AttendanceRecordView = {
   event_id: string;
   event_title: string | null;
   event_start: string | null;
+  /** Null when the event row could not be resolved. */
+  event_end: string | null;
+  /** False when the organiser cancelled, unpublished or deleted the event: the registration row is untouched, the event is off. */
+  event_published: boolean;
   event_timezone: string | null;
+  /** The caller's own check-in code, shown on the Check-in page's pass link. */
+  registration_code: string;
   status: 'registered' | 'attended' | 'cancelled';
   check_in_at: string | null;
   check_in_method: 'qr' | 'manual' | null;

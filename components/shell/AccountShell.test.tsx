@@ -31,28 +31,39 @@ describe('AccountShell: portal', () => {
     expect(labels(bar())).toEqual(order);
   });
 
-  it('links only the pages that exist; the rest are inert, not links', () => {
+  it('every destination is a real link, in the rail and the phone bar, and none is a Soon stub', () => {
     render(<AccountShell>content</AccountShell>);
+    const hrefs: [string, string][] = [
+      ['Check-in', '/account/check-in'],
+      ['Registrations', '/account/registrations'],
+      ['Events', '/events'],
+      ['History', '/account/record'],
+      ['Account', '/account'],
+    ];
     for (const scope of [rail(), bar()]) {
-      expect(within(scope).getByRole('link', { name: /Events/ })).toHaveAttribute('href', '/events');
-      expect(within(scope).getByRole('link', { name: /Account/ })).toHaveAttribute('href', '/account');
-      for (const name of ['Check-in', 'Registrations', 'History']) {
-        expect(within(scope).queryByRole('link', { name: new RegExp(name) })).toBeNull();
-        expect(within(scope).getByText(name).closest('[aria-disabled="true"]')).not.toBeNull();
+      for (const [name, href] of hrefs) {
+        expect(within(scope).getByRole('link', { name: new RegExp(name) })).toHaveAttribute('href', href);
       }
+      expect(scope.querySelector('[aria-disabled="true"]')).toBeNull();
+      expect(within(scope).queryByText('Soon')).toBeNull();
     }
   });
 
-  it('marks the current place: /account/record lights Account, /events lights Events', () => {
-    mockPathname = '/account/record';
-    const { unmount } = render(<AccountShell>content</AccountShell>);
-    expect(within(rail()).getByRole('link', { name: /Account/ })).toHaveAttribute('aria-current', 'page');
-    expect(within(rail()).getByRole('link', { name: /Events/ })).not.toHaveAttribute('aria-current');
-    unmount();
-    mockPathname = '/events';
+  it.each([
+    ['/account/record', 'History'],
+    ['/account/registrations', 'Registrations'],
+    ['/account/check-in', 'Check-in'],
+    ['/account', 'Account'],
+    ['/account/profile', 'Account'],
+    ['/events', 'Events'],
+  ])('marks exactly one place on %s: %s (the longest matching prefix wins)', (path, label) => {
+    mockPathname = path;
     render(<AccountShell>content</AccountShell>);
-    expect(within(rail()).getByRole('link', { name: /Events/ })).toHaveAttribute('aria-current', 'page');
-    expect(within(rail()).getByRole('link', { name: /Account/ })).not.toHaveAttribute('aria-current');
+    for (const scope of [rail(), bar()]) {
+      const lit = scope.querySelectorAll('[aria-current="page"]');
+      expect(lit).toHaveLength(1);
+      expect(lit[0]).toHaveTextContent(label);
+    }
   });
 
   it('brand links to Events, not the marketing landing', () => {
@@ -107,20 +118,6 @@ describe('AccountShell: portal', () => {
     const rules = bar().querySelectorAll('[data-current-rule]');
     expect(rules).toHaveLength(1);
     expect(rules[0].closest('a')).toHaveAttribute('aria-current', 'page');
-  });
-
-  it('prints Soon under each unbuilt phone tab, not only in a hover title', () => {
-    render(<AccountShell>content</AccountShell>);
-    expect(within(bar()).getAllByText('Soon')).toHaveLength(3);
-  });
-
-  it('tells assistive tech and touch users the three unbuilt tabs are coming soon', () => {
-    render(<AccountShell>content</AccountShell>);
-    for (const name of ['Check-in', 'Registrations', 'History']) {
-      const tab = within(bar()).getByText(name).closest('[aria-disabled="true"]') as HTMLElement;
-      expect(tab).toHaveAttribute('title', `${name} is coming soon`);
-      expect(within(tab).getByText(/coming soon/i)).toBeTruthy();
-    }
   });
 
   it('has a skip link and a main landmark holding the page', () => {

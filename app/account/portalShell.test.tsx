@@ -39,6 +39,12 @@ vi.mock('@/components/shell/AccountShell', () => ({ AccountShell: () => null }))
 vi.mock('@/components/shell/SiteShell', () => ({ SiteShell: () => null }));
 vi.mock('./AccountClient', () => ({ AccountClient: () => null }));
 vi.mock('./record/RecordClient', () => ({ RecordClient: () => null }));
+vi.mock('./loadMyRegistrations', () => ({
+  loadMyRegistrations: async () => {
+    if (!s.complete) throw new Error('NEXT_REDIRECT:/account/complete');
+    return { items: [], failed: false };
+  },
+}));
 vi.mock('./profile/ProfileClient', () => ({ ProfileClient: () => null }));
 vi.mock('./claim/ClaimClient', () => ({ ClaimClient: () => null }));
 
@@ -46,6 +52,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { AccountShell } from '@/components/shell/AccountShell';
 import AccountPage from './page';
 import RecordPage from './record/page';
+import RegistrationsPage from './registrations/page';
+import CheckinPage from './check-in/page';
 import ProfilePage from './profile/page';
 import ClaimPage from './claim/page';
 
@@ -56,6 +64,8 @@ beforeEach(() => {
 const pages: [string, () => Promise<unknown>][] = [
   ['/account', AccountPage],
   ['/account/record', RecordPage],
+  ['/account/registrations', RegistrationsPage],
+  ['/account/check-in', CheckinPage],
   ['/account/profile', ProfilePage],
   ['/account/claim', ClaimPage],
 ];
