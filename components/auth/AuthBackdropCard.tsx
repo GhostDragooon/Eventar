@@ -48,7 +48,9 @@ export function AuthBackdropCard({
           className="absolute inset-0"
           style={{
             background:
-              'radial-gradient(120% 80% at 70% 40%, #0E79EC 0%, #1C3C94 45%, #0B1F4A 100%)',
+              // The brand blue stepped toward black, so the white aside copy keeps contrast in both themes (the
+              // palette's own dark stops flip light in dark mode, which would put white text on pale blue).
+              'radial-gradient(120% 80% at 70% 40%, color-mix(in srgb, var(--primary) 55%, black) 0%, color-mix(in srgb, var(--primary) 28%, black) 45%, black 100%)',
           }}
         />
         <div className="absolute inset-0 bg-black/20" />
