@@ -50,6 +50,21 @@ export function canEditRegistrations(role: Staff['role']): boolean {
   return role === 'organiser_admin' || role === 'organiser_member' || role === 'eventar_staff';
 }
 
+// Role chips are editable only by the event's creator (set_registration_role() refuses any other organiser), and by
+// eventar_staff. Decides what to SHOW, on the Registrations page and in the Check-in header sentence that points at it;
+// the database refuses regardless.
+export function canEditRegistrationRoles(staff: Pick<Staff, 'id' | 'role'>, event: { created_by: string | null }): boolean {
+  return canEditRegistrations(staff.role) && (staff.role === 'eventar_staff' || event.created_by === staff.id);
+}
+
+// Which roles mark_attended() accepts: its resolve_actor gate names organiser_admin, organiser_member and
+// eventar_staff (20261023170000). body_admin and auditor read the desk and cannot check anyone in. The walk-in
+// action checks this BEFORE it inserts a registration (a refusal after the insert left an orphan row, RV-FINAL F2);
+// the desk uses it to say so up front. The database stays the authority.
+export function canCheckIn(role: Staff['role']): boolean {
+  return role === 'organiser_admin' || role === 'organiser_member' || role === 'eventar_staff';
+}
+
 // Which roles set_event_cpd_config() accepts: its resolve_actor gate names only
 // these two (read from the live definition on 2026-10-02). An organiser_member
 // can create and publish an event but not accredit it; the create form used to

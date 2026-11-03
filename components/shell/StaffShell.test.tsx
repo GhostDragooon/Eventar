@@ -6,15 +6,22 @@ let mockPathname = '/dashboard';
 vi.mock('next/navigation', () => ({
   usePathname: () => mockPathname,
 }));
+// signOutAndLeave (lib/signOut.ts) goes through the browser client; the revoke result is the test's to set.
+const signOut = vi.fn().mockResolvedValue({});
+vi.mock('@/lib/supabase/browser', () => ({ supabaseBrowser: () => ({ auth: { signOut } }) }));
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { StaffShell } from './StaffShell';
 
 // vitest config has globals:false — RTL renders accumulate without explicit cleanup.
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 beforeEach(() => {
   mockPathname = '/dashboard';
+  signOut.mockClear();
 });
 
 const staff = { email: 'jane@company.com', role: 'organiser_member' as const };
@@ -217,5 +224,73 @@ describe('StaffShell — primary navigation', () => {
       </StaffShell>,
     );
     expect(screen.getByText('unique-child-marker')).toBeInTheDocument();
+  });
+});
+
+// No-silence area 6 (pick 6b): the chip says who and in what role, and does not pretend to be a control; Sign out is
+// a quiet row under the nav, the one sign-out of lib/signOut.ts.
+describe('StaffShell — account chip and Sign out', () => {
+  const sidebar = () => screen.getByRole('navigation', { name: 'Primary' }).closest('aside')!;
+  const chip = () => (sidebar().firstElementChild as HTMLElement).lastElementChild as HTMLElement;
+
+  it.each([
+    ['organiser_admin', 'Organiser Admin'],
+    ['organiser_member', 'Organiser'],
+    ['body_admin', 'Body Admin'],
+    ['auditor', 'Auditor'],
+    ['eventar_staff', 'Eventar Staff'],
+  ] as const)('prints the role line for %s as "%s"', (role, label) => {
+    render(<StaffShell staff={{ email: 'jane@company.com', role }}>content</StaffShell>);
+    expect(within(chip()).getByText(label)).toBeInTheDocument();
+  });
+
+  it('does not look clickable: no pointer cursor, no hover fill, no handler role', () => {
+    render(<StaffShell staff={staff}>content</StaffShell>);
+    expect(chip().className).not.toMatch(/cursor-pointer/);
+    expect(chip().className).not.toMatch(/hover:/);
+    expect(within(chip()).queryByRole('button')).toBeNull();
+    expect(within(chip()).queryByRole('link')).toBeNull();
+  });
+
+  it('Sign out is a button in the sidebar, not a link, and the nav links are unchanged', () => {
+    render(<StaffShell staff={staff}>content</StaffShell>);
+    expect(within(sidebar()).getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Sign out' })).toBeNull();
+    const nav = screen.getByRole('navigation', { name: 'Primary' });
+    expect(within(nav).queryByRole('button')).toBeNull();
+  });
+
+  it('Sign out signs out and leaves for /login', async () => {
+    const loc = { href: '/dashboard' };
+    vi.stubGlobal('location', loc);
+    render(<StaffShell staff={staff}>content</StaffShell>);
+    fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+    expect(signOut).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => expect(loc.href).toBe('/login'));
+  });
+
+  it('while the revoke is in flight the row is disabled and says so (no double submit)', async () => {
+    vi.stubGlobal('location', { href: '/dashboard' });
+    let release!: (v: unknown) => void;
+    signOut.mockReturnValueOnce(new Promise((r) => { release = r; }));
+    render(<StaffShell staff={staff}>content</StaffShell>);
+    fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+    expect(await screen.findByRole('button', { name: 'Signing out…' })).toBeDisabled();
+    release({});
+    await vi.waitFor(() => expect(screen.getByRole('button', { name: 'Sign out' })).toBeEnabled());
+  });
+
+  it('a failed sign-out says so, does not navigate, and a retry can succeed', async () => {
+    const loc = { href: '/dashboard' };
+    vi.stubGlobal('location', loc);
+    signOut.mockResolvedValueOnce({ error: { message: 'network' } });
+    render(<StaffShell staff={staff}>content</StaffShell>);
+    fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not sign out. Try again.');
+    expect(loc.href).toBe('/dashboard');
+    expect(screen.getByRole('button', { name: 'Sign out' })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+    await vi.waitFor(() => expect(loc.href).toBe('/login'));
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });

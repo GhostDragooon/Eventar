@@ -18,7 +18,7 @@ vi.mock('@/lib/supabase/admin', () => ({ supabaseAdmin: () => 'admin-client-mark
 import { afterEach, describe, expect, it } from 'vitest';
 import { AuthRetryableFetchError, AuthSessionMissingError } from '@supabase/supabase-js';
 import { createClient } from '@supabase/supabase-js';
-import { requireStaff, NotAuthorizedError, getStaffSessionState, isStaffSession, canPublishEvents, canSetAccreditation, canEditRegistrations } from './auth';
+import { requireStaff, NotAuthorizedError, getStaffSessionState, isStaffSession, canPublishEvents, canSetAccreditation, canEditRegistrations, canEditRegistrationRoles, canCheckIn } from './auth';
 
 // Fabricate a minimal supabase client shape that requireStaff depends on.
 // The fake chain actually APPLIES each .eq(field, value) predicate against
@@ -253,6 +253,40 @@ describe('canEditRegistrations', () => {
     ['auditor', false],
   ] as const)('%s -> %s', (role, expected) => {
     expect(canEditRegistrations(role)).toBe(expected);
+  });
+});
+
+// set_registration_role() also refuses anyone but the event's creator (eventar_staff excepted), so a role chip is
+// editable only there. Two pages tell people where roles can be edited: both ask this one function.
+describe('canEditRegistrationRoles', () => {
+  const staffAs = (role: Parameters<typeof canCheckIn>[0], id = 'u1') => ({ id, role }) as Parameters<typeof canEditRegistrationRoles>[0];
+  it.each([
+    ['organiser_admin', 'u1', true],
+    ['organiser_member', 'u1', true],
+    ['organiser_admin', 'u2', false],
+    ['organiser_member', 'u2', false],
+    ['eventar_staff', 'u2', true],
+    ['body_admin', 'u1', false],
+    ['auditor', 'u1', false],
+  ] as const)('%s, creator is u1, signed in as %s -> %s', (role, id, expected) => {
+    expect(canEditRegistrationRoles(staffAs(role, id), { created_by: 'u1' })).toBe(expected);
+  });
+  it('an event with no recorded creator is editable by nobody but eventar_staff', () => {
+    expect(canEditRegistrationRoles(staffAs('organiser_admin'), { created_by: null })).toBe(false);
+    expect(canEditRegistrationRoles(staffAs('eventar_staff'), { created_by: null })).toBe(true);
+  });
+});
+
+// mark_attended() names the same three roles; walk-in registers a person only for a role that can then check them in.
+describe('canCheckIn', () => {
+  it.each([
+    ['organiser_admin', true],
+    ['organiser_member', true],
+    ['eventar_staff', true],
+    ['body_admin', false],
+    ['auditor', false],
+  ] as const)('%s -> %s', (role, expected) => {
+    expect(canCheckIn(role)).toBe(expected);
   });
 });
 

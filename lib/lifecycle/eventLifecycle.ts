@@ -66,6 +66,9 @@ export function checkInClosedMessage(reason: 'not_open_yet' | 'closed'): string 
     : `Check-in has not opened yet. It opens ${CHECKIN_OPEN_MINUTES} minutes before the event starts.`;
 }
 
+/** Shown instead of the clock reason when the signed-in role cannot check people in (mark_attended refuses it with 42501). */
+export const CHECKIN_ROLE_MESSAGE = 'Your role cannot check people in. Ask an organiser admin or member.';
+
 /** The same reason derived from the clock, for controls that follow it. `null` means check-in is open. */
 export function checkInGateMessage(lifecycle: Lifecycle): string | null {
   if (lifecycle === 'live') return null;

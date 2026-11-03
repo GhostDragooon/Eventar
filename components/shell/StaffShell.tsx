@@ -1,10 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { BrandMark } from './BrandMark';
 import { SiteFooter } from './SiteFooter';
 import { firstName } from '@/lib/name';
+import { ROLE_LABELS } from '@/lib/roleLabels';
+import { signOutAndLeave } from '@/lib/signOut';
 
 // Organiser shell — rebuilt 2026-08-09 to `docs/plans/2026-07-12-organiser-ia-spec.md`.
 //
@@ -141,6 +144,15 @@ export function NavRow({
 export function StaffShell(props: StaffShellProps) {
   const { staff, children, backHref, backLabel, navItems = NAV, activeHref } = props;
   const pathname = usePathname() ?? '';
+  // The one sign-out (lib/signOut.ts): leaves for /login only after the server revoke worked, else says so.
+  const [signOutError, setSignOutError] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+  const signOut = async () => {
+    setSigningOut(true);
+    setSignOutError(null);
+    setSignOutError(await signOutAndLeave('/login'));
+    setSigningOut(false);
+  };
 
   return (
     <div className="app-atmo flex min-h-screen w-full flex-col text-on-surface">
@@ -195,11 +207,35 @@ export function StaffShell(props: StaffShellProps) {
               <NavRow label="Settings" href="/settings" icon="settings" active={pathname === '/settings' || pathname.startsWith('/settings/')} />
             </nav>
 
+            {/* Sign out: a quiet row under the nav, same shape as the attendee rail (UX-02 pick 2a; no-silence area 6,
+                pick 6b). A button, not a link: it acts. */}
+            <div>
+              <button
+                // ui-primitive-allow: rail row, shaped like the nav rows above it (quiet row under the nav)
+                type="button"
+                disabled={signingOut}
+                onClick={signOut}
+                className="nav-item flex w-full items-center gap-sm rounded-full px-md py-sm text-[calc(13.5px*var(--text-scale))] font-medium text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
+              >
+                <span className="material-symbols-outlined text-[calc(20px*var(--text-scale))]" aria-hidden>
+                  logout
+                </span>
+                <span className="flex-1 whitespace-nowrap text-left">{signingOut ? 'Signing out…' : 'Sign out'}</span>
+              </button>
+              {signOutError && (
+                <p role="alert" className="m-0 px-md pt-xs text-[calc(13px*var(--text-scale))] text-error">
+                  {signOutError}
+                </p>
+              )}
+            </div>
+
             {/* Account chip pinned bottom-left (Ivan's call 2026-09-07). The
                 top bar this used to live in is gone — org identity now shows
                 on the programme page's own H1 (see app/dashboard/page.tsx),
-                and this chip carries the signed-in person instead. */}
-            <div className="mt-auto flex items-center gap-sm rounded-[12px] px-md py-sm hover:bg-surface-container-high cursor-pointer">
+                and this chip carries the signed-in person and their role.
+                Static on purpose (no hover fill, no pointer): it has no
+                handler; Settings and Sign out are the rows above. */}
+            <div className="mt-auto flex items-center gap-sm rounded-[12px] px-md py-sm">
               <span
                 className="grid h-[30px] w-[30px] flex-shrink-0 place-items-center rounded-full bg-primary-container text-[calc(12px*var(--text-scale))] font-semibold text-on-primary-container"
                 aria-hidden
@@ -216,6 +252,7 @@ export function StaffShell(props: StaffShellProps) {
                 >
                   {staff.email}
                 </div>
+                <div className="text-[calc(11.5px*var(--text-scale))] text-on-surface-variant">{ROLE_LABELS[staff.role]}</div>
               </div>
             </div>
           </div>

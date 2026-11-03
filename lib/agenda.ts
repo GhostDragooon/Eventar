@@ -16,6 +16,24 @@ export type AgendaTopic = {
 };
 
 /**
+ * The agenda is saved (display_order) and shown in start-time order; the form has no reorder control (Ivan,
+ * 2026-11-02). `start` is HH:MM, so a string compare orders it. Array.sort is stable, so equal starts keep entry
+ * order; a block whose time is not entered yet sorts last, where a newly added block already sits.
+ */
+export function sortBlocksByStart<T extends { start: string }>(blocks: T[]): T[] {
+  return [...blocks].sort((a, b) => (a.start || '99:99').localeCompare(b.start || '99:99'));
+}
+
+/**
+ * Payload indices of ISO-timestamped blocks in start-time order, for the save actions. Numeric on the instant (ISO
+ * strings of different precision do not compare right as text); stable, so equal starts keep payload order. The
+ * database stores display_order = position in the array it is sent, so sending in this order IS saving in start order.
+ */
+export function startOrder(blocks: ReadonlyArray<{ start_time: string }>): number[] {
+  return blocks.map((_, i) => i).sort((a, b) => Date.parse(blocks[a]!.start_time) - Date.parse(blocks[b]!.start_time));
+}
+
+/**
  * Breaks/transitions are schedule filler, not "sessions" — they must never be
  * survey Q2 options (render side) nor accepted as valuable_block_id (action
  * side). Single predicate so the two filters can't drift.

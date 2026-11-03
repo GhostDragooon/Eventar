@@ -5,6 +5,7 @@ import { readTheme, writeTheme, type Theme } from '@/lib/theme';
 import { readTextSize, writeTextSize, type TextSize } from '@/lib/textSize';
 import { SignOutAction } from '@/components/auth/SignOutAction';
 import { signOutAndLeave } from '@/lib/signOut';
+import { ROLE_LABELS } from '@/lib/roleLabels';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { changeEmail } from '@/app/account/actions';
@@ -38,14 +39,6 @@ const TEXT_OPTIONS: TextOpt[] = [
   { value: 'default', label: 'Default', description: 'Standard size — 16 px body text.',            icon: 'text_format'   },
   { value: 'large',   label: 'Large',   description: 'Roomier type — easier reading from a tablet.', icon: 'text_increase' },
 ];
-
-const ROLE_LABELS: Record<'organiser_admin' | 'organiser_member' | 'body_admin' | 'auditor' | 'eventar_staff', string> = {
-  organiser_admin:  'Organiser Admin',
-  organiser_member: 'Organiser',
-  body_admin:       'Body Admin',
-  auditor:          'Auditor',
-  eventar_staff:    'Eventar Staff',
-};
 
 export default function SettingsClient({
   staff,

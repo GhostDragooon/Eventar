@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   deriveSpeakerNames,
   findParallelBlockIds,
+  sortBlocksByStart,
   type BlockTime,
   type SpeakerSourceBlock,
 } from './agenda';
@@ -88,5 +89,21 @@ describe('deriveSpeakerNames', () => {
       { kind: 'transition', host: 'Stage Manager', topics: [] },
     ];
     expect(deriveSpeakerNames(blocks)).toEqual(['MC Coffee', 'Stage Manager']);
+  });
+});
+
+// Ivan 2026-11-02: the form has no reorder control; blocks are saved in start-time order and the form says so.
+describe('sortBlocksByStart', () => {
+  const b = (id: string, start: string) => ({ id, start });
+
+  it('orders by start time and keeps entry order for equal starts', () => {
+    const input = [b('c', '11:00'), b('a', '09:00'), b('d', '09:00'), b('e', '10:30')];
+    expect(sortBlocksByStart(input).map((x) => x.id)).toEqual(['a', 'd', 'e', 'c']);
+  });
+
+  it('puts a block with no start time yet last, and does not mutate the input', () => {
+    const input = [b('new', ''), b('a', '09:00')];
+    expect(sortBlocksByStart(input).map((x) => x.id)).toEqual(['a', 'new']);
+    expect(input.map((x) => x.id)).toEqual(['new', 'a']);
   });
 });
