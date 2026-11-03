@@ -10,7 +10,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { StatusPill } from '@/components/lifecycle/StatusPill';
+import { StatusChip } from './StatusChip';
 import type { ProgrammeEvent } from './programmeEvent';
 import type { TabKey } from './eventTabs';
 
@@ -108,7 +108,6 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
   // Deleted hides while it is empty: restoring the last deleted event must not leave the page on a tab that is gone.
   const tab: TabKey = chosenTab === 'deleted' && counts.deleted === 0 ? 'active' : chosenTab;
   const inBin = tab === 'deleted';
-  const total = counts.active + counts.drafts + counts.cancelled;
 
   function pickTab(next: TabKey) {
     setChosenTab(next);
@@ -298,7 +297,7 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
         <div>
           <h1 className="text-[calc(28px*var(--text-scale))] font-bold tracking-[-0.02em] text-on-surface">Events</h1>
           <p className="text-[calc(13px*var(--text-scale))] text-on-surface-variant">
-            {total} event{total === 1 ? '' : 's'}. Finished events are in <Link href="/analytics" className="underline underline-offset-2 hover:text-on-surface">History</Link>.
+            {counts.active} active event{counts.active === 1 ? '' : 's'}. Finished events are in <Link href="/analytics" className="underline underline-offset-2 hover:text-on-surface">History</Link>.
           </p>
         </div>
         <Link href="/events/new" className={cn(buttonVariants(), 'h-11 gap-xs px-lg font-label-md text-label-md')}>
@@ -410,7 +409,7 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
 
       {events.length >= FETCH_CAP && (
         <p className="mt-lg text-[calc(13px*var(--text-scale))] text-on-surface-variant">
-          Showing the {FETCH_CAP} events with the latest dates. Finished events are in History.
+          Only the {FETCH_CAP} events with the latest dates are loaded, so older ones may be missing here. Finished events are in History.
         </p>
       )}
 
@@ -481,7 +480,7 @@ function EventRow({ e, nowMs, selected, onToggle, onRestore, inBin, pending }: {
         </div>
         <div className="flex min-w-0 flex-col rounded-[12px] bg-surface-container p-xs">
           <div className="flex min-w-0 flex-wrap items-center gap-x-sm">
-            <span className="flex h-11 items-center"><StatusPill lifecycle={e.lifecycle} /></span>
+            <span className="flex h-11 items-center"><StatusChip lifecycle={e.lifecycle} deleted={e.deleted} /></span>
             <Link href={`/events/${e.id}/details`} className="font-title-lg text-title-lg font-semibold text-on-surface transition-colors hover:text-[color:var(--on-primary-container)]">{e.title}</Link>
           </div>
           <div className="-mt-xs pb-xs">

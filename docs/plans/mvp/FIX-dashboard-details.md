@@ -1,0 +1,30 @@
+# FIX: dashboard, Details, Registrations, speaker check-in, /settings team card (acceptance walk)
+
+Nothing staged or committed. Gates run: `tsc --noEmit` clean; vitest on touched dirs 29 files / 334 tests pass.
+"Failed-first" = the new tests were run against `git show HEAD:<file>` (or a temporary in-place revert) and failed; then the fix was restored and they passed.
+
+| finding | file:line | BEFORE | AFTER | test | failed-first |
+|---|---|---|---|---|---|
+| #1 Deleted tab chip | components/dashboard/StatusChip.tsx (new), EventsHome.tsx (EventRow) | deleted row showed `Drafted` chip beside Restore | `Deleted` chip (neutral container) | EventsHome.test.tsx "labels a draft Draft and a deleted event Deleted" | yes |
+| #1 Drafts chip text | StatusChip.tsx, EventsHome.tsx, details/page.tsx header | `Drafted` | `Draft` (other states unchanged: Registering, Upcoming, Live, Cancelled are states, not verbs) | same test | yes |
+| #2 header count | EventsHome.tsx header | `{active+drafts+cancelled} events.` (14 above an Active tab of 8) | `{counts.active} active events.` | EventsHome.test.tsx "the header counts what is on the Active tab" + updated CX-04R test (`1 active event.`) | yes |
+| #2 footer | EventsHome.tsx footer | `Showing the 300 events with the latest dates.` | `Only the 300 events with the latest dates are loaded, so older ones may be missing here.` (still only when length >= 300) | EventsHome.test.tsx cap tests (reworded) | yes |
+| #20 draft Details timer | components/details/LiveScoreboard.tsx | draft fell into the live branch: `ELAPSED 00m 00s`, `WRAPS IN 746h`, progress rail, ticking interval | draft: `STATUS Draft`, `PUBLISHED Not yet`, no rail, no interval | components/details/LiveScoreboard.test.tsx (new; live still shows ELAPSED/WRAPS IN) | yes |
+| #20 draft survey/feedback | app/events/[id]/details/page.tsx (survey readiness cell; FeedbackSection mount) | `Armed / fires 10 min after end`; Feedback stub `opens HH:MM, 10 min after wrap` | `Not armed / after you publish`; Feedback section not rendered for a draft. Published unchanged | details/page.test.ts "a draft" block (2 tests) | yes |
+| dev m3 deleted event | registrations/page.tsx event query | no deleted filter, edit then returned `Registration not found.` | `.is('deleted_at', null)` so the page is `notFound()` | registrations/page.test.tsx "not found for a soft-deleted event" | yes |
+| dev m2 1000-row cap | registrations/page.tsx `allRows()` | roster and roles read once, silently cut at max_rows 1000 | both read with `.range()` pages of 1000 until a short page; roster ordered by name then id so page edges are stable | registrations/page.test.tsx "past the 1000-row cap" (2300 rows) | yes |
+| dev (c) empty copy | RegistrationsClient.tsx `emptyMessage` | `No matches.` | `No registrations match "<term>".` / `No registrations are <filter>.` / `No registrations are <filter> and match "<term>".` | RegistrationsClient.test.tsx (2 tests) | yes |
+| dev m5a signed out | checkin/speakerActions.ts | `requireStaff()` threw `NotAuthorizedError`, SpeakersCard has no catch | catches only NotAuthorizedError, returns the same sentence markAttended gives; other errors still throw | speakerActions.test.ts "answers a server-side sign-out", "still throws any other auth failure" | yes |
+| dev m5b event state | speakerActions.ts | draft, cancelled, deleted events could be toggled | refused before any speaker read/write: `Publish the event before checking people in.` / `This event was cancelled. Check-in is closed.` / `This event was deleted. Check-in is closed.` (first two reuse `checkInGateMessage`). No check-in window rule added (open product decision kept) | speakerActions.test.ts it.each (3) | yes |
+| dev m5c stale copy | speakerActions.ts doc comment + 2 error strings | `Owner-only by RLS`, `not owned by you` | `Scoped by RLS to the event's organisation`; `Check-in failed — event not found or not in your organisation.` (also returned when the event read is hidden by RLS) | speakerActions.test.ts "not found or not in the organisation" | yes |
+| Settings Team card | app/settings/page.tsx | every role: `Manage your organisation's members and invite new teammates.` + `Manage team` link | admin/eventar_staff unchanged; others: `Only organiser admins can invite teammates. Ask an admin of your organisation.` and no link (the destination shows them only their own row) | app/settings/page.test.tsx (new, 5 cases) | yes |
+
+## Not fixed, with reason
+
+- **StatusPill root cause.** `components/lifecycle/StatusPill.tsx` (label `Drafted`) is outside my files, and is also used by the public event page, account profile/record and the edit page. I added `components/dashboard/StatusChip.tsx`, a wrapper that draws Draft and Deleted and passes everything else to StatusPill, used by the Events home and the Details header. Proper fix: change `drafted: 'Drafted'` to `'Draft'` in StatusPill (and `StatusPill.test.tsx` `/drafted/i` to `/draft/i`), then delete StatusChip's draft branch. The edit page header and the account pages still say `Drafted` until then.
+- **Sign-out sentence duplicated.** `CHECKIN_SIGNED_OUT` and `staffOrSignedOut` are private to `checkin/actions.ts` (a `'use server'` file cannot export a constant or helper without publishing it as an action, and that file is not mine). `speakerActions.ts` carries its own copy of the sentence; move both into `lib/` when someone owns both files.
+- **Sidebar label `ADMIN` above Settings for a member (MINOR):** left as instructed (components/shell/StaffShell.tsx:203, not my file).
+- **Details page for a deleted event** is not excluded (only Registrations was asked).
+- **Details header buttons** Registrations / Check-in: unchanged (item 7).
+- **Draft Details: Attendance card** keeps its existing draft stub text; not in the finding.
+- **Registrations paging assumes max_rows = 1000** (`PAGE` in page.tsx). If the hosted project lowers max_rows below 1000, a page would come back short and the loop would stop early; the constant must follow supabase/config.toml.

@@ -61,7 +61,16 @@ describe('Registrations list', () => {
     expect(screen.getByText('Lin Chan')).toBeTruthy();
     expect(screen.queryByText('Alex Wong')).toBeNull();
     fireEvent.change(screen.getByLabelText('Search name or email'), { target: { value: 'zzz' } });
-    expect(screen.getByText('No matches.')).toBeTruthy();
+    expect(screen.getByText('No registrations match "zzz".')).toBeTruthy();
+  });
+
+  it('an empty filter or search says which one emptied the list (acceptance walk, dev m: bare "No matches.")', () => {
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelled (0)' }));
+    expect(screen.getByText('No registrations are cancelled.')).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Search name or email'), { target: { value: 'Alex' } });
+    expect(screen.getByText('No registrations are cancelled and match "Alex".')).toBeTruthy();
+    expect(screen.queryByText('No matches.')).toBeNull();
   });
 });
 

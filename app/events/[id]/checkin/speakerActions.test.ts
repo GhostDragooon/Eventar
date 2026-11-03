@@ -28,6 +28,9 @@ const eventId = '11111111-2222-4333-8444-555555555555';
 let eqCalls: Array<[string, unknown]> = [];
 
 // ---- mock state -----------------------------------------------------------
+// events read: .select().eq().maybeSingle() (kept out of eqCalls: it is not part of the speaker filters)
+let mockEvent: { status: string; deleted_at: string | null } | null = { status: 'published', deleted_at: null };
+
 // agenda_blocks read: await supabase.from('agenda_blocks').select(...).eq(...)
 type BlockRow = { host: string | null; topics: unknown };
 let mockBlocks: BlockRow[] | null = [
@@ -52,6 +55,13 @@ let mockUpdateError: { message: string; code?: string } | null = null;
 vi.mock('@/lib/supabase/server', () => ({
   supabaseServer: vi.fn(async () => ({
     from: (table: string) => {
+      if (table === 'events') {
+        return {
+          select: (_cols: string) => ({
+            eq: () => ({ maybeSingle: async () => ({ data: mockEvent, error: null }) }),
+          }),
+        };
+      }
       if (table === 'agenda_blocks') {
         return {
           select: (_cols: string) => ({
@@ -120,6 +130,7 @@ vi.mock('@/lib/supabase/server', () => ({
 import { beforeEach, describe, expect, it } from 'vitest';
 import { toggleSpeakerCheckin } from './speakerActions';
 import { CHECKIN_ROLE_MESSAGE } from '@/lib/lifecycle/eventLifecycle';
+import { NotAuthorizedError } from '@/lib/auth';
 
 beforeEach(() => {
   requireStaffMock.mockClear();
@@ -128,6 +139,7 @@ beforeEach(() => {
     { host: 'Ada Lovelace', topics: [{ title: 'T', speaker_name: 'Grace Hopper' }] },
   ];
   mockBlocksError = null;
+  mockEvent = { status: 'published', deleted_at: null };
   eqCalls = [];
   mockExistingRow = null;
   mockExistingError = null;
@@ -331,5 +343,41 @@ describe('toggleSpeakerCheckin', () => {
     const result = await toggleSpeakerCheckin(eventId, 'Ada Lovelace');
     expect(result).toEqual({ error: 'You do not have access to this event.' });
     expect(revalidatePathMock).not.toHaveBeenCalled();
+  });
+});
+
+// Acceptance walk dev m5.
+describe('toggleSpeakerCheckin: signed-out session and event state', () => {
+  it('answers a server-side sign-out with the door message instead of throwing', async () => {
+    requireStaffMock.mockRejectedValueOnce(new NotAuthorizedError());
+    const result = await toggleSpeakerCheckin(eventId, 'Ada Lovelace');
+    expect(result).toEqual({ error: "You've been signed out. This check-in was not saved. Log in again to continue." });
+    expect(lastInsert).toBeNull();
+  });
+
+  it('still throws any other auth failure', async () => {
+    requireStaffMock.mockRejectedValueOnce(new Error('boom'));
+    await expect(toggleSpeakerCheckin(eventId, 'Ada Lovelace')).rejects.toThrow('boom');
+  });
+
+  it.each([
+    [{ status: 'draft', deleted_at: null }, 'Publish the event before checking people in.'],
+    [{ status: 'cancelled', deleted_at: null }, 'This event was cancelled. Check-in is closed.'],
+    [{ status: 'published', deleted_at: '2026-10-01T00:00:00Z' }, 'This event was deleted. Check-in is closed.'],
+  ])('refuses %j without writing', async (event, message) => {
+    mockEvent = event;
+    const result = await toggleSpeakerCheckin(eventId, 'Ada Lovelace');
+    expect(result).toEqual({ error: message });
+    expect(lastInsert).toBeNull();
+    expect(lastUpdate).toBeNull();
+    expect(revalidatePathMock).not.toHaveBeenCalled();
+  });
+
+  it('says the event is not found or not in the organisation when RLS hides it, and when a write is refused', async () => {
+    mockEvent = null;
+    expect(await toggleSpeakerCheckin(eventId, 'Ada Lovelace')).toEqual({ error: 'Check-in failed — event not found or not in your organisation.' });
+    mockEvent = { status: 'published', deleted_at: null };
+    mockInsertedRow = null;
+    expect(await toggleSpeakerCheckin(eventId, 'Ada Lovelace')).toEqual({ error: 'Check-in failed — event not found or not in your organisation.' });
   });
 });

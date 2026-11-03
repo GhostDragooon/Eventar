@@ -4,7 +4,9 @@ import { vi } from 'vitest';
 
 const h = vi.hoisted(() => ({
   staff: { id: 'u1', email: 'a@b.co', role: 'organiser_admin', organisation_id: 'org1' },
-  event: { id: 'e1', title: 'Cardio Update 2026', start_time: '2026-11-10T01:00:00Z', end_time: '2026-11-10T03:00:00Z', timezone: 'Asia/Hong_Kong', organisation_id: 'org1', created_by: 'u1' },
+  roster: [] as Record<string, unknown>[],
+  clientProps: null as null | { rows: { id: string }[] },
+  event: { id: 'e1', title: 'Cardio Update 2026', start_time: '2026-11-10T01:00:00Z', end_time: '2026-11-10T03:00:00Z', timezone: 'Asia/Hong_Kong', organisation_id: 'org1', created_by: 'u1', deleted_at: null as string | null },
 }));
 
 vi.mock('server-only', () => ({}));
@@ -18,17 +20,26 @@ vi.mock('@/lib/auth', async (orig) => ({
 }));
 vi.mock('@/lib/supabase/server', () => {
   const result = { data: [], error: null };
-  const chain: unknown = new Proxy({}, {
-    get: (_t, prop) => {
-      if (prop === 'then') return (res: (v: unknown) => unknown) => res(result);
-      if (prop === 'maybeSingle') return () => Promise.resolve({ data: h.event, error: null });
-      return () => chain;
-    },
-  });
-  return { supabaseServer: async () => ({ from: () => chain }) };
+  const chain = (table: string): unknown => {
+    // Stands in for the database: the soft-delete filter hides a deleted event, and .range() pages the roster.
+    let hideDeleted = false;
+    const c: unknown = new Proxy({}, {
+      get: (_t, prop) => {
+        if (prop === 'then') return (res: (v: unknown) => unknown) => res(result);
+        if (prop === 'maybeSingle') return () => Promise.resolve({ data: hideDeleted && h.event.deleted_at ? null : h.event, error: null });
+        if (prop === 'is') return (col: string, val: unknown) => { if (col === 'deleted_at' && val === null) hideDeleted = true; return c; };
+        if (prop === 'range' && table === 'registrations') {
+          return (from: number, to: number) => Promise.resolve({ data: h.roster.slice(from, Math.min(to + 1, from + 1000)), error: null });
+        }
+        return () => c;
+      },
+    });
+    return c;
+  };
+  return { supabaseServer: async () => ({ from: (table: string) => chain(table) }) };
 });
 vi.mock('@/components/shell/StaffShell', () => ({ StaffShell: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
-vi.mock('./RegistrationsClient', () => ({ default: () => null }));
+vi.mock('./RegistrationsClient', () => ({ default: (p: { rows: { id: string }[] }) => { h.clientProps = p; return null; } }));
 
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
@@ -36,6 +47,9 @@ import RegistrationsPage from './page';
 
 afterEach(() => {
   cleanup();
+  h.roster = [];
+  h.clientProps = null;
+  h.event.deleted_at = null;
   h.staff = { id: 'u1', email: 'a@b.co', role: 'organiser_admin', organisation_id: 'org1' };
 });
 
@@ -73,5 +87,19 @@ describe('Registrations page header', () => {
     expect(await subtitle({ role })).toBe(
       'Everyone registered for this event. You can view contact details; an organiser admin or member can edit them.',
     );
+  });
+});
+
+describe('Registrations page data', () => {
+  it('is not found for a soft-deleted event, so no edit can be tried against it (dev m3)', async () => {
+    h.event.deleted_at = '2026-10-01T00:00:00Z';
+    await expect(RegistrationsPage({ params: Promise.resolve({ id: 'e1' }) })).rejects.toThrow('NEXT_NOT_FOUND');
+  });
+
+  it('lists every registration past the 1000-row cap, not the first 1000 (dev m2)', async () => {
+    h.roster = Array.from({ length: 2300 }, (_, i) => ({ id: `r${i}`, status: 'registered', registered_at: '2026-10-01T00:00:00Z', check_in_at: null, user_id: null }));
+    render(await RegistrationsPage({ params: Promise.resolve({ id: 'e1' }) }));
+    expect(h.clientProps?.rows).toHaveLength(2300);
+    expect(new Set(h.clientProps?.rows.map((r) => r.id)).size).toBe(2300);
   });
 });

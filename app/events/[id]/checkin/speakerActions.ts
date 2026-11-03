@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { requireStaff, canCheckIn } from '@/lib/auth';
-import { CHECKIN_ROLE_MESSAGE } from '@/lib/lifecycle/eventLifecycle';
+import { requireStaff, canCheckIn, NotAuthorizedError } from '@/lib/auth';
+import { CHECKIN_ROLE_MESSAGE, checkInGateMessage } from '@/lib/lifecycle/eventLifecycle';
 import { supabaseServer } from '@/lib/supabase/server';
 import { deriveSpeakerNames } from '@/lib/agenda';
 
@@ -17,6 +17,11 @@ const inputSchema = z.object({
 // 42501 = the speaker_checkins policy refused (another organisation's staff who know a published speaker name).
 const NO_ACCESS = 'You do not have access to this event.';
 
+// Same sentence markAttended gives (./actions.ts keeps its copy private: a 'use server' file cannot export a constant
+// or a helper without publishing it as an action). A server-side sign-out is a message, not a throw that freezes the card.
+const SIGNED_OUT = "You've been signed out. This check-in was not saved. Log in again to continue.";
+const NOT_FOUND = 'Check-in failed — event not found or not in your organisation.';
+
 type ToggleResult =
   | { ok: true; checkedInAt: string | null }
   | { error: string };
@@ -25,15 +30,17 @@ type ToggleResult =
  * Toggle the check-in state of a speaker/host on the Team-Checkin page (G3).
  *
  * Three-layer auth: middleware (proxy.ts) → requireStaff() → RLS via
- * supabaseServer(). Owner-only by RLS: the agenda_blocks read is gated by
- * `agenda_blocks_organizer_full` (+ manager read), and speaker_checkins
- * INSERT/UPDATE policies are owner-only — managers and non-owner organisers
- * hit zero rows / a policy error and get a structured error, never silent
- * success (Q18, CLAUDE.md rule 12).
+ * supabaseServer(). Scoped by RLS to the event's organisation: the agenda_blocks
+ * read and the speaker_checkins INSERT/UPDATE policies are organisation-member
+ * policies — staff of another organisation hit zero rows / a policy error and
+ * get a structured error, never silent success (Q18, CLAUDE.md rule 12).
  *
  * Speakers are NOT a table: the valid-name set is recomputed server-side from
  * the event's agenda blocks via deriveSpeakerNames (host + topic speakers,
  * deduped, no kind filter), so arbitrary names are rejected before any write.
+ *
+ * Event state: a draft, a cancelled or a deleted event is refused with the same wording as the rest of the desk, before
+ * any speaker read or write.
  *
  * Role: the desk tells body_admin and auditor it is read-only, so this refuses them with the same sentence BEFORE any
  * read or write (canCheckIn, the helper mark_attended's gate mirrors). Unlike attendee check-in there is deliberately
@@ -46,17 +53,33 @@ export async function toggleSpeakerCheckin(
   eventId: string,
   speakerName: string,
 ): Promise<ToggleResult> {
-  const staff = await requireStaff();
+  const supabase = await supabaseServer();
+  let staff;
+  try {
+    staff = await requireStaff(supabase);
+  } catch (e) {
+    if (e instanceof NotAuthorizedError) return { error: SIGNED_OUT };
+    throw e;
+  }
   if (!canCheckIn(staff.role)) return { error: CHECKIN_ROLE_MESSAGE };
 
   const parsed = inputSchema.safeParse({ event_id: eventId, speaker_name: speakerName });
   if (!parsed.success) return { error: 'Invalid speaker check-in request.' };
   const { event_id, speaker_name } = parsed.data;
 
-  const supabase = await supabaseServer();
+  const { data: event, error: eventErr } = await supabase
+    .from('events')
+    .select('status, deleted_at')
+    .eq('id', event_id)
+    .maybeSingle();
+  if (eventErr) throw eventErr;
+  if (!event) return { error: NOT_FOUND };
+  if (event.deleted_at) return { error: 'This event was deleted. Check-in is closed.' };
+  if (event.status === 'draft') return { error: checkInGateMessage('drafted') as string };
+  if (event.status === 'cancelled') return { error: checkInGateMessage('cancelled') as string };
 
   // Server-side recompute of the valid speaker set. RLS-gated read: a
-  // non-owner organiser sees zero blocks, so every name fails the membership
+  // staff member of another organisation sees zero blocks, so every name fails the membership
   // check — info-hiding identical to markAttended's "Code not recognised".
   const { data: blocks, error: blocksErr } = await supabase
     .from('agenda_blocks')
@@ -107,9 +130,9 @@ export async function toggleSpeakerCheckin(
       throw insertErr;
     }
     if (!inserted) {
-      // Q18: RLS-filtered write affected zero rows (e.g. manager or non-owner
-      // organiser) — structured error, never silent success.
-      return { error: 'Check-in failed — event not found or not owned by you.' };
+      // Q18: RLS-filtered write affected zero rows (e.g. another organisation's
+      // staff) — structured error, never silent success.
+      return { error: NOT_FOUND };
     }
   } else {
     // Toggle: null → stamp now; stamped → clear.
@@ -124,7 +147,7 @@ export async function toggleSpeakerCheckin(
     if (updateErr) throw updateErr;
     if (!updated) {
       // Q18 zero-rows guard, same as above.
-      return { error: 'Check-in failed — event not found or not owned by you.' };
+      return { error: NOT_FOUND };
     }
   }
 

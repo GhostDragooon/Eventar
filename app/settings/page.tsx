@@ -63,6 +63,8 @@ export default async function SettingsPage() {
     specialties = specialtyRows ?? [];
   }
 
+  const canManageTeam = staff.role === 'organiser_admin' || staff.role === 'eventar_staff';
+
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role }} backHref="/dashboard" backLabel="Events">
       <header className="mb-lg">
@@ -80,16 +82,25 @@ export default async function SettingsPage() {
 
       <section className="mt-xl border-t border-outline-variant pt-lg">
         <h2 className="font-title-lg text-title-lg text-on-surface mb-sm">Team</h2>
-        <p className="font-body-md text-body-md text-on-surface-variant mb-md">
-          Manage your organisation&apos;s members and invite new teammates.
-        </p>
-        <Link
-          href="/settings/team"
-          className="inline-flex items-center gap-sm rounded-lg border border-outline-variant px-md py-sm font-label-lg text-label-lg text-primary hover:bg-surface-container-high transition-colors"
-        >
-          <span className="material-symbols-outlined text-[20px]" aria-hidden>group</span>
-          Manage team
-        </Link>
+        {/* Same gate as /settings/team: only an admin sees the invite controls there, so only an admin is sent to it. */}
+        {canManageTeam ? (
+          <>
+            <p className="font-body-md text-body-md text-on-surface-variant mb-md">
+              Manage your organisation&apos;s members and invite new teammates.
+            </p>
+            <Link
+              href="/settings/team"
+              className="inline-flex items-center gap-sm rounded-lg border border-outline-variant px-md py-sm font-label-lg text-label-lg text-primary hover:bg-surface-container-high transition-colors"
+            >
+              <span className="material-symbols-outlined text-[20px]" aria-hidden>group</span>
+              Manage team
+            </Link>
+          </>
+        ) : (
+          <p className="font-body-md text-body-md text-on-surface-variant">
+            Only organiser admins can invite teammates. Ask an admin of your organisation.
+          </p>
+        )}
       </section>
 
       <section className="mt-xl border-t border-outline-variant pt-lg">

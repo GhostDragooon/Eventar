@@ -30,6 +30,14 @@ const FILTERS: { key: 'all' | Status; label: string }[] = [
   { key: 'cancelled', label: 'Cancelled' },
 ];
 
+// An empty list has to say which search or filter emptied it (acceptance walk: a bare "No matches." named neither).
+function emptyMessage(term: string, filter: 'all' | Status): string {
+  if (!term && filter === 'all') return 'No one has registered yet.';
+  if (!term) return `No registrations are ${filter}.`;
+  if (filter === 'all') return `No registrations match "${term}".`;
+  return `No registrations are ${filter} and match "${term}".`;
+}
+
 export default function RegistrationsClient({
   eventId,
   rows: initialRows,
@@ -142,7 +150,7 @@ export default function RegistrationsClient({
 
       {shown.length === 0 ? (
         <p className="rounded-lg border border-outline-variant bg-surface-container-lowest p-md font-body-md text-body-md text-on-surface-variant">
-          {search || filter !== 'all' ? 'No matches.' : 'No one has registered yet.'}
+          {emptyMessage(search.trim(), filter)}
         </p>
       ) : (
         <ul className="flex flex-col gap-xs rounded-lg border border-outline-variant bg-surface-container-lowest p-xs">

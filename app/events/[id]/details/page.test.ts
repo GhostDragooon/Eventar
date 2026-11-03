@@ -27,6 +27,8 @@ vi.mock('@/lib/supabase/admin', async () => {
 import { NOW, eventRow, settle, textOf } from '@/tests/helpers/staffPageFakes';
 import EventDetailsPage from './page';
 import { PublishedNextSteps } from '@/components/details/PublishedNextSteps';
+import { FeedbackSection } from '@/components/details/FeedbackSection';
+import { ReadinessStrip, type ReadinessCell } from '@/components/details/ReadinessStrip';
 
 const staff = (role: string, organisation_id: string) => ({
   id: 'staff-1', email: 'staff@example.test', role, full_name: null, organisation_id,
@@ -120,5 +122,37 @@ describe('/events/[id]/details: the Published next steps card', () => {
 
   it('does not show for a draft even with the flag: it would say "live" about an event that is not', async () => {
     expect(await cardsFor(eventRow({ id: 'ev-d', organisation_id: 'org-b', status: 'draft' }), { published: '1' })).toHaveLength(0);
+  });
+});
+
+// Acceptance walk MAJOR #20: a draft is not running, so nothing about the survey or the post-event feedback applies yet.
+describe('/events/[id]/details: a draft', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(NOW);
+    h.staff = staff('organiser_admin', 'org-b');
+  });
+  afterEach(() => vi.useRealTimers());
+
+  async function treeFor(row: ReturnType<typeof eventRow>) {
+    h.tables = { events: [row] };
+    const out = await open(row.id as string);
+    expect(out.kind).toBe('render');
+    return out.kind === 'render' ? out.tree : null;
+  }
+  const surveyCell = (tree: unknown) =>
+    (findAll(tree, ReadinessStrip)[0].props.cells as ReadinessCell[]).find((c) => c.label === 'survey');
+  const later = { start_time: new Date(+NOW + 31 * 86_400_000).toISOString(), end_time: new Date(+NOW + 31 * 86_400_000 + 3 * 3_600_000).toISOString() };
+
+  it('shows no feedback card and a survey cell that says it is not armed', async () => {
+    const tree = await treeFor(eventRow({ id: 'ev-d', organisation_id: 'org-b', status: 'draft', ...later }));
+    expect(findAll(tree, FeedbackSection)).toHaveLength(0);
+    expect(surveyCell(tree)).toMatchObject({ value: 'Not armed', note: 'after you publish' });
+  });
+
+  it('a published event keeps the feedback card and an armed survey', async () => {
+    const tree = await treeFor(eventRow({ id: 'ev-p', organisation_id: 'org-b', status: 'published', ...later }));
+    expect(findAll(tree, FeedbackSection)).toHaveLength(1);
+    expect(surveyCell(tree)).toMatchObject({ value: 'Armed' });
   });
 });

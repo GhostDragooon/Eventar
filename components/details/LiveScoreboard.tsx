@@ -34,13 +34,14 @@ export function LiveScoreboard({
   const isLive = lifecycle === 'live';
   const isUpcoming = lifecycle === 'registering' || lifecycle === 'upcoming';
   const isDone = lifecycle === 'completed' || lifecycle === 'cancelled';
+  const isDraft = lifecycle === 'drafted';
 
   // Tick each second only while the numbers are actually moving (live/upcoming).
   useEffect(() => {
-    if (isDone) return;
+    if (isDone || isDraft) return;
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
-  }, [isDone]);
+  }, [isDone, isDraft]);
 
   const total = Math.max(1, endMs - startMs);
   const pct = Math.min(100, Math.max(0, Math.round(((now - startMs) / total) * 100)));
@@ -53,6 +54,7 @@ export function LiveScoreboard({
   // Left/right headline pair varies by state.
   let leftK = 'ELAPSED', leftV = elapsed, rightK = 'WRAPS IN', rightV = wrapsIn;
   if (isUpcoming) { leftK = 'STARTS IN'; leftV = startsIn; rightK = 'RUNS FOR'; rightV = fmtDur(total); }
+  else if (isDraft) { leftK = 'STATUS'; leftV = 'Draft'; rightK = 'PUBLISHED'; rightV = 'Not yet'; }
   else if (isDone) { leftK = 'STATUS'; leftV = lifecycle === 'cancelled' ? 'Cancelled' : 'Wrapped'; rightK = 'DURATION'; rightV = fmtDur(total); }
 
   const accent = isLive ? 'text-[#4ADE80]' : 'text-white';
@@ -77,7 +79,7 @@ export function LiveScoreboard({
       </div>
 
       {/* Progress rail (only meaningful while running) */}
-      {!isDone && (
+      {!isDone && !isDraft && (
         <>
           <div className="h-[6px] w-full rounded-full bg-white/10 overflow-hidden mb-xs" aria-hidden>
             <div className="h-full rounded-full bg-[#4ADE80] transition-[width] duration-1000 ease-linear" style={{ width: `${isUpcoming ? 0 : pct}%` }} />

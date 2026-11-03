@@ -67,7 +67,7 @@ describe('EventsHome', () => {
     renderManage([event({ id: 'e-1' })]);
     const title = screen.getByRole('heading', { level: 1, name: 'Events' });
     const header = within(title.closest('header')!);
-    expect(header.getByText(/^1 event\. Finished events are in/)).toBeInTheDocument();
+    expect(header.getByText(/^1 active event\. Finished events are in/)).toBeInTheDocument();
     expect(header.getByRole('link', { name: 'History' })).toHaveAttribute('href', '/analytics');
     expect(screen.getByRole('link', { name: /new event/i })).toHaveAttribute('href', '/events/new');
     expect(document.body.textContent).not.toMatch(/Programme|Manage/);
@@ -133,6 +133,25 @@ describe('EventsHome', () => {
       fireEvent.click(screen.getByLabelText('Select Draft One'));
       expect(screen.getByText('1 selected')).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();
+    });
+
+    it('labels a draft "Draft" and a deleted event "Deleted", never "Drafted" (acceptance walk MAJOR #1)', () => {
+      renderManage(mixed);
+      fireEvent.click(screen.getByRole('button', { name: /^Drafts/ }));
+      expect(screen.getByText('Draft')).toBeInTheDocument();
+      expect(screen.queryByText('Drafted')).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: /^Deleted/ }));
+      const row = screen.getByText('Binned One').closest('li') as HTMLElement;
+      expect(within(row).getByText('Deleted')).toBeInTheDocument();
+      expect(within(row).queryByText(/draft/i)).toBeNull();
+    });
+
+    it('the header counts what is on the Active tab, not every tab (acceptance walk MAJOR #2)', () => {
+      renderManage(mixed);
+      const tabs = within(screen.getByRole('group', { name: 'Filter events by state' }));
+      expect(tabs.getByRole('button', { name: /^Active,\s*2$/ })).toBeInTheDocument();
+      expect(screen.getByText(/^2 active events\./)).toBeInTheDocument();
+      expect(screen.queryByText(/^4 events\./)).toBeNull();
     });
 
     it('the Deleted tab offers Restore for a row and for the selection', async () => {
@@ -310,12 +329,12 @@ describe('EventsHome', () => {
 
     it('says when the list stopped at 300 events, and points at History', () => {
       renderManage(Array.from({ length: 300 }, (_, i) => event({ id: `e-${i}`, title: `Event ${i}` })));
-      expect(screen.getByText(/Showing the 300 events with the latest dates\. Finished events are in History\./)).toBeInTheDocument();
+      expect(screen.getByText(/Only the 300 events with the latest dates are loaded, so older ones may be missing here\. Finished events are in History\./)).toBeInTheDocument();
     });
 
     it('says nothing about a cap under 300', () => {
       renderManage([event({ id: 'e-1' })]);
-      expect(screen.queryByText(/Showing the 300/)).toBeNull();
+      expect(screen.queryByText(/Only the 300/)).toBeNull();
     });
   });
 

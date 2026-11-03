@@ -7,7 +7,7 @@ import { StaffShell } from '@/components/shell/StaffShell';
 import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
 import { LayoutDashboardIcon, CalendarDaysIcon } from 'lucide-react';
 import { ReadinessStrip, type ReadinessCell } from '@/components/details/ReadinessStrip';
-import { StatusPill } from '@/components/lifecycle/StatusPill';
+import { StatusChip } from '@/components/dashboard/StatusChip';
 import { computeLifecycle, type EventLifecycleRow, type Lifecycle } from '@/lib/lifecycle/eventLifecycle';
 import { formatInTz } from '@/lib/tz';
 import { deriveLeadingSession } from '@/lib/details/leadingSession';
@@ -335,9 +335,10 @@ export default async function EventDetailsPage({
     },
     {
       label: 'survey',
-      value: responseCount > 0 ? `${responseCount}` : 'Armed',
+      // A draft sends nothing: it is not armed until it is published.
+      value: responseCount > 0 ? `${responseCount}` : event.status === 'draft' ? 'Not armed' : 'Armed',
       state: responseCount > 0 ? 'ok' : 'idle',
-      note: responseCount > 0 ? 'responses in' : 'fires 10 min after end',
+      note: responseCount > 0 ? 'responses in' : event.status === 'draft' ? 'after you publish' : 'fires 10 min after end',
     },
   ];
 
@@ -376,7 +377,7 @@ export default async function EventDetailsPage({
           <div className="flex items-center gap-sm flex-wrap">
             <h1 className="text-[calc(30px*var(--text-scale))] leading-[1.1] font-extrabold tracking-[-0.025em] text-on-surface">{event.title}</h1>
             {structuralLocked && <LockIcon />}
-            <StatusPill lifecycle={lifecycle} />
+            <StatusChip lifecycle={lifecycle} />
           </div>
           <p className="font-body-md text-body-md text-on-surface-variant mt-xs flex items-center gap-xs flex-wrap">
             <span>{formatInTz(event.start_time, event.timezone)}</span>
@@ -576,7 +577,8 @@ export default async function EventDetailsPage({
         </section>
       )}
 
-      <FeedbackSection
+      {/* A draft has no survey to wait for, so its stub ("opens 10 min after wrap") is left out until it is published. */}
+      {lifecycle !== 'drafted' && <FeedbackSection
         lifecycle={lifecycle}
         eventId={event.id}
         responseCount={responseCount}
@@ -596,7 +598,7 @@ export default async function EventDetailsPage({
             />
           ) : undefined
         }
-      />
+      />}
     </StaffShell>
   );
 }
