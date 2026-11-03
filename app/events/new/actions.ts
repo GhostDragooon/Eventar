@@ -12,6 +12,7 @@ import { tzFromCoords } from '@/lib/tz';
 import { startOrder } from '@/lib/agenda';
 import {
   blockInputSchema,
+  blockZodErrors,
   eventInputSchema,
   type BlockInput,
 } from './schema';
@@ -113,7 +114,7 @@ export async function createEvent(input: {
   const blocksRaw = Array.isArray(input.blocks) ? input.blocks : [];
   const blockParse = blockArraySchema.safeParse(blocksRaw);
   if (!blockParse.success) {
-    return { error: zodErrors(blockParse.error.issues, 'block ') };
+    return { error: blockZodErrors(blockParse.error.issues, blocksRaw) };
   }
 
   // Envelope-fit validation

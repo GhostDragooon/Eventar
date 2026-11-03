@@ -235,3 +235,22 @@ describe('a published or cancelled event says what is locked and what can still 
     expect(text).not.toMatch(/cancel it from|registration close date/i);
   });
 });
+
+// Two Save buttons on one screen: the accreditation card's own, and the form's at the bottom. Without the line the
+// organiser cannot tell which one saves what (walk finding #27).
+describe('draft edit page says what the accreditation Save covers', () => {
+  function textOf(node: ReactNode): string {
+    if (Array.isArray(node)) return node.map(textOf).join(' ');
+    if (typeof node === 'string') return node;
+    return isValidElement(node) ? textOf((node.props as { children?: ReactNode }).children) : '';
+  }
+  const line = /Saves accreditation only\. Use Save changes at the bottom for the rest of the event\./;
+
+  it.each(['organiser_admin', 'eventar_staff'] as const)('%s: the line sits with the accreditation card', async (role) => {
+    expect(textOf(await draftTree(role))).toMatch(line);
+  });
+
+  it.each(['organiser_member', 'body_admin', 'auditor'] as const)('%s: no line, the card has no live Save for this role', async (role) => {
+    expect(textOf(await draftTree(role))).not.toMatch(line);
+  });
+});

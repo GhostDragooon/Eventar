@@ -11,6 +11,9 @@ type Props = {
 export default function VenueSection({ value, onChange }: Props) {
   return (
     <div className="space-y-md">
+      <span className="block font-label-md text-label-md uppercase tracking-wider text-on-surface mb-xs">
+        Venue<span className="text-error ml-xs" aria-label="required">*</span>
+      </span>
       <VenueSearchBox onSelect={onChange} />
       {value && (
         <div className="rounded-lg border border-outline-variant bg-surface-container-low p-md">

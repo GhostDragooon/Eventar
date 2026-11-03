@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { findParallelBlockIds, labelForBlockKind, sortBlocksByStart } from '@/lib/agenda';
-import { TimePicker15 } from './TimePicker15';
+import { TimePicker15, formatMinutes12h } from './TimePicker15';
 
 export type TopicDraft = {
   title: string;
@@ -146,6 +146,8 @@ type Props = {
   eventEndMinutes: number | null;
   blocks: BlockDraft[];
   onChange: (blocks: BlockDraft[]) => void;
+  /** A save was refused: show every block's errors, touched or not, so the block the message names is red. */
+  showAllErrors?: boolean;
 };
 
 export default function AgendaSection({
@@ -154,6 +156,7 @@ export default function AgendaSection({
   eventEndMinutes,
   blocks,
   onChange,
+  showAllErrors = false,
 }: Props) {
   // Shown, and saved, in start-time order. Components and Breaks render as two lists, each in that order; the saved
   // list interleaves both by start time. The one exception on screen: the card whose start was just picked keeps its
@@ -268,7 +271,7 @@ export default function AgendaSection({
             key={b.localId}
             block={b}
             parallel={parallelIds.has(b.localId)}
-            touched={touched.has(b.localId)}
+            touched={showAllErrors || touched.has(b.localId)}
             errors={blockErrors(b, eventStartMinutes, eventEndMinutes)}
             onTouch={() => markTouched(b.localId)}
             onChange={(patch) => update(b.localId, patch)}
@@ -297,7 +300,7 @@ export default function AgendaSection({
           <FillerEditor
             key={b.localId}
             block={b}
-            touched={touched.has(b.localId)}
+            touched={showAllErrors || touched.has(b.localId)}
             errors={blockErrors(b, eventStartMinutes, eventEndMinutes)}
             onTouch={() => markTouched(b.localId)}
             onChange={(patch) => update(b.localId, patch)}
@@ -331,6 +334,38 @@ export function agendaValid(
   eventEndMinutes: number | null,
 ): boolean {
   return blocks.every(b => !blockHasErrors(blockErrors(b, eventStartMinutes, eventEndMinutes)));
+}
+
+/**
+ * The first reason a save is refused, in a sentence that names the block the way the screen shows it: by its title,
+ * else by its times (as the pickers show them), never by a position number the two-list layout does not display.
+ * Null when every block is fine. Same checks as agendaValid, so a false there always has a sentence here.
+ */
+export function agendaProblem(
+  blocks: BlockDraft[],
+  eventStartMinutes: number | null,
+  eventEndMinutes: number | null,
+): string | null {
+  for (const b of sortBlocksByStart(blocks)) {
+    const e = blockErrors(b, eventStartMinutes, eventEndMinutes);
+    if (!blockHasErrors(e)) continue;
+    const bs = hhmmToMinutes(b.start);
+    const be = hhmmToMinutes(b.end);
+    const times = bs !== null && be !== null ? `${formatMinutes12h(bs)} to ${formatMinutes12h(be)}` : null;
+    const title = b.title.trim();
+    const name = title
+      ? `"${title}"${times ? ` (${times})` : ''}`
+      : `The ${times ? `${times} ` : 'untitled '}${labelForKind(b.kind)} block`;
+    if (e.start || e.end) return `${name} needs a start time and an end time.`;
+    if (e.endBeforeStart) return `${name}: the end time must be after the start time.`;
+    if (e.envelope) {
+      const window = `${formatMinutes12h(eventStartMinutes!)} to ${formatMinutes12h(eventEndMinutes!)}`;
+      return `${name} must sit inside the event's time window, ${window}.`;
+    }
+    if (e.title) return `${name} needs a ${FILLER_KINDS.includes(b.kind) ? '"What" entry' : 'title'}.`;
+    return `${name} needs a title and a speaker for topic ${e.topicIndices[0]! + 1}.`;
+  }
+  return null;
 }
 
 /* ===== Block editors ===== */

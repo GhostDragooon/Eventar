@@ -927,7 +927,8 @@ describe('NewEventForm: a validation message appears in the section it names', (
     render(<NewEventForm {...createBase} submit={submit} />);
     fireEvent.click(screen.getByRole('button', { name: /save draft/i }));
     const alert = screen.getByRole('alert');
-    expect(alert).toHaveTextContent('Add the event basics (name) to continue.');
+    // Everything missing at once (walk #10): one Save click per field read as a form that never finishes.
+    expect(alert).toHaveTextContent('Still needed to continue: event name, venue, date, start time, end time.');
     expect(sectionHeading(alert)).toMatch(/Basics/);
     expect(document.activeElement).toBe(alert);
     expect(screen.getAllByRole('alert')).toHaveLength(1);
@@ -939,14 +940,14 @@ describe('NewEventForm: a validation message appears in the section it names', (
     fireEvent.change(screen.getByPlaceholderText('Workshop on TDD'), { target: { value: 'Only a name' } });
     fireEvent.click(screen.getByRole('button', { name: /save draft/i }));
     const alert = screen.getByRole('alert');
-    expect(alert).toHaveTextContent('Pick a venue from the dropdown to continue.');
+    expect(alert).toHaveTextContent('Still needed to continue: venue, date, start time, end time.');
     expect(sectionHeading(alert)).toMatch(/Date & venue/);
 
     fireEvent.change(screen.getByPlaceholderText(/search a venue/i), { target: { value: 'Rosewood' } });
     const venue = await screen.findByRole('option', { name: /Rosewood Sand Hill/ });
     fireEvent.click(within(venue).getByRole('button'));
     fireEvent.click(screen.getByRole('button', { name: /save draft/i }));
-    expect(screen.getByRole('alert')).toHaveTextContent('Set the date, start, and end time to continue.');
+    expect(screen.getByRole('alert')).toHaveTextContent('Still needed to continue: date, start time, end time.');
     expect(screen.getAllByRole('alert')).toHaveLength(1);
   });
 });
@@ -1072,7 +1073,7 @@ describe('NewEventForm: create mode, Publish confirms before it publishes', () =
     render(<NewEventForm {...createBase} submit={submit} />);
     fireEvent.click(screen.getByRole('button', { name: /publish event/i }));
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(screen.getByText(/add the event basics/i)).toBeInTheDocument();
+    expect(screen.getByText(/still needed to continue: event name, venue/i)).toBeInTheDocument();
     expect(submit).not.toHaveBeenCalled();
   });
 
@@ -1256,5 +1257,117 @@ describe('NewEventForm: agenda block ids across saves (edit mode)', () => {
     const sent = submit.mock.calls[0]![0].blocks;
     expect(sent).toHaveLength(1);
     expect(sent[0]).toMatchObject({ id: 'b2', title: 'Closing session', display_order: 0 });
+  });
+});
+
+// Walk findings #23-25 (agenda banner said one thing for four causes, and sometimes highlighted nothing), #28
+// (Cancel discarded unsaved changes silently) and the Venue required marker.
+describe('NewEventForm: a refused agenda save names the block and the reason', () => {
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+  const EDIT_ID = '11111111-2222-4333-8444-555555555555';
+  const block = (over: Partial<InitialBlock>): InitialBlock => ({
+    id: 'bx', start_time: buildIso(EVENT_DATE, '09:00'), end_time: buildIso(EVENT_DATE, '10:00'),
+    kind: 'workshop', title: 'Opening', host: null, notes: null,
+    topics: [{ title: 'T', speaker_name: 'S' }],
+    ...over,
+  });
+  async function save(blocks: InitialBlock[]) {
+    const submit = vi.fn(async () => ({ ok: true as const }));
+    const view = render(<NewEventForm mode="edit" eventId={EDIT_ID} initialEvent={initialEvent} initialBlocks={blocks} submit={submit} />);
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+    // Forcing the errors visible also shows each block's own banner, so the section message is read by id.
+    return { alert: document.getElementById('form-field-error')!, submit, view };
+  }
+
+  it('end before start: says so, by title and times, and paints the block red though it was never touched', async () => {
+    const { alert, submit, view } = await save([block({ title: 'Late talk', start_time: buildIso(EVENT_DATE, '11:00'), end_time: buildIso(EVENT_DATE, '10:30') })]);
+    expect(alert).toHaveTextContent('"Late talk" (11:00 AM to 10:30 AM): the end time must be after the start time.');
+    expect(view.container.querySelector('[data-block-id="bx"]')?.className).toContain('border-error');
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it('outside the window: says so and names the event window', async () => {
+    const { alert } = await save([block({ title: 'Early bird', start_time: buildIso(EVENT_DATE, '08:00'), end_time: buildIso(EVENT_DATE, '09:30') })]);
+    expect(alert).toHaveTextContent('"Early bird" (08:00 AM to 09:30 AM) must sit inside the event\'s time window, 09:00 AM to 04:00 PM.');
+  });
+
+  it('missing title: names the block by its times', async () => {
+    const { alert } = await save([block({ title: '' })]);
+    expect(alert).toHaveTextContent('The 09:00 AM to 10:00 AM Workshop block needs a title.');
+  });
+
+  it('topic without a speaker: says which topic', async () => {
+    const { alert } = await save([block({ topics: [{ title: 'Fine', speaker_name: 'S' }, { title: 'Half', speaker_name: '' }] })]);
+    expect(alert).toHaveTextContent('"Opening" (09:00 AM to 10:00 AM) needs a title and a speaker for topic 2.');
+  });
+
+  it('names the first block in start order and never uses a position number', async () => {
+    const { alert } = await save([
+      block({ id: 'b2', title: 'Second', start_time: buildIso(EVENT_DATE, '13:00'), end_time: buildIso(EVENT_DATE, '12:00') }),
+      block({ id: 'b1', title: 'First', start_time: buildIso(EVENT_DATE, '11:00'), end_time: buildIso(EVENT_DATE, '10:00') }),
+    ]);
+    expect(alert).toHaveTextContent(/"First"/);
+    expect(alert.textContent).not.toMatch(/block \d/i);
+  });
+});
+
+describe('NewEventForm: Cancel asks before it discards unsaved changes', () => {
+  const EDIT_ID = '11111111-2222-4333-8444-555555555555';
+  const editForm = () => render(
+    <NewEventForm mode="edit" eventId={EDIT_ID} initialEvent={initialEvent} initialBlocks={initialBlocks} submit={vi.fn(async () => ({ ok: true as const }))} />,
+  );
+
+  it('edit: a changed form opens the dialog; Keep editing stays, Discard changes leaves', () => {
+    editForm();
+    fireEvent.change(screen.getByDisplayValue('Internal Workshop'), { target: { value: 'Renamed' } });
+    fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }));
+    expect(pushMock).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog', { name: 'Discard your changes?' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(pushMock).not.toHaveBeenCalled();
+    expect(screen.getByDisplayValue('Renamed')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }));
+    expect(pushMock).toHaveBeenCalledWith(`/events/${EDIT_ID}/details`);
+  });
+
+  it('edit: Escape on the dialog keeps the changes', () => {
+    editForm();
+    fireEvent.change(screen.getByDisplayValue('Internal Workshop'), { target: { value: 'Renamed' } });
+    fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }));
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it('edit: changing a value back to what it was leaves without asking', () => {
+    editForm();
+    const title = screen.getByDisplayValue('Internal Workshop');
+    fireEvent.change(title, { target: { value: 'Renamed' } });
+    fireEvent.change(title, { target: { value: 'Internal Workshop' } });
+    fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(pushMock).toHaveBeenCalledWith(`/events/${EDIT_ID}/details`);
+  });
+
+  it('create: a typed name opens the dialog; Discard changes goes to the dashboard', () => {
+    render(<NewEventForm {...createBase} submit={okSubmit()} />);
+    fireEvent.change(screen.getByPlaceholderText('Workshop on TDD'), { target: { value: 'Half done' } });
+    fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }));
+    expect(pushMock).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }));
+    expect(pushMock).toHaveBeenCalledWith('/dashboard');
+  });
+});
+
+describe('NewEventForm: Venue is marked required like its sibling fields', () => {
+  it('shows the required asterisk on the Venue label', () => {
+    render(<NewEventForm {...createBase} submit={okSubmit()} />);
+    expect(screen.getByText('Venue').querySelector('[aria-label="required"]')).not.toBeNull();
   });
 });

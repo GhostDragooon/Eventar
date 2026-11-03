@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { CheckIcon, ChevronRightIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog } from '@/components/ui/Dialog';
 
 import BasicsSection, {
   CapacityField,
@@ -17,7 +18,7 @@ import DateTimeSection, {
   type DateTimeValue, dateTimeValid,
 } from '@/components/event-form/DateTimeSection';
 import AgendaSection, {
-  type BlockDraft, type BlockKind, type TopicDraft, agendaValid,
+  type BlockDraft, type BlockKind, type TopicDraft, agendaProblem, agendaValid,
 } from '@/components/event-form/AgendaSection';
 import {
   PartnersSection,
@@ -304,6 +305,10 @@ export default function NewEventForm(props: Props) {
   // Create mode: the Publish confirm (UX-01 pick a1). Save draft never opens it. The facts it shows depend on
   // "now", so they are worked out when it opens, and null means closed.
   const [confirmFacts, setConfirmFacts] = useState<PublishFacts | null>(null);
+  // A save the agenda refused: every block shows its errors, touched or not, so the block the message names is red.
+  const [agendaRefused, setAgendaRefused] = useState(false);
+  // Cancel with unsaved changes asks before it throws them away.
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
 
   // Section refs for scroll-to-first-invalid. The linear layout exposes
   // every section at once, so the old "open the failing accordion" trick
@@ -341,7 +346,7 @@ export default function NewEventForm(props: Props) {
 
   // Edit mode: is the form different from what was last saved? The Publish card and the saved banner sit
   // outside this component and read the answer from lib/draftDirty. Every field the form submits is in here.
-  const snapshot = JSON.stringify([basics, venue, datetime, blocks, hostedBy, organizedBy, heroImageUrl, category, selfServe, regOpen, regClose]);
+  const snapshot = JSON.stringify([basics, venue, datetime, blocks, hostedBy, organizedBy, heroImageUrl, category, selfServe, regOpen, regClose, cpdBodyId, cpdHours]);
   const snapshotRef = useRef(snapshot);
   useEffect(() => {
     snapshotRef.current = snapshot;
@@ -358,6 +363,7 @@ export default function NewEventForm(props: Props) {
   function onSubmit(nextIntent: Intent, confirmed = false) {
     setErr(null);
     setFieldErr(null);
+    setAgendaRefused(false);
     setSavedEventId(null);
     setSavedAt(null);
     // Validate in section order; on the first failure, scroll the user to
@@ -367,20 +373,27 @@ export default function NewEventForm(props: Props) {
       setFieldErr({ section, message });
       ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    if (!v1) {
-      invalid('basics', basicsRef, 'Add the event basics (name) to continue.');
-      return;
-    }
-    if (!v2) {
-      invalid('venue', dateVenueRef, 'Pick a venue from the dropdown to continue.');
+    // Every missing required item at once, pointing at the first one's section: one Save click per field read as
+    // a form that never finishes complaining.
+    const missing = [
+      !v1 && 'event name',
+      !v2 && 'venue',
+      !datetime.date && 'date',
+      datetime.startMinutes === null && 'start time',
+      datetime.endMinutes === null && 'end time',
+    ].filter(Boolean);
+    if (missing.length > 0) {
+      invalid(!v1 ? 'basics' : 'venue', !v1 ? basicsRef : dateVenueRef, `Still needed to continue: ${missing.join(', ')}.`);
       return;
     }
     if (!v3) {
-      invalid('venue', dateVenueRef, 'Set the date, start, and end time to continue.');
+      invalid('venue', dateVenueRef, 'The end time must be after the start time.');
       return;
     }
     if (!v4) {
-      invalid('agenda', agendaRef, 'Fix the highlighted agenda blocks (each needs a valid time inside the event window, plus a title).');
+      setAgendaRefused(true);
+      // agendaValid and agendaProblem run the same checks, so a failure always has a sentence.
+      invalid('agenda', agendaRef, agendaProblem(blocks, datetime.startMinutes, datetime.endMinutes)!);
       return;
     }
     // Registration window: each bound needs BOTH date and time once touched;
@@ -529,6 +542,14 @@ export default function NewEventForm(props: Props) {
   }
 
   function onCancel() {
+    if (snapshot !== baselineRef.current) {
+      setConfirmDiscard(true);
+      return;
+    }
+    leave();
+  }
+
+  function leave() {
     if (props.mode === 'edit') {
       router.push(`/events/${props.eventId}/details`);
     } else {
@@ -650,6 +671,7 @@ export default function NewEventForm(props: Props) {
           eventEndMinutes={datetime.endMinutes}
           blocks={blocks}
           onChange={setBlocks}
+          showAllErrors={agendaRefused}
         />
       </FormSection>
 
@@ -903,6 +925,23 @@ export default function NewEventForm(props: Props) {
           facts={confirmFacts}
         />
       )}
+
+      <Dialog
+        open={confirmDiscard}
+        onOpenChange={setConfirmDiscard}
+        title="Discard your changes?"
+        description="You have changes that are not saved. Leaving now loses them."
+        footer={
+          <>
+            <Button type="button" variant="outline" className="min-h-11 px-md" onClick={leave}>
+              Discard changes
+            </Button>
+            <Button type="button" className="min-h-11 px-md" onClick={() => setConfirmDiscard(false)}>
+              Keep editing
+            </Button>
+          </>
+        }
+      />
 
       {err && (
         <p

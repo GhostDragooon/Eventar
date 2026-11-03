@@ -20,6 +20,7 @@ import { tzFromCoords } from '@/lib/tz';
 import { startOrder } from '@/lib/agenda';
 import {
   blockInputSchema,
+  blockZodErrors,
   eventInputSchema,
   type BlockInput,
 } from '../../new/schema';
@@ -133,7 +134,7 @@ export async function updateEvent(
   }
   const blockParse = blockArraySchema.safeParse(input.blocks);
   if (!blockParse.success) {
-    return { error: zodErrors(blockParse.error.issues, 'block ') };
+    return { error: blockZodErrors(blockParse.error.issues, input.blocks) };
   }
 
   // Envelope-fit validation, same rule as createEvent.

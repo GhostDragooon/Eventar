@@ -43,23 +43,24 @@ export type Partner = z.infer<typeof partnerSchema>;
 export const PARTNER_MAX = 8;
 
 const topicSchema = z.object({
-  title: z.string().trim().min(1).max(200),
-  speaker_name: z.string().trim().min(1).max(100),
+  title: z.string().trim().min(1, 'Every topic needs a title.').max(200),
+  speaker_name: z.string().trim().min(1, 'Every topic needs a speaker name.').max(100),
   speaker_credential: z.string().trim().max(120).optional().default(''),
   speaker_affiliation: z.string().trim().max(120).optional().default(''),
 });
 
 // A block saves in start-time order, so a block without a start time cannot be placed. The form never sends one.
 const BLOCK_START_REQUIRED = 'Every agenda block needs a start time.';
+const BLOCK_END_REQUIRED = 'Every agenda block needs an end time.';
 
 export const blockInputSchema = z.object({
   // Present on a block that already exists: update_event_with_blocks updates that row instead of replacing it,
   // so its id (and any survey answer pointing at it) survives a save. Absent = a new block.
   id: z.string().uuid().optional(),
   start_time: z.string({ error: BLOCK_START_REQUIRED }).datetime({ error: BLOCK_START_REQUIRED }),
-  end_time: z.string().datetime(),
+  end_time: z.string().datetime({ error: BLOCK_END_REQUIRED }),
   kind: z.enum(KINDS),
-  title: z.string().trim().min(1).max(200),
+  title: z.string().trim().min(1, 'Every agenda block needs a title.').max(200),
   host: z.string().trim().max(120).optional().default(''),
   topics: z.array(topicSchema).default([]),
   notes: z.string().max(2000).optional().default(''),
@@ -135,6 +136,22 @@ export const eventInputSchema = z.object({
     new Date(d.registration_close_at) > new Date(d.registration_open_at),
   { message: 'Registration must close after it opens', path: ['registration_close_at'] },
 );
+
+/**
+ * Block issues named by the block's title. `path[0]` is the block's position in the start-sorted list the action
+ * receives, a number the organiser never sees on screen, so it never reaches the message. `path.slice(1)` keeps the
+ * field for the generic zod messages (a too-long host reads differently from a too-long title).
+ */
+export function blockZodErrors(issues: z.ZodIssue[], blocks: unknown[]): string {
+  return issues
+    .map((i) => {
+      const at = typeof i.path[0] === 'number' ? (blocks[i.path[0]] as { title?: unknown } | undefined)?.title : undefined;
+      const name = typeof at === 'string' && at.trim() ? `Agenda block "${at.trim()}"` : 'An agenda block';
+      const field = i.path.slice(1).join('.');
+      return `${name}${field ? ` (${field})` : ''}: ${i.message}`;
+    })
+    .join('; ');
+}
 
 export type EventInput = z.infer<typeof eventInputSchema>;
 export type BlockInput = z.infer<typeof blockInputSchema>;

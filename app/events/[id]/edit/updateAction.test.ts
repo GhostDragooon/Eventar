@@ -410,6 +410,15 @@ describe('updateEvent', () => {
       });
     });
 
+    it('names a refused block by its title, not by its position in the start-sorted list', async () => {
+      const result = await updateEvent(eventId, {
+        event: validEvent,
+        blocks: [validBlock, { ...validBlock, title: 'Late talk', start_time: '2026-06-15T11:00:00.000Z', end_time: '2026-06-15T10:30:00.000Z' }],
+      });
+      expect((result as { error: string }).error).toBe('Agenda block "Late talk" (end_time): Block end must be after start');
+      expect(rpcCalls).toHaveLength(0);
+    });
+
     it('rejects a block id that is not a uuid without calling the RPC', async () => {
       const result = await updateEvent(eventId, { event: validEvent, blocks: [{ ...validBlock, id: 'b1' }] });
       expect(result).toHaveProperty('error');

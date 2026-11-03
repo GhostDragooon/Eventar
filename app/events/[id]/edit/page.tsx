@@ -228,6 +228,11 @@ export default async function StaffEventEditPage({
           noAuthorisedBodies={!authorised.unavailable && authorised.bodies.length === 0}
           canSetAccreditation={canSetAccreditation(staff.role)}
         />
+        {event.status === 'draft' && canSetAccreditation(staff.role) && (
+          <p className="mt-xs font-body-md text-body-md text-on-surface-variant">
+            Saves accreditation only. Use Save changes at the bottom for the rest of the event.
+          </p>
+        )}
 
         {/* Decision 9: parity with /details. Without this an organiser could
             only ever configure a second accrediting body from the details

@@ -277,6 +277,12 @@ describe('createEvent: agenda saved in start-time order', () => {
     expect(sent.map((x) => x.title)).toEqual(['Whole', 'Half']);
   });
 
+  it('names a refused block by its title, not by its position in the start-sorted list', async () => {
+    const res = await createEvent({ event, blocks: [block('Fine', '09:00', '10:00'), block('Late talk', '11:00', '10:30')], status: 'draft' });
+    expect(res).toEqual({ error: 'Agenda block "Late talk" (end_time): Block end must be after start' });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
   it.each([undefined, ''])('a block with start_time %j is refused with a sentence and nothing is sent', async (start_time) => {
     const res = await createEvent({ event, blocks: [{ ...block('No start', '09:00', '10:00'), start_time }], status: 'draft' });
     expect(res).toEqual({ error: expect.stringContaining('Every agenda block needs a start time.') });
