@@ -1,0 +1,1 @@
+A subagent hand-back in the window: "`vitest list --filesOnly` shows the test:rls split (check 6) covers exactly the old 47 files: 43 in the parallel stage and 4 in the serial stage, no overlap, none missing." Also from the lead agent: "I split the `test:rls` script into two stages: - a parallel stage that excludes those four files; - a serial stage that runs them one at a time."

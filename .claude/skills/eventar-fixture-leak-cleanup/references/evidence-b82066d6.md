@@ -1,0 +1,1 @@
+"Cleanup: complete. Counts match the start except `audit_events` +16 (permanent). 12 of those name my fixtures. The other 4 are unattributed, probably from the browser agent running at the same time. All `ZZ-BT3` rows are deleted, along with the 7 auth users."

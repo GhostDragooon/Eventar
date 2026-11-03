@@ -1,0 +1,1 @@
+"Rate bucket: I made no change. `getUnlinkedRegistrationCount` is called once by the banner and once by `getAccountMenuState`, so about 2 hits per portal render. The cap of 30 per 60 s is then about 15 renders a minute, one every 4 seconds sustained."

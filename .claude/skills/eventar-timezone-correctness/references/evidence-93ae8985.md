@@ -1,0 +1,1 @@
+Dev-lens hand-back in the window: "m1: the new venue-time line and the time pickers will mismatch on hydration in edit mode once a UTC server renders an Asia/Hong_Kong draft. This is invisible on a dev machine and will first show at the Stage 8 deploy." Lead: "A dev machine can't show it, so it first appears at the Stage 8 deploy."

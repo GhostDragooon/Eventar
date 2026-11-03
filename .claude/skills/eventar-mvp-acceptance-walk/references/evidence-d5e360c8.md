@@ -1,0 +1,3 @@
+Evidence tags: [X] executed, [R] read in code, [I] inferred. Reviewer files: `REVIEW-FINAL-dev.md`, `-organiser-user.md`, `-practitioner-user.md`, `-backtest.md`.
+| 1 | Every organiser and practitioner step passes, no BLOCKER or MAJOR open | **FAILED** | Organiser steps 3 and 8 fail; 10 MAJOR open (section 3).
+| 9 | Every card committed on Ivan's go and pushed | **PASSED** (cards) | `HEAD` equals `origin/main`.

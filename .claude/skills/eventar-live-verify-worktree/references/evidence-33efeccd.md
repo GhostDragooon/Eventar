@@ -1,0 +1,2 @@
+- **Signed-in persona.** Mailpit showed the newest magic link went to `ux-body`; I took the browser to be that account on that basis.
+- **Who am I.** The staff shell never shows which account or role you're signed in as (new MINOR finding).

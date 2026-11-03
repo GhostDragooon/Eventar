@@ -1,0 +1,1 @@
+assistant, Recommended table row H: "The venue picker keeps the previous results clickable while the next search runs, then swaps them. One click picked a place in Xizang and silently set the timezone to Asia/Shanghai."

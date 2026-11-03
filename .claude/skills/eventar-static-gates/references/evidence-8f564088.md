@@ -1,0 +1,1 @@
+check:ui-primitives fails with 4 hits, not the 3 claimed. All 4 predate the base commit (checked by counting raw buttons at 00e2b07 and finding the script unchanged since 2a64e18). I did not run the 545 skipped DB-backed tests (forbidden), so those are unverified by me.

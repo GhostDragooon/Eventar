@@ -1,6 +1,6 @@
 ---
 name: eventar-mvp-card-handback
-description: Use when writing an MVP card hand-back or LOCK file.
+description: Use when writing an MVP card hand-back or LOCK file, or before asking Ivan to review or commit a change set.
 category: verification
 ---
 
@@ -20,7 +20,8 @@ category: verification
 - A "May edit" entry names files, not just folders. If a step changes copy or behaviour that a component renders, name that component file. A glob such as `app/dashboard/manage/**` does not cover `components/dashboard/ManageWorkstation.tsx`, which holds the Manage page's title and intro line. An executor given only the glob stops PARTIAL.
 - An executor that stops PARTIAL on a scope gap is not finished. When the coordinator completes it, the hand-back's STATUS stays the truth (PARTIAL until the review lenses report). Put the coordinator's additions in a `Coordinator additions` block: each file added, why the card's wording covered it, and the test that failed before the change. Each addition is also a Deviation.
 - When a card's claim conflicts with what the live code or database enforces (for example, "every action checks the role" while the RPC admits more roles), apply the database's rule, list the divergence under Findings, and ask. Do not apply the card's blanket version.
-- Review protocol per card: three separate agents, dev lens, user lens, and backtest, each with its own Budget line. Do not present the card until all three have reported. Record each lens's counts and open items in the hand-back's Findings. STATUS is DONE only after all three lenses report. Until then write `STATUS: PARTIAL (code, gates and live check done; review lenses pending)` and name the lenses under Open questions. Shipping code, gates and a live check without the lenses is PARTIAL even when the brief does not mention lenses; say so in the reply and ask whether to run them.
+- Review protocol per card: three separate agents, dev lens, user lens, and backtest, each with its own Budget line. Do not present the card until all three have reported.
+- Asking Ivan to review or commit is the last step, not the first. Before that ask: gates green on the tip, every changed write path executed and the row read back, failures debugged, and the three lenses reported. A "ready for review" message sent earlier is a defect; say what is still pending instead. Record each lens's counts and open items in the hand-back's Findings. STATUS is DONE only after all three lenses report. Until then write `STATUS: PARTIAL (code, gates and live check done; review lenses pending)` and name the lenses under Open questions. Shipping code, gates and a live check without the lenses is PARTIAL even when the brief does not mention lenses; say so in the reply and ask whether to run them.
 - Every review fix applied as MECHANICAL goes in the hand-back Deviations or Findings as a before→after line (file, old text, new text, which finding it closes). Name the design-level findings as not applied and waiting on Ivan.
 - Reply: card status, doc path, source conflicts found, and the next eligible card by name.
 - A card that needs Ivan's design pick: list each option in the reply (id, the skill that argued for it, its cost) and ask through AskUserQuestion. A link to a preview page does not replace the options.

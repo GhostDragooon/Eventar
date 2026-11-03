@@ -1,0 +1,1 @@
+From the lead, before the fix wave: "Editing the copy now would invalidate its checks. So I'm holding the fixes until it reports." and "Then comes the browser walk, so the user-lens sees the final copy. Hot reload changes pages mid-walk, which is why I'm not editing during it."

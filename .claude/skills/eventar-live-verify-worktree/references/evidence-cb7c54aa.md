@@ -1,0 +1,1 @@
+Orchestrator prompt: "Playwright MCP is unavailable (profile locked by other processes; do not retry it)." Hand-back: "Why: the create form ignores scripted values. A keyboard venue pick did not stick (F43, MINOR)."

@@ -1,0 +1,3 @@
+Continuation hand-back: "F50 MAJOR: the venue picker's results arrive 3 to 5 s late and the list rewrites under the pointer. A click selected \"Konghong Xian\" (Xizang) and silently set the timezone to Asia/Shanghai."
+
+Walk table row: "| member | 3 agenda add, remove, read back | NOT WALKED | | | | | The table name I guessed (`event_agenda_blocks`) does not exist; I did not look up the real one. 0 agenda rows not confirmed. |"

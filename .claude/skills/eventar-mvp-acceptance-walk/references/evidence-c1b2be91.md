@@ -1,0 +1,1 @@
+user goal message: "Hard rule: nothing dies in silence — no quiet data corruption, no dead-end copy, no “figure it out,” no partial write without a plain recovery path." and "Defer (document, don't pretend fixed)"

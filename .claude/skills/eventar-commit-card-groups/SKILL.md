@@ -8,7 +8,7 @@ category: git-workflow
 
 Commit from the main checkout with `GIT_LITERAL_PATHSPECS=1` and list the group's paths on both `git add` and `git commit`. Peers' staged and unstaged files stay untouched.
 
-1. Read the card's hand-back for its paths and `Suggested commit message`. Run `git diff -- package.json pnpm-lock.yaml`; a dependency no card names stays unstaged.
+1. Read the card's hand-back for its paths and `Suggested commit message`. A modified file that neither the hand-back nor the brief names belongs to a peer: leave it unstaged, name it to Ivan, and do not fold it into the group. Run `git diff -- package.json pnpm-lock.yaml`; a dependency no card names stays unstaged.
 2. `export GIT_LITERAL_PATHSPECS=1`, then `git reset -q -- <group paths>` to clear this group's stale index entries only.
 3. `git add -- <group paths>`, then `git diff --cached --stat`. The stat must list exactly the group. If it does not, stop and fix it before committing.
 4. Quote Next routes that contain brackets, for example `'app/events/[id]/details/page.tsx'`.

@@ -1,0 +1,1 @@
+Hand-back from the organiser user-lens continuation: "Why: the create form ignores scripted values. A keyboard venue pick did not stick (F43, MINOR). My script click on Sign out did not complete, so the browser is still signed in as ux-member."

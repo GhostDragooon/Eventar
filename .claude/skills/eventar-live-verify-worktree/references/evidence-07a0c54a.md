@@ -1,0 +1,1 @@
+Screenshots: the built-in browser cannot save to a path and Playwright was locked by other processes, so only 3 are on disk (`.playwright-mcp/final-walk/org-admin-1..3.jpg`); every other step was inspected inline and described in text. **The per-step screenshot requirement is not met on disk.**
