@@ -44,7 +44,7 @@ describe('AttendeeSignUpPage', () => {
   it('renders sign-up-framed copy, not sign-in copy', async () => {
     render(<AttendeeSignUpPage />);
     await waitFor(() =>
-      expect(screen.getByRole('heading', { name: /create your eventar record/i })).toBeInTheDocument(),
+      expect(screen.getByRole('heading', { name: /^sign up$/i })).toBeInTheDocument(),
     );
     expect(screen.getByText(/send you a one-time link/i)).toBeInTheDocument();
     expect(screen.queryByText(/sign in to your account/i)).not.toBeInTheDocument();
@@ -92,7 +92,7 @@ describe('AttendeeSignUpPage — next', () => {
     expect(formNext(c)).toBe(`/account/complete?next=${encodeURIComponent('/account/claim')}`);
   });
 
-  // CX-06a user lens U-01: "Create your Eventar record" from the guest success card opens an empty form; the
+  // CX-06a user lens U-01: "Sign up" from the guest success card opens an empty form; the
   // claim only works if the visitor uses the address they registered with, so say so, only on that path.
   it('tells a visitor coming from the registration card to use the same email, and only then', async () => {
     const claim = await render_(new URLSearchParams({ next: '/account/claim' }));

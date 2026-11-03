@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { formatInTz } from '@/lib/tz';
+import { formatInTzWithZone } from '@/lib/tz';
 import { CHECKIN_OPEN_MINUTES } from '@/lib/lifecycle/eventLifecycle';
 import type { AttendanceRecordView } from '../schema';
 
@@ -67,7 +67,7 @@ function Row({ r, mode, nowMs }: { r: AttendanceRecordView; mode: 'list' | 'pass
   const open = nowMs >= startMs - CHECKIN_OPEN_MINUTES * 60_000;
   const attended = r.status === 'attended';
   const status = attended ? 'You are checked in' : open ? 'Check-in is open' : null;
-  const opensAt = !open && r.event_start ? formatInTz(new Date(startMs - CHECKIN_OPEN_MINUTES * 60_000).toISOString(), tz) : null;
+  const opensAt = !open && r.event_start ? formatInTzWithZone(new Date(startMs - CHECKIN_OPEN_MINUTES * 60_000).toISOString(), tz) : null;
 
   return (
     <li className="flex flex-wrap items-center justify-between gap-md border-b border-outline-variant pb-md last:border-b-0 last:pb-0">
@@ -78,10 +78,10 @@ function Row({ r, mode, nowMs }: { r: AttendanceRecordView; mode: 'list' | 'pass
           </Link>
         </p>
         {r.event_start && (
-          <p className="m-0 font-body-md text-body-md text-on-surface-variant">{formatInTz(r.event_start, tz)}</p>
+          <p className="m-0 font-body-md text-body-md text-on-surface-variant">{formatInTzWithZone(r.event_start, tz)}</p>
         )}
         <p className="m-0 font-body-md text-body-md text-on-surface-variant">
-          {status ?? (mode === 'pass' ? `Check-in opens at ${opensAt}` : 'Registered')}
+          {status ?? `Check-in opens at ${opensAt}`}
         </p>
       </div>
       {mode === 'pass' && !attended && (

@@ -93,7 +93,7 @@ function AttendeeSignUpForm() {
         <span className="text-on-surface-variant"> · Sign up</span>
       </p>
       <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">
-        Create your Eventar record
+        Sign up
       </h1>
       <p className="font-body-md text-body-md text-on-surface-variant m-0">
         Enter your email and we&apos;ll send you a one-time link. No password
@@ -102,7 +102,7 @@ function AttendeeSignUpForm() {
       </p>
       {next === '/account/claim' && (
         <p className="font-body-md text-body-md text-on-surface m-0">
-          Use the same email you just registered with, so that registration can be added to your record.
+          Use the same email you just registered with, so that registration can be added to your Registrations.
         </p>
       )}
       <p className="font-body-md text-body-md text-on-surface-variant m-0">

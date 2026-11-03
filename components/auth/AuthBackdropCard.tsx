@@ -31,7 +31,7 @@ export function AuthBackdropCard({
   const body =
     asideBody ??
     (door === 'attendee'
-      ? 'Attendee door — your registrations, check-in pass, and record.'
+      ? 'Attendee door — your registrations, check-in pass, and History.'
       : 'Organiser door — run events, check-in desk, and team access.');
 
   const otherDoor =

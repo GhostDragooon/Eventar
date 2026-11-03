@@ -170,10 +170,10 @@ describe('/login — signed-in practitioner (D1)', () => {
     expect(router.replace).not.toHaveBeenCalled();
   });
 
-  it('"Back to my record" goes to /account/record', async () => {
+  it('"Back to my registrations" goes to /account/registrations', async () => {
     visit('');
-    const back = await screen.findByRole('link', { name: /^back to my record$/i });
-    expect(back).toHaveAttribute('href', '/account/record');
+    const back = await screen.findByRole('link', { name: /^back to my registrations$/i });
+    expect(back).toHaveAttribute('href', '/account/registrations');
   });
 
   // The card must agree with itself: no "Log in" heading above "you're signed in".
@@ -428,15 +428,15 @@ describe('/login — signed in with no practitioner record yet (F3)', () => {
     const signOutButton = await screen.findByRole('button', { name: /sign out and use another email/i });
     const accountLink = screen.getByRole('link', { name: /^go to my account$/i });
     expect(accountLink).toHaveAttribute('href', '/account/record');
-    expect(screen.queryByRole('link', { name: /back to my record/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /back to my registrations/i })).not.toBeInTheDocument();
     // Sign-out leads (first in DOM order).
     expect(signOutButton.compareDocumentPosition(accountLink) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('a session with registrations to claim still gets "Back to my record" first', async () => {
+  it('a session with registrations to claim still gets "Back to my registrations" first', async () => {
     getAccountMenuState.mockResolvedValue({ isStaff: false, accountComplete: false, unlinkedCount: 2 });
     visit('');
-    const record = await screen.findByRole('link', { name: /^back to my record$/i });
+    const record = await screen.findByRole('link', { name: /^back to my registrations$/i });
     const signOutButton = screen.getByRole('button', { name: /sign out and use another email/i });
     expect(record.compareDocumentPosition(signOutButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
@@ -445,11 +445,11 @@ describe('/login — signed in with no practitioner record yet (F3)', () => {
 
 // The same tailwind-merge eviction hit the practitioner panel's primary control.
 describe('/login — the primary control keeps its text colour', () => {
-  it('"Back to my record" (a record exists)', async () => {
+  it('"Back to my registrations" (a record exists)', async () => {
     sessionAs();
     staff(false);
     visit('');
-    const link = await screen.findByRole('link', { name: /^back to my record$/i });
+    const link = await screen.findByRole('link', { name: /^back to my registrations$/i });
     expect(link.className).toMatch(/(^|\s)text-on-primary!?(\s|$)/);
     expect(link.className).toMatch(/(^|\s)text-label-md(\s|$)/);
   });

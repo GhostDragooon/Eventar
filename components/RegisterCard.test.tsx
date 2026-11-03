@@ -464,7 +464,7 @@ describe('RegisterCard — a failed registration', () => {
 // to claiming the registration they just made; a signed-in practitioner gets a
 // way to their record; an organiser gets nothing (the organiser line stays).
 //
-// "This is now on your record." is a claim about a database row, so it keys on
+// "You are registered. It is under Registrations." is a claim about a database row, so it keys on
 // what registerForEvent REPORTS (`linked`: user_id was written), never on a
 // guess from the email (CX-06a review D-02: a failed staff read at submit time
 // registers a plain guest row for an ordinary practitioner). A host that does
@@ -493,16 +493,16 @@ describe('RegisterCard — account prompt on the success card (FR-003)', () => {
     const create = screen.getByRole('link', { name: /^sign up$/i });
     expect(create).toHaveAttribute('href', '/account/sign-up?next=/account/claim');
     expect(screen.queryByRole('link', { name: /^registrations$/i })).not.toBeInTheDocument();
-    expect(screen.queryByText(/now on your record/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/you are registered\. it is under registrations/i)).not.toBeInTheDocument();
     // The sign-in nudge belongs to the form; the success card swaps it out.
     expect(hrefs().filter((h) => /^\/(login|dashboard)/.test(h ?? ''))).toEqual([]);
   });
 
-  it('signed in and the registration was linked: says "This is now on your record." with a "Registrations" link, no create prompt', async () => {
+  it('signed in and the registration was linked: says "You are registered. It is under Registrations." with a "Registrations" link, no create prompt', async () => {
     render(<RegisterCard {...props} signedIn defaultName="Alice Wong" defaultEmail="alice@example.com" />);
     await registerAs(null, true);
 
-    expect(screen.getByText('This is now on your record.')).toBeInTheDocument();
+    expect(screen.getByText('You are registered. It is under Registrations.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^registrations$/i })).toHaveAttribute('href', '/account/registrations');
     expect(screen.queryByRole('link', { name: /^sign up$/i })).not.toBeInTheDocument();
     expect(hrefs().filter((h) => /^\/(login|dashboard)/.test(h ?? ''))).toEqual([]);
@@ -513,7 +513,7 @@ describe('RegisterCard — account prompt on the success card (FR-003)', () => {
     render(<RegisterCard {...props} signedIn defaultName="Alice Wong" defaultEmail="alice@example.com" />);
     await registerAs(null, false);
 
-    expect(screen.queryByText(/now on your record/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/you are registered\. it is under registrations/i)).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^registrations$/i })).toHaveAttribute('href', '/account/registrations');
     expect(screen.queryByRole('link', { name: /^sign up$/i })).not.toBeInTheDocument();
   });
@@ -522,7 +522,7 @@ describe('RegisterCard — account prompt on the success card (FR-003)', () => {
     render(<RegisterCard {...props} />);
     await registerAs('alice@work.com', true);
 
-    expect(screen.queryByText(/now on your record/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/you are registered\. it is under registrations/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^sign up$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^registrations$/i })).not.toBeInTheDocument();
   });
@@ -539,7 +539,7 @@ describe('RegisterCard — account prompt on the success card (FR-003)', () => {
     await registerAs('alice@work.com', true);
 
     expect(screen.getByRole('heading', { name: /registered as a guest/i })).toBeInTheDocument();
-    expect(screen.queryByText(/now on your record/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/you are registered\. it is under registrations/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 });

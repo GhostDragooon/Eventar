@@ -86,3 +86,29 @@ describe('CompleteClient — where "Done" goes', () => {
     expect(push).not.toHaveBeenCalled();
   });
 });
+
+// Every attendee page sends an incomplete account here (Registrations, Check-in, History, Account, Claim, Profile),
+// with no reason on the way, so this lead is the only place that can say what happened and what is next. The
+// registrations are saved ("any": a brand-new account has none, and the page does not know); finishing puts them under Registrations, and History is where past events go.
+describe('CompleteClient — the lead explains the redirect', () => {
+  const LEAD =
+    'Any registrations you have made are saved. Finish this and you will see them under Registrations, with your past events in History. ' +
+    'It takes about two minutes, and after that registering for an event only asks about the event.';
+
+  it.each([1, 4])('step %i: says any registrations are saved (true with none too) and where they are after finishing', (step) => {
+    render(
+      <CompleteClient
+        initialStep={step as 1 | 4}
+        initialAccount={account}
+        initialProfile={null}
+        initialLicences={[licence]}
+        activeBodies={[]}
+        professions={[]}
+        positions={[]}
+        specialties={[]}
+      />,
+    );
+    expect(screen.getByText(LEAD)).toBeTruthy();
+    expect(screen.queryByText(/aren.t accessible/)).toBeNull();
+  });
+});

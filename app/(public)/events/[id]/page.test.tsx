@@ -99,6 +99,8 @@ vi.mock('@/components/lifecycle/StatusPill', () => ({ StatusPill: function Statu
 import { beforeEach, describe, expect, it } from 'vitest';
 import RegisterCard from '@/components/RegisterCard';
 import { PublicShell } from '@/components/shell/PublicShell';
+import { isAccountComplete } from '@/lib/accountCompleteness';
+import { BackToRegistrations } from './BackToRegistrations';
 import PublicEventPage from './page';
 
 type El = { type: unknown; props: Record<string, unknown> };
@@ -164,3 +166,43 @@ describe('/events/[id] page — what the register card is told about the session
     expect(shell.isStaff).toBe(false);
   });
 });
+
+// Ivan 2026-11-02 (7a-1): the public event page is the one portal exit that has no way back, so a signed-in, complete
+// attendee gets a "Back to my registrations" strip. Only that exact triple: an incomplete account's portal links
+// bounce to the wizard, and staff, signed-out visitors and guests see the page unchanged.
+describe('/events/[id] page — the way back to the portal', () => {
+  const strip = async () => findElement(await PublicEventPage({ params: Promise.resolve({ id: eventRow.id }) }), BackToRegistrations);
+
+  beforeEach(() => {
+    state.user = null;
+    state.isStaff = false;
+  });
+
+  it('signed in + not staff + complete account: the strip is there', async () => {
+    state.user = { id: 'prac-uid', email: 'prac@example.com', email_confirmed_at: '2026-01-01T00:00:00Z' };
+    expect(await strip()).not.toBeNull();
+  });
+
+  it('signed out: no strip', async () => {
+    expect(await strip()).toBeNull();
+  });
+
+  it('staff session: no strip', async () => {
+    state.user = { id: 'staff-uid', email: 'org@example.com', email_confirmed_at: '2026-01-01T00:00:00Z' };
+    state.isStaff = true;
+    expect(await strip()).toBeNull();
+  });
+
+  it('incomplete account: no strip (its portal links would bounce to the wizard)', async () => {
+    state.user = { id: 'prac-uid', email: 'prac@example.com', email_confirmed_at: '2026-01-01T00:00:00Z' };
+    vi.mocked(isAccountComplete).mockResolvedValueOnce({ complete: false } as Awaited<ReturnType<typeof isAccountComplete>>);
+    expect(await strip()).toBeNull();
+  });
+
+  it('the completeness check throwing is treated as incomplete: no strip', async () => {
+    state.user = { id: 'prac-uid', email: 'prac@example.com', email_confirmed_at: '2026-01-01T00:00:00Z' };
+    vi.mocked(isAccountComplete).mockRejectedValueOnce(new Error('db down'));
+    expect(await strip()).toBeNull();
+  });
+});
+

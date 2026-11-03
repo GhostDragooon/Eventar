@@ -58,7 +58,7 @@ export function AccountMenu({
 
   const items: { label: string; href: string }[] = complete
     ? [
-        { label: 'Record', href: '/account/record' },
+        { label: 'History', href: '/account/record' },
         { label: 'Profile', href: '/account/profile' },
         { label: 'Account', href: '/account' },
         ...(unlinkedCount > 0 ? [{ label: 'Claim past events', href: '/account/claim' }] : []),

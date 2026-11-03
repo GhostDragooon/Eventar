@@ -92,7 +92,7 @@ export function RecordClient({
       <SectionCard icon="workspace_premium" title="CPD points">
         {credits.length === 0 ? (
           <p className="font-body-md text-body-md text-on-surface-variant m-0">
-            No points on your Eventar record yet. Points release after check-in once your{' '}
+            No points in your History yet. Points release after check-in once your{' '}
             <Link href="/account/profile" className="text-primary-ink font-medium hover:underline">
               profile and licence
             </Link>{' '}

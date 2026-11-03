@@ -50,7 +50,7 @@ describe('RecordClient — empty states', () => {
   it('shows the honest empty-state copy for both sections when there is nothing to show', () => {
     render(<RecordClient attendance={[]} credits={[]} />);
     expect(screen.getByText(/no past events yet/i)).toBeInTheDocument();
-    expect(screen.getByText(/no points on your eventar record yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/no points in your history yet/i)).toBeInTheDocument();
   });
 });
 

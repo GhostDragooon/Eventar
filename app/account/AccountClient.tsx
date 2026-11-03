@@ -278,8 +278,8 @@ export function AccountClient({
         </ul>
         <p className="mt-md font-body-md text-body-md text-on-surface-variant m-0">
           Points release automatically at check-in once all three are in
-          place. Your Eventar record isn&apos;t a substitute for iCMECPD or
-          your college — it&apos;s a running log of what you did through Eventar.
+          place. Your History isn&apos;t a substitute for iCMECPD or your
+          college; it&apos;s a running log of what you did through Eventar.
         </p>
       </section>
 
@@ -483,7 +483,7 @@ export function AccountClient({
               href="/account/record"
               className="text-sm font-medium text-primary-ink hover:underline"
             >
-              View your record
+              View your History
             </Link>
           </div>
           <Button type="submit" disabled={pending}>

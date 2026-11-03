@@ -3,7 +3,7 @@
 // cases, and never point an attendee at the organiser side.
 import { vi } from 'vitest';
 
-const loaded = vi.hoisted(() => ({ items: [] as unknown[], failed: false }));
+const loaded = vi.hoisted(() => ({ items: [] as unknown[], failed: false, unlinkedCount: 0 }));
 vi.mock('./loadMyRegistrations', () => ({ loadMyRegistrations: async () => loaded }));
 vi.mock('@/components/shell/AccountShell', () => ({
   AccountShell: ({ children }: { children: React.ReactNode }) => <div data-testid="shell">{children}</div>,
@@ -33,11 +33,18 @@ const reg = (id: string, title: string, startOffsetH: number, over: Partial<Atte
   ...over,
 });
 
+// Pin only the Date (waitFor keeps real timers): the opens-at strings and the 60-minute boundary read the clock.
+const NOW = new Date('2026-12-13T12:00:00Z');
 beforeEach(() => {
   loaded.items = [];
   loaded.failed = false;
+  loaded.unlinkedCount = 0;
+  vi.useFakeTimers({ toFake: ['Date'], now: NOW });
 });
-afterEach(cleanup);
+afterEach(() => {
+  vi.useRealTimers();
+  cleanup();
+});
 
 const hrefs = () => Array.from(document.querySelectorAll('a')).map((a) => a.getAttribute('href') ?? '');
 
@@ -82,7 +89,51 @@ describe('Registrations', () => {
   });
 });
 
+describe('Registrations: when check-in opens', () => {
+  const at = (id: string, startIso: string) => reg(id, `Event ${id}`, 0, { event_start: startIso, event_end: new Date(Date.parse(startIso) + 2 * HOUR).toISOString() });
+
+  it('an upcoming row says when check-in opens, with the date and the event zone, instead of "Registered"', async () => {
+    loaded.items = [at('a', '2026-12-14T01:00:00Z')]; // 09:00 on 14 Dec in Hong Kong
+    render(await RegistrationsPage());
+    expect(screen.getByText('14 Dec 2026, 09:00 (GMT+8)')).toBeTruthy();
+    expect(screen.getByText('Check-in opens at 14 Dec 2026, 08:00 (GMT+8)')).toBeTruthy();
+    expect(screen.queryByText('Registered')).toBeNull();
+  });
+
+  it('a start at 00:30 opens on the previous local date: the date stays in the string', async () => {
+    loaded.items = [at('b', '2026-12-14T16:30:00Z')]; // 00:30 on 15 Dec in Hong Kong
+    render(await RegistrationsPage());
+    expect(screen.getByText('15 Dec 2026, 00:30 (GMT+8)')).toBeTruthy();
+    expect(screen.getByText('Check-in opens at 14 Dec 2026, 23:30 (GMT+8)')).toBeTruthy();
+  });
+
+  it('uses the event zone, not the server zone', async () => {
+    loaded.items = [{ ...at('c', '2026-12-14T14:00:00Z'), event_timezone: 'America/New_York' }]; // 09:00 EST
+    render(await RegistrationsPage());
+    expect(screen.getByText('Check-in opens at 14 Dec 2026, 08:00 (GMT-5)')).toBeTruthy();
+  });
+
+  it('61 minutes before the start: still "opens at"; at 60 minutes the window is open and the sentence is gone', async () => {
+    loaded.items = [at('d', '2026-12-13T13:00:00Z')]; // opens 12:00Z = 20:00 HKT
+    vi.setSystemTime(new Date('2026-12-13T11:59:00Z'));
+    const first = render(await RegistrationsPage());
+    expect(screen.getByText('Check-in opens at 13 Dec 2026, 20:00 (GMT+8)')).toBeTruthy();
+    first.unmount();
+    vi.setSystemTime(new Date('2026-12-13T12:00:00Z'));
+    render(await RegistrationsPage());
+    expect(screen.getAllByText('Check-in is open')).toHaveLength(2); // the section title and the row
+    expect(screen.queryByText(/Check-in opens at/)).toBeNull();
+  });
+});
+
 describe('Check-in', () => {
+  it('the opens-at row carries the zone too', async () => {
+    loaded.items = [reg('t', 'Tonight', 0, { event_start: '2026-12-13T18:00:00Z', event_end: '2026-12-13T20:00:00Z' })];
+    render(await CheckinPage());
+    expect(screen.getByText('Check-in opens at 14 Dec 2026, 01:00 (GMT+8)')).toBeTruthy();
+    expect(screen.getByText('14 Dec 2026, 02:00 (GMT+8)')).toBeTruthy();
+  });
+
   it('mounts inside the portal shell, with the window rule in its lead', async () => {
     render(await CheckinPage());
     const shell = screen.getByTestId('shell');
@@ -112,6 +163,44 @@ describe('Check-in', () => {
     render(await CheckinPage());
     expect(screen.getByText('You are checked in')).toBeTruthy();
     expect(screen.queryByRole('link', { name: 'Show my pass' })).toBeNull();
+  });
+});
+
+describe('guest-registration banner (Registrations and Check-in)', () => {
+  it.each([
+    ['Registrations', RegistrationsPage],
+    ['Check-in', CheckinPage],
+  ])('%s: count 0 shows no banner', async (_n, Page) => {
+    render(await Page());
+    expect(screen.queryByText(/made with your email as a guest/)).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Link past registrations' })).toBeNull();
+  });
+
+  it.each([
+    ['Registrations', RegistrationsPage],
+    ['Check-in', CheckinPage],
+  ])('%s: count 1 is singular, with the link to the claim page', async (_n, Page) => {
+    loaded.unlinkedCount = 1;
+    render(await Page());
+    expect(screen.getByText(/We found 1 registration made with your email as a guest\./)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Link past registrations' })).toHaveAttribute('href', '/account/claim');
+  });
+
+  it.each([
+    ['Registrations', RegistrationsPage],
+    ['Check-in', CheckinPage],
+  ])('%s: count N is plural', async (_n, Page) => {
+    loaded.unlinkedCount = 5;
+    render(await Page());
+    expect(screen.getByText(/We found 5 registrations made with your email as a guest\./)).toBeTruthy();
+  });
+
+  it('the banner sits next to a failed-read alert, not instead of it', async () => {
+    loaded.failed = true;
+    loaded.unlinkedCount = 2;
+    render(await RegistrationsPage());
+    expect(screen.getByRole('alert').textContent).toMatch(/could not be loaded/);
+    expect(screen.getByText(/We found 2 registrations/)).toBeTruthy();
   });
 });
 

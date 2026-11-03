@@ -15,6 +15,8 @@ import { supabaseServer } from '@/lib/supabase/server';
 import { isAccountComplete } from '@/lib/accountCompleteness';
 import { listMyAttendanceRecords, listMyCreditRecords } from '../actions';
 import { RecordClient } from './RecordClient';
+import { ClaimBanner } from '../ClaimBanner';
+import { readUnlinkedCount } from '../readUnlinkedCount';
 import { splitRegistrations } from '../myRegistrations';
 import { AccountShell } from '@/components/shell/AccountShell';
 
@@ -37,9 +39,10 @@ export default async function AccountRecordPage() {
     redirect('/account/complete');
   }
 
-  const [attendanceResult, creditsResult] = await Promise.all([
+  const [attendanceResult, creditsResult, unlinkedCount] = await Promise.all([
     listMyAttendanceRecords(),
     listMyCreditRecords(),
+    readUnlinkedCount(),
   ]);
   // Same fail-closed posture as app/account/page.tsx:45-51 — a genuine auth
   // failure bounces to sign-in; any other error degrades to an empty list
@@ -55,7 +58,8 @@ export default async function AccountRecordPage() {
 
   return (
     <AccountShell>
-      <div className="mx-auto w-full max-w-2xl px-grid-margin py-xl">
+      <div className="mx-auto w-full max-w-2xl space-y-md px-grid-margin py-xl">
+        <ClaimBanner count={unlinkedCount} />
         <RecordClient attendance={attendance} credits={credits} />
       </div>
     </AccountShell>

@@ -1,5 +1,6 @@
 import { AccountShell } from '@/components/shell/AccountShell';
 import { CHECKIN_OPEN_MINUTES } from '@/lib/lifecycle/eventLifecycle';
+import { ClaimBanner } from '../ClaimBanner';
 import { loadMyRegistrations } from '../loadMyRegistrations';
 import { opensWithinADay, splitRegistrations } from '../myRegistrations';
 import { EmptyState, LoadFailed, PageHeader, Rows, Section } from '../registrations/RegistrationRows';
@@ -11,7 +12,7 @@ export const dynamic = 'force-dynamic';
 // (it shows the QR and code); this page is the way to it from the portal. No capture here: that is the organiser's
 // desk, and no offline or Bluetooth path is built.
 export default async function AttendeeCheckinPage() {
-  const { items, failed } = await loadMyRegistrations('/account/check-in');
+  const { items, failed, unlinkedCount } = await loadMyRegistrations('/account/check-in');
   // eslint-disable-next-line react-hooks/purity -- the server's clock at render, handed down so the page is one consistent snapshot
   const nowMs = Date.now();
   const { live, upcoming } = splitRegistrations(items, nowMs);
@@ -25,6 +26,7 @@ export default async function AttendeeCheckinPage() {
           lead={`Show your pass to the organiser at the door. Check-in opens ${CHECKIN_OPEN_MINUTES} minutes before an event starts and closes when it ends.`}
         />
         {failed && <LoadFailed />}
+        <ClaimBanner count={unlinkedCount} />
         {!failed && live.length + soon.length === 0 && (
           <EmptyState action={{ href: '/account/registrations', label: 'See my registrations' }}>
             Nothing to check in to right now. Your pass appears here when an event you registered for is about to start.

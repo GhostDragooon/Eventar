@@ -280,8 +280,9 @@ export function CompleteClient({
           A few things before you start
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant m-0">
-          Your CPD/CME records aren&apos;t accessible until this is done. It takes about two minutes —
-          after this, event registration only ever asks about the event.
+          Any registrations you have made are saved. Finish this and you will see them under
+          Registrations, with your past events in History. It takes about two minutes, and after that registering for an
+          event only asks about the event.
         </p>
       </header>
 

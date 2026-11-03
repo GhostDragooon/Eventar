@@ -5,6 +5,7 @@ import type { AgendaTopic } from '@/lib/agenda';
 import { buildEventQrPng } from '@/lib/qr';
 import { getRequestOrigin } from '@/lib/origin';
 import RegisterCard from '@/components/RegisterCard';
+import { BackToRegistrations } from './BackToRegistrations';
 import { PublicShell } from '@/components/shell/PublicShell';
 import { StatusPill } from '@/components/lifecycle/StatusPill';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
@@ -220,6 +221,9 @@ export default async function PublicEventPage({
       accountComplete={accountComplete}
       unlinkedCount={unlinkedCount}
     >
+      {/* Exactly signed in + attendee + complete: an incomplete account's portal links bounce to the wizard. */}
+      {signedInUser && !isStaff && accountComplete && <BackToRegistrations />}
+
       {/* Wave 3 — hero backdrop. Full-width band, image when uploaded,
           accent-tinted palette fallback otherwise. No overlay text — the
           existing event-meta block below is the source of truth for title

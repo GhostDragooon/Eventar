@@ -25,7 +25,7 @@ describe('AccountMenu', () => {
     render(<AccountMenu complete />);
     fireEvent.click(screen.getByRole('button', { name: /^account$/i }));
     expect(screen.getByRole('menu')).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: /^record$/i })).toHaveAttribute('href', '/account/record');
+    expect(screen.getByRole('menuitem', { name: /^history$/i })).toHaveAttribute('href', '/account/record');
     expect(screen.getByRole('menuitem', { name: /^profile$/i })).toHaveAttribute('href', '/account/profile');
     expect(screen.getByRole('menuitem', { name: /^account$/i })).toHaveAttribute('href', '/account');
     expect(screen.getByRole('menuitem', { name: /sign out/i })).toBeInTheDocument();
@@ -38,14 +38,14 @@ describe('AccountMenu', () => {
     expect(screen.getByRole('menuitem', { name: /claim past events/i })).toHaveAttribute('href', '/account/claim');
   });
 
-  it('an incomplete account only shows Account + Sign out — no Record, Profile, or Claim', () => {
+  it('an incomplete account only shows Account + Sign out — no History, Profile, or Claim', () => {
     // Ivan's call, 2026-09-21 AskUserQuestion: hide items that would just
     // bounce to /account/complete rather than show-then-redirect.
     render(<AccountMenu complete={false} unlinkedCount={5} />);
     fireEvent.click(screen.getByRole('button', { name: /^account$/i }));
     expect(screen.getByRole('menuitem', { name: /^account$/i })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /sign out/i })).toBeInTheDocument();
-    expect(screen.queryByRole('menuitem', { name: /^record$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /^history$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: /^profile$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: /claim past events/i })).not.toBeInTheDocument();
   });

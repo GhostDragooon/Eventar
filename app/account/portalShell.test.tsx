@@ -1,6 +1,7 @@
 // UX-02 card done-when: each portal page renders inside AccountShell (the doors, sign-in and sign-up, do not: they keep
 // SiteShell; see app/account/sign-up/page.test.tsx). The pages return an element tree, so the root element's type is the shell.
 import { vi } from 'vitest';
+vi.mock('server-only', () => ({})); // the History page reads the claim-banner count (readUnlinkedCount.ts)
 
 const { s, ok, chain } = vi.hoisted(() => {
   // Any chain of query-builder calls, awaited, yields an empty successful result.

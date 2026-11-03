@@ -249,13 +249,13 @@ function PractitionerPanel({
   );
   const recordLink = (
     <Link
-      href="/account/record"
+      href={hasRecord ? '/account/registrations' : '/account/record'}
       className={cn(
         buttonVariants({ variant: hasRecord ? 'default' : 'outline' }),
         hasRecord ? primary : cta,
       )}
     >
-      {hasRecord ? 'Back to my record' : 'Go to my account'}
+      {hasRecord ? 'Back to my registrations' : 'Go to my account'}
     </Link>
   );
 
