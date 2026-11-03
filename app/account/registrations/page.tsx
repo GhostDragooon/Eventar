@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AccountShell } from '@/components/shell/AccountShell';
 import { ClaimBanner } from '../ClaimBanner';
+import { LicenceBanner } from '../LicenceBanner';
 import { loadMyRegistrations } from '../loadMyRegistrations';
 import { splitRegistrations } from '../myRegistrations';
 import { EmptyState, LoadFailed, OUTLINE_LINK, PageHeader, Rows, Section } from './RegistrationRows';
@@ -10,7 +11,7 @@ export const dynamic = 'force-dynamic';
 
 // Doctrine 2026-10-30 section 2: "Upcoming + live sign-ups; empty -> Events". Past events are History.
 export default async function RegistrationsPage() {
-  const { items, failed, unlinkedCount } = await loadMyRegistrations('/account/registrations');
+  const { items, failed, unlinkedCount, licenceMissing } = await loadMyRegistrations('/account/registrations');
   // eslint-disable-next-line react-hooks/purity -- the server's clock at render, handed down so the page is one consistent snapshot
   const nowMs = Date.now();
   const { live, upcoming } = splitRegistrations(items, nowMs);
@@ -21,6 +22,7 @@ export default async function RegistrationsPage() {
         <PageHeader title="Registrations" lead="The events you have signed up for." />
         {failed && <LoadFailed />}
         <ClaimBanner count={unlinkedCount} />
+        <LicenceBanner missing={licenceMissing} />
         {!failed && live.length + upcoming.length === 0 && (
           <EmptyState action={{ href: '/events', label: 'Find events' }}>
             You are not registered for any upcoming events. Past events are in History.

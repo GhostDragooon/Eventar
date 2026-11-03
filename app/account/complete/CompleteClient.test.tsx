@@ -78,12 +78,13 @@ describe('CompleteClient — where "Done" goes', () => {
     expect(push).toHaveBeenCalledExactlyOnceWith('/account/registrations');
   });
 
-  it('does not let a visitor finish without a licence, destination or not', () => {
+  // Ivan 2026-11-04: a licence is not required to finish; the account is flagged on the portal until one is declared.
+  it('lets a visitor finish without a licence and go on to the destination', () => {
     atLicenceStep('/account/claim', []);
     const done = screen.getByRole('button', { name: /^done$/i });
-    expect(done).toBeDisabled();
+    expect(done).toBeEnabled();
     fireEvent.click(done);
-    expect(push).not.toHaveBeenCalled();
+    expect(push).toHaveBeenCalledExactlyOnceWith('/account/claim');
   });
 });
 
@@ -176,10 +177,13 @@ describe('CompleteClient — why Continue is disabled', () => {
     expect(screen.getByText('Add your phone to continue.')).toBeInTheDocument();
   });
 
-  it('says what Declare licence and Done are waiting for on the Licence step', () => {
+  it('says a licence can wait, and what Declare licence is waiting for, on the Licence step', () => {
     atLicenceStep(undefined, []);
-    expect(screen.getByRole('button', { name: 'Done' })).toBeDisabled();
-    expect(screen.getByText('Declare a licence to finish.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Done' })).toBeEnabled();
+    expect(
+      screen.getByText('You can add a licence later from your profile. Credit is released only once a licence is declared.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Declare a licence to finish.')).toBeNull();
     expect(screen.getByText('Choose an accrediting body and add your licence number to declare.')).toBeInTheDocument();
   });
 });

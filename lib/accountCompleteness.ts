@@ -4,9 +4,13 @@
 //
 // Plan: docs/plans/2026-09-16-practitioner-account-creation-plan.md Phase 4.
 //
-// Mirrors the F1-F5 gate inside award_attendance_credit (migration
-// 20260916020000) but is NOT the same check and must not be treated as a
-// trust boundary — this is a UI routing decision (surface tier, reads via
+// Mirrors the F1-F4 gate inside award_attendance_credit (migration
+// 20260916020000), minus the licence (F5): a practitioner without a licence
+// (student, trainee, a body that is not listed) still gets into the portal
+// (Ivan 2026-11-04), so `complete` does not wait for one. `licence` is
+// reported on its own for the portal's "setup not finished" banner, and
+// award_attendance_credit still releases no credit without one. This is NOT
+// the same check and must not be treated as a trust boundary — this is a UI routing decision (surface tier, reads via
 // RLS), not the credit-release gate (which stays the single source of
 // truth for whether CPD points actually release). The two are allowed to
 // disagree slightly without a security consequence: this helper is a
@@ -115,7 +119,7 @@ export async function isAccountComplete(
   const consentsOk = hasConsent('terms_of_service') && hasConsent('privacy_policy');
 
   return {
-    complete: emailConfirmed && identity && profile && licence && consentsOk,
+    complete: emailConfirmed && identity && profile && consentsOk,
     identity,
     profile,
     licence,

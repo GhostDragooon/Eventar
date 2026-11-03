@@ -3,7 +3,7 @@
 // cases, and never point an attendee at the organiser side.
 import { vi } from 'vitest';
 
-const loaded = vi.hoisted(() => ({ items: [] as unknown[], failed: false, unlinkedCount: 0 }));
+const loaded = vi.hoisted(() => ({ items: [] as unknown[], failed: false, unlinkedCount: 0, licenceMissing: false }));
 vi.mock('./loadMyRegistrations', () => ({ loadMyRegistrations: async () => loaded }));
 vi.mock('@/components/shell/AccountShell', () => ({
   AccountShell: ({ children }: { children: React.ReactNode }) => <div data-testid="shell">{children}</div>,
@@ -38,6 +38,7 @@ const NOW = new Date('2026-12-13T12:00:00Z');
 beforeEach(() => {
   loaded.items = [];
   loaded.failed = false;
+  loaded.licenceMissing = false;
   loaded.unlinkedCount = 0;
   vi.useFakeTimers({ toFake: ['Date'], now: NOW });
 });
@@ -201,6 +202,27 @@ describe('guest-registration banner (Registrations and Check-in)', () => {
     render(await RegistrationsPage());
     expect(screen.getByRole('alert').textContent).toMatch(/could not be loaded/);
     expect(screen.getByText(/We found 2 registrations/)).toBeTruthy();
+  });
+});
+
+// Ivan 2026-11-04: the wizard can be finished without a licence, so the portal says the account is not finished.
+describe('no-licence banner (Registrations and Check-in)', () => {
+  it.each([
+    ['Registrations', RegistrationsPage],
+    ['Check-in', CheckinPage],
+  ])('%s: a declared licence shows no banner', async (_n, Page) => {
+    render(await Page());
+    expect(screen.queryByRole('link', { name: 'Add a licence' })).toBeNull();
+  });
+
+  it.each([
+    ['Registrations', RegistrationsPage],
+    ['Check-in', CheckinPage],
+  ])('%s: no licence says setup is unfinished and links to the profile', async (_n, Page) => {
+    loaded.licenceMissing = true;
+    render(await Page());
+    expect(screen.getByText(/Account setup is not finished/)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Add a licence' })).toHaveAttribute('href', '/account/profile');
   });
 });
 

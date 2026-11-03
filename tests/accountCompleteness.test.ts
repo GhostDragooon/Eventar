@@ -72,13 +72,24 @@ describe('isAccountComplete', () => {
   it.each([
     ['missing identity (no phone)', { ...COMPLETE_ROW, phone: null }, 'identity'],
     ['missing profile (no specialty)', { ...COMPLETE_ROW, professional_profiles: { ...COMPLETE_PROFILE, specialty_code: null, specialty_other: null } }, 'profile'],
-    ['missing licence (no non-terminal row)', { ...COMPLETE_ROW, practitioner_licences: [{ status: 'lapsed' }] }, 'licence'],
     ['missing consents (only one of two)', { ...COMPLETE_ROW, consent_records: [VALID_CONSENTS[0]] }, 'consents'],
   ] as const)('%s -> complete: false, %s: false', async (_label, row, failingKey) => {
     mockRow(row as unknown as Row);
     const result = await isAccountComplete('user-1', true);
     expect(result.complete).toBe(false);
     expect(result[failingKey]).toBe(false);
+  });
+
+  // Ivan 2026-11-04: a practitioner with no licence (student, trainee, a body that is not listed) still gets into
+  // the portal; the missing licence is reported on its own so the portal can flag it. Credit still waits for one
+  // (award_attendance_credit is the gate for that, not this helper).
+  it.each([
+    ['no licence rows', []],
+    ['only a lapsed licence (no non-terminal row)', [{ status: 'lapsed' }]],
+  ])('%s -> complete: true, licence: false', async (_label, practitioner_licences) => {
+    mockRow({ ...COMPLETE_ROW, practitioner_licences } as unknown as Row);
+    const result = await isAccountComplete('user-1', true);
+    expect(result).toEqual({ complete: true, identity: true, profile: true, licence: false, consents: true });
   });
 
   it('every group present -> complete: true', async () => {

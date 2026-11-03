@@ -13,7 +13,7 @@ import type { AttendanceRecordView } from './schema';
 // the claim banner: advisory only, 0 when its own read fails (readUnlinkedCount.ts), unlike `failed`, which is the page's read.
 export async function loadMyRegistrations(
   path: string,
-): Promise<{ items: AttendanceRecordView[]; failed: boolean; unlinkedCount: number }> {
+): Promise<{ items: AttendanceRecordView[]; failed: boolean; unlinkedCount: number; licenceMissing: boolean }> {
   const supabase = await supabaseServer();
   // eslint-disable-next-line no-restricted-syntax -- no-session and call-failed collapse to "must sign in"
   const { data: authRes } = await supabase.auth.getUser();
@@ -24,5 +24,9 @@ export async function loadMyRegistrations(
 
   const [res, unlinkedCount] = await Promise.all([listMyAttendanceRecords(), readUnlinkedCount()]);
   if (!res.ok && res.error === 'not_authorized') redirect(`/account/sign-in?next=${encodeURIComponent(path)}`);
-  return res.ok ? { items: res.data.items, failed: false, unlinkedCount } : { items: [], failed: true, unlinkedCount };
+  // `licenceMissing` rides along for the setup banner: the wizard can be finished without a licence, and credit waits for one.
+  const licenceMissing = !completeness.licence;
+  return res.ok
+    ? { items: res.data.items, failed: false, unlinkedCount, licenceMissing }
+    : { items: [], failed: true, unlinkedCount, licenceMissing };
 }

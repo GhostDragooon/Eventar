@@ -507,7 +507,7 @@ export function CompleteClient({
           <div className="space-y-md">
             <SectionCard icon="verified" title="Licence">
               <p className="font-body-md text-body-md text-on-surface-variant m-0 mb-md">
-                Declare at least one licence to release CME/CPD points at that accrediting body.
+                Declare a licence to release CME/CPD points at that accrediting body.
               </p>
               {hasLicence ? (
                 <ul className="flex flex-col gap-sm m-0 p-0 list-none mb-md">
@@ -590,10 +590,10 @@ export function CompleteClient({
               <div className="flex items-center gap-md">
                 {!hasLicence && (
                   <p className="font-body-md text-body-md text-on-surface-variant m-0 text-right">
-                    Declare a licence to finish.
+                    You can add a licence later from your profile. Credit is released only once a licence is declared.
                   </p>
                 )}
-                <Button type="button" onClick={onFinish} disabled={!hasLicence}>
+                <Button type="button" onClick={onFinish}>
                   Done
                 </Button>
               </div>
