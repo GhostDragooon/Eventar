@@ -112,3 +112,74 @@ describe('CompleteClient — the lead explains the redirect', () => {
     expect(screen.queryByText(/aren.t accessible/)).toBeNull();
   });
 });
+
+// S2-5: a disabled Continue must say which field is missing, and required
+// fields must be marked.
+function atStep(step: number, profile: Record<string, string | null> = {}) {
+  render(
+    <CompleteClient
+      initialStep={step}
+      initialAccount={{ ...account, phone: '+852 1234' }}
+      initialProfile={{
+        profession_code: 'medicine',
+        specialty_code: null,
+        specialty_other: 'Cardiology',
+        position_code: 'consultant',
+        position_other: null,
+        workplace_text: 'QMH',
+        department_text: null,
+        ...profile,
+      } as never}
+      initialLicences={[]}
+      activeBodies={[]}
+      professions={[{ code: 'medicine', label_en: 'Medicine' }]}
+      positions={[{ code: 'consultant', label_en: 'Consultant' }]}
+      specialties={[]}
+    />,
+  );
+}
+
+describe('CompleteClient — why Continue is disabled', () => {
+  it('names the missing department next to the disabled Professional Continue', () => {
+    atStep(3);
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
+    expect(screen.getByText('Add your department to continue.')).toBeInTheDocument();
+  });
+
+  it('lists several missing fields and clears the hint once complete', () => {
+    atStep(3, { workplace_text: null });
+    expect(screen.getByText('Add your workplace and department to continue.')).toBeInTheDocument();
+    cleanup();
+    atStep(3, { department_text: 'Cardiology' });
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
+    expect(screen.queryByText(/to continue\./)).not.toBeInTheDocument();
+  });
+
+  it('marks required Professional fields', () => {
+    atStep(3);
+    expect(screen.getByText('Department').parentElement?.querySelector('[aria-label="required"]')).not.toBeNull();
+  });
+
+  it('names the missing Identity field', () => {
+    render(
+      <CompleteClient
+        initialStep={2}
+        initialAccount={account}
+        initialProfile={null}
+        initialLicences={[]}
+        activeBodies={[]}
+        professions={[]}
+        positions={[]}
+        specialties={[]}
+      />,
+    );
+    expect(screen.getByText('Add your phone to continue.')).toBeInTheDocument();
+  });
+
+  it('says what Declare licence and Done are waiting for on the Licence step', () => {
+    atLicenceStep(undefined, []);
+    expect(screen.getByRole('button', { name: 'Done' })).toBeDisabled();
+    expect(screen.getByText('Declare a licence to finish.')).toBeInTheDocument();
+    expect(screen.getByText('Choose an accrediting body and add your licence number to declare.')).toBeInTheDocument();
+  });
+});

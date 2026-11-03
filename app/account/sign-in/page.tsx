@@ -66,7 +66,7 @@ function AttendeeSignInForm() {
       <p className="font-body-md text-body-md text-on-surface-variant m-0">
         New user?{' '}
         <Link
-          href="/account/sign-up"
+          href={next ? `/account/sign-up?next=${encodeURIComponent(next)}` : '/account/sign-up'}
           className="font-semibold text-[color:var(--on-primary-container)] hover:underline"
         >
           Sign up

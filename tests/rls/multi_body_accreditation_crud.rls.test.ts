@@ -10,7 +10,7 @@
 //
 // Gated: only runs under `pnpm test:rls` (RLS_TESTS=1).
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { admin, createTestUser, deleteTestUser } from '../helpers/clients';
+import { admin, createTestUser, deleteTestUser, sqlSuperuserQuery } from '../helpers/clients';
 import { mustDelete } from '../helpers/mustDelete';
 
 const DEFAULT_ORG = '00000000-0000-0000-0000-000000000001';
@@ -297,6 +297,31 @@ describe.skipIf(!process.env.RLS_TESTS)('multi-body accreditation CRUD functions
         expect(data?.map((r) => r.role_code)).toEqual(['presenter']);
       } finally {
         await admin.from('registrations').update({ status: 'registered' }).eq('id', registrationId);
+        await admin.rpc('remove_registration_role', { p_registration_id: registrationId, p_role_code: 'presenter', p_actor_override: ownerId });
+      }
+    });
+
+    // Dev-review m1: check-in inserts the registration_checkins row before the status flips, so a role write landing in
+    // that window read status 'registered'. The lock must also see the check-in row.
+    it('refuses a role change when a check-in row exists but the status is still registered (race window)', async () => {
+      const set = await admin.rpc('set_registration_role', { p_registration_id: registrationId, p_role_code: 'presenter', p_actor_override: ownerId });
+      expect(set.error).toBeNull();
+      // service_role has no INSERT on registration_checkins (definer-only), so the row goes in as superuser. Whatever the
+      // sync trigger does to the status, force it back to 'registered': the race window is a check-in row with that status.
+      await sqlSuperuserQuery('insert into public.registration_checkins (registration_id, occurrence_id, check_in_method) values ($1, $2, $3)', [registrationId, occurrenceId, 'manual']);
+      await sqlSuperuserQuery("update public.registrations set status = 'registered' where id = $1", [registrationId]);
+      try {
+        const again = await admin.rpc('set_registration_role', { p_registration_id: registrationId, p_role_code: 'chair', p_actor_override: ownerId });
+        expect(again.error?.code).toBe('22023');
+        expect(again.error?.details).toBe('role_locked_attended');
+        const remove = await admin.rpc('remove_registration_role', { p_registration_id: registrationId, p_role_code: 'presenter', p_actor_override: ownerId });
+        expect(remove.error?.code).toBe('22023');
+        expect(remove.error?.details).toBe('role_locked_attended');
+        const { data } = await admin.from('registration_roles').select('role_code').eq('registration_id', registrationId);
+        expect(data?.map((r) => r.role_code)).toEqual(['presenter']);
+      } finally {
+        await sqlSuperuserQuery('delete from public.registration_checkins where registration_id = $1', [registrationId]);
+        await sqlSuperuserQuery("update public.registrations set status = 'registered' where id = $1", [registrationId]);
         await admin.rpc('remove_registration_role', { p_registration_id: registrationId, p_role_code: 'presenter', p_actor_override: ownerId });
       }
     });

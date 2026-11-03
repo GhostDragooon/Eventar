@@ -119,6 +119,21 @@ export function CompleteClient({
     profile.workplace_text.trim() !== '' &&
     profile.department_text.trim() !== '';
 
+  // Why a step's Continue is disabled, in the visitor's words (S2-5: a bare
+  // disabled button explains nothing).
+  const identityMissing = [
+    !(account.first_name ?? '').trim() && 'first name',
+    !(account.last_name ?? '').trim() && 'last name',
+    !(account.phone ?? '').trim() && 'phone',
+  ].filter(Boolean) as string[];
+  const professionalMissing = [
+    profile.profession_code === '' && 'profession',
+    !specialtyFilled && 'specialty',
+    !positionFilled && 'position',
+    profile.workplace_text.trim() === '' && 'workplace',
+    profile.department_text.trim() === '' && 'department',
+  ].filter(Boolean) as string[];
+
   function onAcceptConsent() {
     setConsentStatus(null);
     startConsentTransition(async () => {
@@ -334,7 +349,7 @@ export function CompleteClient({
                   </select>
                 </FieldGroup>
                 <div />
-                <FieldGroup label="First name">
+                <FieldGroup label="First name" required>
                   <Input
                     value={account.first_name ?? ''}
                     onChange={(e) => setAccount((prev) => ({ ...prev, first_name: e.target.value || null }))}
@@ -343,7 +358,7 @@ export function CompleteClient({
                     required
                   />
                 </FieldGroup>
-                <FieldGroup label="Last name">
+                <FieldGroup label="Last name" required>
                   <Input
                     value={account.last_name ?? ''}
                     onChange={(e) => setAccount((prev) => ({ ...prev, last_name: e.target.value || null }))}
@@ -352,7 +367,7 @@ export function CompleteClient({
                     required
                   />
                 </FieldGroup>
-                <FieldGroup label="Phone">
+                <FieldGroup label="Phone" required>
                   <Input
                     value={account.phone ?? ''}
                     onChange={(e) => setAccount((prev) => ({ ...prev, phone: e.target.value || null }))}
@@ -369,17 +384,11 @@ export function CompleteClient({
                 <Button type="button" variant="outline" onClick={() => setStep(1)}>
                   Back
                 </Button>
-                <Button
-                  type="submit"
-                  disabled={
-                    identityPending ||
-                    !(account.first_name ?? '').trim() ||
-                    !(account.last_name ?? '').trim() ||
-                    !(account.phone ?? '').trim()
-                  }
-                >
-                  {identityPending ? 'Saving…' : 'Continue'}
-                </Button>
+                <ContinueWithHint missing={identityMissing}>
+                  <Button type="submit" disabled={identityPending || identityMissing.length > 0}>
+                    {identityPending ? 'Saving…' : 'Continue'}
+                  </Button>
+                </ContinueWithHint>
               </div>
             </SectionCard>
           </form>
@@ -389,7 +398,7 @@ export function CompleteClient({
           <form onSubmit={onSaveProfile}>
             <SectionCard icon="work" title="Professional profile">
               <div className="grid gap-md md:grid-cols-2">
-                <FieldGroup label="Profession">
+                <FieldGroup label="Profession" required>
                   <select
                     value={profile.profession_code}
                     onChange={(e) =>
@@ -404,7 +413,7 @@ export function CompleteClient({
                     ))}
                   </select>
                 </FieldGroup>
-                <FieldGroup label="Specialty">
+                <FieldGroup label="Specialty" required={filteredSpecialties.length > 0}>
                   <select
                     value={profile.specialty_code}
                     onChange={(e) => setProfile((prev) => ({ ...prev, specialty_code: e.target.value }))}
@@ -426,7 +435,10 @@ export function CompleteClient({
                     (legacy rows, or a value that no longer matches any
                     controlled-list code) — dev-review CRITICAL + finding 6. */}
                 {specialtyNeedsFreeText || profile.specialty_other.trim() !== '' ? (
-                  <FieldGroup label={filteredSpecialties.length === 0 ? 'Specialty' : 'Specialty (if not listed)'}>
+                  <FieldGroup
+                    label={filteredSpecialties.length === 0 ? 'Specialty' : 'Specialty (if not listed)'}
+                    required={specialtyNeedsFreeText}
+                  >
                     <Input
                       value={profile.specialty_other}
                       onChange={(e) => setProfile((prev) => ({ ...prev, specialty_other: e.target.value }))}
@@ -435,7 +447,7 @@ export function CompleteClient({
                     />
                   </FieldGroup>
                 ) : null}
-                <FieldGroup label="Position / rank">
+                <FieldGroup label="Position / rank" required>
                   <select
                     value={profile.position_code}
                     onChange={(e) => setProfile((prev) => ({ ...prev, position_code: e.target.value }))}
@@ -449,7 +461,7 @@ export function CompleteClient({
                   </select>
                 </FieldGroup>
                 {profile.position_code === 'other' && (
-                  <FieldGroup label="Position (if not listed)">
+                  <FieldGroup label="Position (if not listed)" required>
                     <Input
                       value={profile.position_other}
                       onChange={(e) => setProfile((prev) => ({ ...prev, position_other: e.target.value }))}
@@ -457,7 +469,7 @@ export function CompleteClient({
                     />
                   </FieldGroup>
                 )}
-                <FieldGroup label="Workplace">
+                <FieldGroup label="Workplace" required>
                   <Input
                     value={profile.workplace_text}
                     onChange={(e) => setProfile((prev) => ({ ...prev, workplace_text: e.target.value }))}
@@ -466,7 +478,7 @@ export function CompleteClient({
                     required
                   />
                 </FieldGroup>
-                <FieldGroup label="Department">
+                <FieldGroup label="Department" required>
                   <Input
                     value={profile.department_text}
                     onChange={(e) => setProfile((prev) => ({ ...prev, department_text: e.target.value }))}
@@ -481,9 +493,11 @@ export function CompleteClient({
                 <Button type="button" variant="outline" onClick={() => setStep(2)}>
                   Back
                 </Button>
-                <Button type="submit" disabled={profilePending || !professionalStepValid}>
-                  {profilePending ? 'Saving…' : 'Continue'}
-                </Button>
+                <ContinueWithHint missing={professionalMissing}>
+                  <Button type="submit" disabled={profilePending || !professionalStepValid}>
+                    {profilePending ? 'Saving…' : 'Continue'}
+                  </Button>
+                </ContinueWithHint>
               </div>
             </SectionCard>
           </form>
@@ -510,7 +524,7 @@ export function CompleteClient({
               ) : (
                 <form onSubmit={onDeclareLicence} className="flex flex-col gap-md">
                   <div className="grid gap-md md:grid-cols-2">
-                    <FieldGroup label="Accrediting body">
+                    <FieldGroup label="Accrediting body" required>
                       <select
                         value={bodyId}
                         onChange={(e) => setBodyId(e.target.value)}
@@ -524,7 +538,7 @@ export function CompleteClient({
                         ))}
                       </select>
                     </FieldGroup>
-                    <FieldGroup label="Licence number">
+                    <FieldGroup label="Licence number" required>
                       <Input
                         value={licenceNumber}
                         onChange={(e) => setLicenceNumber(e.target.value)}
@@ -536,7 +550,12 @@ export function CompleteClient({
                     </FieldGroup>
                   </div>
                   {licenceStatus && <StatusBanner status={licenceStatus} />}
-                  <div className="flex justify-end">
+                  <div className="flex items-center justify-end gap-md">
+                    {(!bodyId || !licenceNumber.trim()) && (
+                      <p className="font-body-md text-body-md text-on-surface-variant m-0 text-right">
+                        Choose an accrediting body and add your licence number to declare.
+                      </p>
+                    )}
                     <Button type="submit" disabled={licencePending || !bodyId || !licenceNumber.trim()}>
                       {licencePending ? 'Declaring…' : 'Declare licence'}
                     </Button>
@@ -568,9 +587,16 @@ export function CompleteClient({
               <Button type="button" variant="outline" onClick={() => setStep(3)}>
                 Back
               </Button>
-              <Button type="button" onClick={onFinish} disabled={!hasLicence}>
-                Done
-              </Button>
+              <div className="flex items-center gap-md">
+                {!hasLicence && (
+                  <p className="font-body-md text-body-md text-on-surface-variant m-0 text-right">
+                    Declare a licence to finish.
+                  </p>
+                )}
+                <Button type="button" onClick={onFinish} disabled={!hasLicence}>
+                  Done
+                </Button>
+              </div>
             </div>
           </div>
         )}
@@ -668,10 +694,28 @@ function SectionCard({ icon, title, children }: { icon: string; title: string; c
   );
 }
 
-function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
+// Names the fields keeping Continue disabled, right beside the button.
+function ContinueWithHint({ missing, children }: { missing: string[]; children: React.ReactNode }) {
+  const list = missing.length < 2 ? missing.join('') : `${missing.slice(0, -1).join(', ')} and ${missing[missing.length - 1]}`;
+  return (
+    <div className="flex items-center gap-md">
+      {missing.length > 0 && (
+        <p className="font-body-md text-body-md text-on-surface-variant m-0 text-right">
+          Add your {list} to continue.
+        </p>
+      )}
+      {children}
+    </div>
+  );
+}
+
+function FieldGroup({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="block font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-xs">{label}</span>
+      <span className="block font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-xs">
+        {label}
+        {required && <span className="text-error ml-xs" aria-label="required">*</span>}
+      </span>
       {children}
     </label>
   );

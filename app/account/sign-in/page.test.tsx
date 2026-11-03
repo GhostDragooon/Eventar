@@ -105,4 +105,22 @@ describe('AttendeeSignInPage — door switch', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: /^next$/i })).toBeInTheDocument());
     expect(screen.getByRole('link', { name: /^sign up$/i })).toHaveAttribute('href', '/account/sign-up');
   });
+
+  // S1-2: a visitor who started on an event and picks "Sign up" must not lose it.
+  it('carries a valid next through the Sign up link', async () => {
+    mockSearchParams = new URLSearchParams('next=/events/37e37c81-b10a-4077-8f7d-5b5d247b1adc');
+    render(<AttendeeSignInPage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: /^next$/i })).toBeInTheDocument());
+    expect(screen.getByRole('link', { name: /^sign up$/i })).toHaveAttribute(
+      'href',
+      `/account/sign-up?next=${encodeURIComponent('/events/37e37c81-b10a-4077-8f7d-5b5d247b1adc')}`,
+    );
+  });
+
+  it('never forwards a hostile next to the Sign up link', async () => {
+    mockSearchParams = new URLSearchParams('next=//evil.example/x');
+    render(<AttendeeSignInPage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: /^next$/i })).toBeInTheDocument());
+    expect(screen.getByRole('link', { name: /^sign up$/i })).toHaveAttribute('href', '/account/sign-up');
+  });
 });
