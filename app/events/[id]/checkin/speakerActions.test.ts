@@ -6,9 +6,11 @@ vi.mock('server-only', () => ({}));
 const requireStaffMock = vi.fn(async () => ({
   id: 's-1',
   email: 'a@b.com',
-  role: 'organizer' as const,
+  role: 'organiser_member' as StaffRole,
 }));
-vi.mock('@/lib/auth', () => ({
+// canCheckIn stays the real helper: the role gate is what these tests pin.
+vi.mock('@/lib/auth', async (orig) => ({
+  ...(await orig<typeof import('@/lib/auth')>()),
   requireStaff: () => requireStaffMock(),
 }));
 
@@ -17,6 +19,7 @@ vi.mock('next/cache', () => ({
   revalidatePath: (path: string) => revalidatePathMock(path),
 }));
 
+type StaffRole = import('@/lib/auth').Staff['role'];
 const eventId = '11111111-2222-4333-8444-555555555555';
 
 // Every .eq() call across all stubs, in call order, so a test can assert the
@@ -44,7 +47,7 @@ let mockInsertError: { message: string; code?: string } | null = null;
 // update(...).eq().select().maybeSingle()
 let lastUpdate: Record<string, unknown> | null = null;
 let mockUpdatedRow: { id: string; checked_in_at: string | null } | null = null;
-let mockUpdateError: { message: string } | null = null;
+let mockUpdateError: { message: string; code?: string } | null = null;
 
 vi.mock('@/lib/supabase/server', () => ({
   supabaseServer: vi.fn(async () => ({
@@ -116,6 +119,7 @@ vi.mock('@/lib/supabase/server', () => ({
 
 import { beforeEach, describe, expect, it } from 'vitest';
 import { toggleSpeakerCheckin } from './speakerActions';
+import { CHECKIN_ROLE_MESSAGE } from '@/lib/lifecycle/eventLifecycle';
 
 beforeEach(() => {
   requireStaffMock.mockClear();
@@ -290,5 +294,42 @@ describe('toggleSpeakerCheckin', () => {
     );
     expect(lastInsert).toBeNull();
     expect(lastUpdate).toBeNull();
+  });
+
+  // Backtest M1: the desk tells body_admin and auditor it is read-only, but this action wrote for them.
+  it.each(['body_admin', 'auditor'] as const)('refuses %s before any read or write, with the desk role sentence', async (role) => {
+    requireStaffMock.mockResolvedValueOnce({ id: 's-9', email: 'x@y.com', role });
+    const result = await toggleSpeakerCheckin(eventId, 'Ada Lovelace');
+    expect(result).toEqual({ error: CHECKIN_ROLE_MESSAGE });
+    expect(eqCalls).toEqual([]);
+    expect(lastInsert).toBeNull();
+    expect(lastUpdate).toBeNull();
+    expect(revalidatePathMock).not.toHaveBeenCalled();
+  });
+
+  it.each(['organiser_admin', 'eventar_staff'] as const)('still lets %s toggle', async (role) => {
+    requireStaffMock.mockResolvedValueOnce({ id: 's-9', email: 'x@y.com', role });
+    const result = await toggleSpeakerCheckin(eventId, 'Ada Lovelace');
+    expect(result).toMatchObject({ ok: true });
+    expect(lastInsert).not.toBeNull();
+  });
+
+  // Backtest M1/m3: another organisation's staff who know a real speaker name hit the RLS policy (42501) and got an
+  // HTTP 500. A refusal is a sentence.
+  it('turns an RLS refusal (42501) on the insert into a plain sentence instead of a throw', async () => {
+    mockInsertedRow = null;
+    mockInsertError = { message: 'new row violates row-level security policy', code: '42501' };
+    const result = await toggleSpeakerCheckin(eventId, 'Ada Lovelace');
+    expect(result).toEqual({ error: 'You do not have access to this event.' });
+    expect(revalidatePathMock).not.toHaveBeenCalled();
+  });
+
+  it('turns an RLS refusal (42501) on the update into a plain sentence instead of a throw', async () => {
+    mockExistingRow = { id: 'sc-1', checked_in_at: null };
+    mockUpdatedRow = null;
+    mockUpdateError = { message: 'denied', code: '42501' };
+    const result = await toggleSpeakerCheckin(eventId, 'Ada Lovelace');
+    expect(result).toEqual({ error: 'You do not have access to this event.' });
+    expect(revalidatePathMock).not.toHaveBeenCalled();
   });
 });

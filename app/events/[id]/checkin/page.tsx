@@ -1,5 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
-import { requireStaff, NotAuthorizedError, canManageEvent } from '@/lib/auth';
+import { requireStaff, NotAuthorizedError, canManageEvent, canCheckIn, canEditRegistrations, canEditRegistrationRoles } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { formatInTz } from '@/lib/tz';
 import { StaffShell } from '@/components/shell/StaffShell';
@@ -33,7 +33,7 @@ export default async function StaffCheckinPage({
   const { data: event, error: eventErr } = await supabase
     .from('events')
     .select(
-      'id, title, start_time, end_time, timezone, venue_name, status, max_attendees, registration_close_at, registration_open_at, organisation_id',
+      'id, title, start_time, end_time, timezone, venue_name, status, max_attendees, registration_close_at, registration_open_at, organisation_id, created_by',
     )
     .eq('id', id)
     .maybeSingle();
@@ -97,7 +97,7 @@ export default async function StaffCheckinPage({
   // registered", so a failed read must surface as a failure, not silently
   // render as an empty desk (rule 12). Agenda blocks and speaker check-ins
   // feed the Speakers card only, which already renders a normal, specced
-  // empty state ("No speakers configured…") for zero speakers — so a
+  // empty state ("No speakers are listed…") for zero speakers — so a
   // failed read here degrades into that same state rather than taking
   // down the whole check-in desk, matching the eligibility tier
   // below. Previously these threw too, which under concurrent DB load
@@ -148,6 +148,21 @@ export default async function StaffCheckinPage({
             </p>
           )}
         </div>
+        {/* One-line contract (no-silence area 3). A role that cannot check in sees a read-only desk (see the role
+            sentence in RosterClient), so it is not told to scan or add a walk-in. */}
+        <p className="mt-xs font-body-md text-body-md text-on-surface-variant">
+          {[
+            canCheckIn(staff.role)
+              ? 'Live capture only: scan, enter a code or add a walk-in.'
+              : 'Live capture only: this desk is read-only for your role.',
+            // Same predicates as the Registrations page controls, so no role is sent there to do what it cannot.
+            canEditRegistrations(staff.role)
+              ? canEditRegistrationRoles(staff, event)
+                ? "To edit a person's details or roles, open Registrations."
+                : "To edit a person's details, open Registrations."
+              : 'To see everyone registered, open Registrations.',
+          ].join(' ')}
+        </p>
         <Link
           href={`/events/${id}/registrations`}
           className="mt-sm inline-flex min-h-11 items-center gap-xs font-label-md text-label-md text-primary-ink hover:underline"
@@ -171,6 +186,7 @@ export default async function StaffCheckinPage({
         }}
         // eslint-disable-next-line react-hooks/purity -- the server's clock, handed to the desk so a skewed device clock cannot gate it
         serverNowMs={Date.now()}
+        canCheckIn={canCheckIn(staff.role)}
         initialRoster={rosterRes.data ?? []}
         eligibility={eligibility}
         eligibilityUnavailable={Boolean(eligRes.error)}

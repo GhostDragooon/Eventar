@@ -6,7 +6,7 @@ import { checkDoorSession } from '@/lib/doorSession';
 import { formatInTz } from '@/lib/tz';
 import { isValidRegistrationCode } from '@/lib/registrationCode';
 import { humanizeCameraError } from '@/lib/cameraError';
-import { checkInGateMessage, computeLifecycle, walkInClosedMessage, type EventLifecycleRow, type Lifecycle } from '@/lib/lifecycle/eventLifecycle';
+import { CHECKIN_ROLE_MESSAGE, checkInGateMessage, computeLifecycle, walkInClosedMessage, type EventLifecycleRow, type Lifecycle } from '@/lib/lifecycle/eventLifecycle';
 import { markAttended, walkInRegisterAndCheckIn } from './actions';
 import { Scoreboard } from './Scoreboard';
 import { ScanAndManual } from './ScanAndManual';
@@ -66,6 +66,7 @@ export default function RosterClient({
   eventEndTime,
   lifecycleRow,
   serverNowMs,
+  canCheckIn,
   initialRoster,
   eligibility,
   eligibilityUnavailable,
@@ -84,6 +85,8 @@ export default function RosterClient({
    * time, so a tablet whose clock is minutes off never disables controls the server would accept (DB-02 review F2).
    */
   serverNowMs: number;
+  /** False for a role mark_attended refuses (body_admin, auditor): the desk says so instead of offering controls that fail. */
+  canCheckIn: boolean;
   initialRoster: RosterRow[];
   /** registration_id \u2192 eligibility enum from event_registration_eligibility. */
   eligibility: Record<string, string>;
@@ -126,7 +129,7 @@ export default function RosterClient({
   // [start - 60 min, end] (DB-02); computeLifecycle's 'live' is the same window, so the controls here are
   // disabled with the reason exactly when the server would refuse, and enable when the window opens.
   const lifecycle = computeLifecycle(lifecycleRow, nowMs);
-  const checkInClosed = checkInGateMessage(lifecycle);
+  const checkInClosed = canCheckIn ? checkInGateMessage(lifecycle) : CHECKIN_ROLE_MESSAGE;
 
   useEffect(() => {
     const client = supabaseBrowser();
@@ -236,6 +239,8 @@ export default function RosterClient({
         type="button"
         variant="outline"
         onClick={() => setWalkInOpen(true)}
+        disabled={!canCheckIn}
+        aria-describedby={canCheckIn ? undefined : 'checkin-closed-note'}
         className="self-start font-label-md text-label-md px-md py-sm"
       >
         + Walk-in
@@ -259,6 +264,7 @@ export default function RosterClient({
         eventTimezone={eventTimezone}
         speakerNames={speakerNames}
         initialCheckins={initialSpeakerCheckins}
+        canCheckIn={canCheckIn}
         onError={(message) => setToast({ kind: 'err', message })}
       />
 
@@ -269,7 +275,7 @@ export default function RosterClient({
         />
       )}
 
-      {eligibilityUnavailable && (
+      {eligibilityUnavailable && canCheckIn && (
         <p className="mb-md rounded-lg bg-warning-container px-md py-sm font-body-md text-body-md text-on-warning-container">
           CPD eligibility couldn&rsquo;t be checked just now, so this roster isn&rsquo;t showing which attendees will
           earn a credit. Check-in still works normally and credits post as usual &mdash; only the warnings are missing.
@@ -427,7 +433,7 @@ function RosterRowItem({
       </code>
       {isAttended ? (
         <span className="font-label-md text-label-md text-[color:var(--success)] inline-flex items-center gap-xs">
-          <span aria-hidden>\u2713</span>
+          <span aria-hidden>{'\u2713'}</span>
           {r.check_in_at ? formatInTz(r.check_in_at, eventTimezone) : 'Checked in'}
         </span>
       ) : (

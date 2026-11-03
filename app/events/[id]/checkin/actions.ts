@@ -2,12 +2,12 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { requireStaff, canManageEvent, NotAuthorizedError, type Staff } from '@/lib/auth';
+import { requireStaff, canManageEvent, canCheckIn, NotAuthorizedError, type Staff } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { isValidRegistrationCode, generateRegistrationCode } from '@/lib/registrationCode';
 import { rateLimitBySession } from '@/lib/rateLimit';
-import { checkInClosedMessage, computeLifecycle, walkInClosedMessage, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
+import { CHECKIN_ROLE_MESSAGE, checkInClosedMessage, computeLifecycle, walkInClosedMessage, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 import {
   awardAttendanceCredit,
   type AwardOutcome,
@@ -93,6 +93,13 @@ function summariseCredit(outcomes: AwardOutcome[]): CreditSummary {
   };
 }
 
+// 40P01 (deadlock) and 40001 (serialization failure): this check-in raced another change to the same registration,
+// e.g. an email edit. Nothing was written by the losing side; trying again is the honest instruction.
+const CHECKIN_COLLIDED = 'That check-in collided with another change. Try again.';
+const isCollision = (code: string | undefined) => code === '40P01' || code === '40001';
+
+const methodSchema = z.enum(['qr', 'manual']);
+
 const CHECKIN_SIGNED_OUT = "You've been signed out. This check-in was not saved. Log in again to continue.";
 
 /**
@@ -152,6 +159,9 @@ export async function markAttended(
   const staff = await staffOrSignedOut(supabase);
   if (!staff) return { error: CHECKIN_SIGNED_OUT };
   if (!isValidRegistrationCode(code)) return { error: 'Invalid code format.' };
+  // The type says qr | manual, but a Server Action argument is whatever the caller posted; a bad value reached the
+  // database check constraint and came back as an HTTP 500.
+  if (!methodSchema.safeParse(method).success) return { error: 'Invalid check-in request.' };
 
   // p_actor_override: inert for a real session, makes this callable under
   // review mode too — see 20260814020000.
@@ -160,6 +170,13 @@ export async function markAttended(
     p_method: method,
     p_actor_override: staff.id,
   });
+  // 42501 is a refusal, not a crash: a message, not a 500. The database raises the same 42501 for a wrong role
+  // (body_admin, auditor) and for a suspended or removed staff row, so the error cannot say which. The role this
+  // action just read can: only a role that cannot check in is told so; anything else gets the neutral line.
+  if (error?.code === '42501') {
+    return { error: canCheckIn(staff.role) ? 'You cannot check people in on this event.' : CHECKIN_ROLE_MESSAGE };
+  }
+  if (isCollision(error?.code)) return { error: CHECKIN_COLLIDED };
   if (error) throw error;
   const row = Array.isArray(data) ? data[0] : data;
 
@@ -288,6 +305,9 @@ export async function walkInRegisterAndCheckIn(input: {
   if (!canManageEvent(event, staff)) {
     return { error: 'You do not have access to this event.' };
   }
+  // Before any insert: mark_attended refuses this role AFTER the registration exists, which left an orphan row and
+  // a 500 (RV-FINAL F2). Same list as the RPC's resolve_actor gate.
+  if (!canCheckIn(staff.role)) return { error: CHECKIN_ROLE_MESSAGE };
 
   // Gate on the DERIVED lifecycle, not the raw status column: pg_cron
   // (Stage 8, deferred) never flips status to 'completed' automatically, so
@@ -367,7 +387,17 @@ export async function walkInRegisterAndCheckIn(input: {
   if (emailLogErr) console.error('[walk-in] email_log insert failed', { regId: reg.id });
 
   // Check them in via the existing path
-  const attended = await markAttended(reg.registration_code, 'manual');
+  // A throw here (dropped connection, timeout) must not leave a registered-but-unchecked person behind a 500: the
+  // desk gets the code and the way to finish (Enter code). Deleting the row instead was rejected: it was counted
+  // against capacity and may already be visible on the roster.
+  let attended: Awaited<ReturnType<typeof markAttended>>;
+  try {
+    attended = await markAttended(reg.registration_code, 'manual');
+  } catch (e) {
+    const cause = e as { code?: string; name?: string } | null; // code and name only: no message text, no PII
+    console.error('[walk-in] check-in leg threw after the registration', { regId: reg.id, code: cause?.code, name: cause?.name });
+    attended = { error: `Use Enter code with ${reg.registration_code} to finish.` };
+  }
 
   revalidatePath(`/events/${eventId}/checkin`);
 
@@ -380,5 +410,16 @@ export async function walkInRegisterAndCheckIn(input: {
   }
   // The person IS registered by now (and counts against capacity): say so with the code, so staff do not retry
   // into "already registered" and can check them in by code once check-in is open (rule 12, DB-02 review F3).
-  return { error: `${fullName} was registered (code ${reg.registration_code}) but not checked in. ${attended.error}` };
+  const code = reg.registration_code;
+  let why = attended.error;
+  if (why === checkInClosedMessage('not_open_yet') || why === checkInClosedMessage('closed')) {
+    // The gate above passed on the EVENT window, but mark_attended checks each session. Refused anyway means no
+    // session is open right now (a gap, or the sessions are over): "opens 60 minutes before the event starts" and
+    // "This event has ended." would both be false here.
+    why = `No session is open for check-in right now. When one opens, use Enter code with ${code} to finish.`;
+  } else if (why === CHECKIN_COLLIDED) {
+    // "Try again" would meet "already registered": the code is the way to finish.
+    why = `That check-in collided with another change. Use Enter code with ${code} to finish.`;
+  }
+  return { error: `${fullName} was registered (code ${code}) but not checked in. ${why}` };
 }

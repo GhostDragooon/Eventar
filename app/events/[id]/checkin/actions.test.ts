@@ -18,6 +18,7 @@ const { MockNotAuthorizedError } = vi.hoisted(() => ({
 }));
 vi.mock('@/lib/auth', () => ({
   NotAuthorizedError: MockNotAuthorizedError,
+  canCheckIn: (role: string) => ['organiser_admin', 'organiser_member', 'eventar_staff'].includes(role),
   requireStaff: vi.fn(async () => ({
     id: 'staff-1',
     email: 'operator@example.test',
@@ -30,6 +31,7 @@ vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 
 const EVENT_ID = '11111111-2222-4333-8444-555555555555';
 let checkinResult = 'ok';
+let rpcError: { code: string; message: string } | null = null;
 const markAttendedRow = {
   get result() {
     return checkinResult;
@@ -42,7 +44,7 @@ const markAttendedRow = {
 
 vi.mock('@/lib/supabase/server', () => ({
   supabaseServer: vi.fn(async () => ({
-    rpc: async () => ({ data: [markAttendedRow], error: null }),
+    rpc: async () => ({ data: [markAttendedRow], error: rpcError }),
     auth: { getUser: async () => ({ data: { user: { id: 'auth-user-1' } } }) },
   })),
 }));
@@ -175,5 +177,60 @@ describe('markAttended — signed out mid-event', () => {
   it('any other failure still throws (not masked as signed out)', async () => {
     vi.mocked(requireStaff).mockRejectedValueOnce(new Error('staff read failed'));
     await expect(markAttended('ABC-1234', 'qr')).rejects.toThrow('staff read failed');
+  });
+});
+
+// RV-FINAL F2: a body_admin scan reached mark_attended, which refuses the role with 42501, and the action threw (HTTP 500).
+describe('markAttended — role refused by the database', () => {
+  beforeEach(() => {
+    rpcError = null;
+  });
+
+  // The database raises the same 42501 ("not active staff in <roles>") for a wrong role and for a suspended or
+  // removed staff row, so the message cannot tell them apart. The action knows the role it just read: only a role
+  // that cannot check in gets the role message.
+  it('a role that cannot check in: the 42501 becomes the role message instead of a throw', async () => {
+    vi.mocked(requireStaff).mockResolvedValueOnce({ id: 'staff-2', email: 'a@example.test', role: 'body_admin', full_name: 'Body Admin' } as never);
+    rpcError = { code: '42501', message: 'require_active_staff: caller is not active staff in {organiser_admin,organiser_member,eventar_staff}' };
+    await expect(markAttended('WK-ABC234', 'qr')).resolves.toEqual({
+      error: 'Your role cannot check people in. Ask an organiser admin or member.',
+    });
+  });
+
+  it('a role that CAN check in but is still refused (suspended or removed row): neutral message, not a role claim', async () => {
+    rpcError = { code: '42501', message: 'require_active_staff: caller is not active staff in {organiser_admin,organiser_member,eventar_staff}' };
+    await expect(markAttended('WK-ABC234', 'qr')).resolves.toEqual({
+      error: 'You cannot check people in on this event.',
+    });
+  });
+
+  it('any other RPC error still throws (not masked as a role problem)', async () => {
+    rpcError = { code: '57014', message: 'timeout' };
+    await expect(markAttended('WK-ABC234', 'qr')).rejects.toMatchObject({ code: '57014' });
+  });
+});
+
+// Backtest MINOR: a hand-built method reached the database check constraint and came back as an HTTP 500.
+describe('markAttended: method', () => {
+  beforeEach(() => {
+    rpcError = null;
+  });
+
+  it('refuses a method that is neither qr nor manual with a sentence, before the database is asked', async () => {
+    // If validation did not run first, the RPC error below would be thrown instead of this sentence being returned.
+    rpcError = { code: '23514', message: 'check_in_method_check' };
+    await expect(markAttended('WK-ABC234', 'carrier-pigeon' as never)).resolves.toEqual({ error: 'Invalid check-in request.' });
+  });
+});
+
+// Backtest MINOR: a check-in racing an email edit on the same registration row was a deadlock (40P01) and an HTTP 500.
+describe('markAttended: a collision with another change', () => {
+  beforeEach(() => {
+    rpcError = null;
+  });
+
+  it.each(['40P01', '40001'])('%s becomes a plain sentence instead of a throw', async (code) => {
+    rpcError = { code, message: 'deadlock detected' };
+    await expect(markAttended('WK-ABC234', 'qr')).resolves.toEqual({ error: 'That check-in collided with another change. Try again.' });
   });
 });

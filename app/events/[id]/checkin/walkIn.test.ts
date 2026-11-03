@@ -9,6 +9,7 @@ const { MockNotAuthorizedError } = vi.hoisted(() => ({
 vi.mock('@/lib/auth', () => ({
   NotAuthorizedError: MockNotAuthorizedError,
   requireStaff: (...args: unknown[]) => mockRequireStaff(...args),
+  canCheckIn: (role: string) => ['organiser_admin', 'organiser_member', 'eventar_staff'].includes(role),
   canManageEvent: (event: { organisation_id: string | null }, staff: { role: string; organisation_id?: string }) => {
     if (staff.role === 'eventar_staff') return true;
     return event.organisation_id != null && event.organisation_id === staff.organisation_id;
@@ -41,9 +42,10 @@ const markAttendedResult = {
 
 // What mark_attended answers for the check-in that follows the walk-in's registration.
 let markAttendedStatus = 'ok';
+let markAttendedRpcError: { code: string; message: string } | null = null;
 vi.mock('@/lib/supabase/server', () => ({
   supabaseServer: vi.fn(async () => ({
-    rpc: async () => ({ data: [{ result: markAttendedStatus, ...markAttendedResult.registration }], error: null }),
+    rpc: async () => ({ data: [{ result: markAttendedStatus, ...markAttendedResult.registration }], error: markAttendedRpcError }),
     auth: { getUser: async () => ({ data: { user: { id: 'auth-1' } } }) },
   })),
 }));
@@ -111,6 +113,7 @@ function mockEmailLogInsert() {
 
 beforeEach(() => {
   markAttendedStatus = 'ok';
+  markAttendedRpcError = null;
   mockRequireStaff.mockReset().mockResolvedValue(staff);
   mockFrom.mockReset();
   mockRpc.mockReset();
@@ -128,9 +131,85 @@ describe('walkInRegisterAndCheckIn', () => {
     mockEmailLogInsert();
 
     const res = await walkInRegisterAndCheckIn(validInput);
+    // The event window is open (the gate passed), so mark_attended's per-session refusal means no session is open: the
+    // single-event sentence ("opens 60 minutes before the event starts") would be false here (backtest m1).
     expect(res).toEqual({
-      error: 'Walk In was registered (code WK-TEST1) but not checked in. Check-in has not opened yet. It opens 60 minutes before the event starts.',
+      error: 'Walk In was registered (code WK-TEST1) but not checked in. No session is open for check-in right now. When one opens, use Enter code with WK-TEST1 to finish.',
     });
+  });
+
+  it('every session over while the event window is still open: same true sentence, not "This event has ended."', async () => {
+    markAttendedStatus = 'closed';
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...LIVE_TIMES });
+    mockRegInsert({ id: 'reg-1', registration_code: 'WK-TEST1' });
+    mockEmailLogInsert();
+
+    await expect(walkInRegisterAndCheckIn(validInput)).resolves.toEqual({
+      error: 'Walk In was registered (code WK-TEST1) but not checked in. No session is open for check-in right now. When one opens, use Enter code with WK-TEST1 to finish.',
+    });
+  });
+
+  // Backtest MINOR: a deadlock with an email edit used to throw after the row existed. "Try again" would hit
+  // "already registered", so the walk-in's recovery is the code.
+  it.each(['40P01', '40001'])('a %s collision after the registration says so and gives the code to finish with', async (code) => {
+    markAttendedRpcError = { code, message: 'deadlock detected' };
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...LIVE_TIMES });
+    mockRegInsert({ id: 'reg-1', registration_code: 'WK-TEST1' });
+    mockEmailLogInsert();
+
+    await expect(walkInRegisterAndCheckIn(validInput)).resolves.toEqual({
+      error: 'Walk In was registered (code WK-TEST1) but not checked in. That check-in collided with another change. Use Enter code with WK-TEST1 to finish.',
+    });
+  });
+
+  // RV-FINAL F2: body_admin passed canManageEvent, the registration was inserted, then mark_attended refused the
+  // role with 42501 and the action threw (HTTP 500), leaving a `registered` walk_in row. The role is refused first.
+  it.each(['body_admin', 'auditor'])('%s cannot check people in: refused with a plain message and NO registration is inserted', async (role) => {
+    mockRequireStaff.mockResolvedValueOnce({ ...staff, role });
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...LIVE_TIMES });
+
+    await expect(walkInRegisterAndCheckIn(validInput)).resolves.toEqual({
+      error: 'Your role cannot check people in. Ask an organiser admin or member.',
+    });
+    expect(mockFrom).toHaveBeenCalledTimes(1); // the event read only: no registrations insert, no email_log
+  });
+
+  // A role the pre-check lets through but the database still refuses (drift) must not 500 after the insert either.
+  it('a 42501 from mark_attended after the insert (role allowed) says the person is registered, with the code and the neutral reason', async () => {
+    markAttendedRpcError = { code: '42501', message: 'permission denied' };
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...LIVE_TIMES });
+    mockRegInsert({ id: 'reg-1', registration_code: 'WK-TEST1' });
+    mockEmailLogInsert();
+
+    await expect(walkInRegisterAndCheckIn(validInput)).resolves.toEqual({
+      error: 'Walk In was registered (code WK-TEST1) but not checked in. You cannot check people in on this event.',
+    });
+  });
+
+  // Any other failure of the check-in leg (a dropped connection) used to throw with the row left behind.
+  it('any other failure of the check-in after the insert names the person, the code and how to finish', async () => {
+    markAttendedRpcError = { code: '57014', message: 'canceling statement due to statement timeout' };
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...LIVE_TIMES });
+    mockRegInsert({ id: 'reg-1', registration_code: 'WK-TEST1' });
+    mockEmailLogInsert();
+
+    await expect(walkInRegisterAndCheckIn(validInput)).resolves.toEqual({
+      error: 'Walk In was registered (code WK-TEST1) but not checked in. Use Enter code with WK-TEST1 to finish.',
+    });
+  });
+
+  // The cause is logged (code only, UUIDs only, no PII) so a timeout and a bug are not the same silence in the logs.
+  it('the check-in leg failure logs the error code with the registration id and nothing personal', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    markAttendedRpcError = { code: '57014', message: 'canceling statement due to statement timeout' };
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...LIVE_TIMES });
+    mockRegInsert({ id: 'reg-1', registration_code: 'WK-TEST1' });
+    mockEmailLogInsert();
+
+    await walkInRegisterAndCheckIn(validInput);
+    expect(spy).toHaveBeenCalledWith('[walk-in] check-in leg threw after the registration', { regId: 'reg-1', code: '57014', name: undefined });
+    expect(JSON.stringify(spy.mock.calls)).not.toMatch(/walk@in\.test|Walk In|WK-TEST1/);
+    spy.mockRestore();
   });
 
   it.each([

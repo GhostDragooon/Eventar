@@ -21,12 +21,15 @@ export function SpeakersCard({
   eventTimezone,
   speakerNames,
   initialCheckins,
+  canCheckIn,
   onError,
 }: {
   eventId: string;
   eventTimezone: string;
   speakerNames: string[];
   initialCheckins: SpeakerCheckinRow[];
+  /** Same answer as every other control on the desk; the sentence saying why is the desk's #checkin-closed-note. */
+  canCheckIn: boolean;
   onError?: (message: string) => void;
 }) {
   // Map<speaker_name, checked_in_at|null>. Names absent from the map are
@@ -92,7 +95,7 @@ export function SpeakersCard({
 
       {speakerNames.length === 0 ? (
         <p className="font-body-md text-body-md text-on-surface-variant py-sm">
-          No speakers configured — add them to the agenda first.
+          No speakers are listed on this event&apos;s agenda.
         </p>
       ) : (
         <ul className="divide-y divide-surface-container-highest">
@@ -122,7 +125,8 @@ export function SpeakersCard({
                   type="button"
                   variant={isChecked ? 'secondary' : 'outline'}
                   onClick={() => handleToggle(name)}
-                  disabled={isBusy}
+                  disabled={isBusy || !canCheckIn}
+                  aria-describedby={canCheckIn ? undefined : 'checkin-closed-note'}
                   aria-pressed={isChecked}
                   className={
                     'shrink-0 min-h-11 min-w-24 px-md py-sm font-label-md text-label-md ' +

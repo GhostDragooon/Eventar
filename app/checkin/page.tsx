@@ -79,7 +79,10 @@ export default async function CheckinIndexPage() {
     <StaffShell staff={{ email: staff.email, role: staff.role }}>
       <header className="mb-lg">
         <p className="text-label-md font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-xs">Check-in</p>
-        <h1 className="text-[calc(30px*var(--text-scale))] leading-[1.1] font-extrabold tracking-[-0.025em] text-on-surface">Pick an event to run the door</h1>
+        <h1 className="text-[calc(30px*var(--text-scale))] leading-[1.1] font-extrabold tracking-[-0.025em] text-on-surface">Check-in: choose an event</h1>
+        <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
+          Open the desk for an event that is live now or coming up. A desk opens 60 minutes before the start.
+        </p>
         <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
           {live.length > 0 ? `${live.length} live now` : 'Nothing live right now'} · {upcoming.length} coming up
         </p>
@@ -87,7 +90,7 @@ export default async function CheckinIndexPage() {
 
       {rows.length === 0 ? (
         <div className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-xl text-center">
-          <p className="font-body-md text-body-md text-on-surface-variant">No open events. Check-in unlocks 60 minutes before an event starts.</p>
+          <p className="font-body-md text-body-md text-on-surface-variant">No published events to check in. Publish an event and its check-in desk appears here.</p>
         </div>
       ) : (
         <ul className="flex flex-col gap-sm">

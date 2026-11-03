@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { requireStaff } from '@/lib/auth';
+import { requireStaff, canCheckIn } from '@/lib/auth';
+import { CHECKIN_ROLE_MESSAGE } from '@/lib/lifecycle/eventLifecycle';
 import { supabaseServer } from '@/lib/supabase/server';
 import { deriveSpeakerNames } from '@/lib/agenda';
 
@@ -12,6 +13,9 @@ const inputSchema = z.object({
   // between 1 and 120.
   speaker_name: z.string().transform((v) => v.trim()).pipe(z.string().min(1).max(120)),
 });
+
+// 42501 = the speaker_checkins policy refused (another organisation's staff who know a published speaker name).
+const NO_ACCESS = 'You do not have access to this event.';
 
 type ToggleResult =
   | { ok: true; checkedInAt: string | null }
@@ -31,6 +35,10 @@ type ToggleResult =
  * the event's agenda blocks via deriveSpeakerNames (host + topic speakers,
  * deduped, no kind filter), so arbitrary names are rejected before any write.
  *
+ * Role: the desk tells body_admin and auditor it is read-only, so this refuses them with the same sentence BEFORE any
+ * read or write (canCheckIn, the helper mark_attended's gate mirrors). Unlike attendee check-in there is deliberately
+ * NO check-in window rule here: that is an open product call, not an oversight.
+ *
  * Toggle semantics: no row OR checked_in_at null → stamp now() + updated_by;
  * currently stamped → clear to null (updated_by still recorded).
  */
@@ -39,6 +47,7 @@ export async function toggleSpeakerCheckin(
   speakerName: string,
 ): Promise<ToggleResult> {
   const staff = await requireStaff();
+  if (!canCheckIn(staff.role)) return { error: CHECKIN_ROLE_MESSAGE };
 
   const parsed = inputSchema.safeParse({ event_id: eventId, speaker_name: speakerName });
   if (!parsed.success) return { error: 'Invalid speaker check-in request.' };
@@ -94,6 +103,7 @@ export async function toggleSpeakerCheckin(
       if (insertErr.code === '23505') {
         return { error: 'This speaker was just updated on another device — refresh and retry.' };
       }
+      if (insertErr.code === '42501') return { error: NO_ACCESS };
       throw insertErr;
     }
     if (!inserted) {
@@ -110,6 +120,7 @@ export async function toggleSpeakerCheckin(
       .eq('id', existing.id)
       .select('id')
       .maybeSingle();
+    if (updateErr?.code === '42501') return { error: NO_ACCESS };
     if (updateErr) throw updateErr;
     if (!updated) {
       // Q18 zero-rows guard, same as above.
