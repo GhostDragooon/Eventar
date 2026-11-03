@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
-import { requireStaff, NotAuthorizedError, canManageEvent, canEditRegistrations } from '@/lib/auth';
+import { requireStaff, NotAuthorizedError, canManageEvent, canEditRegistrations, canEditRegistrationRoles, canCheckIn } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { formatInTz } from '@/lib/tz';
 import { StaffShell } from '@/components/shell/StaffShell';
@@ -72,6 +72,17 @@ export default async function RegistrationsPage({ params }: { params: Promise<{ 
     checkInLabel: r.check_in_at ? formatInTz(r.check_in_at, event.timezone) : null,
   }));
 
+  const canEdit = canEditRegistrations(staff.role);
+  const canEditRoles = canEditRegistrationRoles(staff, event);
+  // Instruction copy follows the same gates as the controls, so no role is told to do what it cannot.
+  const subtitle = [
+    'Everyone registered for this event.',
+    canEdit
+      ? canEditRoles ? 'Edit contact details and roles here.' : 'Edit contact details here.'
+      : 'You can view contact details; an organiser admin or member can edit them.',
+    canCheckIn(staff.role) ? 'To check people in, open Check-in.' : null,
+  ].filter(Boolean).join(' ');
+
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role }} backHref={`/events/${id}/details`} backLabel="Event">
       <Breadcrumbs
@@ -85,7 +96,9 @@ export default async function RegistrationsPage({ params }: { params: Promise<{ 
 
       <header className="mb-lg">
         <h1 className="font-headline-lg text-headline-lg text-on-surface mb-xs">Registrations</h1>
-        <p className="font-body-md text-body-md text-on-surface-variant">{event.title}</p>
+        <p className="font-body-md text-body-md text-on-surface-variant">
+          {subtitle}
+        </p>
         <Link
           href={`/events/${id}/checkin`}
           className="mt-sm inline-flex min-h-11 items-center gap-xs font-label-md text-label-md text-primary-ink hover:underline"
@@ -100,8 +113,8 @@ export default async function RegistrationsPage({ params }: { params: Promise<{ 
         rows={rows}
         initialRoles={roles}
         rolesUnavailable={Boolean(rolesRes.error)}
-        canEdit={canEditRegistrations(staff.role)}
-        canEditRoles={canEditRegistrations(staff.role) && (staff.role === 'eventar_staff' || event.created_by === staff.id)}
+        canEdit={canEdit}
+        canEditRoles={canEditRoles}
       />
     </StaffShell>
   );

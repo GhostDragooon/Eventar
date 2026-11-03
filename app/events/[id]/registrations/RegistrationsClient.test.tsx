@@ -92,6 +92,24 @@ describe('Edit dialog', () => {
     expect(within(dialog).getByText(/belongs to an Eventar account/)).toBeTruthy();
   });
 
+  it('locks the email of an attended registration and says why; the name stays editable', () => {
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Sam Ho' }));
+    const dialog = screen.getByRole('dialog');
+    const email = within(dialog).getByLabelText('Email') as HTMLInputElement;
+    expect(email.disabled).toBe(true);
+    expect(email.getAttribute('aria-describedby')).toContain('edit-email-note');
+    expect((within(dialog).getByLabelText('Full name') as HTMLInputElement).disabled).toBe(false);
+    expect(within(dialog).getByText(/already checked in, so their email cannot be changed/)).toBeTruthy();
+    expect(within(dialog).queryByText(/belongs to an Eventar account/)).toBeNull();
+  });
+
+  it('leaves the email of a registered (not yet attended) row editable', () => {
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Alex Wong' }));
+    expect((within(screen.getByRole('dialog')).getByLabelText('Email') as HTMLInputElement).disabled).toBe(false);
+  });
+
   it('shows the refusal in the dialog and keeps the old value on the row', async () => {
     updateRegistrationContact.mockResolvedValue({ error: 'Another registration for this event already uses that email.' });
     renderPage();

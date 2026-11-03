@@ -72,6 +72,7 @@ describe('updateRegistrationContact', () => {
 
   it.each([
     ['linked_registration: this registration belongs to an Eventar account', undefined, /belongs to an Eventar account.*The name can/],
+    ['email_locked_attended: this person has already checked in, so their email cannot be changed', undefined, /already checked in.*email cannot be changed.*correct their name/],
     ['already_registered: another registration for this event already uses that email', '23505', /already uses that email/],
     ['update_registration_contact: registration x not found', 'P0002', /Registration not found/],
     ['update_registration_contact: registration x is not in your organisation', '42501', /do not have access/],

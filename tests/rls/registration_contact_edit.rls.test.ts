@@ -9,6 +9,7 @@
 // Gated: only runs under `pnpm test:rls` (RLS_TESTS=1).
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { Client } from 'pg';
+import { createHash } from 'node:crypto';
 import { admin, createAnonClient, createTestUser, deleteTestUser, sqlSuperuserQuery, type TestUser } from '../helpers/clients';
 import { mustDelete } from '../helpers/mustDelete';
 
@@ -52,6 +53,19 @@ describe.skipIf(!process.env.RLS_TESTS)('audited roster edit and the registratio
     if (error || !data) throw new Error(`registration fixture: ${error?.message}`);
     return { id: data.id as string, email: data.email as string };
   }
+
+  const sha256 = (addr: string) => createHash('sha256').update(addr.trim().toLowerCase(), 'utf8').digest('hex');
+  const attend = async (id: string) => {
+    expect((await admin.from('registrations').update({ status: 'attended' }).eq('id', id)).error).toBeNull();
+  };
+  // A check-in row without registrations.status = 'attended' (for example a person cancelled after checking in).
+  const checkinRowOnly = async (id: string) => {
+    const [occ] = await sqlSuperuserQuery<{ id: string }>('select id from public.event_occurrences where event_id = $1 order by ordinal limit 1', [eventId]);
+    expect(occ, 'the event fixture has an occurrence').toBeTruthy();
+    await sqlSuperuserQuery('insert into public.registration_checkins (registration_id, occurrence_id, check_in_method) values ($1, $2, $3)', [id, occ.id, 'manual']);
+  };
+  const auditCount = async () =>
+    (await sqlSuperuserQuery<{ n: number }>(`select count(*)::int as n from public.audit_events where event_type = 'registration_contact_updated'`))[0].n;
 
   const edit = (who: TestUser, registrationId: string, name: string, email: string) =>
     who.client.rpc('update_registration_contact', { p_registration_id: registrationId, p_full_name: name, p_email: email });
@@ -132,7 +146,14 @@ describe.skipIf(!process.env.RLS_TESTS)('audited roster edit and the registratio
       expect(after.full_name).toBe('Both Changed');
       expect(after.registration_code).toBe(before.registration_code);
       expect(after.status).toBe(before.status);
-      expect((await auditOf(r.id))[0].payload).toEqual({ fields: ['full_name', 'email'] });
+      // The audit row names the fields and carries a sha256 of each address (lower-cased, trimmed), never the address.
+      const audit = await auditOf(r.id);
+      expect(audit[0].payload).toEqual({
+        fields: ['full_name', 'email'],
+        email_before_sha256: sha256(r.email),
+        email_after_sha256: sha256(newEmail),
+      });
+      expect(JSON.stringify(audit[0].payload)).not.toMatch(/rls-test|@/);
     });
 
     it('saving the same values changes nothing and writes no audit row', async () => {
@@ -152,6 +173,49 @@ describe.skipIf(!process.env.RLS_TESTS)('audited roster edit and the registratio
       expect(await auditOf(r.id)).toHaveLength(0);
       expect((await edit(owner, r.id, 'Linked Name', r.email)).error).toBeNull();
       expect((await row(r.id)).full_name).toBe('Linked Name');
+    });
+
+    it('an attended, unlinked registration keeps its email (email_locked_attended), changes nothing and writes no audit row', async () => {
+      // The claim links unlinked registrations by lower(trim(email)): changing this email would move the credit to
+      // whoever owns the new address.
+      const r = await makeReg();
+      await attend(r.id);
+      const before = await row(r.id);
+      const auditsBefore = await auditCount();
+      const refused = await edit(owner, r.id, before.full_name, `db05-${RUN}-reroute@rls-test.invalid`);
+      expect(refused.error?.code).toBe('22023');
+      expect(refused.error?.message).toMatch(/^email_locked_attended: this person has already checked in, so their email cannot be changed/);
+      expect(await row(r.id)).toEqual(before);
+      expect(await auditCount()).toBe(auditsBefore);
+      // A name change riding along with the email change is refused as a whole.
+      const both = await edit(member, r.id, 'Renamed and rerouted', `db05-${RUN}-reroute2@rls-test.invalid`);
+      expect(both.error?.message).toMatch(/^email_locked_attended: /);
+      expect(await row(r.id)).toEqual(before);
+    });
+
+    it('the lock also holds for a check-in row on a registration whose status is not attended', async () => {
+      const r = await makeReg();
+      await checkinRowOnly(r.id);
+      expect((await row(r.id)).status).toBe('registered');
+      const refused = await edit(owner, r.id, 'Whoever', `db05-${RUN}-reroute3@rls-test.invalid`);
+      expect(refused.error?.code).toBe('22023');
+      expect(refused.error?.message).toMatch(/^email_locked_attended: /);
+      expect((await row(r.id)).email).toBe(r.email);
+      expect(await auditOf(r.id)).toHaveLength(0);
+    });
+
+    it('an attended registration can still have its name corrected (audit: field names only, no hashes), and an identical email is a no-op', async () => {
+      const r = await makeReg();
+      await attend(r.id);
+      const done = await edit(owner, r.id, 'Spelling fixed', r.email.toUpperCase());
+      expect(done.error).toBeNull();
+      expect((await row(r.id)).full_name).toBe('Spelling fixed');
+      const audit = await auditOf(r.id);
+      expect(audit).toHaveLength(1);
+      expect(audit[0].payload).toEqual({ fields: ['full_name'] });
+      const same = await edit(owner, r.id, 'Spelling fixed', r.email);
+      expect(same.error).toBeNull();
+      expect(await auditOf(r.id)).toHaveLength(1);
     });
 
     it('a registration that gets linked while an edit waits is refused on the fresh row (the row lock)', async () => {
@@ -334,6 +398,157 @@ describe.skipIf(!process.env.RLS_TESTS)('audited roster edit and the registratio
         await mustDelete(admin.from('events').delete().eq('id', deletedEvent), 'deleted event fixture');
       }
     });
+  });
+
+  // The email lock (email_locked_attended) is read under the registration row lock. A check-in takes that lock when its
+  // registration_checkins insert fires sync_registration_checkin_summary (and again at the status update), so an edit
+  // that starts while a check-in is in flight waits for it and then sees the check-in. Nothing else pins that.
+  // Holds registration row locks across transactions. This file is in the serial stage of the test:rls script, with the
+  // other files that run DDL in a transaction (updateAsRoleWithGrant): in parallel with the main stage they deadlock.
+  describe('a check-in racing an email edit on an unattended, unlinked registration', () => {
+    let liveEventId: string;
+    const claims = (u: TestUser) => JSON.stringify({ role: 'authenticated', email: u.email });
+    type Outcome = { ok: true; rows: unknown[] } | { ok: false; code?: string; message: string };
+    // One RPC call as the signed-in actor inside an open transaction on `c`.
+    const asActor = async (c: Client, u: TestUser) => {
+      await c.query('begin');
+      await c.query(`select set_config('request.jwt.claims', $1, true)`, [claims(u)]);
+      await c.query('set local role authenticated');
+    };
+    const call = (c: Client, sql: string, params: unknown[]): Promise<Outcome> =>
+      c.query(sql, params).then(
+        (r) => ({ ok: true as const, rows: r.rows }),
+        (e: { code?: string; message: string }) => ({ ok: false as const, code: e.code, message: e.message }),
+      );
+    const checkIn = (c: Client, code: string) => call(c, `select result from public.mark_attended($1, 'manual')`, [code]);
+    const editEmail = (c: Client, id: string, email: string) =>
+      call(c, 'select public.update_registration_contact($1, $2, $3)', [id, 'ZZ-RT race edit', email]);
+    const finish = async (c: Client, o: Outcome) => { await c.query(o.ok ? 'commit' : 'rollback').catch(() => undefined); };
+
+    async function makeLiveReg(n: number) {
+      const email = `zz-rt-race-${RUN}-${n}@rls-test.invalid`;
+      const { data, error } = await admin
+        .from('registrations')
+        .insert({ event_id: liveEventId, email, full_name: `ZZ-RT race ${n}`, registration_code: `WK-ZR${RUN}${n}` })
+        .select('id, registration_code')
+        .single();
+      if (error || !data) throw new Error(`race registration fixture: ${error?.message}`);
+      return { id: data.id as string, code: data.registration_code as string, email };
+    }
+    const seqOf = async (regId: string, type: string) =>
+      (await sqlSuperuserQuery<{ chain_seq: string }>(
+        'select chain_seq from public.audit_events where subject_id = $1 and event_type = $2', [regId, type],
+      ))[0]?.chain_seq;
+
+    beforeAll(async () => {
+      // Inside the check-in window (it opens an hour before the start and closes at the end).
+      const { data: ev, error } = await admin
+        .from('events')
+        .insert({
+          title: `ZZ-RT checkin race ${RUN} — DELETE ME`,
+          start_time: new Date(Date.now() - 10 * 60_000).toISOString(),
+          end_time: new Date(Date.now() + 2 * 3_600_000).toISOString(),
+          timezone: 'Asia/Hong_Kong', created_by: ownerStaffId, venue_name: 'V', city: 'HK', country: 'HK',
+          latitude: 22.3, longitude: 114.2, status: 'published', organisation_id: DEFAULT_ORG,
+        })
+        .select('id')
+        .single();
+      if (error || !ev) throw new Error(`live event fixture: ${error?.message}`);
+      liveEventId = ev.id as string;
+    }, 60_000);
+
+    afterAll(async () => {
+      if (!liveEventId) return;
+      // participation_evidence references the registrations (check-ins write it): delete it first.
+      await mustDelete(admin.from('participation_evidence').delete().eq('event_id', liveEventId), 'race evidence fixture');
+      await mustDelete(admin.from('registrations').delete().eq('event_id', liveEventId), 'race registrations fixture');
+      await mustDelete(admin.from('events').delete().eq('id', liveEventId), 'race event fixture');
+    });
+
+    it('an edit that starts while a check-in is in flight waits for it, then is refused (email_locked_attended)', async () => {
+      const r = await makeLiveReg(0);
+      const a = new Client({ connectionString: LOCAL_DB });
+      const b = new Client({ connectionString: LOCAL_DB });
+      let res: Outcome | undefined;
+      try {
+        await a.connect();
+        await b.connect();
+        await asActor(a, owner);
+        const done = await checkIn(a, r.code); // not committed: A holds the registration row
+        expect(done.ok && done.rows, 'the check-in under test must succeed').toEqual([{ result: 'ok' }]);
+        await asActor(b, member);
+        const bPid = (await b.query('select pg_backend_pid() as pid')).rows[0].pid as number;
+        const pending = editEmail(b, r.id, `zz-rt-race-${RUN}-0-new@rls-test.invalid`);
+        let waiting = false;
+        for (let i = 0; i < 100 && !waiting; i++) {
+          const [w] = await sqlSuperuserQuery<{ n: number }>(
+            `select count(*)::int as n from pg_stat_activity where pid = $1 and wait_event_type = 'Lock'`, [bPid],
+          );
+          waiting = w.n > 0;
+          if (!waiting) await new Promise((res2) => setTimeout(res2, 50));
+        }
+        expect(waiting, 'the edit never waited on the check-in, so this test would prove nothing').toBe(true);
+        await a.query('commit');
+        res = await pending;
+      } finally {
+        if (res) await finish(b, res); else await b.query('rollback').catch(() => undefined);
+        await a.query('rollback').catch(() => undefined);
+        await a.end();
+        await b.end();
+      }
+      expect(res?.ok).toBe(false);
+      expect(res && !res.ok && res.code).toBe('22023');
+      expect(res && !res.ok && res.message).toMatch(/^email_locked_attended: /);
+      expect(await row(r.id)).toMatchObject({ email: r.email, status: 'attended' });
+      expect(await auditOf(r.id)).toHaveLength(0);
+    }, 30_000);
+
+    it('15 concurrent trials: the email changes only if the edit committed before the check-in did (a deadlock on one side is tolerated)', async () => {
+      const a = new Client({ connectionString: LOCAL_DB });
+      const b = new Client({ connectionString: LOCAL_DB });
+      try {
+        await a.connect();
+        await b.connect();
+        for (let n = 1; n <= 15; n++) {
+          const r = await makeLiveReg(n);
+          const newEmail = `zz-rt-race-${RUN}-${n}-new@rls-test.invalid`;
+          await asActor(a, owner);
+          await asActor(b, member);
+          let go!: () => void;
+          const gate = new Promise<void>((res) => { go = res; });
+          const check = gate.then(() => checkIn(a, r.code)).then(async (o) => { await finish(a, o); return o; });
+          // The edit's path to the row lock is shorter than the check-in's, so stagger its start to let the check-in win some trials.
+          const edit = gate.then(() => new Promise((res) => setTimeout(res, (n % 5) * 6))).then(() => editEmail(b, r.id, newEmail)).then(async (o) => { await finish(b, o); return o; });
+          go();
+          const [ci, ed] = await Promise.all([check, edit]);
+
+          const tag = `trial ${n}`;
+          const state = await row(r.id);
+          const checkedIn = (await sqlSuperuserQuery<{ n: number }>('select count(*)::int as n from public.registration_checkins where registration_id = $1', [r.id]))[0].n;
+          // Every refusal is one the design allows: the lock refusal for the edit, a deadlock victim for either side.
+          for (const o of [ci, ed]) {
+            if (!o.ok) expect(['22023', '40P01'], `${tag}: unexpected failure ${o.code} ${o.message}`).toContain(o.code);
+          }
+          if (!ed.ok && ed.code === '22023') expect(ed.message, tag).toMatch(/^email_locked_attended: /);
+          expect(!ci.ok && !ed.ok, `${tag}: both calls failed, neither committed`).toBe(false);
+          // What each side reports is what the database holds.
+          expect(state.email, `${tag}: edit ${ed.ok ? 'succeeded' : 'refused'}`).toBe(ed.ok ? newEmail : r.email);
+          expect(checkedIn, `${tag}: check-in ${ci.ok ? 'reported' : 'failed'}`).toBe(ci.ok ? 1 : 0);
+          // The forbidden outcome: the email changed AFTER the check-in committed. Both audit writes are the last
+          // statement of their transactions and hold the chain's advisory lock until commit, so chain_seq is commit order.
+          if (ed.ok && ci.ok) {
+            const editSeq = Number(await seqOf(r.id, 'registration_contact_updated'));
+            const checkinSeq = Number(await seqOf(r.id, 'attendee_checked_in'));
+            expect(editSeq, `${tag}: the edit committed after the check-in and still changed the email`).toBeLessThan(checkinSeq);
+          }
+        }
+      } finally {
+        await a.query('rollback').catch(() => undefined);
+        await b.query('rollback').catch(() => undefined);
+        await a.end();
+        await b.end();
+      }
+    }, 60_000);
   });
 
   describe('the direct UPDATE on registrations is closed', () => {

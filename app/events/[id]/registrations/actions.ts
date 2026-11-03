@@ -38,6 +38,9 @@ export async function updateRegistrationContact(
     if (error.message.startsWith('linked_registration:')) {
       return { error: 'This registration belongs to an Eventar account, so its email cannot be changed here. The name can.' };
     }
+    if (error.message.startsWith('email_locked_attended:')) {
+      return { error: 'This person has already checked in, so their email cannot be changed. You can still correct their name.' };
+    }
     if (error.message.startsWith('already_registered:')) {
       return { error: 'Another registration for this event already uses that email.' };
     }

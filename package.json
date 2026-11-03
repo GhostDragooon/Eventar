@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:rls": "RLS_TESTS=1 vitest run tests/rls tests/audit tests/cron tests/cpd/organisation_body_authorisation.rls.test.ts tests/cpd/roster_eligibility.rls.test.ts tests/cpd/claim_registrations.rls.test.ts tests/cpd/award_f1_f5_gate.rls.test.ts",
+    "test:rls": "RLS_TESTS=1 vitest run tests/rls tests/audit tests/cron tests/cpd/organisation_body_authorisation.rls.test.ts tests/cpd/roster_eligibility.rls.test.ts tests/cpd/claim_registrations.rls.test.ts tests/cpd/award_f1_f5_gate.rls.test.ts --exclude '**/registration_contact_edit.rls.test.ts' --exclude '**/event_soft_delete_privacy.rls.test.ts' --exclude '**/registrations_link_immutability.rls.test.ts' --exclude '**/registrations_insert_forgery.rls.test.ts' && RLS_TESTS=1 vitest run --no-file-parallelism tests/rls/registration_contact_edit.rls.test.ts tests/rls/event_soft_delete_privacy.rls.test.ts tests/rls/registrations_link_immutability.rls.test.ts tests/rls/registrations_insert_forgery.rls.test.ts",
     "check:ui-colours": "node scripts/check-ui-colours.mjs",
     "check:ui-primitives": "node scripts/check-ui-primitives.mjs"
   },

@@ -271,6 +271,9 @@ function EditDialog({
   const [email, setEmail] = useState(row.email);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // After check-in the email decides who receives the credit, so the database refuses the change (email_locked_attended).
+  const attended = row.status === 'attended';
+  const emailLocked = row.linked || attended;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -315,7 +318,7 @@ function EditDialog({
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            disabled={row.linked}
+            disabled={emailLocked}
             required
             maxLength={254}
             aria-describedby={error ? 'edit-email-note edit-error' : 'edit-email-note'}
@@ -325,7 +328,9 @@ function EditDialog({
         <p id="edit-email-note" className="font-body-md text-body-md text-on-surface-variant">
           {row.linked
             ? 'This registration belongs to an Eventar account, so its email cannot be changed here. The name can.'
-            : 'Their check-in code stays the same, so a pass already emailed to them keeps working.'}
+            : attended
+              ? 'This person has already checked in, so their email cannot be changed. The name can.'
+              : 'Their check-in code stays the same, so a pass already emailed to them keeps working.'}
         </p>
         {error && (
           <p id="edit-error" role="alert" className="font-body-md text-body-md text-error">
