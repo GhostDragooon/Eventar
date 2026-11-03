@@ -27,6 +27,7 @@ import {
 import { HeroImageSection } from '@/components/event-form/HeroImageSection';
 import { DatePicker } from '@/components/event-form/DatePicker';
 import { TimePicker15 } from '@/components/event-form/TimePicker15';
+import { sortBlocksByStart } from '@/lib/agenda';
 import { registrationWindow } from '@/lib/registrationWindow';
 import type { Venue } from '@/lib/venue';
 import { tzFromCoords } from '@/lib/tz';
@@ -445,7 +446,10 @@ export default function NewEventForm(props: Props) {
       // fabricated chrome. True is the accurate description of reality.
       checkin_modes: { staff: true, self_serve: selfServe },
     };
-    const blocksPayload = blocks.map((b, i) => ({
+    // Saved in start-time order (no reorder control). The returned block ids come back in this order, so the id
+    // write-back below maps through the same sorted list.
+    const sortedBlocks = sortBlocksByStart(blocks);
+    const blocksPayload = sortedBlocks.map((b, i) => ({
       id: savedBlockIds[b.localId],
       start_time: new Date(`${datetime.date}T${b.start}:00`).toISOString(),
       end_time:   new Date(`${datetime.date}T${b.end}:00`).toISOString(),
@@ -482,7 +486,7 @@ export default function NewEventForm(props: Props) {
     const previewUrl = props.mode === 'edit' ? `/events/${props.eventId}` : null;
     const openPreview = nextIntent === 'preview';
     const submittedSnapshot = snapshot;
-    const submittedLocalIds = blocks.map((b) => b.localId);
+    const submittedLocalIds = sortedBlocks.map((b) => b.localId);
 
     start(async () => {
       const res = await props.submit(payload);
@@ -626,7 +630,15 @@ export default function NewEventForm(props: Props) {
               Timezone follows the venue — {venueTz}.
             </p>
           )}
-          <DateTimeSection value={datetime} onChange={(p) => setDatetime({ ...datetime, ...p })} />
+          {venueTz && venueTz !== 'Asia/Hong_Kong' && (
+            <p
+              className="font-body-md text-body-md font-semibold text-on-surface"
+              data-testid="venue-tz-notice"
+            >
+              This venue is outside Hong Kong, so the event time will be shown in {venueTz} time.
+            </p>
+          )}
+          <DateTimeSection value={datetime} onChange={(p) => setDatetime({ ...datetime, ...p })} venueTz={venueTz} />
         </div>
       </FormSection>
 

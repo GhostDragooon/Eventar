@@ -1,5 +1,6 @@
 'use client';
 
+import { browserTz, formatInTzWithZone } from '@/lib/tz';
 import { DatePicker } from './DatePicker';
 import {
   TimePicker15,
@@ -31,9 +32,11 @@ export type DateTimeValue = {
 type Props = {
   value: DateTimeValue;
   onChange: (patch: Partial<DateTimeValue>) => void;
+  /** Zone of the picked venue. With it, the form says what attendees will see for the start time you typed. */
+  venueTz?: string | null;
 };
 
-export default function DateTimeSection({ value, onChange }: Props) {
+export default function DateTimeSection({ value, onChange, venueTz }: Props) {
   const dur = durationOrNull(value.startMinutes, value.endMinutes);
 
   // Duration bar scale: a workshop is realistically 1–12h. Clamp to 12h so
@@ -111,9 +114,40 @@ export default function DateTimeSection({ value, onChange }: Props) {
           Times are in your local timezone. The event page will display them in
           the venue&apos;s local time.
         </p>
+        <VenueTimeLine value={value} venueTz={venueTz} />
       </div>
     </div>
   );
+}
+
+/**
+ * The typed start is read in the browser's zone (new Date(`${date}T${hh:mm}:00`), the same read the form submits)
+ * and shown to attendees in the venue's zone. When those two clocks differ, say so in plain words, with the result.
+ */
+function VenueTimeLine({ value, venueTz }: { value: DateTimeValue; venueTz?: string | null }) {
+  if (!venueTz || !value.date || value.startMinutes === null) return null;
+  const instant = new Date(`${value.date}T${formatMinutes24h(value.startMinutes)}:00`);
+  if (Number.isNaN(instant.getTime())) return null;
+  const yours = browserTz();
+  const mine = splitClock(formatInTzWithZone(instant.toISOString(), yours));
+  const theirs = splitClock(formatInTzWithZone(instant.toISOString(), venueTz));
+  if (!mine || !theirs || (mine.day === theirs.day && mine.time === theirs.time)) return null;
+  return (
+    <p
+      role="status"
+      data-testid="venue-time-line"
+      className="font-body-md text-body-md font-semibold text-on-surface"
+    >
+      You entered {mine.time} in your time ({yours}, {mine.zone}). This event will show {theirs.time}
+      {theirs.day !== mine.day ? ` on ${theirs.day}` : ''} ({venueTz}, {theirs.zone}) to attendees.
+    </p>
+  );
+}
+
+// "01 Dec 2026, 09:00 (GMT+8)" -> day, time, zone label (formatInTzWithZone's shape).
+function splitClock(s: string): { day: string; time: string; zone: string } | null {
+  const m = /^(.+), (\d{2}:\d{2}) \((.+)\)$/.exec(s);
+  return m ? { day: m[1]!, time: m[2]!, zone: m[3]! } : null;
 }
 
 function Labelled({

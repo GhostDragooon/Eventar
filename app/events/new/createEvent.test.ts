@@ -242,3 +242,45 @@ describe('createEvent: server-side trace', () => {
   });
 });
 
+// Backtest M2 (Ivan's ruling 2026-11-02): the agenda is saved in start-time order. The form sorted; the action did
+// not, so any other client saved display_order = whatever order it sent.
+describe('createEvent: agenda saved in start-time order', () => {
+  const at = (hhmm: string) => `2026-06-15T${hhmm}:00.000Z`;
+  const block = (title: string, start: string, end: string) => ({ start_time: at(start), end_time: at(end), kind: 'lecture' as const, title });
+
+  it('sends the blocks to the database ordered by start time, whatever order they arrived in', async () => {
+    await expect(createEvent({ event, blocks: [block('Late', '13:00', '14:00'), block('Early', '09:30', '10:30'), block('Mid', '11:00', '12:00')], status: 'draft' })).rejects.toThrow('NEXT_REDIRECT');
+    const sent = rpc.mock.calls[0]![1].blocks_input as Array<{ title: string }>;
+    expect(sent.map((b) => b.title)).toEqual(['Early', 'Mid', 'Late']);
+  });
+
+  // create_event_with_blocks stores the client's display_order (update_event_with_blocks uses the array position), so
+  // the action must overwrite it with the sorted index or a stale client's own numbers decide the stored order.
+  it('overwrites a client-supplied display_order with the sorted position', async () => {
+    const withOrder = (b: ReturnType<typeof block>, display_order: number) => ({ ...b, display_order });
+    await expect(createEvent({ event, blocks: [withOrder(block('Late', '13:00', '14:00'), 0), withOrder(block('Early', '09:30', '10:30'), 1)], status: 'draft' })).rejects.toThrow('NEXT_REDIRECT');
+    const sent = rpc.mock.calls[0]![1].blocks_input as Array<{ title: string; display_order: number }>;
+    expect(sent.map((b) => [b.title, b.display_order])).toEqual([['Early', 0], ['Late', 1]]);
+  });
+
+  it('keeps arrival order for equal starts (stable)', async () => {
+    await expect(createEvent({ event, blocks: [block('First', '09:00', '10:00'), block('Second', '09:00', '09:30')], status: 'draft' })).rejects.toThrow('NEXT_REDIRECT');
+    const sent = rpc.mock.calls[0]![1].blocks_input as Array<{ title: string }>;
+    expect(sent.map((b) => b.title)).toEqual(['First', 'Second']);
+  });
+
+  it('orders by the instant, not the text: 09:00:00Z and 09:00:00.500Z', async () => {
+    const a = { ...block('Half', '09:00', '10:00'), start_time: '2026-06-15T09:00:00.500Z' };
+    const b = { ...block('Whole', '09:00', '10:00'), start_time: '2026-06-15T09:00:00Z' };
+    await expect(createEvent({ event, blocks: [a, b], status: 'draft' })).rejects.toThrow('NEXT_REDIRECT');
+    const sent = rpc.mock.calls[0]![1].blocks_input as Array<{ title: string }>;
+    expect(sent.map((x) => x.title)).toEqual(['Whole', 'Half']);
+  });
+
+  it.each([undefined, ''])('a block with start_time %j is refused with a sentence and nothing is sent', async (start_time) => {
+    const res = await createEvent({ event, blocks: [{ ...block('No start', '09:00', '10:00'), start_time }], status: 'draft' });
+    expect(res).toEqual({ error: expect.stringContaining('Every agenda block needs a start time.') });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+});
+

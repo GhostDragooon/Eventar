@@ -441,6 +441,37 @@ describe('NewEventForm — D.3b linear layout', () => {
     expect(hint.textContent ?? '').toMatch(/timezone follows the venue/i);
   });
 
+  // RV-FINAL F50: one mis-click picked a place in Xizang and the only sign was a small grey line. A venue outside
+  // Hong Kong now gets a visible sentence saying the event time will be shown in that zone.
+  it('picking a venue outside Hong Kong says the event time will be shown in that venue\'s zone', async () => {
+    searchVenues.mockResolvedValue([
+      { venue_name: 'Konghong Xian', venue_address: 'Xizang, China', city: '', region: 'Xizang', country: 'China', latitude: 33.5, longitude: 79.7 },
+    ]);
+    render(<NewEventForm mode="create" submit={vi.fn(async () => ({ ok: true as const }))} cpdBodies={[]} cpdBodiesUnavailable={false} />);
+    expect(screen.queryByTestId('venue-tz-notice')).toBeNull();
+    fireEvent.change(screen.getByPlaceholderText(/search a venue/i), { target: { value: 'Hong Kong' } });
+    fireEvent.click(within(await screen.findByRole('option', { name: /Konghong Xian/ })).getByRole('button'));
+    const zone = screen.getByTestId('venue-tz-hint').textContent!.match(/— (\S+)\./)![1]!;
+    expect(zone).not.toBe('Asia/Hong_Kong');
+    expect(screen.getByTestId('venue-tz-notice').textContent).toBe(
+      `This venue is outside Hong Kong, so the event time will be shown in ${zone} time.`,
+    );
+  });
+
+  it('a Hong Kong venue gets the timezone line and no outside-Hong-Kong notice', () => {
+    render(
+      <NewEventForm
+        mode="edit"
+        eventId="11111111-2222-4333-8444-555555555555"
+        initialEvent={{ ...initialEvent, latitude: 22.2819, longitude: 114.1583 }}
+        initialBlocks={initialBlocks}
+        submit={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+    expect(screen.getByTestId('venue-tz-hint').textContent).toMatch(/Asia\/Hong_Kong/);
+    expect(screen.queryByTestId('venue-tz-notice')).toBeNull();
+  });
+
   it('does NOT render the timezone hint before a venue is picked (create mode)', () => {
     render(
       <NewEventForm
@@ -1177,6 +1208,43 @@ describe('NewEventForm: agenda block ids across saves (edit mode)', () => {
     await save(2, submit);
     expect(ids(submit.mock.calls[1]![0])).toEqual(['b1', 'new-uuid']);
     expect(submit.mock.calls[1]![0].blocks.map((b) => b.title)).toEqual(['Opening session', 'Coffee']);
+  });
+
+  // Ivan 2026-11-02: no reorder control; the agenda is saved in start-time order. The ids the action returns come back
+  // in that (payload) order, so they must be mapped through the SORTED localIds or a block inherits another's id.
+  it('saves blocks in start-time order, not entry order, and a second save still maps each id to its block', async () => {
+    const submit = vi.fn<(p: SubmitPayload) => Promise<SaveResult>>(async () => ({ ok: true, blockIds: ['b1', 'new-uuid', 'b2'] }));
+    renderEdit([initialBlocks[0]!, secondBlock], submit); // 09:00 and 11:00, in entry order [b1, b2]
+    addBreak('Coffee'); // entered last, starts 10:00: belongs between them
+
+    await save(1, submit);
+    const first = submit.mock.calls[0]![0].blocks;
+    expect(first.map((b) => b.title)).toEqual(['Opening session', 'Coffee', 'Closing session']);
+    expect(first.map((b) => b.display_order)).toEqual([0, 1, 2]);
+    expect(ids(submit.mock.calls[0]![0])).toEqual(['b1', undefined, 'b2']);
+
+    await waitFor(() => expect(refreshMock).toHaveBeenCalledTimes(1));
+    await save(2, submit);
+    expect(ids(submit.mock.calls[1]![0])).toEqual(['b1', 'new-uuid', 'b2']);
+    expect(submit.mock.calls[1]![0].blocks.map((b) => b.title)).toEqual(['Opening session', 'Coffee', 'Closing session']);
+  });
+
+  it('shows the blocks in the order they will be saved, and says the order is by start time', () => {
+    const submit = vi.fn<(p: SubmitPayload) => Promise<SaveResult>>(async () => ({ ok: true, blockIds: [] }));
+    renderEdit([initialBlocks[0]!], submit);
+    addBreak('Late coffee'); // 10:00
+    fireEvent.click(screen.getByRole('button', { name: '+ Break' }));
+    // Named first: once it has a start time (09:30) it belongs above 'Late coffee'.
+    fireEvent.change(screen.getAllByPlaceholderText('Lunch / coffee').at(-1)!, { target: { value: 'Early tea' } });
+    fireEvent.click(screen.getAllByRole('button', { name: /Block start time/ }).at(-1)!);
+    fireEvent.click(screen.getByRole('option', { name: '09:30 AM' }));
+
+    const shown = () => screen.getAllByPlaceholderText('Lunch / coffee').map((el) => (el as HTMLInputElement).value);
+    // The card being edited keeps its place until the pointer or focus leaves it, then it takes its sorted place.
+    expect(shown()).toEqual(['Late coffee', 'Early tea']);
+    fireEvent.click(document.body); // release is on the click, not the press (review R2 m3)
+    expect(shown()).toEqual(['Early tea', 'Late coffee']);
+    expect(screen.getByText('Blocks are ordered by start time.')).toBeInTheDocument();
   });
 
   it('keeps each id with its block when a block is removed, not with the position it held', async () => {

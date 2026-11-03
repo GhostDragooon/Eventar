@@ -358,10 +358,28 @@ export default async function StaffEventEditPage({
             </Section>
           )}
 
+          {/* What a published event really allows (read from the code, not promised): CPD accreditation above
+              (admin, until credit is issued), registration close on the Event Manager page, cancel and create on the
+              Events page. Nobody can edit details or the agenda (UPD-01), so no "ask an admin". */}
           {event.status !== 'draft' && (
-            <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant italic">
-              Editing event details isn&apos;t available yet — this view is read-only.
-              Need a change? Ask an admin.
+            <p className="font-body-md text-body-md text-on-surface-variant">
+              Details are locked after publishing: nobody can change the title, date, venue or agenda yet.
+              {event.status === 'published' ? (
+                <>
+                  {' '}You can still change the CPD accreditation above (organiser admins only, until credit has been
+                  issued) and, while registration is open, the registration close date on the{' '}
+                  <Link href={`/events/${event.id}/details`} className="text-primary-ink hover:underline">Event Manager</Link>{' '}
+                  page. To stop this event, cancel it from the{' '}
+                  <Link href="/dashboard" className="text-primary-ink hover:underline">Events</Link>{' '}
+                  page; to change anything else, create a new event there.
+                </>
+              ) : (
+                <>
+                  {' '}To run it with different details, create a new event from the{' '}
+                  <Link href="/dashboard" className="text-primary-ink hover:underline">Events</Link>{' '}
+                  page.
+                </>
+              )}
             </p>
           )}
         </div>

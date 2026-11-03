@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { findParallelBlockIds, labelForBlockKind } from '@/lib/agenda';
+import { findParallelBlockIds, labelForBlockKind, sortBlocksByStart } from '@/lib/agenda';
 import { TimePicker15 } from './TimePicker15';
 
 export type TopicDraft = {
@@ -155,8 +155,19 @@ export default function AgendaSection({
   blocks,
   onChange,
 }: Props) {
-  const components = blocks.filter(b => !FILLER_KINDS.includes(b.kind));
-  const fillers    = blocks.filter(b =>  FILLER_KINDS.includes(b.kind));
+  // Shown, and saved, in start-time order. Components and Breaks render as two lists, each in that order; the saved
+  // list interleaves both by start time. The one exception on screen: the card whose start was just picked keeps its
+  // place until the pointer or focus leaves it (`held`), so it does not jump away under the cursor mid-edit.
+  const [held, setHeld] = useState<{ id: string; order: string[] } | null>(null);
+  const byStart = sortBlocksByStart(blocks);
+  const sorted = held
+    ? [
+        ...held.order.map((id) => blocks.find((b) => b.localId === id)).filter((b): b is BlockDraft => b !== undefined),
+        ...byStart.filter((b) => !held.order.includes(b.localId)),
+      ]
+    : byStart;
+  const components = sorted.filter(b => !FILLER_KINDS.includes(b.kind));
+  const fillers    = sorted.filter(b =>  FILLER_KINDS.includes(b.kind));
 
   const parallelIds = useMemo(() => {
     if (!date) return new Set<string>();  // no date yet → don't fabricate `T${time}` keys
@@ -180,7 +191,32 @@ export default function AgendaSection({
     });
   }
 
+  const heldId = held?.id;
+  useEffect(() => {
+    if (!heldId) return;
+    // Release on the CLICK, not the press: re-sorting on the press moves the control under the pointer before the
+    // release, so the click lands on whatever slid into its place. A pointer press also moves focus, so focus only
+    // releases when no pointer is down (keyboard Tab); the press's own click then does it.
+    let pressing = false;
+    const outside = (e: Event) => !(e.target as Element | null)?.closest?.(`[data-block-id="${heldId}"]`);
+    const press = () => { pressing = true; };
+    const lift = () => { pressing = false; };
+    const onClick = (e: Event) => { if (outside(e)) setHeld(null); };
+    const onFocus = (e: Event) => { if (!pressing && outside(e)) setHeld(null); };
+    document.addEventListener('mousedown', press);
+    document.addEventListener('mouseup', lift);
+    document.addEventListener('click', onClick);
+    document.addEventListener('focusin', onFocus);
+    return () => {
+      document.removeEventListener('mousedown', press);
+      document.removeEventListener('mouseup', lift);
+      document.removeEventListener('click', onClick);
+      document.removeEventListener('focusin', onFocus);
+    };
+  }, [heldId]);
+
   function update(localId: string, patch: Partial<BlockDraft>) {
+    if ('start' in patch) setHeld({ id: localId, order: sorted.map((b) => b.localId) });
     onChange(blocks.map(b => b.localId === localId ? { ...b, ...patch } : b));
   }
   function remove(localId: string) {
@@ -198,6 +234,7 @@ export default function AgendaSection({
 
   return (
     <div className="space-y-lg">
+      <p className="font-body-md text-body-md text-on-surface-variant">Blocks are ordered by start time.</p>
       {/* Components — header reads "Event type" per the locked terminology
           (patterns doc §7). The DB column stays `kind`; only the user-facing
           label changes. Primary chips are always visible; secondary types
@@ -522,6 +559,7 @@ function BlockEditor({ block, parallel, touched, errors, onTouch, onChange, onRe
 
   return (
     <div
+      data-block-id={block.localId}
       className={
         'rounded-[20px] p-md space-y-md bg-surface-container-lowest border-2 transition-colors ' +
         (showRedShell ? 'border-error' : 'border-outline-variant')
@@ -671,6 +709,7 @@ function FillerEditor({ block, touched, errors, onTouch, onChange, onRemove }: {
 
   return (
     <div
+      data-block-id={block.localId}
       className={
         'rounded-[20px] p-md space-y-md bg-surface-container-lowest border-2 transition-colors ' +
         (showRedShell ? 'border-error' : 'border-outline-variant')

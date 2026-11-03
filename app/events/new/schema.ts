@@ -49,11 +49,14 @@ const topicSchema = z.object({
   speaker_affiliation: z.string().trim().max(120).optional().default(''),
 });
 
+// A block saves in start-time order, so a block without a start time cannot be placed. The form never sends one.
+const BLOCK_START_REQUIRED = 'Every agenda block needs a start time.';
+
 export const blockInputSchema = z.object({
   // Present on a block that already exists: update_event_with_blocks updates that row instead of replacing it,
   // so its id (and any survey answer pointing at it) survives a save. Absent = a new block.
   id: z.string().uuid().optional(),
-  start_time: z.string().datetime(),
+  start_time: z.string({ error: BLOCK_START_REQUIRED }).datetime({ error: BLOCK_START_REQUIRED }),
   end_time: z.string().datetime(),
   kind: z.enum(KINDS),
   title: z.string().trim().min(1).max(200),
@@ -66,7 +69,8 @@ export const blockInputSchema = z.object({
   sponsored: z.boolean().default(false),
   sponsor_name: z.string().trim().max(200).optional().default(''),
 })
-.refine(d => new Date(d.end_time) > new Date(d.start_time), {
+.refine(d => Number.isNaN(Date.parse(d.start_time)) || new Date(d.end_time) > new Date(d.start_time), {
+  // (an unreadable start is already reported on start_time; a second "end must be after start" would mislead)
   message: 'Block end must be after start', path: ['end_time'],
 })
 .refine(d => !(d.kind === 'break' || d.kind === 'transition') || d.topics.length === 0, {

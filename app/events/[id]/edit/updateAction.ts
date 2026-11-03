@@ -17,6 +17,7 @@ import { requireStaff } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { tzFromCoords } from '@/lib/tz';
+import { startOrder } from '@/lib/agenda';
 import {
   blockInputSchema,
   eventInputSchema,
@@ -38,7 +39,8 @@ function blockFitsEnvelope(block: BlockInput, event: { start_time: string; end_t
       && new Date(block.end_time)   <= new Date(event.end_time);
 }
 
-// `blockIds` are the saved agenda blocks' ids in payload order, so the form can send them back on its next save.
+// `blockIds` are the saved agenda blocks' ids in PAYLOAD order (the order the caller sent them, whatever order they
+// were saved in), so the form can send them back on its next save.
 type UpdateResult = { ok: true; blockIds: string[] } | { error: string };
 
 const NOT_A_DRAFT = 'This event is no longer a draft, so its details cannot be edited yet. Your changes were not saved.';
@@ -142,11 +144,15 @@ export async function updateEvent(
 
   const timezone = tzFromCoords(eventParse.data.latitude, eventParse.data.longitude);
 
+  // Saved in start-time order: display_order is the position in the array sent to the RPC. `order[k]` is the payload
+  // index of the block saved k-th; the read-back below maps the ids back through it.
+  const order = startOrder(blockParse.data);
+
   const supabase = await supabaseServer();
   const { data, error } = await supabase.rpc('update_event_with_blocks', {
     event_id_input: idParse.data,
     event_input:    { ...eventParse.data, timezone },
-    blocks_input:   blockParse.data,
+    blocks_input:   order.map(i => blockParse.data[i]!),
   });
 
   // Non-owner / not-visible events make the RPC RAISE; supabase surfaces that
@@ -160,9 +166,9 @@ export async function updateEvent(
   // Dashboard lists title/dates — same convention as publishEvent/createEvent.
   revalidatePath('/dashboard');
 
-  // The RPC returns the event id, not the block ids. display_order is the payload index, so reading the blocks back
-  // in that order gives index i of the result = payload block i. A count that differs means the mapping would be
-  // wrong, so refuse it: the save itself went through, which the message says.
+  // The RPC returns the event id, not the block ids. display_order is the position in the (start-ordered) array we
+  // sent, so reading the blocks back in that order gives saved[k] = the block at payload index order[k]. A count that
+  // differs means the mapping would be wrong, so refuse it: the save itself went through, which the message says.
   const { data: saved, error: readErr } = await supabase
     .from('agenda_blocks')
     .select('id')
@@ -171,5 +177,7 @@ export async function updateEvent(
   if (readErr || !saved || saved.length !== blockParse.data.length) {
     return { error: 'Your changes were saved, but the agenda could not be read back. Reload this page before saving again.' };
   }
-  return { ok: true, blockIds: saved.map(r => r.id) };
+  const blockIds: string[] = [];
+  saved.forEach((r, k) => { blockIds[order[k]!] = r.id; });
+  return { ok: true, blockIds };
 }

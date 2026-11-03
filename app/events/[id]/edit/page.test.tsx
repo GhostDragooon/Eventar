@@ -61,7 +61,7 @@ vi.mock('@/lib/cpd/authorisedBodies', () => ({ listAuthorisedBodies: vi.fn(async
 vi.mock('./actions', () => ({ publishEvent: vi.fn(), getEventQrPng: vi.fn(), exportRegistrantsCsv: vi.fn() }));
 vi.mock('./updateAction', () => ({ updateEvent: vi.fn() }));
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import PublishDraftButton from './PublishDraftButton';
 import { DraftSavedBanner } from '@/components/event-form/DraftSavedBanner';
 import { CpdAccreditationSection } from '@/components/details/CpdAccreditationSection';
@@ -187,5 +187,51 @@ describe('draft edit page feeds the confirm and the saved banner', () => {
   it('tells the banner when this role cannot publish', async () => {
     const [banner] = findAll(await draftTree('body_admin', '1'), DraftSavedBanner);
     expect(banner.props).toMatchObject({ canPublish: false });
+  });
+});
+
+// RV-FINAL F60: a published event said "Need a change? Ask an admin" although no one can edit details or the agenda.
+// The copy now says so and names only what exists: accreditation on this page, the registration close date on the
+// Event Manager page, cancel and create on the Events page.
+function textOf(node: ReactNode): string {
+  if (Array.isArray(node)) return node.map(textOf).join('');
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (isValidElement(node)) return textOf((node.props as { children?: ReactNode }).children);
+  return '';
+}
+function hrefsOf(node: ReactNode, found: string[] = []): string[] {
+  if (Array.isArray(node)) node.forEach((n) => hrefsOf(n, found));
+  else if (isValidElement(node)) {
+    const props = node.props as { href?: unknown; children?: ReactNode };
+    if (typeof props.href === 'string') found.push(props.href);
+    hrefsOf(props.children, found);
+  }
+  return found;
+}
+
+describe('a published or cancelled event says what is locked and what can still be done', () => {
+  const original = eventRow.status;
+  afterEach(() => {
+    eventRow.status = original;
+  });
+
+  it('published: details locked, no "ask an admin", names the real next steps with working links', async () => {
+    eventRow.status = 'published';
+    const tree = await draftTree('organiser_admin');
+    const text = textOf(tree).replace(/\s+/g, ' ');
+    expect(text).toContain('Details are locked after publishing: nobody can change the title, date, venue or agenda yet.');
+    expect(text).toContain('change the CPD accreditation above');
+    expect(text).toContain('registration close date on the Event Manager page');
+    expect(text).toContain('cancel it from the Events page');
+    expect(text).not.toMatch(/ask an admin|isn.t available yet/i);
+    expect(hrefsOf(tree)).toEqual(expect.arrayContaining(['/events/event-1/details', '/dashboard']));
+  });
+
+  it('cancelled: does not offer to cancel again or to change registration', async () => {
+    eventRow.status = 'cancelled';
+    const text = textOf(await draftTree('organiser_admin')).replace(/\s+/g, ' ');
+    expect(text).toContain('Details are locked after publishing');
+    expect(text).toContain('create a new event from the Events page');
+    expect(text).not.toMatch(/cancel it from|registration close date/i);
   });
 });

@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { canPublishEvents, canSetAccreditation, requireStaff } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { tzFromCoords } from '@/lib/tz';
+import { startOrder } from '@/lib/agenda';
 import {
   blockInputSchema,
   eventInputSchema,
@@ -123,13 +124,17 @@ export async function createEvent(input: {
 
   const timezone = tzFromCoords(eventParse.data.latitude, eventParse.data.longitude);
 
+  // Saved in start-time order. create_event_with_blocks stores the display_order it is sent, so write the sorted
+  // position over whatever the client supplied (update_event_with_blocks uses the array position itself).
+  const orderedBlocks = startOrder(blockParse.data).map((i, pos) => ({ ...blockParse.data[i]!, display_order: pos }));
+
   const supabase = await supabaseServer();
   const { data, error } = await supabase.rpc('create_event_with_blocks', {
     // created_by is only honoured by the RPC for the service-role executor
     // (review mode / session-less contexts); JWT sessions derive it from
     // app_private.current_staff_id() and ignore this key.
     event_input:  { ...eventParse.data, timezone, status: statusParse.data, created_by: staff.id },
-    blocks_input: blockParse.data,
+    blocks_input: orderedBlocks,
   });
 
   // A publish the database refuses raises 42501 inside publish_event and rolls

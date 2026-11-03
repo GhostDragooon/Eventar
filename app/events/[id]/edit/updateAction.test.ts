@@ -378,6 +378,38 @@ describe('updateEvent', () => {
       expect(readBackCalls).toEqual([{ table: 'agenda_blocks', eventId }]);
     });
 
+    // Backtest M2: saved in start-time order. blockIds stay in PAYLOAD order (the client writes them back by the order
+    // it sent), so a client that sends an unsorted payload still maps every id to the right block.
+    describe('start-time order on save', () => {
+      const at = (hhmm: string) => `2026-06-15T${hhmm}:00.000Z`;
+      const late = { ...validBlock, title: 'Late', id: idA, start_time: at('13:00'), end_time: at('14:00') };
+      const early = { ...validBlock, title: 'Early', id: idB, start_time: at('09:30'), end_time: at('10:30') };
+      const mid = { ...validBlock, title: 'Mid', start_time: at('11:00'), end_time: at('12:00') }; // new: no id
+
+      it('sends the blocks to the RPC ordered by start time', async () => {
+        await updateEvent(eventId, { event: validEvent, blocks: [late, early, mid] });
+        const sent = rpcCalls[0].params.blocks_input as Array<{ title: string }>;
+        expect(sent.map((b) => b.title)).toEqual(['Early', 'Mid', 'Late']);
+      });
+
+      it('returns the ids in the order the blocks were SENT, not the order they were saved in', async () => {
+        // saved: Early (idB), Mid (new-1), Late (idA). Payload: Late, Early, Mid.
+        const result = await updateEvent(eventId, { event: validEvent, blocks: [late, early, mid] });
+        expect(result).toEqual({ ok: true, blockIds: [idA, idB, 'new-1'] });
+      });
+
+      it('a payload already in start order returns the saved order unchanged', async () => {
+        const result = await updateEvent(eventId, { event: validEvent, blocks: [early, mid, late] });
+        expect(result).toEqual({ ok: true, blockIds: [idB, 'new-1', idA] });
+      });
+
+      it.each([undefined, ''])('a block with start_time %j is refused with a sentence and nothing is sent', async (start_time) => {
+        const result = await updateEvent(eventId, { event: validEvent, blocks: [{ ...mid, start_time }] });
+        expect(result).toEqual({ error: expect.stringContaining('Every agenda block needs a start time.') });
+        expect(rpcCalls).toHaveLength(0);
+      });
+    });
+
     it('rejects a block id that is not a uuid without calling the RPC', async () => {
       const result = await updateEvent(eventId, { event: validEvent, blocks: [{ ...validBlock, id: 'b1' }] });
       expect(result).toHaveProperty('error');
