@@ -29,7 +29,27 @@ let eqCalls: Array<[string, unknown]> = [];
 
 // ---- mock state -----------------------------------------------------------
 // events read: .select().eq().maybeSingle() (kept out of eqCalls: it is not part of the speaker filters)
-let mockEvent: { status: string; deleted_at: string | null } | null = { status: 'published', deleted_at: null };
+type MockEvent = {
+  status: string;
+  deleted_at: string | null;
+  start_time: string;
+  end_time: string;
+  registration_close_at: string | null;
+  registration_open_at: string | null;
+};
+// Inside the check-in window by default: started 30 minutes ago, ends in 3 hours.
+const HOUR = 3_600_000;
+const eventAt = (startOffsetMs: number, endOffsetMs: number, over: Partial<MockEvent> = {}): MockEvent => ({
+  status: 'published',
+  deleted_at: null,
+  start_time: new Date(Date.now() + startOffsetMs).toISOString(),
+  end_time: new Date(Date.now() + endOffsetMs).toISOString(),
+  registration_close_at: null,
+  registration_open_at: null,
+  ...over,
+});
+const liveEvent = (over: Partial<MockEvent> = {}) => eventAt(-HOUR / 2, 3 * HOUR, over);
+let mockEvent: MockEvent | null = liveEvent();
 
 // agenda_blocks read: await supabase.from('agenda_blocks').select(...).eq(...)
 type BlockRow = { host: string | null; topics: unknown };
@@ -139,7 +159,7 @@ beforeEach(() => {
     { host: 'Ada Lovelace', topics: [{ title: 'T', speaker_name: 'Grace Hopper' }] },
   ];
   mockBlocksError = null;
-  mockEvent = { status: 'published', deleted_at: null };
+  mockEvent = liveEvent();
   eqCalls = [];
   mockExistingRow = null;
   mockExistingError = null;
@@ -361,9 +381,9 @@ describe('toggleSpeakerCheckin: signed-out session and event state', () => {
   });
 
   it.each([
-    [{ status: 'draft', deleted_at: null }, 'Publish the event before checking people in.'],
-    [{ status: 'cancelled', deleted_at: null }, 'This event was cancelled. Check-in is closed.'],
-    [{ status: 'published', deleted_at: '2026-10-01T00:00:00Z' }, 'This event was deleted. Check-in is closed.'],
+    [liveEvent({ status: 'draft' }), 'Publish the event before checking people in.'],
+    [liveEvent({ status: 'cancelled' }), 'This event was cancelled. Check-in is closed.'],
+    [liveEvent({ deleted_at: '2026-10-01T00:00:00Z' }), 'This event was deleted. Check-in is closed.'],
   ])('refuses %j without writing', async (event, message) => {
     mockEvent = event;
     const result = await toggleSpeakerCheckin(eventId, 'Ada Lovelace');
@@ -376,8 +396,40 @@ describe('toggleSpeakerCheckin: signed-out session and event state', () => {
   it('says the event is not found or not in the organisation when RLS hides it, and when a write is refused', async () => {
     mockEvent = null;
     expect(await toggleSpeakerCheckin(eventId, 'Ada Lovelace')).toEqual({ error: 'Check-in failed — event not found or not in your organisation.' });
-    mockEvent = { status: 'published', deleted_at: null };
+    mockEvent = liveEvent();
     mockInsertedRow = null;
     expect(await toggleSpeakerCheckin(eventId, 'Ada Lovelace')).toEqual({ error: 'Check-in failed — event not found or not in your organisation.' });
+  });
+});
+
+// Ivan 2026-11-04 (Decide 2, option A): speakers are ticked in the same window as attendees, [start - 60 min, end].
+describe('toggleSpeakerCheckin: the check-in window', () => {
+  const NOT_OPEN = 'Check-in has not opened yet. It opens 60 minutes before the event starts.';
+  const CLOSED = 'Check-in is closed. This event has ended.';
+
+  it.each([
+    ['31 days early', eventAt(31 * 24 * HOUR, 31 * 24 * HOUR + 3 * HOUR), NOT_OPEN],
+    ['61 minutes before the start', eventAt(61 * 60_000, 61 * 60_000 + 3 * HOUR), NOT_OPEN],
+    ['after the end', eventAt(-5 * HOUR, -HOUR), CLOSED],
+    ['a completed event', liveEvent({ status: 'completed' }), CLOSED],
+  ])('refuses %s without writing', async (_label, event, message) => {
+    mockEvent = event;
+    expect(await toggleSpeakerCheckin(eventId, 'Ada Lovelace')).toEqual({ error: message });
+    expect(lastInsert).toBeNull();
+    expect(lastUpdate).toBeNull();
+    expect(revalidatePathMock).not.toHaveBeenCalled();
+  });
+
+  it('refusal covers un-ticking too: a ticked speaker cannot be cleared outside the window', async () => {
+    mockEvent = eventAt(-5 * HOUR, -HOUR);
+    mockExistingRow = { id: 'sc-1', checked_in_at: '2026-06-13T10:00:00.000Z' };
+    expect(await toggleSpeakerCheckin(eventId, 'Ada Lovelace')).toEqual({ error: CLOSED });
+    expect(lastUpdate).toBeNull();
+  });
+
+  it('accepts 59 minutes before the start (inside the 60-minute pre-open)', async () => {
+    mockEvent = eventAt(59 * 60_000, 59 * 60_000 + 3 * HOUR);
+    expect(await toggleSpeakerCheckin(eventId, 'Ada Lovelace')).toMatchObject({ ok: true });
+    expect(lastInsert).not.toBeNull();
   });
 });

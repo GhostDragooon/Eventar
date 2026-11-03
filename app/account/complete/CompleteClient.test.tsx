@@ -181,9 +181,73 @@ describe('CompleteClient — why Continue is disabled', () => {
     atLicenceStep(undefined, []);
     expect(screen.getByRole('button', { name: 'Done' })).toBeEnabled();
     expect(
-      screen.getByText('You can add a licence later from your profile. Credit is released only once a licence is declared.'),
+      screen.getByText(
+        'You can add a licence later from your profile. Credit is released only for events you check in to after you declare a licence.',
+      ),
     ).toBeInTheDocument();
     expect(screen.queryByText('Declare a licence to finish.')).toBeNull();
     expect(screen.getByText('Choose an accrediting body and add your licence number to declare.')).toBeInTheDocument();
+  });
+});
+
+// Decide 3 (Ivan 2026-11-04): the terms and privacy pages are not published, so the wizard must not say the visitor
+// accepts documents they cannot read.
+describe('CompleteClient: the consent step', () => {
+  it('promises documents to be published, not ones to accept now', () => {
+    render(
+      <CompleteClient
+        initialStep={1}
+        initialAccount={account}
+        initialProfile={null}
+        initialLicences={[]}
+        activeBodies={[]}
+        professions={[]}
+        positions={[]}
+        specialties={[]}
+      />,
+    );
+    expect(
+      screen.getByText(/By continuing you agree to the terms and privacy policy we will publish before launch\./),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('I agree to the Eventar terms and privacy policy once published.')).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/you accept the current/i);
+  });
+});
+
+// Dev review M2 (Ivan 2026-11-04): Done is optional, but it must not silently drop a licence the visitor typed.
+describe('CompleteClient: Done and a half-filled licence', () => {
+  const body = { id: 'b1', short_name: 'HKCP', full_name: 'Hong Kong College of Physicians', jurisdiction: 'HK' };
+  const GUARD = 'Your licence is not declared yet. Select Declare licence, or clear the fields to skip.';
+  function renderNoLicence() {
+    render(
+      <CompleteClient
+        initialStep={4}
+        initialAccount={account}
+        initialProfile={null}
+        initialLicences={[]}
+        activeBodies={[body]}
+        professions={[]}
+        positions={[]}
+        specialties={[]}
+      />,
+    );
+  }
+
+  it('a typed licence number disables Done and says what to do; clearing it re-enables Done', () => {
+    renderNoLicence();
+    const number = screen.getByPlaceholderText('e.g. M12345');
+    fireEvent.change(number, { target: { value: 'M123' } });
+    expect(screen.getByRole('button', { name: 'Done' })).toBeDisabled();
+    expect(screen.getByText(GUARD)).toBeInTheDocument();
+    fireEvent.change(number, { target: { value: '' } });
+    expect(screen.getByRole('button', { name: 'Done' })).toBeEnabled();
+    expect(screen.queryByText(GUARD)).toBeNull();
+  });
+
+  it('a chosen body alone also disables Done', () => {
+    renderNoLicence();
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'b1' } });
+    expect(screen.getByRole('button', { name: 'Done' })).toBeDisabled();
+    expect(screen.getByText(GUARD)).toBeInTheDocument();
   });
 });

@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { formatInTz } from '@/lib/tz';
 import { toggleSpeakerCheckin } from './speakerActions';
 import { Button } from '@/components/ui/button';
+import { CHECKIN_ROLE_MESSAGE } from '@/lib/lifecycle/eventLifecycle';
 
 export type SpeakerCheckinRow = {
   speaker_name: string;
@@ -22,14 +23,17 @@ export function SpeakersCard({
   speakerNames,
   initialCheckins,
   canCheckIn,
+  closedMessage,
   onError,
 }: {
   eventId: string;
   eventTimezone: string;
   speakerNames: string[];
   initialCheckins: SpeakerCheckinRow[];
-  /** Same answer as every other control on the desk; the sentence saying why is the desk's #checkin-closed-note. */
+  /** Same answer as every other control on the desk (role and clock); the sentence saying why is the desk's #checkin-closed-note. */
   canCheckIn: boolean;
+  /** Why the buttons are disabled (the desk's reason), repeated here because the desk note sits above the Scan badge. */
+  closedMessage?: string | null;
   onError?: (message: string) => void;
 }) {
   // Map<speaker_name, checked_in_at|null>. Names absent from the map are
@@ -92,6 +96,12 @@ export function SpeakersCard({
           </span>
         )}
       </header>
+      {closedMessage && (
+        <p className="mb-sm font-body-md text-body-md text-on-surface-variant">
+          {closedMessage}
+          {closedMessage !== CHECKIN_ROLE_MESSAGE && ' Speaker ticks are locked outside the check-in window.'}
+        </p>
+      )}
 
       {speakerNames.length === 0 ? (
         <p className="font-body-md text-body-md text-on-surface-variant py-sm">

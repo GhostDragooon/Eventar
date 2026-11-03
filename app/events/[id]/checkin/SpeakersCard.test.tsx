@@ -42,3 +42,28 @@ describe('SpeakersCard role gate', () => {
     }
   });
 });
+
+// User review (Ivan 2026-11-04): the reason sat about 150 px above the card, so the card now says it in its own header.
+describe('SpeakersCard closed caption', () => {
+  const props = { eventId: 'e1', eventTimezone: 'Asia/Hong_Kong', speakerNames: ['Ada Lovelace'], initialCheckins: [] };
+
+  it('outside the window: repeats the reason and says ticks are locked', () => {
+    render(<SpeakersCard {...props} canCheckIn={false} closedMessage="Check-in is closed. This event has ended." />);
+    const card = screen.getByRole('region', { name: 'Speakers' });
+    expect(card).toHaveTextContent('Check-in is closed. This event has ended.');
+    expect(card).toHaveTextContent('Speaker ticks are locked outside the check-in window.');
+  });
+
+  it('for a read-only role: repeats the role sentence without the window line', () => {
+    render(<SpeakersCard {...props} canCheckIn={false} closedMessage="Your role cannot check people in. Ask an organiser admin or member." />);
+    const card = screen.getByRole('region', { name: 'Speakers' });
+    expect(card).toHaveTextContent('Your role cannot check people in. Ask an organiser admin or member.');
+    expect(card).not.toHaveTextContent('locked outside');
+  });
+
+  it('inside the window: no caption', () => {
+    render(<SpeakersCard {...props} canCheckIn closedMessage={null} />);
+    expect(screen.getByRole('region', { name: 'Speakers' })).not.toHaveTextContent(/Check-in (is closed|has not opened)/);
+    expect(screen.queryByText(/locked outside/)).toBeNull();
+  });
+});

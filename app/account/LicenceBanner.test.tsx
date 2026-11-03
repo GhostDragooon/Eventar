@@ -17,7 +17,7 @@ describe('LicenceBanner', () => {
     render(<LicenceBanner missing />);
     expect(
       screen.getByText(
-        'Account setup is not finished: no licence is declared. Credit is released only once you declare one.',
+        'Account setup is not finished: no current licence is declared. Credit is released only for events you check in to after you declare one.',
       ),
     ).toBeTruthy();
     expect(screen.getAllByRole('link')).toHaveLength(1);

@@ -4,8 +4,9 @@
 //
 // Plan: docs/plans/2026-09-16-practitioner-account-creation-plan.md Phase 4.
 //
-// Mirrors the F1-F4 gate inside award_attendance_credit (migration
-// 20260916020000), minus the licence (F5): a practitioner without a licence
+// Mirrors F1-F3 of the gate inside award_attendance_credit (migration
+// 20260916020000), not F4 (the licence, per body) or F5 (registration linked
+// to a user): a practitioner without a licence
 // (student, trainee, a body that is not listed) still gets into the portal
 // (Ivan 2026-11-04), so `complete` does not wait for one. `licence` is
 // reported on its own for the portal's "setup not finished" banner, and

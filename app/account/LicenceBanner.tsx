@@ -10,7 +10,10 @@ export function LicenceBanner({ missing }: { missing: boolean }) {
       role="status"
       className="space-y-xs rounded-[20px] border border-outline-variant bg-primary-fixed p-lg font-body-md text-body-md text-on-surface"
     >
-      <p className="m-0">Account setup is not finished: no licence is declared. Credit is released only once you declare one.</p>
+      <p className="m-0">
+        Account setup is not finished: no current licence is declared. Credit is released only for events you check in to after you
+        declare one.
+      </p>
       <Link href="/account/profile" className="text-sm font-medium text-primary-ink hover:underline">
         Add a licence
       </Link>

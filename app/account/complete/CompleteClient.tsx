@@ -90,6 +90,8 @@ export function CompleteClient({
   const [avatarPending, startAvatarTransition] = useTransition();
 
   const hasLicence = licences.some((l) => l.status === 'declared' || l.status === 'verified');
+  // Done is optional, but a typed-and-undeclared licence would be dropped silently (dev review M2).
+  const licenceTyped = !hasLicence && (bodyId !== '' || licenceNumber.trim() !== '');
   const filteredSpecialties = specialties.filter((s) => s.profession_code === profile.profession_code);
   // Only 'medicine' has seeded specialties today (write-up §5: "cardiac /
   // cardiovascular is the first populated set"). Every other profession has
@@ -308,9 +310,7 @@ export function CompleteClient({
           <SectionCard icon="fact_check" title="Privacy and terms">
             <p className="font-body-md text-body-md text-on-surface-variant m-0">
               Eventar uses your professional identity to release CME/CPD credit for events you attend.
-              By continuing, you accept the current{' '}
-              <span className="font-medium text-on-surface">Terms of Service</span> and{' '}
-              <span className="font-medium text-on-surface">Privacy Policy</span>.
+              By continuing you agree to the terms and privacy policy we will publish before launch.
             </p>
             <label className="mt-md flex items-start gap-sm cursor-pointer">
               <input
@@ -320,7 +320,7 @@ export function CompleteClient({
                 className="mt-1 h-4 w-4 rounded border-outline-variant"
               />
               <span className="font-body-md text-body-md text-on-surface">
-                I accept the Terms of Service and Privacy Policy.
+                I agree to the Eventar terms and privacy policy once published.
               </span>
             </label>
             {consentStatus && <StatusBanner status={consentStatus} />}
@@ -590,10 +590,12 @@ export function CompleteClient({
               <div className="flex items-center gap-md">
                 {!hasLicence && (
                   <p className="font-body-md text-body-md text-on-surface-variant m-0 text-right">
-                    You can add a licence later from your profile. Credit is released only once a licence is declared.
+                    {licenceTyped
+                      ? 'Your licence is not declared yet. Select Declare licence, or clear the fields to skip.'
+                      : 'You can add a licence later from your profile. Credit is released only for events you check in to after you declare a licence.'}
                   </p>
                 )}
-                <Button type="button" onClick={onFinish}>
+                <Button type="button" onClick={onFinish} disabled={licenceTyped || licencePending || avatarPending}>
                   Done
                 </Button>
               </div>

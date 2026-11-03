@@ -264,7 +264,8 @@ export default function RosterClient({
         eventTimezone={eventTimezone}
         speakerNames={speakerNames}
         initialCheckins={initialSpeakerCheckins}
-        canCheckIn={canCheckIn}
+        canCheckIn={checkInClosed == null}
+        closedMessage={checkInClosed}
         onError={(message) => setToast({ kind: 'err', message })}
       />
 

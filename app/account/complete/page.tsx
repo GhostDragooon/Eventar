@@ -22,11 +22,11 @@
 // to /account instead of showing the flow again.
 //
 // That guard must not fire on a Server Action's own re-render of this same
-// route: saving the professional profile is always the step that flips
-// completeness to true (a licence is optional, so step 4 is only ever reached
-// from step 3 in the same visit), so the POST that saves it would otherwise
-// trigger this page's redirect mid-action — skipping the licence step and the
-// wizard's own "Done" button entirely. `next-action` is Next's
+// route: whichever step saves last flips completeness to true (usually the
+// professional profile; a licence is optional, so step 4 is only reached from
+// step 3 in the same visit), so that POST would otherwise trigger this page's
+// redirect mid-action — skipping the licence step and the wizard's own "Done"
+// button entirely. `next-action` is Next's
 // own request header identifying that a render is happening as a Server
 // Action response, not a fresh navigation (confirmed against
 // node_modules/next/dist/client/components/app-router-headers.js:

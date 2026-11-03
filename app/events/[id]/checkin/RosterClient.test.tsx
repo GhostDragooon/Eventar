@@ -16,7 +16,9 @@ vi.mock('./actions', () => ({
 }));
 // A probe: the desk must hand the Speakers card the same role answer it gives every other control.
 vi.mock('./SpeakersCard', () => ({
-  SpeakersCard: ({ canCheckIn }: { canCheckIn?: boolean }) => <span data-testid="speakers-probe" data-can-check-in={String(canCheckIn)} />,
+  SpeakersCard: ({ canCheckIn, closedMessage }: { canCheckIn?: boolean; closedMessage?: string | null }) => (
+    <span data-testid="speakers-probe" data-can-check-in={String(canCheckIn)} data-closed-message={closedMessage ?? ''} />
+  ),
 }));
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -189,5 +191,23 @@ describe('RosterClient: a role that cannot check people in', () => {
     cleanup();
     renderDesk(-30, T0, true);
     expect(screen.getByTestId('speakers-probe')).toHaveAttribute('data-can-check-in', 'true');
+  });
+
+  // Decide 2: speakers follow the same clock as attendees, so the card is disabled when the server would refuse.
+  it.each([
+    ['before the pre-open', 90, 'false'],
+    ['inside the window', -30, 'true'],
+    ['after the end', -180, 'false'],
+  ])('hands the Speakers card the clock answer %s', (_label, startInMin, expected) => {
+    renderDesk(startInMin);
+    expect(screen.getByTestId('speakers-probe')).toHaveAttribute('data-can-check-in', expected);
+  });
+
+  it('hands the Speakers card the desk reason while closed, and none while open', () => {
+    renderDesk(90);
+    expect(screen.getByTestId('speakers-probe')).toHaveAttribute('data-closed-message', expect.stringMatching(/has not opened yet/));
+    cleanup();
+    renderDesk(-30);
+    expect(screen.getByTestId('speakers-probe')).toHaveAttribute('data-closed-message', '');
   });
 });

@@ -82,7 +82,7 @@ describe('/account/complete — an incomplete account running the wizard', () =>
   );
 
   it('keeps the destination across the wizard\'s own Server Action re-renders (same URL, same query)', async () => {
-    s.complete = true; // declaring the licence flips completeness mid-action
+    s.complete = true; // the step that saves last flips completeness mid-action
     s.actionRerender = true;
     const r = await run('/account/claim');
     expect(r.redirectedTo).toBeNull();

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { requireStaff, canCheckIn, NotAuthorizedError } from '@/lib/auth';
-import { CHECKIN_ROLE_MESSAGE, checkInGateMessage } from '@/lib/lifecycle/eventLifecycle';
+import { CHECKIN_ROLE_MESSAGE, checkInGateMessage, computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 import { supabaseServer } from '@/lib/supabase/server';
 import { deriveSpeakerNames } from '@/lib/agenda';
 
@@ -39,12 +39,14 @@ type ToggleResult =
  * the event's agenda blocks via deriveSpeakerNames (host + topic speakers,
  * deduped, no kind filter), so arbitrary names are rejected before any write.
  *
- * Event state: a draft, a cancelled or a deleted event is refused with the same wording as the rest of the desk, before
- * any speaker read or write.
+ * Event state and window: a deleted event, and any event outside [start - CHECKIN_OPEN_MINUTES, end] (draft,
+ * cancelled, not open yet, ended), is refused with the same wording as the rest of the desk, before any speaker read or
+ * write. Same window as attendees (Ivan 2026-11-04, Decide 2): the clock decides, via computeLifecycle, as walk-in does.
+ * Clearing a tick is refused outside the window too. The gate is app-layer only (the speaker_checkins policies do not
+ * check the clock), and a multi-occurrence event uses its whole span, not each occurrence's own window.
  *
  * Role: the desk tells body_admin and auditor it is read-only, so this refuses them with the same sentence BEFORE any
- * read or write (canCheckIn, the helper mark_attended's gate mirrors). Unlike attendee check-in there is deliberately
- * NO check-in window rule here: that is an open product call, not an oversight.
+ * read or write (canCheckIn, the helper mark_attended's gate mirrors).
  *
  * Toggle semantics: no row OR checked_in_at null → stamp now() + updated_by;
  * currently stamped → clear to null (updated_by still recorded).
@@ -69,14 +71,14 @@ export async function toggleSpeakerCheckin(
 
   const { data: event, error: eventErr } = await supabase
     .from('events')
-    .select('status, deleted_at')
+    .select('status, deleted_at, start_time, end_time, registration_close_at, registration_open_at')
     .eq('id', event_id)
     .maybeSingle();
   if (eventErr) throw eventErr;
   if (!event) return { error: NOT_FOUND };
   if (event.deleted_at) return { error: 'This event was deleted. Check-in is closed.' };
-  if (event.status === 'draft') return { error: checkInGateMessage('drafted') as string };
-  if (event.status === 'cancelled') return { error: checkInGateMessage('cancelled') as string };
+  const closedMessage = checkInGateMessage(computeLifecycle(event as EventLifecycleRow, Date.now()));
+  if (closedMessage) return { error: closedMessage };
 
   // Server-side recompute of the valid speaker set. RLS-gated read: a
   // staff member of another organisation sees zero blocks, so every name fails the membership
