@@ -171,6 +171,13 @@ export async function requireStaff(client?: SupabaseClient): Promise<Staff> {
   const { data: userRes } = await supabase.auth.getUser();
   const email = userRes?.user?.email?.toLowerCase();
   if (!email) throw new NotAuthorizedError('no session');
+  // Staff is matched on the email string, so the address must be proven (security audit H1, 2026-11-04). An
+  // unconfirmed address would otherwise inherit whichever staff row carries it. proxy.ts applies the same check.
+  // getStaffSessionState deliberately does NOT: it only denies or frames, so an unconfirmed address that matches
+  // a staff row must still read as staff there (the practitioner-write guards depend on it). Only meaningful while hosted Auth has "Confirm email" ON: with
+  // autoconfirm every address counts as confirmed at signup. The RLS side (app_private.auth_email()) is not
+  // covered here: it reads the JWT email claim and is a kernel change (Decisions Log + Ivan sign-off).
+  if (!userRes?.user?.email_confirmed_at) throw new NotAuthorizedError('email not confirmed');
 
   const { data: staff, error: staffErr } = await supabase
     .from('staff')

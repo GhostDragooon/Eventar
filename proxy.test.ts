@@ -69,7 +69,7 @@ describe('proxy — signed-out visitor on a staff route', () => {
 
 describe('proxy — staff lookup', () => {
   beforeEach(() => {
-    getUser.mockResolvedValue({ data: { user: { email: 'Staff@Example.com' } }, error: null });
+    getUser.mockResolvedValue({ data: { user: { email_confirmed_at: '2026-01-01T00:00:00Z', email: 'Staff@Example.com' } }, error: null });
   });
 
   // N2 (2026-09-25): the gate matched on email alone, so a suspended or
@@ -94,9 +94,26 @@ describe('proxy — staff lookup', () => {
 // out here any more. Signing out destroyed a practitioner's login for clicking
 // "Start an Event" and then told them their email was "not on the organizer
 // list" (I1). /login now explains the session and lets the person choose.
+// Security audit H1: an unconfirmed address is not staff. The session is kept and the staff table is never read.
+describe('proxy — signed in with an unconfirmed address', () => {
+  beforeEach(() => {
+    getUser.mockResolvedValue({ data: { user: { id: 'user-uuid-1', email: 'staff@example.com', email_confirmed_at: null } }, error: null });
+    stubStaffLookup({ data: { id: 'staff-1' }, error: null });
+  });
+
+  // Not not_organiser: /login would read this session as staff and bounce it back here, forever.
+  it('goes to /login?error=email_unconfirmed, no sign-out, no staff lookup', async () => {
+    const to = location(await proxy(request('/dashboard')));
+    expect(to.pathname).toBe('/login');
+    expect(to.searchParams.get('error')).toBe('email_unconfirmed');
+    expect(signOut).not.toHaveBeenCalled();
+    expect(from).not.toHaveBeenCalled();
+  });
+});
+
 describe('proxy — signed in, but no active staff row', () => {
   beforeEach(() => {
-    getUser.mockResolvedValue({ data: { user: { email: 'practitioner@example.com' } }, error: null });
+    getUser.mockResolvedValue({ data: { user: { email_confirmed_at: '2026-01-01T00:00:00Z', email: 'practitioner@example.com' } }, error: null });
     stubStaffLookup({ data: null, error: null });
   });
 
@@ -119,7 +136,7 @@ describe('proxy — branches that did not change', () => {
   // A session with no email is broken, not merely unprivileged: it can never
   // match a staff row, so this is still the one place the gate signs out.
   it('a session with no email is signed out and sent to /login?error=not_authorized', async () => {
-    getUser.mockResolvedValue({ data: { user: { email: undefined } }, error: null });
+    getUser.mockResolvedValue({ data: { user: { email_confirmed_at: '2026-01-01T00:00:00Z', email: undefined } }, error: null });
     const to = location(await proxy(request('/dashboard')));
     expect(to.pathname).toBe('/login');
     expect(to.searchParams.get('error')).toBe('not_authorized');
@@ -129,7 +146,7 @@ describe('proxy — branches that did not change', () => {
   // An unreadable staff table is an outage, not a verdict (rule 12): fail
   // closed, keep the session, say it is on our side.
   it('an unreadable staff table is an outage: /login?error=unavailable, session kept', async () => {
-    getUser.mockResolvedValue({ data: { user: { email: 'staff@example.com' } }, error: null });
+    getUser.mockResolvedValue({ data: { user: { email_confirmed_at: '2026-01-01T00:00:00Z', email: 'staff@example.com' } }, error: null });
     stubStaffLookup({ data: null, error: { code: '57014', message: 'canceling statement' } });
     const to = location(await proxy(request('/dashboard')));
     expect(to.pathname).toBe('/login');
@@ -141,7 +158,7 @@ describe('proxy — branches that did not change', () => {
   // outage: say so, log who and why (UUID and code only, never the email), keep the session.
   it('an email that matches two active staff rows gets /login?error=multiple_organisations, logged without PII, session kept', async () => {
     const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    getUser.mockResolvedValue({ data: { user: { id: 'user-uuid-1', email: 'staff@example.com' } }, error: null });
+    getUser.mockResolvedValue({ data: { user: { email_confirmed_at: '2026-01-01T00:00:00Z', id: 'user-uuid-1', email: 'staff@example.com' } }, error: null });
     stubStaffLookup({ data: null, error: { code: 'PGRST116', message: 'JSON object requested, multiple (or no) rows returned' } });
     const to = location(await proxy(request('/dashboard')));
     expect(to.pathname).toBe('/login');
@@ -156,7 +173,7 @@ describe('proxy — branches that did not change', () => {
   });
 
   it('any other staff-read failure still reads as the transient outage', async () => {
-    getUser.mockResolvedValue({ data: { user: { id: 'user-uuid-1', email: 'staff@example.com' } }, error: null });
+    getUser.mockResolvedValue({ data: { user: { email_confirmed_at: '2026-01-01T00:00:00Z', id: 'user-uuid-1', email: 'staff@example.com' } }, error: null });
     stubStaffLookup({ data: null, error: { code: 'PGRST301', message: 'JWT expired' } });
     expect(location(await proxy(request('/dashboard'))).searchParams.get('error')).toBe('unavailable');
   });

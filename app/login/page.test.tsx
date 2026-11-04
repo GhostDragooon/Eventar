@@ -262,6 +262,19 @@ describe('/login — signed-in practitioner (D1)', () => {
 });
 
 describe('/login — ?error= codes', () => {
+  // Security audit H1: proxy.ts sends an unconfirmed session here. getStaffSessionState matches on email alone, so
+  // this session can read as staff; the page must show the form and NOT run the check, or it replaces to /dashboard,
+  // the proxy sends it back, and the person loops (user-lens F9).
+  it('?error=email_unconfirmed shows the form with the notice and does not run the staff check or redirect', async () => {
+    sessionAs('org@example.com');
+    staff(true);
+    visit('error=email_unconfirmed&next=%2Fdashboard');
+    expect(await screen.findByLabelText(/email address/i)).toBeInTheDocument();
+    expect(screen.getByText(/isn't confirmed yet/i)).toBeInTheDocument();
+    expect(getAccountMenuState).not.toHaveBeenCalled();
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
   // D1: a pasted not_organiser URL with nobody signed in.
   it('?error=not_organiser with no session shows the form plus the organiser copy', async () => {
     noSession();

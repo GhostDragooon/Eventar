@@ -83,6 +83,15 @@ export async function proxy(req: NextRequest) {
     return redirectWithCookies(new URL('/login?error=not_authorized', req.url));
   }
 
+  // An unconfirmed address is not staff (security audit H1): same rule as requireStaff(). Session kept. Its own
+  // code, not not_organiser: /login runs its staff check for not_organiser, reads this session as staff
+  // (getStaffSessionState matches on email alone) and replaces back to /dashboard, which lands here again.
+  // Every other code skips that check and shows the form. Asked before the staff table is read, so the line it
+  // shows says nothing about staff membership.
+  if (!user.email_confirmed_at) {
+    return redirectWithCookies(loginUrl('email_unconfirmed'));
+  }
+
   // status = 'active' matches requireStaff() and getStaffSessionState():
   // suspended/removed staff lose access at Layer 1 too, not only at Layer 2
   // (finding N2, 2026-09-25).

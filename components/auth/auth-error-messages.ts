@@ -31,6 +31,10 @@ const AUTH_ERROR_MESSAGES_ORGANIZER: Readonly<Record<string, string>> = {
   // /login?error=not_organiser. With a session /login shows its practitioner
   // panel instead; this line is what a visitor with no session sees.
   not_organiser: ORGANISER_WRONG_DOOR,
+  // proxy.ts sends any signed-in session whose address is not confirmed here, before it looks at the staff table,
+  // so the line is the same for everyone and says nothing about staff membership.
+  email_unconfirmed:
+    "Your email address isn't confirmed yet. Open the confirmation email we sent you, or request a new log-in link below.",
 };
 
 const AUTH_ERROR_MESSAGES_ATTENDEE: Readonly<Record<string, string>> = {

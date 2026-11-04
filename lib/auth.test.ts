@@ -26,7 +26,7 @@ import { requireStaff, NotAuthorizedError, getStaffSessionState, isStaffSession,
 // removes a .eq(...) call from requireStaff is caught here rather than
 // silently passing regardless of the filter.
 function mockClient({ user, staffRow, userError = null, staffError = null }: {
-  user: { email: string; id?: string } | null;
+  user: { email: string; id?: string; email_confirmed_at?: string | null } | null;
   staffRow: { id: string; email: string; role: 'organizer' | 'manager'; full_name: string | null; status: string } | null;
   userError?: Error | null;
   staffError?: { code: string; message: string } | null;
@@ -49,12 +49,23 @@ function mockClient({ user, staffRow, userError = null, staffError = null }: {
     };
   }
   return {
-    auth: { getUser: async () => ({ data: { user }, error: userError }) },
+    // A signed-in fixture is confirmed unless a test says otherwise (email_confirmed_at: null).
+    auth: { getUser: async () => ({ data: { user: user && { email_confirmed_at: '2026-01-01T00:00:00Z', ...user } }, error: userError }) },
     from: () => ({ select: () => makeChain(staffRow) }),
   } as any;
 }
 
 describe('requireStaff', () => {
+  // Security audit H1: staff is matched on the email string, so an unproven address must not inherit a staff row.
+  it('throws NotAuthorizedError when the address is not confirmed, even if a staff row matches it', async () => {
+    const c = mockClient({
+      user: { email: 'a@b.com', email_confirmed_at: null },
+      staffRow: { id: 's-1', email: 'a@b.com', role: 'organizer', full_name: 'Alex Bee', status: 'active' },
+    });
+    await expect(requireStaff(c)).rejects.toThrow(NotAuthorizedError);
+    await expect(requireStaff(c)).rejects.toThrow('email not confirmed');
+  });
+
   it('returns staff record when user is logged in and listed in staff', async () => {
     const c = mockClient({
       user: { email: 'a@b.com' },
@@ -100,6 +111,13 @@ describe('getStaffSessionState', () => {
 
   it("returns 'staff' for a session whose email has an active staff row", async () => {
     const c = mockClient({ user: { email: 'org@x.com' }, staffRow: activeStaff });
+    expect(await getStaffSessionState(c)).toBe('staff');
+  });
+
+  // The deny side keeps matching on email alone (audit H1 guards GRANTING access, in requireStaff and proxy): an
+  // unconfirmed address that matches a staff row still reads as staff, so practitioner-only writes stay refused.
+  it("returns 'staff' for an unconfirmed address that matches an active staff row (deny-side, unchanged)", async () => {
+    const c = mockClient({ user: { email: 'org@x.com', email_confirmed_at: null }, staffRow: activeStaff });
     expect(await getStaffSessionState(c)).toBe('staff');
   });
 

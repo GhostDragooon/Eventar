@@ -30,6 +30,13 @@ describe('resolveAuthError', () => {
     expect(resolveAuthError('not_organiser')).toBe(resolveAuthError('not_authorized'));
   });
 
+  // Security audit H1: an unconfirmed session. Neutral for everyone, so it must not hint at staff membership.
+  it('resolves email_unconfirmed to a neutral line that never mentions staff, organisers or a password', () => {
+    const line = resolveAuthError('email_unconfirmed')!;
+    expect(line).toMatch(/isn't confirmed yet/i);
+    expect(line).not.toMatch(/password|staff|list|team|admin|organi[sz]er/i);
+  });
+
   // Ivan 2026-11-01: bland, non-enumerating, no password language, points to the Attendee door and Sign up.
   it('the wrong-door line never says whether the email is on a staff list, never mentions a password, and points on', () => {
     for (const code of ['not_authorized', 'not_organiser']) {
