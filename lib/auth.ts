@@ -65,6 +65,14 @@ export function canCheckIn(role: Staff['role']): boolean {
   return role === 'organiser_admin' || role === 'organiser_member' || role === 'eventar_staff';
 }
 
+// Which roles bulk_update_event_status() accepts (20261104100000): cancel, archive and restore events. Same three
+// as publish_event; body_admin and auditor read and cannot change an event's state. Until that migration the RPC
+// named no roles, so any active staff role could cancel or delete every event in its organisation. The database
+// refuses regardless; this lets the action answer plainly before the call.
+export function canChangeEventStatus(role: Staff['role']): boolean {
+  return role === 'organiser_admin' || role === 'organiser_member' || role === 'eventar_staff';
+}
+
 // Which roles set_event_cpd_config() accepts: its resolve_actor gate names only
 // these two (read from the live definition on 2026-10-02). An organiser_member
 // can create and publish an event but not accredit it; the create form used to

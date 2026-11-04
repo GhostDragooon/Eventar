@@ -1,12 +1,17 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { requireStaff } from '@/lib/auth';
+import { z } from 'zod';
+import { canChangeEventStatus, requireStaff } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 type BulkResult = { ok: true; count: number } | { error: string };
 type BulkAction = 'cancel' | 'soft_delete' | 'restore';
+
+const BULK_ROLE_MESSAGE = 'Your role cannot cancel, delete or restore events. Ask an organiser admin or member.';
+// ponytail: 500 is far above any ticked page of events; raise it if bulk-select ever spans more.
+const eventIdsSchema = z.array(z.string().uuid()).max(500);
 
 // Owner/manager-gated bulk mutation over the caller's events, routed through
 // the bulk_update_event_status() SECURITY DEFINER RPC (20260816070000) so
@@ -19,9 +24,12 @@ type BulkAction = 'cancel' | 'soft_delete' | 'restore';
 // read-only, no RLS/permission risk). Ownership scoping (own events only,
 // unless eventar_staff) now lives in the RPC's WHERE clause instead of here.
 async function bulkUpdate(eventIds: string[], action: BulkAction): Promise<BulkResult> {
-  if (eventIds.length === 0) return { ok: true, count: 0 };
   const supabase = await supabaseServer();
   const staff = await requireStaff(supabase);
+  // Role gate before any read or write (the RPC refuses too: 20261104100000).
+  if (!canChangeEventStatus(staff.role)) return { error: BULK_ROLE_MESSAGE };
+  if (eventIds.length === 0) return { ok: true, count: 0 };
+  if (!eventIdsSchema.safeParse(eventIds).success) return { error: 'Could not update the selected events.' };
   // eslint-disable-next-line no-restricted-syntax -- attribution only; degrades to NULL, same as checkin/actions.ts
   const { data: authUser } = await supabase.auth.getUser();
   const admin = supabaseAdmin();

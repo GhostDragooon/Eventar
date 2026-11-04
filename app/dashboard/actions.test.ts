@@ -11,14 +11,18 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 
-vi.mock('@/lib/auth', () => ({
-  requireStaff: vi.fn(async () => ({
-    id: 'staff-1',
-    email: 'operator@example.test',
-    role: 'organiser_admin',
-    full_name: 'Test Operator',
-  })),
+const { requireStaff } = vi.hoisted(() => ({ requireStaff: vi.fn() }));
+// canChangeEventStatus stays real: the role table is the thing under test.
+vi.mock('@/lib/auth', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/auth')>()),
+  requireStaff,
 }));
+const staffWithRole = (role: string) => ({
+  id: 'staff-1',
+  email: 'operator@example.test',
+  role,
+  full_name: 'Test Operator',
+});
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 
@@ -33,17 +37,23 @@ vi.mock('@/lib/supabase/server', () => ({
 
 import { cancelEvents, softDeleteEvents, restoreEvents } from './actions';
 
+const EVT_1 = '11111111-1111-4111-8111-111111111111';
+const EVT_2 = '22222222-2222-4222-8222-222222222222';
+const EVT_OTHER = '33333333-3333-4333-8333-333333333333';
+
 beforeEach(() => {
   rpc.mockReset();
+  requireStaff.mockReset();
+  requireStaff.mockResolvedValue(staffWithRole('organiser_admin'));
 });
 
 describe('dashboard bulk actions — route through the audited RPC', () => {
   it('cancelEvents calls bulk_update_event_status with action=cancel and both actor ids', async () => {
-    rpc.mockResolvedValueOnce({ data: [{ id: 'evt-1' }, { id: 'evt-2' }], error: null });
-    const res = await cancelEvents(['evt-1', 'evt-2']);
+    rpc.mockResolvedValueOnce({ data: [{ id: EVT_1 }, { id: EVT_2 }], error: null });
+    const res = await cancelEvents([EVT_1, EVT_2]);
     expect(res).toEqual({ ok: true, count: 2 });
     expect(rpc).toHaveBeenCalledWith('bulk_update_event_status', {
-      p_event_ids: ['evt-1', 'evt-2'],
+      p_event_ids: [EVT_1, EVT_2],
       p_action: 'cancel',
       p_actor_override: 'staff-1',
       p_actor_user_id: 'auth-user-1',
@@ -51,14 +61,14 @@ describe('dashboard bulk actions — route through the audited RPC', () => {
   });
 
   it('softDeleteEvents calls with action=soft_delete', async () => {
-    rpc.mockResolvedValueOnce({ data: [{ id: 'evt-1' }], error: null });
-    await softDeleteEvents(['evt-1']);
+    rpc.mockResolvedValueOnce({ data: [{ id: EVT_1 }], error: null });
+    await softDeleteEvents([EVT_1]);
     expect(rpc).toHaveBeenCalledWith('bulk_update_event_status', expect.objectContaining({ p_action: 'soft_delete' }));
   });
 
   it('restoreEvents calls with action=restore', async () => {
-    rpc.mockResolvedValueOnce({ data: [{ id: 'evt-1' }], error: null });
-    await restoreEvents(['evt-1']);
+    rpc.mockResolvedValueOnce({ data: [{ id: EVT_1 }], error: null });
+    await restoreEvents([EVT_1]);
     expect(rpc).toHaveBeenCalledWith('bulk_update_event_status', expect.objectContaining({ p_action: 'restore' }));
   });
 
@@ -70,7 +80,7 @@ describe('dashboard bulk actions — route through the audited RPC', () => {
 
   it('surfaces an RPC error as a generic failure message', async () => {
     rpc.mockResolvedValueOnce({ data: null, error: { message: 'boom' } });
-    const res = await cancelEvents(['evt-1']);
+    const res = await cancelEvents([EVT_1]);
     expect(res).toEqual({ error: 'Could not update the selected events.' });
   });
 
@@ -78,8 +88,51 @@ describe('dashboard bulk actions — route through the audited RPC', () => {
     // Mirrors the RPC's own silent-filter behavior: passing 2 ids but owning
     // only 1 returns just the owned row, same as the prior direct .update()
     // + .eq('created_by', ...) did.
-    rpc.mockResolvedValueOnce({ data: [{ id: 'evt-1' }], error: null });
-    const res = await cancelEvents(['evt-1', 'evt-not-owned']);
+    rpc.mockResolvedValueOnce({ data: [{ id: EVT_1 }], error: null });
+    const res = await cancelEvents([EVT_1, EVT_OTHER]);
     expect(res).toEqual({ ok: true, count: 1 });
+  });
+});
+
+// Security audit M1 (20261104100000): any active staff role used to pass. The gate runs after requireStaff and
+// before any read or write; the RPC refuses the same two roles with 42501 (tests/rls/bulk_update_event_status_gate).
+describe('dashboard bulk actions — role gate and input check', () => {
+  it.each(['organiser_admin', 'organiser_member', 'eventar_staff'])('%s reaches the RPC', async (role) => {
+    requireStaff.mockResolvedValue(staffWithRole(role));
+    rpc.mockResolvedValueOnce({ data: [{ id: EVT_1 }], error: null });
+    expect(await cancelEvents([EVT_1])).toEqual({ ok: true, count: 1 });
+    expect(rpc).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['body_admin', 'auditor'])('%s is refused with a plain message and the RPC is never called', async (role) => {
+    requireStaff.mockResolvedValue(staffWithRole(role));
+    for (const fn of [cancelEvents, softDeleteEvents, restoreEvents]) {
+      const res = await fn([EVT_1]);
+      expect(res).toEqual({ error: expect.stringMatching(/role cannot cancel, delete or restore/i) });
+    }
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('a refused role is refused even for an empty list (the gate comes first)', async () => {
+    requireStaff.mockResolvedValue(staffWithRole('auditor'));
+    expect(await cancelEvents([])).toEqual({ error: expect.any(String) });
+  });
+
+  it('requireStaff runs even for an empty list (Hard Rule 3: no early return above the gate)', async () => {
+    requireStaff.mockRejectedValue(new Error('not authorized'));
+    await expect(cancelEvents([])).rejects.toThrow('not authorized');
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('refuses ids that are not uuids without calling the RPC', async () => {
+    expect(await cancelEvents(['not-a-uuid'])).toEqual({ error: 'Could not update the selected events.' });
+    expect(await cancelEvents([EVT_1, "x'; drop table events;--"])).toEqual({ error: 'Could not update the selected events.' });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('refuses more than 500 ids without calling the RPC', async () => {
+    const many = Array.from({ length: 501 }, (_, i) => `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`);
+    expect(await cancelEvents(many)).toEqual({ error: 'Could not update the selected events.' });
+    expect(rpc).not.toHaveBeenCalled();
   });
 });

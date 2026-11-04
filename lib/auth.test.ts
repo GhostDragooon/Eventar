@@ -18,7 +18,7 @@ vi.mock('@/lib/supabase/admin', () => ({ supabaseAdmin: () => 'admin-client-mark
 import { afterEach, describe, expect, it } from 'vitest';
 import { AuthRetryableFetchError, AuthSessionMissingError } from '@supabase/supabase-js';
 import { createClient } from '@supabase/supabase-js';
-import { requireStaff, NotAuthorizedError, getStaffSessionState, isStaffSession, canPublishEvents, canSetAccreditation, canEditRegistrations, canEditRegistrationRoles, canCheckIn } from './auth';
+import { requireStaff, NotAuthorizedError, getStaffSessionState, isStaffSession, canPublishEvents, canSetAccreditation, canEditRegistrations, canEditRegistrationRoles, canCheckIn, canChangeEventStatus } from './auth';
 
 // Fabricate a minimal supabase client shape that requireStaff depends on.
 // The fake chain actually APPLIES each .eq(field, value) predicate against
@@ -320,6 +320,20 @@ describe('canSetAccreditation', () => {
     ['auditor', false],
   ] as const)('%s -> %s', (role, expected) => {
     expect(canSetAccreditation(role)).toBe(expected);
+  });
+});
+
+// bulk_update_event_status() names organiser_admin, organiser_member and eventar_staff (20261104100000). The same
+// table is asserted against the live function in tests/rls/bulk_update_event_status_gate.rls.test.ts.
+describe('canChangeEventStatus', () => {
+  it.each([
+    ['organiser_admin', true],
+    ['organiser_member', true],
+    ['eventar_staff', true],
+    ['body_admin', false],
+    ['auditor', false],
+  ] as const)('%s -> %s', (role, expected) => {
+    expect(canChangeEventStatus(role)).toBe(expected);
   });
 });
 
