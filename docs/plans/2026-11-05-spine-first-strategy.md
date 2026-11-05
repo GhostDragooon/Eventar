@@ -76,8 +76,7 @@ So the College rows are static and have no rules. An event accredited by, say, H
    - confirmed-email staff guard: `0ed292c`
    - `bulk_update_event_status` role gate: `4396d28`
    - Next 16.4.5: `73361e3`
-   - clickjacking: `frame-ancestors 'none'` at `next.config.ts:14`
-   - Remaining: dependency hygiene.
+   - Still open (security audit `docs/plans/security-audit-20261104.md`, "Still open" list): clickjacking (M3) — `frame-ancestors 'none'` at `next.config.ts:14` is only in the **Report-Only** CSP, which browsers do not enforce (corrected 2026-11-05); hosted Auth "Confirm email" check; H1 SQL layer; M2 forgeable `consent_records`; `zod` 4.4.3 → 4.6.6+.
 3. **Stage 8.** Deploy (Singapore), Resend / Turnstile / privacy notice as needed, real events and real check-ins.
 4. **Partner outreach → first accreditation slice.** Rule content for that partner's body only. Build the two confirmation steps from §2. Add B9 digest and B7 QC engines only where they serve that slice.
 
