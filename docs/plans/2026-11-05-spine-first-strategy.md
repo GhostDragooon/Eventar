@@ -64,7 +64,7 @@ Stage 10 built the **machinery**. The **rule content** is almost all still missi
 | 15 HKAM Colleges + MCHK in the registry | seeded as registry rows only |
 | Rule content (`role_mappings`) | **HKCP and MCHK only**, provisional, from public web sources, static jsonb with no version |
 | Pack hash on `credit_ledger` | does not exist (2026-08-21 decision: computed at export time only) |
-| Rule-content history | **shipped 2026-11-05** (`20261105100000`, local only): audit row per change with old/new content + hashes, one baseline row per existing body |
+| Rule-content history | **shipped 2026-11-05** (`20261105100000`, local + Seoul): audit row per change with old/new content + hashes, one baseline row per existing body |
 | Versioned `body_rules` / deterministic evaluator | not built; Stage 13, gated on Q26 + doctrine D.1 |
 
 So the College rows are static and have no rules. An event accredited by, say, HKCA awards nothing until HKCA gets `role_mappings`. That matches this strategy: content is added per partner.
@@ -104,7 +104,7 @@ So the College rows are static and have no rules. An event accredited by, say, H
 
 ## 7a. Known breakers (reviewed 2026-11-05)
 
-1. **Rule content had no history. FIXED** by migration `20261105100000` (see §2, §4). Applied locally only; Seoul needs Ivan's go.
+1. **Rule content had no history. FIXED** by migration `20261105100000` (see §2, §4). Applied locally and to Seoul on 2026-11-05 (with the 18 earlier pending migrations).
 2. **The "Ivan approves first" gate is only safe inside `award_attendance_credit()`.** Credit posts at check-in and the ledger is append-only, so a UI-only gate lets check-ins before approval write permanent rows. **Deferred** (Ivan: not an issue at this stage). Re-entry: when the approval step is built.
 3. **Ivan's confirmations would be recorded as `body_confirmed`.** Evidence a regulator reads would say the body confirmed what Eventar confirmed. **Deferred.** Re-entry: before any confirmed row appears in a College export.
 4. **One confirmer does not scale.** Per-row confirmation on a multi-body event (~13 rows per attendee) needs a per-event bulk confirm. **Deferred.** Re-entry: the first multi-body accredited event.
