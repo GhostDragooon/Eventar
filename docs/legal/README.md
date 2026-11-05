@@ -4,38 +4,48 @@
 
 ## What's in here
 
-| File | Version | Notes |
-|---|---|---|
-| [`privacy-policy.md`](./privacy-policy.md) | **v0.2** (non-solicitor cleanup 2026-05-22) | Scoped to PDPO (Cap. 486). Substantive cleanup done — see frontmatter `v0.2_changes` for the changelog. |
-| [`terms-and-conditions.md`](./terms-and-conditions.md) | v0.1 | Multi-tenant SaaS framing, ~9 entity/cap/jurisdiction placeholders unfilled. |
-| [`legal-notice.md`](./legal-notice.md) | v0.1 | Operator identity, contact, IP statement. ~5 entity placeholders unfilled. |
+| File | Draft revision | Consent string (unchanged) | Notes |
+|---|---|---|---|
+| [`privacy-policy.md`](./privacy-policy.md) | **0.3** (2026-11-05, CPD rewrite) | `pp-0.2-draft` | PPS + short collection notice, structured on the PCPD PICS/PPS guidance (2013). Data inventory rebuilt from the live schema. |
+| [`terms-and-conditions.md`](./terms-and-conditions.md) | **0.2** (2026-11-05, CPD rewrite) | `tos-0.1-draft` | Practitioner/Organiser/Attendee split, permanent Credit Records, accrediting body decides credit. |
+| [`legal-notice.md`](./legal-notice.md) | 0.1 | — | Pre-pivot; not revised. Overlaps the Terms (disclaimer, liability, IP); consider folding it in. |
+
+Real platforms used as **structural references only** (no sentence copied): Eventbrite legal hub (document split), Luma terms and privacy, Accredible privacy (audience split), Hong Kong Academy of Medicine privacy (language precedence, CME transferees), PCPD guidance notes. Sources and dates are in each file's frontmatter.
+
+**Consent strings were deliberately not bumped.** `lib/accountCompleteness.ts` requires the exact string in `lib/legalVersions.ts`, so a bump re-prompts every account (381 locally). Bump both, and reword `app/account/complete/CompleteClient.tsx`, only when the reviewed pages are published.
 
 ## Current framing
 
-All three drafts assume the **multi-tenant SaaS model** described in the vault's `30 — Reference/Commercialisation Proposal.md`: Eventar is a software platform, third-party **Organisers** are the data controllers, and **Attendees** register for events the Organisers run.
-
-This may or may not be where the product actually goes. Per the project decision on 2026-05-22, the MVP-vs-commercialisation fork is **deferred until after Phase 6**. If the project ends up purely internal (no third-party Organisers), large parts of the T&Cs become inappropriate and should be rewritten before publication.
+The CPD platform (pivot 2026-07-03, Q48 direction 2026-11-05). Eventar is the data user for Practitioner accounts, licences and Credit Records; Organisers are the data users for their event registration lists, with Eventar as processor. The Accrediting Body's role (separate data user or not) is a solicitor question.
 
 ## What still blocks publication
 
 ### Requires a Hong Kong solicitor
 - Legal entity name, BR number, registered address (all three docs)
 - Effective date (all three)
-- Liability cap amount and 12-month-fees fallback (T&C §11.2(c))
-- Jurisdiction / arbitration choice (T&C §15)
-- A separate **Data Processing Agreement** (referenced by T&C §5.3 but not drafted here)
-- PDPO §33 cross-border position confirmation
-- Fee terms (T&C §5.6) — currently a placeholder
+- A separate **Data Processing Agreement** (referenced by Terms §1.3 and §5.3; not drafted here)
+- PDPO §33 cross-border position confirmation (Privacy §7)
+- Data roles, especially whether the Accrediting Body is a separate data user (Privacy §2)
+- Whether existing tos-0.1-draft / pp-0.2-draft acceptances stand or need re-consent
+- Fee terms (Terms §5.4) — currently a placeholder
+- Liability cap (Terms §12.2), indemnity scope (§13), disputes forum (§15)
 
 ### Requires implementation work first
-- The Privacy Policy intentionally does **not** claim audit logging (the codebase doesn't ship it yet). If the product later adds an audit log, update Privacy §10.
+- **Erasure overclaims until fixed:** `pseudonymise_user` replaces only `users.full_name`; it leaves first/last/preferred name, phone, avatar, sign-in email, registration name/email and licence numbers. Extend the function, or narrow Privacy §10 (marked PUBLICATION BLOCKER).
+- **Audit payloads hold plaintext email** (`registration_claimed`, `registration_contact_updated`) that cannot be updated: hash them as `email_change` does, or narrow Privacy §10.
+- **Avatars are in a public bucket** (`avatars`, `public = true`); Privacy §6 now says so. Make the bucket private or keep that sentence.
+- **No purge job** enforces any retention period in Privacy §8 (incl. IP-keyed `rate_limits`).
+- `participation_evidence` keeps service_role DELETE; Privacy §8 gives it a period, not "permanent". Revoke DELETE if it should be permanent.
+- Organiser venue search sends text + IP to OpenStreetMap Nominatim from the browser (Privacy §6); proxy it server-side if that transfer is unwanted.
+- No self-serve account closing or rights-request form exists; Terms §10.2 and Privacy §10 route both to an email address.
+- The pre-credit accreditation review (Terms §5.2) is not built (Q48 breaker 2).
+- Speaker-discovery listing: confirm who can see it before publication (Privacy §3).
 
 ### Requires confirmation before publication
-- Supabase project region (check Supabase Dashboard → Settings → General) — Privacy §8
-- Vercel deployment region (once Phase 8 lands) — Privacy §8
+- Database region (Seoul today, Singapore planned) and hosting provider/region (Stage 8) — Privacy §7
 - PCPD contact details — verified against pcpd.org.hk on 2026-05-22; re-verify at publication time
-- Retention defaults in Privacy §9 — currently working defaults set in v0.2; the data owner should sign these off
+- Retention defaults in Privacy §8 — currently working defaults; the data owner should sign these off
 
 ## Cross-references in code
 
-These docs are not yet served by the app. When they are published (`/legal/terms`, `/legal/privacy`, `/legal/notice` or similar), update the app footer + the Phase 7 email templates to link to them.
+These docs are not yet served by the app. When they are published (`/legal/terms`, `/legal/privacy`, `/legal/notice` or similar), update the app footer + the email templates to link to them.
