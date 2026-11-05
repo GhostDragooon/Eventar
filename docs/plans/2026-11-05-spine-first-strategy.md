@@ -1,6 +1,6 @@
 # Spine-first strategy — DIRECTION (2026-11-05)
 
-> **Status: DIRECTION, not locked (Ivan, 2026-11-05).** This is the heading we are working toward, not a fixed plan. It will change as partners join and as the AI tooling matures. Logged in the vault as Decisions Log **Q48** (direction). `STAGES.md` stays the stage authority until §7 item 1 is decided. Known breakers are in §7a.
+> **Status: DIRECTION, not locked (Ivan, 2026-11-05).** This is the heading we are working toward, not a fixed plan. It will change as partners join and as the AI tooling matures. Logged in the vault as Decisions Log **Q48** (direction). `STAGES.md` stays the stage authority; §7 records the stage placement Ivan decided the same day. Known breakers are in §7a.
 
 ## 1. End goal
 
@@ -40,7 +40,7 @@ These are narrow, typed, confidence-gated classifiers. Examples:
 
 Each engine is a single narrow job, not one general "CPD brain", and none of them calculates points.
 
-**Engine vendor: not decided.** Jev (TypeSafe AI's "System One" decision model) is a candidate; see §6.
+**Engine vendor: not chosen.** Jev (TypeSafe AI's "System One" decision model) was assessed and skipped for now; see §6 and §7.
 
 ## 3. Go-to-market and expansion
 
@@ -93,14 +93,11 @@ So the College rows are static and have no rules. An event accredited by, say, H
   4. A vendor / terms review: licence, pricing, data retention.
 - **Not yet read:** typesafe.ai's own docs. The Reddit review was not reachable.
 
-## 7. Open (Q48 "Not decided")
+## 7. Decided (Ivan, 2026-11-05)
 
-1. **Where B9 digest + B7 QC engines go in `STAGES.md`.** Stage 10 is "Dual-track engine (provisional rules)", and its machinery is shipped (§4); it is not the LLM + Jev build. Options:
-   - (a) Close Stage 10 as shipped. Move B9/B7 into Stage 12 (per partner slice) and log the rescope in Q48.
-   - (b) Rename Stage 10 to the LLM + QC build. This costs a renumber across `STAGES.md`, `PROJECT_STATE.md`, `BLOCK-ARCHITECTURE.md` and live plans.
-   - (c) Leave B9/B7 in Stage 13 as mapped today.
-2. **Stage 11 (KMS-signed, verifiable record).** This is what makes evidence "regulators will accept". Keep it before the pilot, move it, or drop it?
-3. **Jev: adopt, trial or skip.** A trial would be an advisory-only, non-PII, optional B7 step, admitted via the block checklist.
+1. **B9 digest + B7 QC engines go into Stage 12.** Stage 10 is closed as shipped (its machinery is in §4). Each Stage 12 partner slice builds that partner's rule content, plus the digest and any QC engine the slice needs. Rows 10 and 12 of `STAGES.md` were edited in place; no stage was renumbered.
+2. **Stage 11 stays before the pilot.** A KMS-signed record that verifies against a published key is what makes the evidence regulator-acceptable.
+3. **Jev: skip for now.** Revisit when a B7 QC engine is actually being built (tracked in `docs/DEFERRED.md`). The §6 blocks still apply if it comes back.
 
 ## 7a. Known breakers (reviewed 2026-11-05)
 
@@ -121,4 +118,4 @@ Items 2–5 are tracked in `docs/DEFERRED.md`.
 
 ## 9. Agent instruction
 
-Treat the spine as the product. Treat accreditation as a partner-led module on top of clean capture. Keep the award deterministic. Use an LLM only for document digest (offline, B9). Use QC engines only as narrow, confidence-gated flaggers that a human clears (B7). Expand body coverage only with partners who join. Do not invent scope beyond this plan, and treat §7 as undecided.
+Treat the spine as the product. Treat accreditation as a partner-led module on top of clean capture. Keep the award deterministic. Use an LLM only for document digest (offline, B9). Use QC engines only as narrow, confidence-gated flaggers that a human clears (B7). Expand body coverage only with partners who join. Do not invent scope beyond this plan, and follow §7's decisions.
