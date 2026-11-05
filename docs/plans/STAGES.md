@@ -24,6 +24,8 @@
 
 > **Rescope logged 2026-08-10 (Ivan) — Decisions Log Q33.** Stages 9, 10, 12 and 13 were re-pointed at the dual-track CME/CPD launch. The versioned `body_rules` evaluator that used to be Stage 10 moved to **Stage 13**; it stays gated on Q26 and doctrine D.1. Rule 1 below forbids *silent* renumbering — this is the logged kind, and the alternative (appending as Stage 14, which would then run *before* 9–13 in calendar time) was considered and rejected as worse for the next reader. Scope record: `docs/plans/2026-08-10-dual-track-stage-scope.md`.
 
+> **Direction logged 2026-11-05 (Ivan) — Decisions Log Q48, not a renumber.** Spine first; accreditation grows per partner. Reading note: Stage 12's "1–2 Specialty Colleges + 1 MCHK provider" is meant as "the partners who actually join"; the row text is unchanged. Where the B9 document digest and B7 QC engines sit in this table is still open (`docs/plans/2026-11-05-spine-first-strategy.md` §7). No row above changes until Ivan decides.
+
 ## Translating the old names
 
 | Old term | Now |
