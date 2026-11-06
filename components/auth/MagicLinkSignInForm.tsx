@@ -98,7 +98,7 @@ export function MagicLinkSignInForm({
           ? 'The response does not reveal whether an account already exists.'
           : audience === 'invitee'
             ? 'Use the address you want for your organiser account.'
-            : 'The response does not reveal whether an address is on the organizer list.'}
+            : 'The response does not reveal whether an address is on the organiser list.'}
       </p>
       {/* text-on-primary!: tailwind-merge reads `text-label-md` (a font size) as
           a text colour and drops the Button's own text-on-primary, leaving dark

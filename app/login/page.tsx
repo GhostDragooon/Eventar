@@ -192,12 +192,12 @@ function LoginForm() {
           ) : (
             <>
               <li>
-                Only organizer emails can log in. If yours isn&apos;t on the list, ask an admin to
+                Only organiser emails can log in. If yours isn&apos;t on the list, ask an admin to
                 add you.
               </li>
               <li>Changing address? Log in with your current one, then update it from Settings.</li>
               <li>
-                Lost access to your inbox entirely? Ask an admin to update your organizer record —
+                Lost access to your inbox entirely? Ask an admin to update your organiser record —
                 magic-link-only log-in means we can&apos;t self-serve you back in from this screen.
               </li>
             </>

@@ -324,7 +324,10 @@ export function CompleteClient({
               </span>
             </label>
             {consentStatus && <StatusBanner status={consentStatus} />}
-            <div className="mt-md flex justify-end">
+            <div className="mt-md flex items-center justify-end gap-md">
+              {!consentChecked && (
+                <p className="font-body-md text-body-md text-on-surface-variant m-0 text-right">Tick the box above to continue.</p>
+              )}
               <Button type="button" onClick={onAcceptConsent} disabled={!consentChecked || consentPending}>
                 {consentPending ? 'Saving…' : 'Continue'}
               </Button>

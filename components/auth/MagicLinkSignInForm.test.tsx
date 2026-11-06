@@ -96,7 +96,7 @@ describe('MagicLinkSignInForm', () => {
 
   it('shows an initial error passed from the host (e.g. a redirect from /auth/callback)', () => {
     render(<MagicLinkSignInForm submitMagicLink={async () => ({ ok: true })} initialError="Your email is not on the organizer list." />);
-    expect(screen.getByRole('alert')).toHaveTextContent(/not on the organizer list/i);
+    expect(screen.getByRole('alert')).toHaveTextContent(/not on the organi[sz]er list/i);
   });
 
   // Band 1 review F4: the alert used to follow the submit button, below the fold
@@ -120,7 +120,7 @@ describe('MagicLinkSignInForm', () => {
 
   it('help copy references the organizer list by default (audience unset)', () => {
     render(<MagicLinkSignInForm submitMagicLink={async () => ({ ok: true })} />);
-    expect(screen.getByText(/organizer list/i)).toBeInTheDocument();
+    expect(screen.getByText(/organi[sz]er list/i)).toBeInTheDocument();
     expect(screen.queryByText(/account already exists/i)).not.toBeInTheDocument();
   });
 
@@ -128,14 +128,14 @@ describe('MagicLinkSignInForm', () => {
   it('help copy drops the allowlist and says which address to use when audience="invitee"', () => {
     render(<MagicLinkSignInForm submitMagicLink={async () => ({ ok: true })} audience="invitee" />);
     expect(screen.getByText(/use the address you want for your organiser account/i)).toBeInTheDocument();
-    expect(screen.queryByText(/organizer list/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/organi[sz]er list/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/account already exists/i)).not.toBeInTheDocument();
   });
 
   it('help copy drops the organizer framing when audience="attendee"', () => {
     render(<MagicLinkSignInForm submitMagicLink={async () => ({ ok: true })} audience="attendee" />);
     expect(screen.getByText(/account already exists/i)).toBeInTheDocument();
-    expect(screen.queryByText(/organizer list/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/organi[sz]er list/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/staff list/i)).not.toBeInTheDocument();
   });
 });

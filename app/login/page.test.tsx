@@ -71,7 +71,7 @@ describe('/login — no session', () => {
     visit('');
     expect(await screen.findByLabelText(/email address/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /^log in$/i })).toBeInTheDocument();
-    expect(screen.getByText(/organizer access only/i)).toBeInTheDocument();
+    expect(screen.getByText(/organi[sz]er access only/i)).toBeInTheDocument();
     expect(panelHeading()).not.toBeInTheDocument();
     expect(getAccountMenuState).not.toHaveBeenCalled();
     expect(router.replace).not.toHaveBeenCalled();
@@ -160,11 +160,11 @@ describe('/login — signed-in practitioner (D1)', () => {
     // line claimed a "practitioner account" the visitor may never have made.
     expect(screen.getByText(/organiser log in is for organiser emails only/i)).toBeInTheDocument();
     expect(screen.getByText(/open the invite link your admin sent you/i)).toBeInTheDocument();
-    expect(screen.queryByText(/isn't on an organiser team|staff list|organizer list/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/isn't on an organiser team|staff list|organi[sz]er list/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/a practitioner account/i)).not.toBeInTheDocument();
     // The form and the allowlist notice are hidden while the panel shows.
     expect(emailField()).not.toBeInTheDocument();
-    expect(screen.queryByText(/organizer access only/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/organi[sz]er access only/i)).not.toBeInTheDocument();
     // The whole point of D1: the session survives this page.
     expect(signOut).not.toHaveBeenCalled();
     expect(router.replace).not.toHaveBeenCalled();
@@ -214,7 +214,7 @@ describe('/login — signed-in practitioner (D1)', () => {
       expect(await screen.findByLabelText(/email address/i)).toBeInTheDocument();
       expect(signOut).toHaveBeenCalledTimes(1);
       expect(panelHeading()).not.toBeInTheDocument();
-      expect(screen.getByText(/organizer access only/i)).toBeInTheDocument();
+      expect(screen.getByText(/organi[sz]er access only/i)).toBeInTheDocument();
       expect(container.querySelector('input[name="next"]')).toHaveValue('/events/new');
       // The "Log in" heading is back.
       expect(screen.getByRole('heading', { name: /^log in$/i })).toBeInTheDocument();
@@ -390,7 +390,7 @@ describe('/login — arriving from an invite link', () => {
     visit(INVITE);
     expect(await screen.findByRole('heading', { name: /log in to accept your invite/i })).toBeInTheDocument();
     expect(screen.getByText(/return you to your invite/i)).toBeInTheDocument();
-    expect(screen.queryByText(/organizer access only/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/organi[sz]er access only/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/contact an admin to be added/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /^log in$/i })).not.toBeInTheDocument();
   });
@@ -399,13 +399,13 @@ describe('/login — arriving from an invite link', () => {
     visit(INVITE);
     await screen.findByLabelText(/email address/i);
     expect(screen.getByText(/use the address you want for your organiser account/i)).toBeInTheDocument();
-    expect(screen.queryByText(/organizer list/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/organi[sz]er list/i)).not.toBeInTheDocument();
   });
 
   it('the "Trouble logging in?" list no longer says only listed organizers can log in', async () => {
     visit(INVITE);
     await screen.findByLabelText(/email address/i);
-    expect(screen.queryByText(/only organizer emails can log in/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/only organiser emails can log in/i)).not.toBeInTheDocument();
     expect(screen.getByText(/your invite link is separate from the log-in link, and works once/i)).toBeInTheDocument();
     // Sign-in links and the invite link are different things; the list says so.
     expect(screen.getByText(/log-in links expire after 15 minutes/i)).toBeInTheDocument();
@@ -422,8 +422,8 @@ describe('/login — arriving from an invite link', () => {
     // The loading card has a "Log in" heading too, so wait for the form before asserting on it.
     await screen.findByLabelText(/email address/i);
     expect(screen.getByRole('heading', { name: /^log in$/i })).toBeInTheDocument();
-    expect(screen.getByText(/organizer access only/i)).toBeInTheDocument();
-    expect(screen.getByText(/only organizer emails can log in/i)).toBeInTheDocument();
+    expect(screen.getByText(/organi[sz]er access only/i)).toBeInTheDocument();
+    expect(screen.getByText(/only organiser emails can log in/i)).toBeInTheDocument();
   });
 });
 

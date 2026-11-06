@@ -401,8 +401,9 @@ export function AccountClient({
                 maxLength={8}
               />
             </FieldGroup>
-            <FieldGroup label="Phone (optional)">
+            <FieldGroup label="Phone">
               <Input
+                required
                 value={account.phone ?? ''}
                 onChange={(e) => set('phone', e.target.value || null)}
                 autoComplete="tel"

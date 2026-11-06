@@ -353,3 +353,12 @@ describe('AccountClient — Change email section', () => {
     expect(screen.getByText(/another account already uses that email/i)).toBeInTheDocument();
   });
 });
+
+// Re-walk 2026-11-06 MINOR 4: lib/accountCompleteness.ts requires phone, so the Account form must not call it optional.
+describe('AccountClient — phone is required', () => {
+  it('labels phone without "(optional)" and marks the input required', () => {
+    render(<AccountClient initialAccount={initialAccount} initialProfile={null} initialUnlinkedCount={0} />);
+    expect(screen.queryByText(/Phone \(optional\)/)).toBeNull();
+    expect(screen.getByLabelText(/^Phone/)).toBeRequired();
+  });
+});

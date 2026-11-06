@@ -7,7 +7,7 @@ import { StatusPill } from './StatusPill';
 
 describe('StatusPill', () => {
   it.each([
-    ['drafted', /drafted/i],
+    ['drafted', /^draft$/i],
     ['registering', /registering/i],
     ['upcoming', /upcoming/i],
     ['live', /live/i],

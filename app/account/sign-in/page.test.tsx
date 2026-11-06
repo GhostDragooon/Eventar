@@ -60,7 +60,7 @@ describe('AttendeeSignInPage — trouble-signing-in help', () => {
     await waitFor(() =>
       expect(screen.getByText(/account already exists/i)).toBeInTheDocument(),
     );
-    expect(screen.queryByText(/organizer list/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/organi[sz]er list/i)).not.toBeInTheDocument();
   });
 
   it('renders the error immediately when ?error= is on the URL, without waiting on the session check (soft-loop fix)', () => {

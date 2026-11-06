@@ -75,3 +75,15 @@ describe('AgendaSection ordering', () => {
     expect(order(container)).toEqual(['B', 'A']);
   });
 });
+
+describe('AgendaSection block error banner', () => {
+  it('lists what the block still needs as a list, not a chain of "and" (re-walk 2026-11-06 MINOR 2)', () => {
+    render(
+      <AgendaSection date="2026-12-01" eventStartMinutes={8 * 60} eventEndMinutes={18 * 60} showAllErrors
+        blocks={[{ ...block('k', '', ''), kind: 'keynote', title: '', topics: [{ title: '', speaker_name: '', speaker_credential: '', speaker_affiliation: '' }] } as BlockDraft]}
+        onChange={() => {}} />,
+    );
+    expect(screen.getByText('Still needed to continue: start time, end time, title and topic 1 (title + speaker).')).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/Please enter a valid/);
+  });
+});

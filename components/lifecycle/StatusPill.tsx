@@ -18,7 +18,7 @@ const STYLES: Record<Lifecycle, string> = {
 };
 
 const LABELS: Record<Lifecycle, string> = {
-  drafted: 'Drafted',
+  drafted: 'Draft',
   registering: 'Registering',
   upcoming: 'Upcoming',
   live: 'Live',

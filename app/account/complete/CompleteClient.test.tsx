@@ -212,6 +212,16 @@ describe('CompleteClient: the consent step', () => {
     expect(screen.getByLabelText('I agree to the Eventar terms and privacy policy once published.')).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/you accept the current/i);
   });
+
+  it('says why Continue is disabled until the box is ticked, and drops the hint once it is (re-walk 2026-11-06 MINOR 3)', () => {
+    render(
+      <CompleteClient initialStep={1} initialAccount={account} initialProfile={null} initialLicences={[]}
+        activeBodies={[]} professions={[]} positions={[]} specialties={[]} />,
+    );
+    expect(screen.getByText('Tick the box above to continue.')).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText('I agree to the Eventar terms and privacy policy once published.'));
+    expect(screen.queryByText('Tick the box above to continue.')).toBeNull();
+  });
 });
 
 // Dev review M2 (Ivan 2026-11-04): Done is optional, but it must not silently drop a licence the visitor typed.

@@ -538,7 +538,7 @@ function BlockErrorBanner({
     >
       <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
       <span>
-        Please enter a valid {missing.join(' and ')} to continue.
+        Still needed to continue: {missing.length < 2 ? missing[0] : `${missing.slice(0, -1).join(', ')} and ${missing[missing.length - 1]}`}.
       </span>
     </p>
   );
