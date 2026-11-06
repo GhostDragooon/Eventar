@@ -3,7 +3,9 @@
 set -euo pipefail
 supabase db reset
 q() { docker exec supabase_db_Eventar psql -U postgres -d postgres -tA -c "$1"; }
-# 1) both chains verify clean on a fresh replay
+# 1) the three chains verify clean on a fresh replay (seed.sql writes no
+#    evidence rows, so the evidence check is a smoke check: it proves the
+#    verifier runs, not that it detects tampering)
 # NOTE: verify_audit_chain()/verify_ledger_chain() return ONE ROW PER LEDGER
 # ENTRY (link_valid/content_valid booleans per row), not "zero rows when
 # clean" — bare count(*) equals the entry count regardless of tamper state.
@@ -12,6 +14,7 @@ q() { docker exec supabase_db_Eventar psql -U postgres -d postgres -tA -c "$1"; 
 # 20260709250000_credit_ledger.sql — corrected here, not copied blind).
 [ "$(q 'select count(*) from verify_audit_chain() where not link_valid or not content_valid')" = "0" ] || { echo "audit chain dirty on fresh replay"; exit 1; }
 [ "$(q 'select count(*) from verify_ledger_chain() where not link_valid or not content_valid')" = "0" ] || { echo "ledger chain dirty on fresh replay"; exit 1; }
+[ "$(q 'select count(*) from verify_evidence_chain() where not link_valid or not content_valid')" = "0" ] || { echo "evidence chain dirty on fresh replay"; exit 1; }
 # 2) two real writer events, tamper the first, expect detection
 # write_audit_event(p_event_type, p_actor_user_id uuid, p_actor_role text,
 # p_organisation_id uuid, p_subject_type text, p_subject_id uuid, p_payload
