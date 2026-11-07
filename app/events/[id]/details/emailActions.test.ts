@@ -35,9 +35,11 @@ vi.mock('@/lib/tz', () => ({
 }));
 
 // --- Auth ---
-type Staff = { id: string; role: 'organiser_member' | 'eventar_staff'; email: string; full_name: string | null; organisation_id: string | null };
+type Staff = { id: string; role: 'organiser_member' | 'organiser_admin' | 'eventar_staff' | 'body_admin' | 'auditor'; email: string; full_name: string | null; organisation_id: string | null };
 let mockStaff: Staff;
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/auth', async (orig) => ({
+  // Q51: canWriteEvent is the real helper.
+  canWriteEvent: (await orig<typeof import('@/lib/auth')>()).canWriteEvent,
   requireStaff: vi.fn(async () => mockStaff),
   NotAuthorizedError: class NotAuthorizedError extends Error {},
   canManageEvent: (event: { organisation_id: string | null }, staff: { role: string; organisation_id: string | null }) => {
@@ -61,6 +63,7 @@ type EventRow = {
   venue_name: string;
   venue_address: string | null;
   organisation_id: string | null;
+  created_by?: string | null;
 };
 type Reg = { id: string; email: string; full_name: string; registration_code: string; status: string };
 
@@ -167,6 +170,7 @@ function eventRow(overrides: Partial<EventRow> = {}): EventRow {
     venue_name: 'HQ',
     venue_address: '12/F Central',
     organisation_id: orgId,
+    created_by: ownerId,
     ...overrides,
   };
 }
@@ -201,6 +205,19 @@ describe('sendReminderForEvent — authorization', () => {
     const result = await sendReminderForEvent(eventId);
     expect(result.error).toMatch(/not authorized/i);
     expect(result.sent + result.queued + result.skipped + result.failed).toBe(0);
+    expect(emailLogInserts).toHaveLength(0);
+    expect(mockSendStub).not.toHaveBeenCalled();
+  });
+
+  // Q51 (dev review M3): sends reach every registrant through the admin client, so the rule is checked here.
+  it.each([
+    ['organiser_member', 'someone-else', 'Only the organiser who created this event, or an organiser admin, can change it.'],
+    ['body_admin', ownerId, "Your role can't change events. Ask an organiser admin."],
+    ['auditor', ownerId, "Your role can't change events. Ask an organiser admin."],
+  ] as const)('%s (%s) in the organisation sends nothing', async (role, id, message) => {
+    mockStaff = { id, role, email: 'x@x.com', full_name: null, organisation_id: orgId };
+    const result = await sendReminderForEvent(eventId);
+    expect(result.error).toBe(message);
     expect(emailLogInserts).toHaveLength(0);
     expect(mockSendStub).not.toHaveBeenCalled();
   });

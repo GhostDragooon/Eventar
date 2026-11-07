@@ -6,7 +6,8 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { canPublishEvents, canSetAccreditation, requireStaff } from '@/lib/auth';
+import { canCreateEvents, canPublishEvents, canSetAccreditation, requireStaff } from '@/lib/auth';
+import { CREATE_REFUSED } from '@/lib/lifecycle/eventLifecycle';
 import { supabaseServer } from '@/lib/supabase/server';
 import { tzFromCoords } from '@/lib/tz';
 import { startOrder } from '@/lib/agenda';
@@ -79,6 +80,8 @@ export async function createEvent(input: {
   cpd?: unknown;
 }): Promise<{ error: string; eventId?: string }> {
   const staff = await requireStaff();
+  // Q51: body_admin and auditor are read-only. create_event_with_blocks refuses them too (42501 not_event_writer).
+  if (!canCreateEvents(staff.role)) return { error: CREATE_REFUSED };
 
   const statusParse = statusSchema.safeParse(input.status);
   if (!statusParse.success) {

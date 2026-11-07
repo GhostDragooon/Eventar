@@ -50,11 +50,31 @@ export function canEditRegistrations(role: Staff['role']): boolean {
   return role === 'organiser_admin' || role === 'organiser_member' || role === 'eventar_staff';
 }
 
-// Role chips are editable only by the event's creator (set_registration_role() refuses any other organiser), and by
-// eventar_staff. Decides what to SHOW, on the Registrations page and in the Check-in header sentence that points at it;
-// the database refuses regardless.
-export function canEditRegistrationRoles(staff: Pick<Staff, 'id' | 'role'>, event: { created_by: string | null }): boolean {
-  return canEditRegistrations(staff.role) && (staff.role === 'eventar_staff' || event.created_by === staff.id);
+// Q51 (Ivan, 2026-11-07): who may change an event and everything hanging off it (details, agenda, publish, status,
+// registrations, check-in, speakers, role chips, accreditation, hero image). organiser_admin: every event in its
+// organisation. organiser_member: only events it created. body_admin and auditor: none. eventar_staff: every event.
+// Mirrors app_private.can_write_event, which the database applies at every write regardless of what this says.
+export function canWriteEvent(
+  staff: Pick<Staff, 'id' | 'role' | 'organisation_id'>,
+  event: { organisation_id: string | null; created_by: string | null },
+): boolean {
+  if (staff.role === 'eventar_staff') return true;
+  if (event.organisation_id == null || event.organisation_id !== staff.organisation_id) return false;
+  if (staff.role === 'organiser_admin') return true;
+  return staff.role === 'organiser_member' && event.created_by === staff.id;
+}
+
+// Who may create an event (Q51): the three writing roles. body_admin and auditor are read-only.
+export function canCreateEvents(role: Staff['role']): boolean {
+  return role === 'organiser_admin' || role === 'organiser_member' || role === 'eventar_staff';
+}
+
+// Role chips follow the general rule (Q51); set_registration_role() refuses anyone else.
+export function canEditRegistrationRoles(
+  staff: Pick<Staff, 'id' | 'role' | 'organisation_id'>,
+  event: { organisation_id: string | null; created_by: string | null },
+): boolean {
+  return canWriteEvent(staff, event);
 }
 
 // Which roles mark_attended() accepts: its resolve_actor gate names organiser_admin, organiser_member and

@@ -18,7 +18,7 @@ vi.mock('@/lib/supabase/admin', () => ({ supabaseAdmin: () => 'admin-client-mark
 import { afterEach, describe, expect, it } from 'vitest';
 import { AuthRetryableFetchError, AuthSessionMissingError } from '@supabase/supabase-js';
 import { createClient } from '@supabase/supabase-js';
-import { requireStaff, NotAuthorizedError, getStaffSessionState, isStaffSession, canPublishEvents, canSetAccreditation, canEditRegistrations, canEditRegistrationRoles, canCheckIn, canChangeEventStatus } from './auth';
+import { requireStaff, NotAuthorizedError, getStaffSessionState, isStaffSession, canPublishEvents, canSetAccreditation, canEditRegistrations, canEditRegistrationRoles, canCheckIn, canChangeEventStatus, canWriteEvent, canCreateEvents } from './auth';
 
 // Fabricate a minimal supabase client shape that requireStaff depends on.
 // The fake chain actually APPLIES each .eq(field, value) predicate against
@@ -276,22 +276,39 @@ describe('canEditRegistrations', () => {
 
 // set_registration_role() also refuses anyone but the event's creator (eventar_staff excepted), so a role chip is
 // editable only there. Two pages tell people where roles can be edited: both ask this one function.
-describe('canEditRegistrationRoles', () => {
-  const staffAs = (role: Parameters<typeof canCheckIn>[0], id = 'u1') => ({ id, role }) as Parameters<typeof canEditRegistrationRoles>[0];
+// Q51 (Ivan, 2026-11-07): admin acts on every event in its organisation, member only on events it created,
+// body_admin and auditor on none, eventar_staff on all. Mirrors app_private.can_write_event.
+describe('canWriteEvent', () => {
+  const staffAs = (role: Parameters<typeof canCheckIn>[0], id = 'u1', organisation_id: string | null = 'org1') =>
+    ({ id, role, organisation_id }) as Parameters<typeof canWriteEvent>[0];
+  const ev = { organisation_id: 'org1', created_by: 'u1' };
   it.each([
-    ['organiser_admin', 'u1', true],
-    ['organiser_member', 'u1', true],
-    ['organiser_admin', 'u2', false],
-    ['organiser_member', 'u2', false],
-    ['eventar_staff', 'u2', true],
-    ['body_admin', 'u1', false],
-    ['auditor', 'u1', false],
-  ] as const)('%s, creator is u1, signed in as %s -> %s', (role, id, expected) => {
-    expect(canEditRegistrationRoles(staffAs(role, id), { created_by: 'u1' })).toBe(expected);
+    ['organiser_admin', 'u1', 'org1', true],
+    ['organiser_admin', 'u2', 'org1', true],
+    ['organiser_admin', 'u2', 'org2', false],
+    ['organiser_member', 'u1', 'org1', true],
+    ['organiser_member', 'u2', 'org1', false],
+    ['body_admin', 'u1', 'org1', false],
+    ['auditor', 'u1', 'org1', false],
+    ['eventar_staff', 'u2', 'org2', true],
+  ] as const)('%s %s in %s on an event org1 created by u1 -> %s', (role, id, org, expected) => {
+    expect(canWriteEvent(staffAs(role, id, org), ev)).toBe(expected);
   });
-  it('an event with no recorded creator is editable by nobody but eventar_staff', () => {
-    expect(canEditRegistrationRoles(staffAs('organiser_admin'), { created_by: null })).toBe(false);
-    expect(canEditRegistrationRoles(staffAs('eventar_staff'), { created_by: null })).toBe(true);
+  it('an event with no recorded creator is writable by an admin of its organisation, not by a member', () => {
+    expect(canWriteEvent(staffAs('organiser_admin'), { organisation_id: 'org1', created_by: null })).toBe(true);
+    expect(canWriteEvent(staffAs('organiser_member'), { organisation_id: 'org1', created_by: null })).toBe(false);
+  });
+  it('role chips follow the same rule', () => {
+    expect(canEditRegistrationRoles(staffAs('organiser_admin', 'u2'), ev)).toBe(true);
+    expect(canEditRegistrationRoles(staffAs('organiser_member', 'u2'), ev)).toBe(false);
+  });
+});
+
+describe('canCreateEvents', () => {
+  it.each([
+    ['organiser_admin', true], ['organiser_member', true], ['eventar_staff', true], ['body_admin', false], ['auditor', false],
+  ] as const)('%s -> %s', (role, expected) => {
+    expect(canCreateEvents(role)).toBe(expected);
   });
 });
 

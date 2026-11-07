@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { translateCpdRpcError } from './rpcErrors';
+import { NOT_EVENT_WRITER } from '@/lib/lifecycle/eventLifecycle';
 
 describe('translateCpdRpcError 42501', () => {
   // The old fallback said "Only the event owner (or staff) can make this change", which is false for a
@@ -15,15 +16,11 @@ describe('translateCpdRpcError 42501', () => {
     expect(translateCpdRpcError({ code: '42501', details: 'multi_body_configured' })).toMatch(/multiple-body/i);
   });
 
-  // Every accreditation and registration-role RPC raises 42501 with detail `not_owner` for anyone who did not
-  // create the event (and is not Eventar staff). That is the one 42501 left once the role is checked up
-  // front, and an organiser admin who is not the creator must not be told to ask an organiser admin
-  // (review UX-03/CX-05 M2).
-  it('names the real rule for not_owner: the creator or Eventar staff', () => {
-    const msg = translateCpdRpcError({ code: '42501', details: 'not_owner' });
-    expect(msg).toMatch(/created this event/i);
-    expect(msg).toMatch(/eventar staff/i);
-    expect(msg).not.toMatch(/ask an organiser admin/i);
+  // Q51 (2026-11-07): the accreditation and registration-role RPCs raise 42501 `not_owner`, and every event-owned
+  // table raises 42501 `not_event_writer`, for anyone the rule excludes: a member on a colleague's event, or an
+  // admin of another organisation. Both say the rule itself.
+  it.each(['not_owner', 'not_event_writer'])('names the Q51 rule for %s', (details) => {
+    expect(translateCpdRpcError({ code: '42501', details })).toBe(NOT_EVENT_WRITER);
   });
 
   it('keeps the generic refusal neutral: it serves registration roles as well as accreditation', () => {

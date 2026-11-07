@@ -30,6 +30,7 @@ vi.mock('@/lib/supabase/server', () => ({ supabaseServer: async () => ({ rpc }) 
 
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createEvent } from './actions';
+import { CREATE_REFUSED } from '@/lib/lifecycle/eventLifecycle';
 
 const event = {
   title: 'Internal Workshop',
@@ -58,10 +59,11 @@ beforeEach(() => {
 // and end on the crash page; under review mode EVERY role was told "this account
 // is not allowed". The refusal is now plain, explained, and made before the database.
 describe('createEvent — publishing', () => {
-  it.each(['body_admin', 'auditor'] as const)('%s asking to publish is refused with a plain reason and nothing is sent', async (role) => {
+  // Q51 (Ivan, 2026-11-07): body_admin and auditor are read-only, so they create nothing, draft or published.
+  it.each(['body_admin', 'auditor'] as const)('%s asking to publish is refused as a read-only role and nothing is sent', async (role) => {
     mockRole = role;
     const res = await createEvent({ event, blocks: [], status: 'published' });
-    expect(res).toEqual({ error: expect.stringMatching(publishRefusal) });
+    expect(res).toEqual({ error: CREATE_REFUSED });
     expect(rpc).not.toHaveBeenCalled();
   });
 
@@ -80,13 +82,10 @@ describe('createEvent — publishing', () => {
     await expect(createEvent({ event, blocks: [], status: 'draft' })).rejects.toThrow('NEXT_REDIRECT:/events/event-123/edit?saved=1');
   });
 
-  it('a read-only role can still save a DRAFT', async () => {
-    mockRole = 'body_admin';
-    await expect(createEvent({ event, blocks: [], status: 'draft' })).rejects.toThrow('NEXT_REDIRECT');
-    expect(rpc).toHaveBeenCalledWith(
-      'create_event_with_blocks',
-      expect.objectContaining({ event_input: expect.objectContaining({ status: 'draft' }) }),
-    );
+  it.each(['body_admin', 'auditor'] as const)('%s cannot save a draft either (Q51)', async (role) => {
+    mockRole = role;
+    expect(await createEvent({ event, blocks: [], status: 'draft' })).toEqual({ error: CREATE_REFUSED });
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   // The database stays the authority: if the role changed after the page loaded,
@@ -158,7 +157,8 @@ describe('createEvent: accreditation', () => {
   it.each(['organiser_member', 'body_admin', 'auditor'] as const)('%s choosing an accrediting body is refused before anything is written', async (role) => {
     mockRole = role;
     const res = await createEvent({ event, blocks: [], status: 'draft', cpd: { bodyId: BODY, hours: 2 } });
-    expect(res).toEqual({ error: expect.stringMatching(accreditationRefusal) });
+    // body_admin and auditor are stopped earlier, as read-only roles (Q51).
+    expect(res).toEqual({ error: role === 'organiser_member' ? expect.stringMatching(accreditationRefusal) : CREATE_REFUSED });
     expect(rpc).not.toHaveBeenCalled();
   });
 

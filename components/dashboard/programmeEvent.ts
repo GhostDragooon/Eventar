@@ -24,4 +24,6 @@ export type ProgrammeEvent = {
   hero_image_url: string | null;
   city: string | null;
   hosts: Array<{ name: string; avatar_url: string | null }>;
+  /** Q51: false when this account may look at the event but not change it. Absent means it may. */
+  writable?: boolean;
 };

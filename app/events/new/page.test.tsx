@@ -30,6 +30,7 @@ vi.mock('./NewEventForm', () => ({ default: function NewEventFormStub() { return
 import { describe, expect, it } from 'vitest';
 import NewEventForm from './NewEventForm';
 import NewEventPage from './page';
+import { CREATE_REFUSED } from '@/lib/lifecycle/eventLifecycle';
 
 // The page is an async server component; calling it yields the element tree without
 // rendering anything, so the form's props can be read straight off it.
@@ -58,8 +59,6 @@ describe('create page hands the form what this role may do', () => {
     ['organiser_admin', true, true],
     ['organiser_member', true, false],
     ['eventar_staff', true, true],
-    ['body_admin', false, false],
-    ['auditor', false, false],
   ] as const)('%s: canPublish %s, canSetAccreditation %s', async (role, canPublish, canSetAccreditation) => {
     expect(await formProps(role)).toMatchObject({ canPublish, canSetAccreditation });
   });
@@ -85,12 +84,12 @@ describe('create page lead', () => {
     expect(text).toContain('or Publish event when it is ready to go live.');
   });
 
-  it.each(['body_admin', 'auditor'] as const)('%s: says what a draft needs, never offers Publish, and does not repeat the role reason', async (role) => {
+  // Q51 (Ivan, 2026-11-07): body_admin and auditor are read-only, so they get the reason and no form.
+  it.each(['body_admin', 'auditor'] as const)('%s: is told it cannot create events, and gets no form', async (role) => {
     mockRole = role;
-    const text = textOf(await NewEventPage());
-    expect(text).toContain('A name, date, times and venue are enough to save a draft.');
-    expect(text).not.toMatch(/publish event/i);
-    expect(text).not.toMatch(/your role can't publish/i);
+    const tree = await NewEventPage();
+    expect(textOf(tree)).toContain(CREATE_REFUSED);
+    expect(findAll(tree, NewEventForm)).toHaveLength(0);
   });
 
   it('uses no em-dash in the lead (D14)', async () => {

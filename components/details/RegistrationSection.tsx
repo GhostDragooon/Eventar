@@ -16,6 +16,8 @@ type Props = {
   // Section-scoped operations (e.g. "Send reminders now" during door prep) —
   // keeps actions categorized inside their section instead of floating.
   actionSlot?: React.ReactNode;
+  /** Q51: this account may look but not change the close date. */
+  closeReadOnly?: boolean;
 };
 
 // Section 01 — Registration. Full card while the window is open (draft /
@@ -26,6 +28,7 @@ export function RegistrationSection({
   registered,
   maxAttendees,
   registrationCloseAt,
+  closeReadOnly = false,
   registeredAt,
   nowMs,
   lifecycle,
@@ -117,7 +120,7 @@ export function RegistrationSection({
 
       {(lifecycle === 'registering' || lifecycle === 'upcoming') && (
         <div className="mt-lg pt-lg border-t border-outline-variant">
-          <RegistrationCloseEditor eventId={eventId} current={registrationCloseAt} />
+          <RegistrationCloseEditor eventId={eventId} current={registrationCloseAt} readOnly={closeReadOnly} />
         </div>
       )}
       {actionSlot && <div className="mt-lg pt-lg border-t border-outline-variant">{actionSlot}</div>}

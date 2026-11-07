@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
-import { requireStaff, NotAuthorizedError, canPublishEvents, canSetAccreditation } from '@/lib/auth';
+import { requireStaff, NotAuthorizedError, canCreateEvents, canPublishEvents, canSetAccreditation } from '@/lib/auth';
+import { CREATE_REFUSED } from '@/lib/lifecycle/eventLifecycle';
 import { StaffShell } from '@/components/shell/StaffShell';
 import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
 import { LayoutDashboardIcon, CalendarPlusIcon } from 'lucide-react';
@@ -20,6 +21,15 @@ export default async function NewEventPage() {
   } catch (e) {
     if (e instanceof NotAuthorizedError) redirect('/login');
     throw e;
+  }
+  // Q51: body_admin and auditor are read-only. Say so instead of showing a form whose Save is refused.
+  if (!canCreateEvents(staff.role)) {
+    return (
+      <StaffShell staff={{ email: staff.email, role: staff.role }} backHref="/dashboard" backLabel="Events">
+        <h1 className="font-headline-lg text-headline-lg text-on-surface">Create event</h1>
+        <p className="font-body-lg text-body-lg text-on-surface-variant mt-sm">{CREATE_REFUSED}</p>
+      </StaffShell>
+    );
   }
   const canPublish = canPublishEvents(staff.role);
   const canAccredit = canSetAccreditation(staff.role);

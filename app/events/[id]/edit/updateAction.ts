@@ -13,7 +13,8 @@
 // 'use server' file, so it can export sync helpers).
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { requireStaff } from '@/lib/auth';
+import { canWriteEvent, requireStaff } from '@/lib/auth';
+import { eventWriteRefusal } from '@/lib/lifecycle/eventLifecycle';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { tzFromCoords } from '@/lib/tz';
@@ -102,7 +103,7 @@ export async function updateEvent(
   {
     const { data: row, error: rowErr } = await supabaseAdmin()
       .from('events')
-      .select('organisation_id, status, deleted_at')
+      .select('organisation_id, created_by, status, deleted_at')
       .eq('id', idParse.data)
       .maybeSingle();
     if (rowErr) return { error: 'Could not verify ownership of this event. Please try again.' };
@@ -111,6 +112,8 @@ export async function updateEvent(
     if (staff.role !== 'eventar_staff' && row.organisation_id !== staff.organisation_id) {
       return { error: 'You do not have access to this event.' };
     }
+    // Q51: within the organisation, a member edits only its own events; body_admin and auditor edit none.
+    if (!canWriteEvent(staff, row)) return { error: eventWriteRefusal(staff.role) };
     // Only a draft can be edited here, whoever asks (the platform operator included): the screens already say
     // "Details cannot be edited after publishing yet", and the RPC would otherwise rewrite a published event
     // with no audit row. Checked after the organisation gate so a stranger learns nothing about the status.

@@ -327,6 +327,28 @@ describe('EventsHome', () => {
       expect(screen.getByRole('dialog')).toHaveTextContent('Delete 2 events?');
     });
 
+    // Q51 (Ivan, 2026-11-07): refused in the confirm, before anything looks done (user-lens MAJOR 1-2).
+    it.each([['Cancel', 'cancel'], ['Delete', 'delete']] as const)('%s with a colleague\'s event selected: the confirm says so and cannot go ahead', (button, verb) => {
+      renderManage([event({ id: 'a1', title: 'Mine' }), event({ id: 'b1', title: 'Colleague talk', writable: false })]);
+      fireEvent.click(screen.getByLabelText('Select Mine'));
+      fireEvent.click(screen.getByLabelText('Select Colleague talk'));
+      fireEvent.click(screen.getByRole('button', { name: button }));
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toHaveTextContent(`You can't ${verb} “Colleague talk”.`);
+      expect(dialog).toHaveTextContent('Unselect it, or ask an organiser admin.');
+      const go = within(dialog).getByRole('button', { name: verb === 'cancel' ? 'Cancel 2 events' : 'Delete 2 events' });
+      expect(go).toBeDisabled();
+      fireEvent.click(go);
+      expect(cancelMock).not.toHaveBeenCalled();
+      expect(screen.queryByText(/Moved to the Cancelled tab/)).toBeNull();
+    });
+
+    it('labels Edit as View on an event this account may not change', () => {
+      renderManage([event({ id: 'a1', title: 'Mine' }), event({ id: 'b1', title: 'Colleague talk', writable: false })]);
+      expect(screen.getAllByRole('link', { name: 'Edit' })).toHaveLength(1);
+      expect(screen.getAllByRole('link', { name: 'View' })).toHaveLength(1);
+    });
+
     it('says when the list stopped at 300 events, and points at History', () => {
       renderManage(Array.from({ length: 300 }, (_, i) => event({ id: `e-${i}`, title: `Event ${i}` })));
       expect(screen.getByText(/Only the 300 events with the latest dates are loaded, so older ones may be missing here\. Finished events are in History\./)).toBeInTheDocument();

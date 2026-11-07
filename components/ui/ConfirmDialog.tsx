@@ -14,6 +14,7 @@ export function ConfirmDialog({
   backdropCancels = true,
   tone = 'primary',
   pending = false,
+  confirmDisabled = false,
   onConfirm,
   onCancel,
 }: {
@@ -25,15 +26,19 @@ export function ConfirmDialog({
   backdropCancels?: boolean;
   tone?: 'primary' | 'danger';
   pending?: boolean;
+  /** The confirm cannot go ahead (the body says why); focus starts on the cancel button instead. */
+  confirmDisabled?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
 
   // Focus on open only: a caller that re-renders while open (a ticking
   // countdown label) must not pull focus back off the button the user is on.
   useEffect(() => {
-    if (open) confirmRef.current?.focus();
+    if (open) (confirmDisabled ? cancelRef : confirmRef).current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- focus on open only, see above
   }, [open]);
 
   useEffect(() => {
@@ -66,6 +71,7 @@ export function ConfirmDialog({
         <p id="confirm-dialog-body" className="font-body-md text-body-md text-on-surface-variant mb-lg">{body}</p>
         <div className="flex justify-end gap-sm">
           <button
+            ref={cancelRef}
             type="button"
             onClick={onCancel}
             disabled={pending}
@@ -77,7 +83,7 @@ export function ConfirmDialog({
             ref={confirmRef}
             type="button"
             onClick={onConfirm}
-            disabled={pending}
+            disabled={pending || confirmDisabled}
             className={`min-h-11 px-lg py-sm rounded-lg font-label-md text-label-md transition-opacity disabled:opacity-50 ${
               tone === 'danger'
                 ? 'bg-[color:var(--error)] text-white hover:opacity-90'

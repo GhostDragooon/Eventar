@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useEffectEvent, useMemo, useRef, useState, useTransition } from 'react';
-import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
+import { NOT_EVENT_WRITER, type Lifecycle } from '@/lib/lifecycle/eventLifecycle';
 import { softDeleteEvents, restoreEvents, cancelEvents } from '@/app/dashboard/actions';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/toast';
@@ -90,6 +90,7 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
     body: string;
     confirmLabel: string;
     tone: 'primary' | 'danger';
+    blocked?: boolean;
   }>(null);
   // Cancel is one-way in the database, so its undo delays the write instead:
   // nothing is sent until the countdown ends or the organiser clicks Done.
@@ -257,6 +258,19 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
     }
     const n = ids.length;
     const titleOf = (id: string) => events.find((e) => e.id === id)?.title ?? 'this event';
+    // Q51 (Ivan, 2026-11-07): a selection holding an event this account may not change is refused in the confirm,
+    // before anything looks done. The server refuses the same batch regardless.
+    const notMine = ids.filter((id) => events.find((e) => e.id === id)?.writable === false).map((id) => `“${titleOf(id)}”`);
+    if (notMine.length > 0) {
+      const verb = kind === 'archive' ? 'delete' : 'cancel';
+      setConfirm({
+        kind, ids, tone: 'danger', blocked: true,
+        confirmLabel: kind === 'archive' ? `Delete ${n} event${n === 1 ? '' : 's'}` : `Cancel ${n} event${n === 1 ? '' : 's'}`,
+        title: kind === 'archive' ? (n === 1 ? `Delete "${titleOf(ids[0])}"?` : `Delete ${n} events?`) : (n === 1 ? `Cancel "${titleOf(ids[0])}"?` : `Cancel ${n} events?`),
+        body: `You can't ${verb} ${notMine.join(', ')}. ${NOT_EVENT_WRITER} Unselect ${notMine.length === 1 ? 'it' : 'them'}, or ask an organiser admin.`,
+      });
+      return;
+    }
     setConfirm(
       kind === 'archive'
         ? {
@@ -351,7 +365,8 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
       </div>
 
       {picked.size > 0 && (
-        <div className="bulk-bar-in mb-md flex flex-wrap items-center justify-between gap-md rounded-lg border border-[color:var(--primary-fixed-dim)] bg-primary-container/60 px-md py-sm">
+        // Sticky while rows are selected, so the actions stay in reach when the selected rows are further down.
+        <div className="bulk-bar-in sticky top-0 z-10 mb-md flex flex-wrap items-center justify-between gap-md rounded-lg border border-[color:var(--primary-fixed-dim)] bg-primary-container px-md py-sm">
           <span className="font-label-md text-label-md font-semibold text-on-surface">{picked.size} selected</span>
           <div className="flex flex-wrap items-center gap-sm">
             <Button type="button" variant="outline" onClick={exportCsv} disabled={pending} className={btn}>
@@ -421,6 +436,7 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
         cancelLabel={confirm?.kind === 'cancel' ? 'Keep events' : undefined}
         tone={confirm?.tone ?? 'primary'}
         pending={pending}
+        confirmDisabled={confirm?.blocked === true}
         onConfirm={() => {
           if (!confirm) return;
           if (confirm.kind !== 'cancel') return execute(confirm.kind, confirm.ids);
@@ -504,7 +520,8 @@ function EventRow({ e, nowMs, selected, onToggle, onRestore, inBin, pending }: {
             ) : (
               <>
                 <Link href={`/events/${e.id}/details`} className={cn(buttonVariants({ variant: 'outline' }), link)}>Details</Link>
-                <Link href={`/events/${e.id}/edit`} className={cn(buttonVariants({ variant: 'outline' }), link)}>Edit</Link>
+                {/* Q51: an event this account may not change opens the same page read-only, so the label says View. */}
+                <Link href={`/events/${e.id}/edit`} className={cn(buttonVariants({ variant: 'outline' }), link)}>{e.writable === false ? 'View' : 'Edit'}</Link>
                 {/* Check-in is refused on a draft until it is published, and closed on a cancelled event (checkInGateMessage). */}
                 {e.lifecycle !== 'drafted' && e.lifecycle !== 'cancelled' && (
                   <Link href={`/events/${e.id}/checkin`} className={cn(buttonVariants({ variant: doorNow ? 'default' : 'outline' }), link)}>Check-in</Link>

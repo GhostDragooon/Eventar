@@ -22,12 +22,18 @@ const staffWithRole = (role: string) => ({
   email: 'operator@example.test',
   role,
   full_name: 'Test Operator',
+  organisation_id: 'org1',
 });
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 
-const { rpc } = vi.hoisted(() => ({ rpc: vi.fn() }));
-vi.mock('@/lib/supabase/admin', () => ({ supabaseAdmin: () => ({ rpc }) }));
+const { rpc, eventRows } = vi.hoisted(() => ({ rpc: vi.fn(), eventRows: { value: [] as Array<Record<string, string>> } }));
+vi.mock('@/lib/supabase/admin', () => ({
+  supabaseAdmin: () => ({
+    rpc,
+    from: () => ({ select: () => ({ in: async (_c: string, ids: string[]) => ({ data: eventRows.value.filter((r) => ids.includes(r.id)), error: null }) }) }),
+  }),
+}));
 
 vi.mock('@/lib/supabase/server', () => ({
   supabaseServer: vi.fn(async () => ({
@@ -41,7 +47,10 @@ const EVT_1 = '11111111-1111-4111-8111-111111111111';
 const EVT_2 = '22222222-2222-4222-8222-222222222222';
 const EVT_OTHER = '33333333-3333-4333-8333-333333333333';
 
+const row = (id: string, created_by = 'staff-1', title = `Event ${id.slice(0, 4)}`) => ({ id, title, organisation_id: 'org1', created_by });
+
 beforeEach(() => {
+  eventRows.value = [row(EVT_1), row(EVT_2), row(EVT_OTHER)];
   rpc.mockReset();
   requireStaff.mockReset();
   requireStaff.mockResolvedValue(staffWithRole('organiser_admin'));
@@ -134,5 +143,35 @@ describe('dashboard bulk actions — role gate and input check', () => {
     const many = Array.from({ length: 501 }, (_, i) => `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`);
     expect(await cancelEvents(many)).toEqual({ error: 'Could not update the selected events.' });
     expect(rpc).not.toHaveBeenCalled();
+  });
+});
+
+// Q51 (Ivan, 2026-11-07): a member acts only on events it created; a mixed selection is refused whole, by name.
+const requireStaffMock_member = () => requireStaff.mockResolvedValue(staffWithRole('organiser_member'));
+
+describe('dashboard bulk actions — Q51 event-writer rule', () => {
+  it('a member selecting a colleague\'s event changes nothing and is told which event is not theirs', async () => {
+    requireStaff.mockResolvedValue(staffWithRole('organiser_member'));
+    eventRows.value = [row(EVT_1), row(EVT_2, 'staff-2', 'Colleague talk')];
+    const res = await cancelEvents([EVT_1, EVT_2]);
+    expect(res).toEqual({ error: expect.stringContaining('“Colleague talk”') });
+    expect((res as { error: string }).error).toMatch(/^Nothing was changed\./);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('an id from another organisation is counted, never named (dev review m1)', async () => {
+    requireStaffMock_member();
+    eventRows.value = [row(EVT_1), { id: EVT_OTHER, title: 'Secret other-org event', organisation_id: 'org2', created_by: 'x' }];
+    const res = await cancelEvents([EVT_1, EVT_OTHER]);
+    const msg = (res as { error: string }).error;
+    expect(msg).toMatch(/1 selected event is not in your organisation\./);
+    expect(msg).not.toMatch(/Secret/);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('an admin may change a colleague\'s event', async () => {
+    eventRows.value = [row(EVT_2, 'staff-2')];
+    rpc.mockResolvedValueOnce({ data: [{ id: EVT_2 }], error: null });
+    expect(await cancelEvents([EVT_2])).toEqual({ ok: true, count: 1 });
   });
 });

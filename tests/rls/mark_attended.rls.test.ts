@@ -243,18 +243,15 @@ describe.skipIf(!process.env.RLS_TESTS)('mark_attended RLS + audit', () => {
     expect((auditRow?.payload as { event_id?: string })?.event_id).toBe(eventId);
   });
 
-  // ---- 2. a same-org teammate (not the creator) can still check in ----
+  // ---- 2. a same-org organiser_member who did not create the event cannot check in ----
   //
-  // Access is org-scoped, not creator-scoped (20260910 authority sweep):
-  // any active staff member of the event's organisation can check attendees
-  // in, not only whoever happened to create the event row. created_by stays
-  // as metadata only. A 20260912 migration briefly clobbered this guard back
-  // to a created_by check when it added evidence-recording — this case is
-  // the regression cover for that bug (see 20260912020000_evidence_org_scope_fix).
-  it('a same-org teammate (not the creator) can mark a valid code attended', async () => {
+  // Q51 (Ivan, 2026-11-07): an organiser_member acts only on events it created; an organiser_admin acts on every
+  // event in its organisation (admin coverage: tests/rls/role_rights_q51.rls.test.ts). This replaces the 20260910
+  // org-wide rule this case used to pin. The answer stays info-hiding (not_recognised) and nothing is written.
+  it('a same-org organiser_member who did not create the event sees not_recognised and nothing changes', async () => {
     const eventId = await makeEventFixture();
     const regCode = code('MA002');
-    const regId = await makeRegistrationFixture(eventId, regCode);
+    await makeRegistrationFixture(eventId, regCode);
 
     const { data, error } = await nonOwner.client.rpc('mark_attended', {
       p_code: regCode,
@@ -262,15 +259,14 @@ describe.skipIf(!process.env.RLS_TESTS)('mark_attended RLS + audit', () => {
     });
     expect(error).toBeNull();
     const row = Array.isArray(data) ? data[0] : data;
-    expect(row.result).toBe('ok');
-    expect(row.registration_id).toBe(regId);
+    expect(row.result).toBe('not_recognised');
 
     const { data: reg } = await admin
       .from('registrations')
       .select('status')
       .eq('registration_code', regCode)
       .single();
-    expect(reg?.status).toBe('attended');
+    expect(reg?.status).toBe('registered');
   });
 
   // ---- 2b. a staff member from a DIFFERENT organisation is denied ----

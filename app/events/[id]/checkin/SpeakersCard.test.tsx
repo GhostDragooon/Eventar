@@ -6,6 +6,7 @@ vi.mock('./speakerActions', () => ({ toggleSpeakerCheckin: vi.fn() }));
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { SpeakersCard } from './SpeakersCard';
+import { NOT_EVENT_WRITER } from '@/lib/lifecycle/eventLifecycle';
 
 afterEach(cleanup);
 
@@ -59,6 +60,11 @@ describe('SpeakersCard closed caption', () => {
     const card = screen.getByRole('region', { name: 'Speakers' });
     expect(card).toHaveTextContent('Your role cannot check people in. Ask an organiser admin or member.');
     expect(card).not.toHaveTextContent('locked outside');
+  });
+
+  it('on a colleague\'s event (Q51): does not repeat the reason the desk already gives once', () => {
+    render(<SpeakersCard {...props} canCheckIn={false} closedMessage={NOT_EVENT_WRITER} />);
+    expect(screen.getByRole('region', { name: 'Speakers' })).not.toHaveTextContent(NOT_EVENT_WRITER);
   });
 
   it('inside the window: no caption', () => {

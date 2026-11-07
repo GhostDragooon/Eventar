@@ -51,14 +51,20 @@ describe('Check-in page header', () => {
     expect(screen.getByRole('link', { name: /^Registrations/ })).toHaveAttribute('href', '/events/e1/registrations');
   });
 
-  // Registrations shows role chips read-only to anyone but the creator (set_registration_role is creator-only), so
-  // this line must not send them there to edit roles (review R2 m5).
-  it.each(['organiser_admin', 'organiser_member'])('%s who did not create the event: told details, never roles', async (role) => {
-    h.role = role;
+  // Q51 (Ivan, 2026-11-07): an organiser_admin acts on every event in its organisation; a member only on its own.
+  it('organiser_admin who did not create the event: can still check in and edit details and roles', async () => {
+    h.role = 'organiser_admin';
     h.event.created_by = 'someone-else';
     await open();
-    expect(screen.getByText(EDIT_DETAILS)).toBeTruthy();
-    expect(screen.queryByText(/roles/)).toBeNull();
+    expect(screen.getByText(EDIT_ALL)).toBeTruthy();
+  });
+
+  it('organiser_member who did not create the event: a read-only desk, sent to Registrations only to look', async () => {
+    h.role = 'organiser_member';
+    h.event.created_by = 'someone-else';
+    await open();
+    expect(screen.getByText('You can view this desk but not check people in. To see everyone registered, open Registrations.')).toBeTruthy();
+    expect(screen.queryByText(/add a walk-in/)).toBeNull();
   });
 
   it('eventar_staff who did not create the event can still edit roles', async () => {

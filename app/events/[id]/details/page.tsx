@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { requireStaff, NotAuthorizedError, canManageEvent, canSetAccreditation } from '@/lib/auth';
+import { requireStaff, NotAuthorizedError, canManageEvent, canSetAccreditation, canWriteEvent } from '@/lib/auth';
+import { eventWriteRefusal } from '@/lib/lifecycle/eventLifecycle';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { StaffShell } from '@/components/shell/StaffShell';
@@ -269,6 +270,7 @@ export default async function EventDetailsPage({
   // email and evidence panels below; credits issued and authorised bodies rely on
   // the page gate alone, so dropping it re-exposes them.
   const canSeeConfirmationsSent = canManageEvent(event, staff);
+  const writable = canWriteEvent(staff, event);
   const confirmationsSent = canSeeConfirmationsSent
     ? (confirmationsRes.count ?? 0)
     : 0;
@@ -386,8 +388,10 @@ export default async function EventDetailsPage({
             <span>{event.venue_name ?? 'No venue set'}</span>
             {structuralLocked && <LockIcon />}
           </p>
+          {/* Q51: one line, where the title is, for an account that may look but not change (user-lens 2026-11-07). */}
+          {!writable && <p className="font-body-md text-body-md text-on-surface-variant mt-xs">{eventWriteRefusal(staff.role)}</p>}
         </div>
-        <ActionToolbar eventId={event.id} lifecycle={lifecycle} />
+        <ActionToolbar eventId={event.id} lifecycle={lifecycle} writable={writable} />
       </header>
 
       {/* Where Publish lands (UX-01 pick a1): `?published=1` is the one-time arrival signal, and only an event that
@@ -435,7 +439,7 @@ export default async function EventDetailsPage({
         creditsIssued={creditsIssued}
         bodiesUnavailable={bodiesUnavailable}
         noAuthorisedBodies={noAuthorisedBodies}
-        canSetAccreditation={canSetAccreditation(staff.role)}
+        canSetAccreditation={canSetAccreditation(staff.role) && writable}
       />
 
       <MultiBodyAccreditationWizard
@@ -446,7 +450,7 @@ export default async function EventDetailsPage({
         occurrences={wizardOccurrences}
         initialGroups={wizardGroups}
         frozen={creditsIssued > 0}
-        canSetAccreditation={canSetAccreditation(staff.role)}
+        canSetAccreditation={canSetAccreditation(staff.role) && writable}
       />
 
       {/* Task 10.7 evidence export — one section per row Step 6 spec, mounted
@@ -482,6 +486,7 @@ export default async function EventDetailsPage({
         registered={regs.length}
         maxAttendees={event.max_attendees}
         registrationCloseAt={event.registration_close_at}
+        closeReadOnly={!writable}
         registeredAt={regs.map((r) => r.registered_at)}
         nowMs={nowMs}
         lifecycle={lifecycle}
@@ -617,7 +622,7 @@ function LockIcon() {
   );
 }
 
-function ActionToolbar({ eventId, lifecycle }: { eventId: string; lifecycle: Lifecycle }) {
+function ActionToolbar({ eventId, lifecycle, writable = true }: { eventId: string; lifecycle: Lifecycle; writable?: boolean }) {
   const showRoster = lifecycle === 'registering' || lifecycle === 'upcoming' || lifecycle === 'live' || lifecycle === 'completed';
   const canAnalytics = lifecycle === 'completed';
   const showPublic = lifecycle === 'registering' || lifecycle === 'upcoming' || lifecycle === 'live';
@@ -628,7 +633,7 @@ function ActionToolbar({ eventId, lifecycle }: { eventId: string; lifecycle: Lif
   return (
     <div className="flex gap-xs flex-wrap shrink-0">
       <Link href={`/events/${eventId}/edit`} className={outline}>
-        <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>edit</span>Edit
+        <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>{writable ? 'edit' : 'visibility'}</span>{writable ? 'Edit' : 'View'}
       </Link>
       {showRoster && (
         <>

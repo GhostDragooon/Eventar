@@ -6,6 +6,7 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { requireStaff } from '@/lib/auth';
+import { NOT_EVENT_WRITER } from '@/lib/lifecycle/eventLifecycle';
 import { supabaseServer } from '@/lib/supabase/server';
 
 const idSchema = z.string().uuid();
@@ -45,6 +46,7 @@ export async function updateRegistrationContact(
       return { error: 'Another registration for this event already uses that email.' };
     }
     if (error.code === 'P0002') return { error: 'Registration not found.' };
+    if (error.code === '42501' && error.details === 'not_event_writer') return { error: NOT_EVENT_WRITER };
     if (error.code === '42501') return { error: 'You do not have access to this registration.' };
     // UUID and code only: a Postgres DETAIL can carry a key value, which is PII.
     console.error('[roster] contact update failed', { registrationId: parsed.data.registrationId, code: error.code });

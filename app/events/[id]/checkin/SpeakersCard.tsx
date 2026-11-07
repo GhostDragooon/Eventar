@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { formatInTz } from '@/lib/tz';
 import { toggleSpeakerCheckin } from './speakerActions';
 import { Button } from '@/components/ui/button';
-import { CHECKIN_ROLE_MESSAGE } from '@/lib/lifecycle/eventLifecycle';
+import { CHECKIN_ROLE_MESSAGE, NOT_EVENT_WRITER } from '@/lib/lifecycle/eventLifecycle';
 
 export type SpeakerCheckinRow = {
   speaker_name: string;
@@ -96,7 +96,8 @@ export function SpeakersCard({
           </span>
         )}
       </header>
-      {closedMessage && (
+      {/* Q51: the event-writer reason is said once on the desk, under Status, not again here (user-lens 2026-11-07). */}
+      {closedMessage && closedMessage !== NOT_EVENT_WRITER && (
         <p className="mb-sm font-body-md text-body-md text-on-surface-variant">
           {closedMessage}
           {closedMessage !== CHECKIN_ROLE_MESSAGE && ' Speaker ticks are locked outside the check-in window.'}

@@ -7,6 +7,7 @@ const requireStaffMock = vi.fn(async () => ({
   id: 's-1',
   email: 'a@b.com',
   role: 'organiser_member' as StaffRole,
+  organisation_id: 'org-1' as string | null,
 }));
 // canCheckIn stays the real helper: the role gate is what these tests pin.
 vi.mock('@/lib/auth', async (orig) => ({
@@ -36,6 +37,8 @@ type MockEvent = {
   end_time: string;
   registration_close_at: string | null;
   registration_open_at: string | null;
+  organisation_id: string;
+  created_by: string;
 };
 // Inside the check-in window by default: started 30 minutes ago, ends in 3 hours.
 const HOUR = 3_600_000;
@@ -46,6 +49,8 @@ const eventAt = (startOffsetMs: number, endOffsetMs: number, over: Partial<MockE
   end_time: new Date(Date.now() + endOffsetMs).toISOString(),
   registration_close_at: null,
   registration_open_at: null,
+  organisation_id: 'org-1',
+  created_by: 's-1',
   ...over,
 });
 const liveEvent = (over: Partial<MockEvent> = {}) => eventAt(-HOUR / 2, 3 * HOUR, over);
@@ -149,7 +154,7 @@ vi.mock('@/lib/supabase/server', () => ({
 
 import { beforeEach, describe, expect, it } from 'vitest';
 import { toggleSpeakerCheckin } from './speakerActions';
-import { CHECKIN_ROLE_MESSAGE } from '@/lib/lifecycle/eventLifecycle';
+import { NOT_EVENT_WRITER, CHECKIN_ROLE_MESSAGE } from '@/lib/lifecycle/eventLifecycle';
 import { NotAuthorizedError } from '@/lib/auth';
 
 beforeEach(() => {
@@ -330,7 +335,7 @@ describe('toggleSpeakerCheckin', () => {
 
   // Backtest M1: the desk tells body_admin and auditor it is read-only, but this action wrote for them.
   it.each(['body_admin', 'auditor'] as const)('refuses %s before any read or write, with the desk role sentence', async (role) => {
-    requireStaffMock.mockResolvedValueOnce({ id: 's-9', email: 'x@y.com', role });
+    requireStaffMock.mockResolvedValueOnce({ id: 's-9', email: 'x@y.com', role, organisation_id: 'org-1' });
     const result = await toggleSpeakerCheckin(eventId, 'Ada Lovelace');
     expect(result).toEqual({ error: CHECKIN_ROLE_MESSAGE });
     expect(eqCalls).toEqual([]);
@@ -339,8 +344,17 @@ describe('toggleSpeakerCheckin', () => {
     expect(revalidatePathMock).not.toHaveBeenCalled();
   });
 
+  // Q51 (Ivan, 2026-11-07): a member acts only on events it created.
+  it('refuses an organiser_member on a colleague\'s event, without writing', async () => {
+    requireStaffMock.mockResolvedValueOnce({ id: 's-2', email: 'x@y.com', role: 'organiser_member', organisation_id: 'org-1' });
+    const result = await toggleSpeakerCheckin(eventId, 'Ada Lovelace');
+    expect(result).toEqual({ error: NOT_EVENT_WRITER });
+    expect(lastInsert).toBeNull();
+    expect(lastUpdate).toBeNull();
+  });
+
   it.each(['organiser_admin', 'eventar_staff'] as const)('still lets %s toggle', async (role) => {
-    requireStaffMock.mockResolvedValueOnce({ id: 's-9', email: 'x@y.com', role });
+    requireStaffMock.mockResolvedValueOnce({ id: 's-9', email: 'x@y.com', role, organisation_id: 'org-1' });
     const result = await toggleSpeakerCheckin(eventId, 'Ada Lovelace');
     expect(result).toMatchObject({ ok: true });
     expect(lastInsert).not.toBeNull();

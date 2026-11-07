@@ -21,6 +21,7 @@ const BUSINESS_RULE = '22023';
 describe.skipIf(!process.env.RLS_TESTS)('multi-body accreditation CRUD functions', () => {
   let ownerId: string;
   let otherOwnerId: string;
+  let otherOrgId: string;
   let staffId: string;
   let bodyId: string;
   let eventId: string;
@@ -31,14 +32,14 @@ describe.skipIf(!process.env.RLS_TESTS)('multi-body accreditation CRUD functions
   const ts = Date.now();
 
   beforeAll(async () => {
-    const mkStaff = async (role: string, label: string) => {
+    const mkStaff = async (role: string, label: string, organisation_id = DEFAULT_ORG) => {
       const { data, error } = await admin
         .from('staff')
         .insert({
           email: `rls-c5-${label}-${ts}@example.com`,
           role,
           full_name: `RLS Test C5 ${label}`,
-          organisation_id: DEFAULT_ORG,
+          organisation_id,
           status: 'active',
         })
         .select('id')
@@ -47,7 +48,12 @@ describe.skipIf(!process.env.RLS_TESTS)('multi-body accreditation CRUD functions
       return data.id as string;
     };
     ownerId = await mkStaff('organiser_admin', 'owner');
-    otherOwnerId = await mkStaff('organiser_admin', 'other-owner');
+    // Q51 (2026-11-07): an organiser_admin acts on every event in its own organisation, so the non-owner case uses
+    // an organiser_admin of another organisation.
+    const { data: org, error: orgErr } = await admin.from('organisations').insert({ name: 'RLS C5 other org', slug: `rls-c5-other-${ts}` }).select('id').single();
+    if (orgErr || !org) throw new Error(`other org fixture: ${orgErr?.message}`);
+    otherOrgId = org.id as string;
+    otherOwnerId = await mkStaff('organiser_admin', 'other-owner', otherOrgId);
     staffId = await mkStaff('eventar_staff', 'staff');
 
     const { data: body, error: bodyErr } = await admin
@@ -125,6 +131,7 @@ describe.skipIf(!process.env.RLS_TESTS)('multi-body accreditation CRUD functions
     if (ownerId) await mustDelete(admin.from('staff').delete().eq('id', ownerId), 'owner staff fixture');
     if (otherOwnerId) await mustDelete(admin.from('staff').delete().eq('id', otherOwnerId), 'other-owner staff fixture');
     if (staffId) await mustDelete(admin.from('staff').delete().eq('id', staffId), 'eventar_staff fixture');
+    if (otherOrgId) await mustDelete(admin.from('organisations').delete().eq('id', otherOrgId), 'other org fixture');
   }, 60_000);
 
   describe('groups + schedule rows + occurrence links — owner round trip', () => {

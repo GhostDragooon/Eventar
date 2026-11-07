@@ -6,12 +6,13 @@ vi.mock('next/navigation', () => ({ redirect: vi.fn(), notFound: vi.fn() }));
 
 type Role = 'organiser_admin' | 'organiser_member' | 'body_admin' | 'auditor' | 'eventar_staff';
 let mockRole: Role = 'organiser_member';
+let mockStaffId = 'staff-1';
 // The role predicates and canManageEvent stay REAL: this file proves the page asks them
 // and hands the answer to the Publish card, the wiring the component tests cannot see.
 vi.mock('@/lib/auth', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/auth')>()),
   requireStaff: vi.fn(async () => ({
-    id: 'staff-1',
+    id: mockStaffId,
     email: 'organiser@example.com',
     role: mockRole,
     full_name: 'Org Aniser',
@@ -66,6 +67,7 @@ import PublishDraftButton from './PublishDraftButton';
 import { DraftSavedBanner } from '@/components/event-form/DraftSavedBanner';
 import { CpdAccreditationSection } from '@/components/details/CpdAccreditationSection';
 import StaffEventEditPage from './page';
+import { NOT_EVENT_WRITER, eventWriteRefusal } from '@/lib/lifecycle/eventLifecycle';
 
 // The page is an async server component; calling it yields the element tree without
 // rendering anything, so the Publish card's props can be read straight off it.
@@ -108,8 +110,6 @@ describe('draft edit page hands the Publish card what this role may do', () => {
     ['organiser_admin', true],
     ['organiser_member', true],
     ['eventar_staff', true],
-    ['body_admin', false],
-    ['auditor', false],
   ] as const)('%s: canPublish %s', async (role, canPublish) => {
     const cards = findAll(await draftTree(role), PublishDraftButton);
     expect(cards, 'exactly one Publish card on a draft').toHaveLength(1);
@@ -131,18 +131,28 @@ describe('the Publish card is honest before the one-way step', () => {
     expect(card.body).not.toMatch(/cannot be edited after publishing/i);
   });
 
-  it.each(['body_admin', 'auditor'] as const)('%s gets the reason in the heading, not a sales line above a missing button', async (role) => {
-    const card = publishCardOf(await draftTree(role));
-    expect(card.title).toBe('Publishing needs an organiser admin');
-    expect(card.body).toBe("Your role can't publish events.");
-    expect(`${card.title} ${card.body}`).not.toMatch(/QR|ready to publish/i);
-  });
-
   it('uses no em-dash in the card copy (D14)', async () => {
-    for (const role of ['organiser_admin', 'body_admin'] as const) {
+    for (const role of ['organiser_admin', 'organiser_member'] as const) {
       const card = publishCardOf(await draftTree(role));
       expect(`${card.title}${card.body}`).not.toContain('\u2014');
     }
+  });
+});
+
+// Q51 (Ivan, 2026-11-07): body_admin and auditor are read-only, and a member edits only its own events. They get the
+// reason and no form, no Publish card, no accreditation card.
+describe('draft edit page for an account that may not change this event', () => {
+  afterEach(() => { mockStaffId = 'staff-1'; });
+  it.each([['body_admin', 'staff-1'], ['auditor', 'staff-1'], ['organiser_member', 'staff-2']] as const)('%s (%s): the reason, read-only view, no live controls', async (role, id) => {
+    mockStaffId = id;
+    const tree = await draftTree(role);
+    expect(findAll(tree, PublishDraftButton)).toHaveLength(0);
+    // The read-only view still shows the accreditation, with no live Save (user-lens 2026-11-07: "View").
+    const cpd = findAll(tree, CpdAccreditationSection);
+    expect(cpd.every((c) => (c.props as { canSetAccreditation: boolean }).canSetAccreditation === false)).toBe(true);
+    expect(textOf(tree)).toContain(eventWriteRefusal(role));
+    // A body_admin who created an old draft itself is not told 'only the organiser who created this event'.
+    if (role !== 'organiser_member') expect(textOf(tree)).not.toContain(NOT_EVENT_WRITER);
   });
 });
 
@@ -153,8 +163,6 @@ describe('draft edit page hands the accreditation card what this role may do', (
     ['organiser_admin', true],
     ['organiser_member', false],
     ['eventar_staff', true],
-    ['body_admin', false],
-    ['auditor', false],
   ] as const)('%s: canSetAccreditation %s', async (role, canSet) => {
     const cards = findAll(await draftTree(role), CpdAccreditationSection);
     expect(cards, 'exactly one accreditation card').toHaveLength(1);
@@ -184,10 +192,6 @@ describe('draft edit page feeds the confirm and the saved banner', () => {
     expect(banners[0].props).toMatchObject({ eventId: 'event-1', savedOnLoad: expected, canPublish: true });
   });
 
-  it('tells the banner when this role cannot publish', async () => {
-    const [banner] = findAll(await draftTree('body_admin', '1'), DraftSavedBanner);
-    expect(banner.props).toMatchObject({ canPublish: false });
-  });
 });
 
 // RV-FINAL F60: a published event said "Need a change? Ask an admin" although no one can edit details or the agenda.
@@ -225,6 +229,15 @@ describe('a published or cancelled event says what is locked and what can still 
     expect(text).toContain('cancel it from the Events page');
     expect(text).not.toMatch(/ask an admin|isn.t available yet/i);
     expect(hrefsOf(tree)).toEqual(expect.arrayContaining(['/events/event-1/details', '/dashboard']));
+  });
+
+  // User-lens 2026-11-07: a member was told it could change the accreditation, next to "Your role can't set it".
+  it('published, organiser_member creator: not told it can change the accreditation', async () => {
+    eventRow.status = 'published';
+    const text = textOf(await draftTree('organiser_member')).replace(/\s+/g, ' ');
+    expect(text).toContain('Details are locked after publishing');
+    expect(text).not.toContain('change the CPD accreditation above');
+    expect(text).toContain('registration close date on the Event Manager page');
   });
 
   it('cancelled: does not offer to cancel again or to change registration', async () => {

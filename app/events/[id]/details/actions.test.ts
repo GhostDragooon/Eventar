@@ -2,8 +2,13 @@ import { vi } from 'vitest';
 vi.mock('server-only', () => ({}));
 
 // requireStaff is gated by hard rule #3; mock it as a no-op for these tests.
-vi.mock('@/lib/auth', () => ({
-  requireStaff: vi.fn(async () => ({ id: 's-1', email: 'a@b.com', role: 'organizer' })),
+const { requireStaffMock } = vi.hoisted(() => ({
+  requireStaffMock: vi.fn(async () => ({ id: 's-1', email: 'a@b.com', role: 'organiser_member', organisation_id: 'org-1' })),
+}));
+// canWriteEvent stays real (Q51).
+vi.mock('@/lib/auth', async (orig) => ({
+  ...(await orig<typeof import('@/lib/auth')>()),
+  requireStaff: requireStaffMock,
 }));
 
 // next/cache's revalidatePath must be mocked: it's a no-op in the test runner
@@ -22,9 +27,11 @@ const eventStartTime = '2026-06-15T09:00:00.000Z';
 const eventId = '11111111-2222-4333-8444-555555555555';
 
 let lastUpdate: Record<string, unknown> | null = null;
-let mockEventRow: { id: string; start_time: string } | null = {
+let mockEventRow: { id: string; start_time: string; organisation_id: string; created_by: string } | null = {
   id: eventId,
   start_time: eventStartTime,
+  organisation_id: 'org-1',
+  created_by: 's-1',
 };
 let mockReadError: { message: string } | null = null;
 let mockUpdateError: { message: string } | null = null;
@@ -59,7 +66,7 @@ import { updateRegistrationClose } from './actions';
 
 beforeEach(() => {
   lastUpdate = null;
-  mockEventRow = { id: eventId, start_time: eventStartTime };
+  mockEventRow = { id: eventId, start_time: eventStartTime, organisation_id: 'org-1', created_by: 's-1' };
   mockReadError = null;
   mockUpdateError = null;
   mockUpdatedRow = { id: eventId };
@@ -153,3 +160,19 @@ describe('updateRegistrationClose', () => {
     });
   });
 });
+
+// Q51 (Ivan, 2026-11-07): this action had only requireStaff, so body_admin and auditor could change it, and a member
+// any event in the organisation. Now: refused before the write.
+describe('updateRegistrationClose — Q51 event-writer rule', () => {
+  it.each([
+    ['organiser_member', 's-2', 'Only the organiser who created this event, or an organiser admin, can change it.'],
+    ['body_admin', 's-1', "Your role can't change events. Ask an organiser admin."],
+    ['auditor', 's-1', "Your role can't change events. Ask an organiser admin."],
+  ])('%s (%s) is refused before any write', async (role, id, message) => {
+    requireStaffMock.mockResolvedValueOnce({ id, email: 'a@b.com', role, organisation_id: 'org-1' });
+    const result = await updateRegistrationClose(eventId, null);
+    expect(result).toEqual({ error: message });
+    expect(lastUpdate).toBeNull();
+  });
+});
+

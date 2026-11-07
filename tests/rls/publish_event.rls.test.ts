@@ -162,23 +162,23 @@ describe.skipIf(!process.env.RLS_TESTS)('publish_event RLS + audit', () => {
     );
   });
 
-  // ---- 2. a same-org teammate (not the creator) can publish ----
-  // 20260910000000 moved the access gate from created_by = actor.id to
-  // organisation_id = actor.organisation_id — any active staff member of the
-  // event's org can now publish it, not only whoever created the row.
-  it('a same-org teammate (not the creator) can publish a valid event', async () => {
+  // ---- 2. a same-org organiser_member who did not create the event cannot publish it ----
+  // Q51 (Ivan, 2026-11-07): an organiser_member acts only on events it created; an organiser_admin acts on every
+  // event in its organisation (admin coverage: tests/rls/role_rights_q51.rls.test.ts). Replaces the 20260910
+  // org-wide rule this case used to pin.
+  it('a same-org organiser_member who did not create the event errors with 42501 and nothing changes', async () => {
     const eventId = await makeEventFixture('draft');
 
     const { error } = await nonOwner.client.rpc('publish_event', { p_event_id: eventId });
-    expect(error).toBeNull();
+    expect(error?.code).toBe('42501');
 
     const { data: event } = await admin
       .from('events')
       .select('status, published_at')
       .eq('id', eventId)
       .single();
-    expect(event?.status).toBe('published');
-    expect(event?.published_at).not.toBeNull();
+    expect(event?.status).toBe('draft');
+    expect(event?.published_at).toBeNull();
   });
 
   // ---- 2b. a staff member from a DIFFERENT organisation is rejected ----

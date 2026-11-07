@@ -1,7 +1,7 @@
 import 'server-only';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Staff } from '@/lib/auth';
+import { canWriteEvent, type Staff } from '@/lib/auth';
 import type { ProgrammeEvent } from '@/components/dashboard/programmeEvent';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 import { idBatches } from '@/lib/supabase/inBatches';
@@ -52,7 +52,7 @@ export function ownEvents<Cols extends string>(
 export async function fetchDecoratedEvents(
   supabase: SupabaseClient,
   nowMs: number,
-  staff: Pick<Staff, 'role' | 'organisation_id'>,
+  staff: Pick<Staff, 'id' | 'role' | 'organisation_id'>,
 ): Promise<{ events: ProgrammeEvent[] }> {
   const { data: events, error: eventsErr } = await ownEvents(
     supabase,
@@ -110,6 +110,8 @@ export async function fetchDecoratedEvents(
       hero_image_url: e.hero_image_url ?? null,
       city: e.city ?? null,
       hosts: organizedBy.filter((h) => h.name).map((h) => ({ name: h.name as string, avatar_url: null })),
+      // ownEvents already limits non-eventar staff to their own organisation, so the event's organisation is the staff's.
+      writable: canWriteEvent(staff, { organisation_id: staff.organisation_id, created_by: e.created_by }),
     };
   });
 

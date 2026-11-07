@@ -6,7 +6,9 @@ const mockRequireStaff = vi.fn();
 const { MockNotAuthorizedError } = vi.hoisted(() => ({
   MockNotAuthorizedError: class NotAuthorizedError extends Error {},
 }));
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/lib/auth', async (orig) => ({
+  // Q51: canWriteEvent is the real helper.
+  canWriteEvent: (await orig<typeof import('@/lib/auth')>()).canWriteEvent,
   NotAuthorizedError: MockNotAuthorizedError,
   requireStaff: (...args: unknown[]) => mockRequireStaff(...args),
   canCheckIn: (role: string) => ['organiser_admin', 'organiser_member', 'eventar_staff'].includes(role),
@@ -126,7 +128,7 @@ describe('walkInRegisterAndCheckIn', () => {
   // answers "already registered" and code entry refuses too.
   it('a check-in refused after the registration says the person was registered, with the code and the reason', async () => {
     markAttendedStatus = 'not_open_yet';
-    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...LIVE_TIMES });
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, created_by: 'staff-1', deleted_at: null, ...LIVE_TIMES });
     mockRegInsert({ id: 'reg-1', registration_code: 'WK-TEST1' });
     mockEmailLogInsert();
 
@@ -140,7 +142,7 @@ describe('walkInRegisterAndCheckIn', () => {
 
   it('every session over while the event window is still open: same true sentence, not "This event has ended."', async () => {
     markAttendedStatus = 'closed';
-    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...LIVE_TIMES });
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, created_by: 'staff-1', deleted_at: null, ...LIVE_TIMES });
     mockRegInsert({ id: 'reg-1', registration_code: 'WK-TEST1' });
     mockEmailLogInsert();
 
@@ -153,7 +155,7 @@ describe('walkInRegisterAndCheckIn', () => {
   // "already registered", so the walk-in's recovery is the code.
   it.each(['40P01', '40001'])('a %s collision after the registration says so and gives the code to finish with', async (code) => {
     markAttendedRpcError = { code, message: 'deadlock detected' };
-    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...LIVE_TIMES });
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, created_by: 'staff-1', deleted_at: null, ...LIVE_TIMES });
     mockRegInsert({ id: 'reg-1', registration_code: 'WK-TEST1' });
     mockEmailLogInsert();
 
@@ -166,7 +168,7 @@ describe('walkInRegisterAndCheckIn', () => {
   // role with 42501 and the action threw (HTTP 500), leaving a `registered` walk_in row. The role is refused first.
   it.each(['body_admin', 'auditor'])('%s cannot check people in: refused with a plain message and NO registration is inserted', async (role) => {
     mockRequireStaff.mockResolvedValueOnce({ ...staff, role });
-    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...LIVE_TIMES });
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, created_by: 'staff-1', deleted_at: null, ...LIVE_TIMES });
 
     await expect(walkInRegisterAndCheckIn(validInput)).resolves.toEqual({
       error: 'Your role cannot check people in. Ask an organiser admin or member.',
@@ -174,10 +176,21 @@ describe('walkInRegisterAndCheckIn', () => {
     expect(mockFrom).toHaveBeenCalledTimes(1); // the event read only: no registrations insert, no email_log
   });
 
+  // Q51 (Ivan, 2026-11-07): the insert runs on the admin client, so the member rule is checked before it.
+  it('an organiser_member on a colleague\'s event is refused and NO registration is inserted', async () => {
+    mockRequireStaff.mockResolvedValueOnce({ ...staff, id: 'staff-2', role: 'organiser_member' });
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, created_by: 'staff-1', deleted_at: null, ...LIVE_TIMES });
+
+    await expect(walkInRegisterAndCheckIn(validInput)).resolves.toEqual({
+      error: 'Only the organiser who created this event, or an organiser admin, can change it.',
+    });
+    expect(mockFrom).toHaveBeenCalledTimes(1);
+  });
+
   // A role the pre-check lets through but the database still refuses (drift) must not 500 after the insert either.
   it('a 42501 from mark_attended after the insert (role allowed) says the person is registered, with the code and the neutral reason', async () => {
     markAttendedRpcError = { code: '42501', message: 'permission denied' };
-    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...LIVE_TIMES });
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, created_by: 'staff-1', deleted_at: null, ...LIVE_TIMES });
     mockRegInsert({ id: 'reg-1', registration_code: 'WK-TEST1' });
     mockEmailLogInsert();
 
@@ -189,7 +202,7 @@ describe('walkInRegisterAndCheckIn', () => {
   // Any other failure of the check-in leg (a dropped connection) used to throw with the row left behind.
   it('any other failure of the check-in after the insert names the person, the code and how to finish', async () => {
     markAttendedRpcError = { code: '57014', message: 'canceling statement due to statement timeout' };
-    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...LIVE_TIMES });
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, created_by: 'staff-1', deleted_at: null, ...LIVE_TIMES });
     mockRegInsert({ id: 'reg-1', registration_code: 'WK-TEST1' });
     mockEmailLogInsert();
 
@@ -202,7 +215,7 @@ describe('walkInRegisterAndCheckIn', () => {
   it('the check-in leg failure logs the error code with the registration id and nothing personal', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     markAttendedRpcError = { code: '57014', message: 'canceling statement due to statement timeout' };
-    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...LIVE_TIMES });
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, created_by: 'staff-1', deleted_at: null, ...LIVE_TIMES });
     mockRegInsert({ id: 'reg-1', registration_code: 'WK-TEST1' });
     mockEmailLogInsert();
 
@@ -218,7 +231,7 @@ describe('walkInRegisterAndCheckIn', () => {
     ['ended', ENDED_TIMES],
   ])("another organisation's staff get the access error for a %s event, whatever its lifecycle", async (_label, times) => {
     mockRequireStaff.mockResolvedValueOnce({ ...staff, organisation_id: 'org-other' });
-    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...times });
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, created_by: 'staff-1', deleted_at: null, ...times });
     await expect(walkInRegisterAndCheckIn(validInput)).resolves.toEqual({ error: 'You do not have access to this event.' });
   });
 
@@ -237,7 +250,7 @@ describe('walkInRegisterAndCheckIn', () => {
   });
 
   it('happy path: registers + checks in', async () => {
-    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...LIVE_TIMES });
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, created_by: 'staff-1', deleted_at: null, ...LIVE_TIMES });
     mockRegInsert({ id: 'reg-1', registration_code: 'WK-TEST1' });
     mockEmailLogInsert();
 
@@ -247,14 +260,14 @@ describe('walkInRegisterAndCheckIn', () => {
 
   it('rejects non-manager staff (different org)', async () => {
     mockRequireStaff.mockResolvedValue({ ...staff, organisation_id: 'other-org' });
-    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...LIVE_TIMES });
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, created_by: 'staff-1', deleted_at: null, ...LIVE_TIMES });
 
     const res = await walkInRegisterAndCheckIn(validInput);
     expect(res).toEqual({ error: 'You do not have access to this event.' });
   });
 
   it('rejects duplicate email (23505)', async () => {
-    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...LIVE_TIMES });
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, created_by: 'staff-1', deleted_at: null, ...LIVE_TIMES });
     mockRegInsert(null, { code: '23505', message: 'registrations_event_id_email_key' });
 
     const res = await walkInRegisterAndCheckIn(validInput);
@@ -288,21 +301,21 @@ describe('walkInRegisterAndCheckIn', () => {
   // catches this; a bare `status !== 'published'` check, which is all this
   // action used to have, would incorrectly accept the walk-in below.
   it('rejects a walk-in on an event that ended, even though status is still "published"', async () => {
-    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...ENDED_TIMES });
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, created_by: 'staff-1', deleted_at: null, ...ENDED_TIMES });
 
     const res = await walkInRegisterAndCheckIn(validInput);
     expect(res).toEqual({ error: 'Check-in is closed. This event has ended.' });
   });
 
   it('rejects a walk-in on a cancelled event', async () => {
-    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'cancelled', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...LIVE_TIMES });
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'cancelled', max_attendees: null, organisation_id: ORG_ID, created_by: 'staff-1', deleted_at: null, ...LIVE_TIMES });
 
     const res = await walkInRegisterAndCheckIn(validInput);
     expect(res).toEqual({ error: 'This event was cancelled. Check-in is closed.' });
   });
 
   it('rejects a walk-in on an event that has not started yet', async () => {
-    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, deleted_at: null, ...NOT_YET_OPEN_TIMES });
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, created_by: 'staff-1', deleted_at: null, ...NOT_YET_OPEN_TIMES });
 
     const res = await walkInRegisterAndCheckIn(validInput);
     expect(res).toEqual({ error: 'Check-in has not opened yet. It opens 60 minutes before the event starts.' });

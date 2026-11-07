@@ -343,6 +343,8 @@ describe.skipIf(!process.env.RLS_TESTS)('agenda save integrity and draft-only ed
   });
 
   describe('below the RPC: a signed-in user cannot edit a published event through PostgREST either', () => {
+    // Q51 (2026-11-07): an organiser_member writes only events it created, so these draft-only checks run as the
+    // creator (owner). A member on a colleague's event is covered by tests/rls/role_rights_q51.rls.test.ts.
     // One value per column `authenticated` can UPDATE, each different from the fixture's. The list is checked
     // against the live grants, so a column granted later without the trigger covering it fails here.
     const PROTECTED: Record<string, unknown> = {
@@ -365,7 +367,7 @@ describe.skipIf(!process.env.RLS_TESTS)('agenda save integrity and draft-only ed
     it.each(Object.keys(PROTECTED))('PATCH events.%s on a published event is refused (event_not_draft) and nothing changes', async (col) => {
       const { id } = await makeEvent('published');
       const before = (await admin.from('events').select(col).eq('id', id).single()).data as unknown as Record<string, unknown>;
-      const { error } = await member.client.from('events').update({ [col]: PROTECTED[col] }).eq('id', id);
+      const { error } = await owner.client.from('events').update({ [col]: PROTECTED[col] }).eq('id', id);
       expect(error?.code).toBe('22023');
       expect(error?.message).toMatch(/^event_not_draft: /);
       const after = (await admin.from('events').select(col).eq('id', id).single()).data as unknown as Record<string, unknown>;
@@ -375,14 +377,14 @@ describe.skipIf(!process.env.RLS_TESTS)('agenda save integrity and draft-only ed
     it('registration_close_at stays editable on a published event (the Close registration editor)', async () => {
       const { id } = await makeEvent('published');
       const when = new Date(start() - HOUR).toISOString();
-      const { data, error } = await member.client.from('events').update({ registration_close_at: when }).eq('id', id).select('registration_close_at').single();
+      const { data, error } = await owner.client.from('events').update({ registration_close_at: when }).eq('id', id).select('registration_close_at').single();
       expect(error).toBeNull();
       expect(new Date(data!.registration_close_at as string).toISOString()).toBe(when);
     });
 
     it('the same PATCH on a draft is allowed (control)', async () => {
       const { id } = await makeEvent('draft');
-      const { error } = await member.client.from('events').update({ title: 'DB-04 draft patched', venue_name: 'patched', max_attendees: 5 }).eq('id', id);
+      const { error } = await owner.client.from('events').update({ title: 'DB-04 draft patched', venue_name: 'patched', max_attendees: 5 }).eq('id', id);
       expect(error).toBeNull();
       expect(await titleOf(id)).toBe('DB-04 draft patched');
     });
@@ -399,20 +401,20 @@ describe.skipIf(!process.env.RLS_TESTS)('agenda save integrity and draft-only ed
 
     it('agenda_blocks: INSERT, UPDATE and DELETE by a signed-in user are refused on a published event', async () => {
       const { id, blockIds: [a] } = await makeEvent('published', ['Alpha']);
-      const ins = await member.client.from('agenda_blocks').insert({ event_id: id, ...blockInput('Sneaked in', 2), display_order: 5 });
+      const ins = await owner.client.from('agenda_blocks').insert({ event_id: id, ...blockInput('Sneaked in', 2), display_order: 5 });
       expect(ins.error?.code).toBe('22023');
-      const upd = await member.client.from('agenda_blocks').update({ title: 'Renamed' }).eq('id', a);
+      const upd = await owner.client.from('agenda_blocks').update({ title: 'Renamed' }).eq('id', a);
       expect(upd.error?.code).toBe('22023');
-      const del = await member.client.from('agenda_blocks').delete().eq('id', a);
+      const del = await owner.client.from('agenda_blocks').delete().eq('id', a);
       expect(del.error?.code).toBe('22023');
       expect(await blocksOf(id)).toEqual([{ id: a, title: 'Alpha', display_order: 0 }]);
     });
 
     it('agenda_blocks: a signed-in user can still write to a draft, and service_role to a published event (control)', async () => {
       const { id, blockIds: [a] } = await makeEvent('draft', ['Alpha']);
-      expect((await member.client.from('agenda_blocks').insert({ event_id: id, ...blockInput('Added', 2), display_order: 5 })).error).toBeNull();
-      expect((await member.client.from('agenda_blocks').update({ title: 'Renamed' }).eq('id', a)).error).toBeNull();
-      expect((await member.client.from('agenda_blocks').delete().eq('id', a)).error).toBeNull();
+      expect((await owner.client.from('agenda_blocks').insert({ event_id: id, ...blockInput('Added', 2), display_order: 5 })).error).toBeNull();
+      expect((await owner.client.from('agenda_blocks').update({ title: 'Renamed' }).eq('id', a)).error).toBeNull();
+      expect((await owner.client.from('agenda_blocks').delete().eq('id', a)).error).toBeNull();
       const { id: pub } = await makeEvent('published', ['Alpha']);
       expect((await admin.from('agenda_blocks').insert({ event_id: pub, ...blockInput('Seeded', 2), display_order: 5 })).error).toBeNull();
     });
@@ -420,7 +422,7 @@ describe.skipIf(!process.env.RLS_TESTS)('agenda save integrity and draft-only ed
     it('agenda_blocks: a block cannot be moved off a published event onto a draft either', async () => {
       const { id: pub, blockIds: [a] } = await makeEvent('published', ['Alpha']);
       const { id: draft } = await makeEvent('draft');
-      const { error } = await member.client.from('agenda_blocks').update({ event_id: draft }).eq('id', a);
+      const { error } = await owner.client.from('agenda_blocks').update({ event_id: draft }).eq('id', a);
       expect(error?.code).toBe('22023');
       expect((await blocksOf(pub)).map((r) => r.id)).toEqual([a]);
     });
@@ -428,10 +430,10 @@ describe.skipIf(!process.env.RLS_TESTS)('agenda save integrity and draft-only ed
     it('agenda_blocks: a direct DELETE of a block a survey answer points at is refused too, on a draft', async () => {
       const { id, blockIds: [a, b] } = await makeEvent('draft', ['Alpha', 'Bravo']);
       const regId = await answerAbout(id, b, 'D');
-      const refused = await member.client.from('agenda_blocks').delete().eq('id', b);
+      const refused = await owner.client.from('agenda_blocks').delete().eq('id', b);
       expect(refused.error?.code).toBe('22023');
       expect(refused.error?.message).toBe('block_has_survey_answers: Bravo');
-      expect((await member.client.from('agenda_blocks').delete().eq('id', a)).error).toBeNull(); // an unanswered one still goes
+      expect((await owner.client.from('agenda_blocks').delete().eq('id', a)).error).toBeNull(); // an unanswered one still goes
       expect((await blocksOf(id)).map((r) => r.id)).toEqual([b]);
       expect(await surveyBlockOf(regId)).toBe(b);
     });
@@ -445,7 +447,7 @@ describe.skipIf(!process.env.RLS_TESTS)('agenda save integrity and draft-only ed
     it('agenda_blocks: a block cannot be moved from a draft onto a published event', async () => {
       const { blockIds: [a] } = await makeEvent('draft', ['Alpha']);
       const { id: pub } = await makeEvent('published');
-      const { error } = await member.client.from('agenda_blocks').update({ event_id: pub }).eq('id', a);
+      const { error } = await owner.client.from('agenda_blocks').update({ event_id: pub }).eq('id', a);
       expect(error?.code).toBe('22023');
     });
   });

@@ -140,7 +140,7 @@ describe.skipIf(!process.env.RLS_TESTS)('audited roster edit and the registratio
       const r = await makeReg();
       const before = await row(r.id);
       const newEmail = `db05-${RUN}-NEW${r.id.slice(0, 4)}@rls-test.invalid`;
-      expect((await edit(member, r.id, 'Both Changed', newEmail)).error).toBeNull();
+      expect((await edit(owner, r.id, 'Both Changed', newEmail)).error).toBeNull();
       const after = await row(r.id);
       expect(after.email).toBe(newEmail.toLowerCase());
       expect(after.full_name).toBe('Both Changed');
@@ -188,7 +188,7 @@ describe.skipIf(!process.env.RLS_TESTS)('audited roster edit and the registratio
       expect(await row(r.id)).toEqual(before);
       expect(await auditCount()).toBe(auditsBefore);
       // A name change riding along with the email change is refused as a whole.
-      const both = await edit(member, r.id, 'Renamed and rerouted', `db05-${RUN}-reroute2@rls-test.invalid`);
+      const both = await edit(owner, r.id, 'Renamed and rerouted', `db05-${RUN}-reroute2@rls-test.invalid`);
       expect(both.error?.message).toMatch(/^email_locked_attended: /);
       expect(await row(r.id)).toEqual(before);
     });
@@ -476,7 +476,7 @@ describe.skipIf(!process.env.RLS_TESTS)('audited roster edit and the registratio
         await asActor(a, owner);
         const done = await checkIn(a, r.code); // not committed: A holds the registration row
         expect(done.ok && done.rows, 'the check-in under test must succeed').toEqual([{ result: 'ok' }]);
-        await asActor(b, member);
+        await asActor(b, owner);
         const bPid = (await b.query('select pg_backend_pid() as pid')).rows[0].pid as number;
         const pending = editEmail(b, r.id, `zz-rt-race-${RUN}-0-new@rls-test.invalid`);
         let waiting = false;
@@ -513,7 +513,7 @@ describe.skipIf(!process.env.RLS_TESTS)('audited roster edit and the registratio
           const r = await makeLiveReg(n);
           const newEmail = `zz-rt-race-${RUN}-${n}-new@rls-test.invalid`;
           await asActor(a, owner);
-          await asActor(b, member);
+          await asActor(b, owner);
           let go!: () => void;
           const gate = new Promise<void>((res) => { go = res; });
           const check = gate.then(() => checkIn(a, r.code)).then(async (o) => { await finish(a, o); return o; });

@@ -6,10 +6,12 @@ vi.mock('server-only', () => ({}));
 const requireStaffMock = vi.fn(async () => ({
   id: 's-1',
   email: 'a@b.com',
-  role: 'organizer' as string,
+  role: 'organiser_member' as string,
   organisation_id: 'org-1' as string | null,
 }));
-vi.mock('@/lib/auth', () => ({
+// canWriteEvent stays real (Q51).
+vi.mock('@/lib/auth', async (orig) => ({
+  ...(await orig<typeof import('@/lib/auth')>()),
   requireStaff: () => requireStaffMock(),
 }));
 
@@ -61,7 +63,7 @@ vi.mock('@/lib/supabase/server', () => ({
 // The in-code gate reads events.organisation_id and status via admin before the RPC
 // (service-role contexts skip the RPC's own JWT-based check). Default: a draft in the
 // mocked staff's organisation; tests flip mockEvent (null = no such event).
-let mockEvent: { organisation_id: string; status: string; deleted_at: string | null } | null = { organisation_id: 'org-1', status: 'draft', deleted_at: null };
+let mockEvent: { organisation_id: string; status: string; deleted_at: string | null; created_by?: string } | null = { organisation_id: 'org-1', status: 'draft', deleted_at: null, created_by: 's-1' };
 vi.mock('@/lib/supabase/admin', () => ({
   supabaseAdmin: vi.fn(() => ({
     from: (_table: string) => ({
@@ -121,7 +123,7 @@ const validBlock = {
 };
 
 beforeEach(() => {
-  mockEvent = { organisation_id: 'org-1', status: 'draft', deleted_at: null };
+  mockEvent = { organisation_id: 'org-1', status: 'draft', deleted_at: null, created_by: 's-1' };
   requireStaffMock.mockClear();
   revalidatePathMock.mockClear();
   rpcCalls = [];
@@ -135,7 +137,7 @@ describe('updateEvent', () => {
   // Ivan's ruling 2026-10-23: the screens already say "Details cannot be edited after publishing yet", but the
   // server accepted an update to a published event from any colleague (and wrote no audit row). Gate it until P9b.
   it.each(['published', 'cancelled', 'completed'])('refuses an event whose status is %s without calling the RPC', async (status) => {
-    mockEvent = { organisation_id: 'org-1', status, deleted_at: null };
+    mockEvent = { organisation_id: 'org-1', status, deleted_at: null, created_by: 's-1' };
     const result = await updateEvent(eventId, { event: validEvent, blocks: [validBlock] });
     expect(result).toEqual({ error: expect.stringMatching(/no longer a draft/i) });
     expect(rpcCalls).toHaveLength(0);
@@ -143,7 +145,7 @@ describe('updateEvent', () => {
   });
 
   it('refuses every role on a published event, the platform operator included', async () => {
-    mockEvent = { organisation_id: 'org-1', status: 'published', deleted_at: null };
+    mockEvent = { organisation_id: 'org-1', status: 'published', deleted_at: null, created_by: 's-1' };
     requireStaffMock.mockResolvedValueOnce({ id: 's-9', email: 'op@x.com', role: 'eventar_staff', organisation_id: 'org-other' });
     const result = await updateEvent(eventId, { event: validEvent, blocks: [validBlock] });
     expect(result).toEqual({ error: expect.stringMatching(/no longer a draft/i) });
@@ -151,7 +153,7 @@ describe('updateEvent', () => {
   });
 
   it("refuses another organisation's event before saying anything about its status", async () => {
-    mockEvent = { organisation_id: 'org-2', status: 'published', deleted_at: null };
+    mockEvent = { organisation_id: 'org-2', status: 'published', deleted_at: null, created_by: 's-1' };
     const result = await updateEvent(eventId, { event: validEvent, blocks: [validBlock] });
     expect(result).toEqual({ error: 'You do not have access to this event.' });
     expect(rpcCalls).toHaveLength(0);
@@ -161,7 +163,7 @@ describe('updateEvent', () => {
   // with a clean 42501 (proved in tests/rls/event_agenda_integrity.rls.test.ts). This test pins the action's own
   // gate only: the RPC is mocked.
   it("lets the platform operator past the action's own gate on another organisation's draft", async () => {
-    mockEvent = { organisation_id: 'org-2', status: 'draft', deleted_at: null };
+    mockEvent = { organisation_id: 'org-2', status: 'draft', deleted_at: null, created_by: 's-1' };
     requireStaffMock.mockResolvedValueOnce({ id: 's-9', email: 'op@x.com', role: 'eventar_staff', organisation_id: 'org-other' });
     const result = await updateEvent(eventId, { event: validEvent, blocks: [validBlock] });
     expect(result).toEqual({ ok: true, blockIds: ['new-0'] });
@@ -169,7 +171,7 @@ describe('updateEvent', () => {
   });
 
   it('treats a soft-deleted draft as not found (the backtest saved one)', async () => {
-    mockEvent = { organisation_id: 'org-1', status: 'draft', deleted_at: '2026-10-01T00:00:00.000Z' };
+    mockEvent = { organisation_id: 'org-1', status: 'draft', deleted_at: '2026-10-01T00:00:00.000Z', created_by: 's-1' };
     const result = await updateEvent(eventId, { event: validEvent, blocks: [validBlock] });
     expect(result).toEqual({ error: 'Event not found.' });
     expect(rpcCalls).toHaveLength(0);
@@ -472,3 +474,25 @@ describe('updateEvent', () => {
     expect(revalidatePathMock).not.toHaveBeenCalled();
   });
 });
+
+// Q51 (Ivan, 2026-11-07): within the organisation a member edits only its own events; body_admin and auditor none.
+describe('updateEvent — Q51 event-writer rule', () => {
+  it.each([
+    ['organiser_member', 's-2', 'Only the organiser who created this event, or an organiser admin, can change it.'],
+    ['body_admin', 's-1', "Your role can't change events. Ask an organiser admin."],
+    ['auditor', 's-1', "Your role can't change events. Ask an organiser admin."],
+  ])('%s (%s) is refused before the RPC', async (role, id, message) => {
+    requireStaffMock.mockResolvedValueOnce({ id, email: 'a@b.com', role, organisation_id: 'org-1' });
+    const result = await updateEvent(eventId, { event: validEvent, blocks: [validBlock] });
+    expect(result).toEqual({ error: message });
+    expect(rpcCalls).toEqual([]);
+  });
+
+  it('an organiser_admin may edit a colleague\'s draft', async () => {
+    requireStaffMock.mockResolvedValueOnce({ id: 's-2', email: 'a@b.com', role: 'organiser_admin', organisation_id: 'org-1' });
+    const result = await updateEvent(eventId, { event: validEvent, blocks: [validBlock] });
+    expect(result).not.toEqual({ error: 'Only the organiser who created this event, or an organiser admin, can change it.' });
+    expect(rpcCalls.length).toBe(1);
+  });
+});
+

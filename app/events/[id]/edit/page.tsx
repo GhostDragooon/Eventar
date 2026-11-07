@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { requireStaff, NotAuthorizedError, canManageEvent, canPublishEvents, canSetAccreditation } from '@/lib/auth';
+import { requireStaff, NotAuthorizedError, canManageEvent, canPublishEvents, canSetAccreditation, canWriteEvent } from '@/lib/auth';
+import { eventWriteRefusal } from '@/lib/lifecycle/eventLifecycle';
 import { supabaseServer } from '@/lib/supabase/server';
 import { formatInTz } from '@/lib/tz';
 import { labelForBlockKind, type AgendaTopic } from '@/lib/agenda';
@@ -69,6 +70,11 @@ export default async function StaffEventEditPage({
   if (!canManageEvent(event, staff)) {
     redirect(`/events/${id}/details`);
   }
+  // Q51: a member edits only events it created; body_admin and auditor edit none. They get the same read-only view
+  // a published event has (the Events list labels the link "View"), with the reason on top, and no live controls.
+  const writable = canWriteEvent(staff, event);
+  const readOnly = event.status !== 'draft' || !writable;
+  const canAccredit = canSetAccreditation(staff.role) && writable;
   const canPublish = canPublishEvents(staff.role);
 
   // Read every column the form treats as full-replace input. Omitting any of
@@ -226,9 +232,9 @@ export default async function StaffEventEditPage({
           creditsIssued={creditsRes.count ?? 0}
           bodiesUnavailable={authorised.unavailable}
           noAuthorisedBodies={!authorised.unavailable && authorised.bodies.length === 0}
-          canSetAccreditation={canSetAccreditation(staff.role)}
+          canSetAccreditation={canAccredit}
         />
-        {event.status === 'draft' && canSetAccreditation(staff.role) && (
+        {event.status === 'draft' && canAccredit && (
           <p className="mt-xs font-body-md text-body-md text-on-surface-variant">
             Saves accreditation only. Use Save changes at the bottom for the rest of the event.
           </p>
@@ -247,7 +253,7 @@ export default async function StaffEventEditPage({
           occurrences={wizardOccurrences}
           initialGroups={wizardGroups}
           frozen={(creditsRes.count ?? 0) > 0}
-          canSetAccreditation={canSetAccreditation(staff.role)}
+          canSetAccreditation={canAccredit}
         />
       </div>
 
@@ -259,7 +265,7 @@ export default async function StaffEventEditPage({
           publish to remain reachable from /edit while the event is a draft.
           Non-draft: keep the existing read-only + ActionCards sidebar
           layout untouched. */}
-      {event.status === 'draft' ? (
+      {!readOnly ? (
         <>
         {/* UX-01 pick c1: the draft is saved (this page is where Save draft lands), then Save changes later. */}
         <DraftSavedBanner eventId={event.id} savedOnLoad={saved === '1'} canPublish={canPublish} />
@@ -366,13 +372,18 @@ export default async function StaffEventEditPage({
           {/* What a published event really allows (read from the code, not promised): CPD accreditation above
               (admin, until credit is issued), registration close on the Event Manager page, cancel and create on the
               Events page. Nobody can edit details or the agenda (UPD-01), so no "ask an admin". */}
-          {event.status !== 'draft' && (
+          {!writable && (
+            <p className="font-body-md text-body-md text-on-surface-variant">{eventWriteRefusal(staff.role)}</p>
+          )}
+          {writable && event.status !== 'draft' && (
             <p className="font-body-md text-body-md text-on-surface-variant">
               Details are locked after publishing: nobody can change the title, date, venue or agenda yet.
               {event.status === 'published' ? (
                 <>
-                  {' '}You can still change the CPD accreditation above (organiser admins only, until credit has been
-                  issued) and, while registration is open, the registration close date on the{' '}
+                  {/* Said only to a role that can set accreditation; a member was told it could, next to "Your
+                      role can't set accreditation" (user-lens 2026-11-07). */}
+                  {canAccredit ? ' You can still change the CPD accreditation above (until credit has been issued) and, while' : ' While'}
+                  {' '}registration is open, the registration close date on the{' '}
                   <Link href={`/events/${event.id}/details`} className="text-primary-ink hover:underline">Event Manager</Link>{' '}
                   page. To stop this event, cancel it from the{' '}
                   <Link href="/dashboard" className="text-primary-ink hover:underline">Events</Link>{' '}

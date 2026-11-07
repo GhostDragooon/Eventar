@@ -1,6 +1,7 @@
 'use server';
 import { revalidatePath } from 'next/cache';
 import { requireStaff, canManageEvent, canPublishEvents } from '@/lib/auth';
+import { NOT_EVENT_WRITER } from '@/lib/lifecycle/eventLifecycle';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { buildEventQrPng } from '@/lib/qr';
@@ -30,6 +31,8 @@ export async function publishEvent(id: string): Promise<PublishResult> {
   // this callable under review mode too, see 20260814020000.
   const { error } = await supabase.rpc('publish_event', { p_event_id: id, p_actor_override: staff.id });
   if (error) {
+    // Q51: the event belongs to someone this account may not act for.
+    if (error.code === '42501' && error.details === 'not_event_writer') return { error: NOT_EVENT_WRITER };
     if (error.code === '42501') {
       return { error: 'Cannot publish: event not found or not in your organisation.' };
     }

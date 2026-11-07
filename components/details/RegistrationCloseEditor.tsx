@@ -8,6 +8,8 @@ import { updateRegistrationClose } from '@/app/events/[id]/details/actions';
 type Props = {
   eventId: string;
   current: string | null; // ISO or null
+  /** Q51: shown but not editable (the page says why). */
+  readOnly?: boolean;
 };
 
 // `<input type="datetime-local">` requires 'YYYY-MM-DDTHH:mm' in the user's
@@ -20,7 +22,7 @@ function isoToLocalInputValue(iso: string): string {
   return new Date(d.getTime() - offsetMs).toISOString().slice(0, 16);
 }
 
-export function RegistrationCloseEditor({ eventId, current }: Props) {
+export function RegistrationCloseEditor({ eventId, current, readOnly = false }: Props) {
   const [value, setValue] = useState(current ? isoToLocalInputValue(current) : '');
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -53,8 +55,10 @@ export function RegistrationCloseEditor({ eventId, current }: Props) {
           type="datetime-local"
           value={value}
           onChange={(e) => setValue(e.target.value)}
+          disabled={readOnly}
           className="w-auto"
         />
+        {!readOnly && (
         <Button
           type="button"
           onClick={handleSave}
@@ -63,7 +67,8 @@ export function RegistrationCloseEditor({ eventId, current }: Props) {
         >
           {isPending ? 'Saving…' : 'Save'}
         </Button>
-        {value && (
+        )}
+        {value && !readOnly && (
           <button
             type="button"
             onClick={() => setValue('')}

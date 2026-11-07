@@ -43,8 +43,7 @@ describe('fetchDecoratedEvents — org scoping (regression, 2026-09-17 cross-org
     const { builder, calls } = makeQueryMock([]);
     const supabase = { from: () => builder } as never;
 
-    await fetchDecoratedEvents(supabase, Date.now(), {
-      role: 'organiser_admin',
+    await fetchDecoratedEvents(supabase, Date.now(), { id: 's-1', role: 'organiser_admin',
       organisation_id: 'org-mine',
     });
 
@@ -57,8 +56,7 @@ describe('fetchDecoratedEvents — org scoping (regression, 2026-09-17 cross-org
     const { builder, calls } = makeQueryMock([]);
     const supabase = { from: () => builder } as never;
 
-    await fetchDecoratedEvents(supabase, Date.now(), {
-      role: 'eventar_staff',
+    await fetchDecoratedEvents(supabase, Date.now(), { id: 's-1', role: 'eventar_staff',
       organisation_id: null,
     });
 
@@ -96,7 +94,7 @@ describe('fetchDecoratedEvents — the registrations lookup stays under the URL 
     };
     const supabase = { from: (t: string) => (t === 'events' ? eventsBuilder : regsBuilder) } as never;
 
-    const { events: out } = await fetchDecoratedEvents(supabase, Date.now(), { role: 'organiser_admin', organisation_id: 'org-mine' });
+    const { events: out } = await fetchDecoratedEvents(supabase, Date.now(), { id: 's-1', role: 'organiser_admin', organisation_id: 'org-mine' });
 
     expect(idLists.length).toBeGreaterThan(1);
     // 37 characters per id in the URL: 100 ids is about 3.7 KB, well under the 8 KB gateway limit.
@@ -116,7 +114,7 @@ describe('fetchDecoratedEvents — the registrations lookup stays under the URL 
     };
     const supabase = { from: (t: string) => (t === 'events' ? eventsBuilder : regsBuilder) } as never;
     await expect(
-      fetchDecoratedEvents(supabase, Date.now(), { role: 'organiser_admin', organisation_id: 'org-mine' }),
+      fetchDecoratedEvents(supabase, Date.now(), { id: 's-1', role: 'organiser_admin', organisation_id: 'org-mine' }),
     ).rejects.toThrow('boom');
   });
 });
@@ -164,8 +162,7 @@ describe('fetchDecoratedEvents: dayKey', () => {
   it("stamps each event with its own local date", async () => {
     // 2026-10-20T02:00Z is Mon 19 Oct 22:00 in New York.
     const { builder } = makeQueryMock([event]);
-    const { events } = await fetchDecoratedEvents({ from: () => builder } as never, Date.parse('2026-10-15T02:00:00Z'), {
-      role: 'organiser_admin',
+    const { events } = await fetchDecoratedEvents({ from: () => builder } as never, Date.parse('2026-10-15T02:00:00Z'), { id: 's-1', role: 'organiser_admin',
       organisation_id: 'org-mine',
     });
     expect(events[0].dayKey).toBe('2026-10-19');

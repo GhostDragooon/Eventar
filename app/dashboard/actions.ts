@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { canChangeEventStatus, requireStaff } from '@/lib/auth';
+import { canChangeEventStatus, canWriteEvent, requireStaff } from '@/lib/auth';
+import { NOT_EVENT_WRITER } from '@/lib/lifecycle/eventLifecycle';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
@@ -33,6 +34,19 @@ async function bulkUpdate(eventIds: string[], action: BulkAction): Promise<BulkR
   // eslint-disable-next-line no-restricted-syntax -- attribution only; degrades to NULL, same as checkin/actions.ts
   const { data: authUser } = await supabase.auth.getUser();
   const admin = supabaseAdmin();
+
+  // Q51 (Ivan, 2026-11-07): a selection holding any event this account may not change is refused whole, naming
+  // those events, before anything is written. The RPC refuses the same batch (42501 not_event_writer).
+  const { data: rows, error: readErr } = await admin.from('events').select('id, title, organisation_id, created_by').in('id', eventIds);
+  if (readErr) return { error: 'Could not update the selected events.' };
+  const blocked = (rows ?? []).filter((r) => !canWriteEvent(staff, r));
+  if (blocked.length > 0) {
+    // Name only events of the caller's own organisation: an id from elsewhere must not reveal its title (dev review m1).
+    const named = blocked.filter((r) => r.organisation_id === staff.organisation_id).map((r) => `“${r.title}”`);
+    const other = blocked.length - named.length;
+    const parts = [...(named.length ? [`Not yours: ${named.join(', ')}.`] : []), ...(other ? [`${other} selected ${other === 1 ? 'event is' : 'events are'} not in your organisation.`] : [])];
+    return { error: `Nothing was changed. ${NOT_EVENT_WRITER} ${parts.join(' ')}` };
+  }
 
   const { data, error } = await admin.rpc('bulk_update_event_status', {
     p_event_ids: eventIds,

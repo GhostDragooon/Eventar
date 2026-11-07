@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
-import { requireStaff, NotAuthorizedError, canManageEvent, canCheckIn, canEditRegistrations, canEditRegistrationRoles } from '@/lib/auth';
+import { requireStaff, NotAuthorizedError, canManageEvent, canCheckIn, canEditRegistrations, canEditRegistrationRoles, canWriteEvent } from '@/lib/auth';
+import { CHECKIN_ROLE_MESSAGE, NOT_EVENT_WRITER } from '@/lib/lifecycle/eventLifecycle';
 import { supabaseServer } from '@/lib/supabase/server';
 import { formatInTz } from '@/lib/tz';
 import { StaffShell } from '@/components/shell/StaffShell';
@@ -152,11 +153,13 @@ export default async function StaffCheckinPage({
             sentence in RosterClient), so it is not told to scan or add a walk-in. */}
         <p className="mt-xs font-body-md text-body-md text-on-surface-variant">
           {[
-            canCheckIn(staff.role)
+            canCheckIn(staff.role) && canWriteEvent(staff, event)
               ? 'Live capture only: scan, enter a code or add a walk-in.'
+              : canCheckIn(staff.role)
+              ? 'You can view this desk but not check people in.'
               : 'Live capture only: this desk is read-only for your role.',
             // Same predicates as the Registrations page controls, so no role is sent there to do what it cannot.
-            canEditRegistrations(staff.role)
+            canEditRegistrations(staff.role) && canWriteEvent(staff, event)
               ? canEditRegistrationRoles(staff, event)
                 ? "To edit a person's details or roles, open Registrations."
                 : "To edit a person's details, open Registrations."
@@ -186,7 +189,8 @@ export default async function StaffCheckinPage({
         }}
         // eslint-disable-next-line react-hooks/purity -- the server's clock, handed to the desk so a skewed device clock cannot gate it
         serverNowMs={Date.now()}
-        canCheckIn={canCheckIn(staff.role)}
+        canCheckIn={canCheckIn(staff.role) && canWriteEvent(staff, event)}
+        refusalMessage={canCheckIn(staff.role) ? NOT_EVENT_WRITER : CHECKIN_ROLE_MESSAGE}
         initialRoster={rosterRes.data ?? []}
         eligibility={eligibility}
         eligibilityUnavailable={Boolean(eligRes.error)}

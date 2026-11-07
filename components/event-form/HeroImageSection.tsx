@@ -9,8 +9,9 @@ import { supabaseBrowser } from '@/lib/supabase/browser';
 // staff session). Server-side validation lives on the bucket (size + MIME
 // whitelist via storage.buckets) + RLS (staff-only write).
 //
-// File naming: `pending/{timestamp}-{rand}.{ext}` for create-mode (event
-// id unknown yet); `{eventId}/{timestamp}-{rand}.{ext}` for edit-mode.
+// File naming: `pending/{authUserId}/{timestamp}-{rand}.{ext}` for create-mode (event id unknown yet; only that
+// user may write there, Q51); `{eventId}/{timestamp}-{rand}.{ext}` for edit-mode (writable by whoever may change
+// that event, app_private.can_write_hero_object).
 // Old images aren't deleted on replace — a follow-up cleanup task can
 // sweep orphans by joining storage.objects against events.hero_image_url.
 
@@ -46,8 +47,17 @@ export function HeroImageSection({ value, onChange, eventId }: Props) {
       const safeExt = /^(jpe?g|png|webp)$/.test(ext) ? ext : 'jpg';
       const stamp = Date.now();
       const rand = Math.random().toString(36).slice(2, 8);
-      const path = `${eventId ?? 'pending'}/${stamp}-${rand}.${safeExt}`;
       const supabase = supabaseBrowser();
+      let folder = eventId;
+      if (!folder) {
+        const { data: auth, error: authErr } = await supabase.auth.getUser();
+        if (authErr || !auth.user) {
+          setError('Upload failed: we could not confirm you are signed in. Sign in again and retry.');
+          return;
+        }
+        folder = `pending/${auth.user.id}`;
+      }
+      const path = `${folder}/${stamp}-${rand}.${safeExt}`;
       const { error: upErr } = await supabase.storage
         .from(BUCKET)
         .upload(path, file, { upsert: false, contentType: file.type });

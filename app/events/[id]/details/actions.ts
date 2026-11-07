@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { requireStaff } from '@/lib/auth';
+import { canWriteEvent, requireStaff } from '@/lib/auth';
+import { eventWriteRefusal } from '@/lib/lifecycle/eventLifecycle';
 import { supabaseServer } from '@/lib/supabase/server';
 
 const inputSchema = z.object({
@@ -19,7 +20,7 @@ export async function updateRegistrationClose(
   eventId: string,
   registrationCloseAt: string | null,
 ): Promise<UpdateResult> {
-  await requireStaff();
+  const staff = await requireStaff();
 
   const parsed = inputSchema.safeParse({ registration_close_at: registrationCloseAt });
   if (!parsed.success) {
@@ -39,12 +40,14 @@ export async function updateRegistrationClose(
 
   const { data: event, error: readError } = await supabase
     .from('events')
-    .select('id, start_time')
+    .select('id, start_time, organisation_id, created_by')
     .eq('id', eventId)
     .maybeSingle();
 
   if (readError) return { error: readError.message };
   if (!event) return { error: 'Event not found.' };
+  // Q51: before any write. This action had only requireStaff, so body_admin and auditor could change it.
+  if (!canWriteEvent(staff, event)) return { error: eventWriteRefusal(staff.role) };
 
   if (parsedDate != null) {
     const startMs = new Date(event.start_time).getTime();

@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
-import { requireStaff, NotAuthorizedError, canManageEvent, canEditRegistrations, canEditRegistrationRoles, canCheckIn } from '@/lib/auth';
+import { requireStaff, NotAuthorizedError, canManageEvent, canEditRegistrations, canEditRegistrationRoles, canCheckIn, canWriteEvent } from '@/lib/auth';
+import { NOT_EVENT_WRITER } from '@/lib/lifecycle/eventLifecycle';
 import { supabaseServer } from '@/lib/supabase/server';
 import { formatInTz } from '@/lib/tz';
 import { StaffShell } from '@/components/shell/StaffShell';
@@ -99,15 +100,19 @@ export default async function RegistrationsPage({ params }: { params: Promise<{ 
     checkInLabel: r.check_in_at ? formatInTz(r.check_in_at, event.timezone) : null,
   }));
 
-  const canEdit = canEditRegistrations(staff.role);
+  // Q51: a member edits only events it created.
+  const writable = canWriteEvent(staff, event);
+  const canEdit = canEditRegistrations(staff.role) && writable;
   const canEditRoles = canEditRegistrationRoles(staff, event);
   // Instruction copy follows the same gates as the controls, so no role is told to do what it cannot.
   const subtitle = [
     'Everyone registered for this event.',
     canEdit
       ? canEditRoles ? 'Edit contact details and roles here.' : 'Edit contact details here.'
-      : 'You can view contact details; an organiser admin or member can edit them.',
-    canCheckIn(staff.role) ? 'To check people in, open Check-in.' : null,
+      : canEditRegistrations(staff.role)
+        ? `You can view contact details. ${NOT_EVENT_WRITER}`
+        : 'You can view contact details; an organiser admin or member can edit them.',
+    canCheckIn(staff.role) && writable ? 'To check people in, open Check-in.' : null,
   ].filter(Boolean).join(' ');
 
   return (

@@ -774,7 +774,7 @@ describe.skipIf(!process.env.RLS_TESTS)('audited-table write guard (service_role
         const { data: staff, error: stErr } = await admin
           .from('staff')
           .insert([
-            { email: colleague.email, role: 'organiser_member', full_name: 'SEC-02 colleague', organisation_id: DEFAULT_ORG, status: 'active' },
+            { email: colleague.email, role: 'organiser_admin', full_name: 'SEC-02 colleague', organisation_id: DEFAULT_ORG, status: 'active' },
             { email: creatorEmail, role: 'organiser_member', full_name: 'SEC-02 creator', organisation_id: DEFAULT_ORG, status: 'active' },
           ])
           .select('id, email');
@@ -807,7 +807,7 @@ describe.skipIf(!process.env.RLS_TESTS)('audited-table write guard (service_role
         expect(hide.error?.code, 'a colleague soft-deleting through PATCH must be 42501').toBe(PERMISSION_DENIED);
 
         const edit = await colleague.client.from('events').update({ title: 'SEC-02 edited — DELETE ME' }).eq('id', eventId).select('id');
-        expect(edit.error, 'an ordinary column must still update for an organisation member').toBeNull();
+        expect(edit.error, 'an ordinary column must still update for an organiser admin (Q51: a member may edit only its own events)').toBeNull();
         const { data: after } = await admin.from('events').select('created_by, deleted_at, title').eq('id', eventId).single();
         expect(after?.created_by).toBe(creatorId);
         expect(after?.deleted_at).toBeNull();
@@ -826,7 +826,7 @@ describe.skipIf(!process.env.RLS_TESTS)('audited-table write guard (service_role
           },
           blocks_input: [],
         });
-        expect(rpc.error, 'the edit RPC must still work for an organisation member').toBeNull();
+        expect(rpc.error, 'the edit RPC must still work for an organiser admin').toBeNull();
         const { data: viaRpc } = await admin.from('events').select('title, created_by').eq('id', eventId).single();
         expect(viaRpc?.title).toBe('SEC-02 via rpc — DELETE ME');
         expect(viaRpc?.created_by, 'the RPC must not touch created_by').toBe(creatorId);

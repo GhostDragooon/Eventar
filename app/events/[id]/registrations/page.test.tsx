@@ -77,9 +77,16 @@ describe('Registrations page header', () => {
     );
   });
 
-  it('does not promise role edits to an editor who is not the creator (the role chips are read-only for them)', async () => {
+  // Q51 (Ivan, 2026-11-07): a member acts only on events it created; an admin on every event in its organisation.
+  it('a member who did not create the event can only look, and is told why', async () => {
     expect(await subtitle({ id: 'u2', role: 'organiser_member' })).toBe(
-      'Everyone registered for this event. Edit contact details here. To check people in, open Check-in.',
+      'Everyone registered for this event. You can view contact details. Only the organiser who created this event, or an organiser admin, can change it.',
+    );
+  });
+
+  it('an admin who did not create the event edits contact details and roles', async () => {
+    expect(await subtitle({ id: 'u2', role: 'organiser_admin' })).toBe(
+      'Everyone registered for this event. Edit contact details and roles here. To check people in, open Check-in.',
     );
   });
 
