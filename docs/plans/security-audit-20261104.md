@@ -85,7 +85,7 @@ Raw lens reports (scratchpad, not in repo): `sec-deps.md`, `sec-authz.md`, `sec-
 ## Low
 
 - `compute_accreditation_credit` (SECURITY DEFINER, no check inside, EXECUTE for `authenticated`): a practitioner given another user's uuid learns licence presence, `licence_id` and attendance outcome. EXECUTED (DB lens). Revoke EXECUTE from `authenticated`.
-- `verify_evidence_chain` callable by any signed-in user; leaks global evidence row count (590) and tamper status. **Closed 2026-11-06 (Q50, `20261106110000`): `service_role` only, like the audit and ledger verifiers. Local only until Ivan's Seoul go.**
+- `verify_evidence_chain` callable by any signed-in user; leaks global evidence row count (590) and tamper status. **Closed 2026-11-06 (Q50, `20261106110000`): `service_role` only, like the audit and ledger verifiers. Applied locally and to Seoul 2026-11-06 on Ivan's go (`supabase db push --linked`, exit 0; the file's own grant and trigger assertions ran there). Commit `43f3821`, on origin since `bdc87c4`. Seoul not read back: Ivan stopped that read on 2026-11-07.**
 - 8 functions have EXECUTE for PUBLIC (trigger functions or invoker-gated), one SECURITY DEFINER trigger function executable by anon (`trigger_reconcile_on_attendance_points_change`). Revoke from public and anon.
 - Write policies ignore staff role: an org-A `body_admin` inserted `agenda_blocks` and `speaker_checkins` (EXECUTED); `auditor` inferred from policy text. Needs a decided role matrix.
 - `sendReminderForEvent` and `sendSurveyInviteForEvent`: no role gate or rate limit; `auditor` / `body_admin` can trigger mass mail.

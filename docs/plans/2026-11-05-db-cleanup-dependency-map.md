@@ -13,7 +13,7 @@ _Read-only survey of the **local stack** (127.0.0.1:54322, read-only session), p
 5. **Squash** (Tier 3): keep it for Singapore provisioning. §5 lists what a naive squash would lose.
 6. **Seoul production holds test traffic that cannot be removed** (§9). 19 of its 26 events are fixtures. It has 16,007 `attendee_checked_in` audit rows for 31 real check-ins, plus test-only event types such as `chain_test_concurrent_4`. `audit_events` is append-only, so this stays for good. Recommendation: Singapore starts from migrations plus reference seed only, and no rows are copied from Seoul. Record that in the Stage 8 plan.
 
-7. **K2 gaps found by the Q49 reviews (2026-11-06), not caused by it; each is a kernel decision.** **(a) and (c) DECIDED 2026-11-06 (Q50, Ivan: "Audit every delete"), built as `20261106110000_audit_evidence_deletes_align_verifiers.sql`, local only.** (b) is a `docs/DEFERRED.md` row (Claude's recommendation: Stage 11), not ruled.
+7. **K2 gaps found by the Q49 reviews (2026-11-06), not caused by it; each is a kernel decision.** **(a) and (c) DECIDED 2026-11-06 (Q50, Ivan: "Audit every delete"), built as `20261106110000_audit_evidence_deletes_align_verifiers.sql`. Applied locally and to Seoul 2026-11-06 on Ivan's go (`supabase db push --linked`, exit 0; the file's own grant and trigger assertions ran there). Commit `43f3821`, on origin since `bdc87c4`. Seoul not read back: Ivan stopped that read on 2026-11-07.** (b) is a `docs/DEFERRED.md` row (Claude's recommendation: Stage 11), not ruled.
    - (a) **Evidence deletes leave no audit trace.** Locally, 19,767 `evidence_recorded` audit rows point at evidence rows that no longer exist (test teardown via the retained `service_role` DELETE). `verify_evidence_chain` returns only `chain_seq, link_valid, content_valid`, so an auditor cannot tell those breaks from tampering. Options: write an audit event on every evidence delete (chain_seq + hash + reason), or revoke the DELETE and handle erasure another way. [EXEC]
    - (b) **The hashes do not cover every column.** The evidence hash omits `user_id`, `organisation_id`, `actor_id` and the metadata columns. The audit hash omits `organisation_id`, `actor_role`, `subject_type` and `id`. UPDATE is revoked from every API role, so only the table owner could edit them, and nothing anchors the chain head externally. "content_valid" means consistent for the hashed columns, not "history unchanged". [read from source; grants EXEC]
    - (c) **Verifier EXECUTE grants disagree.** `verify_audit_chain` / `verify_ledger_chain`: `service_role` only. `verify_evidence_chain`: `authenticated` only (also Low finding in `security-audit-20261104.md`). No single role can run all three. `scripts/ci/replay-and-verify.sh` checks audit and ledger but not evidence. [EXEC]
@@ -23,7 +23,7 @@ _Read-only survey of the **local stack** (127.0.0.1:54322, read-only session), p
 
 **Queued for Claude** (after the picks above): Tier 1 (schema map + function-dump script, no DB change).
 
-**Other sessions:** none running at survey time.
+**Other sessions:** none running at survey time. On 2026-11-07, "Handoffs and silence consolidation" shipped Q51 (role rights) to Seoul; §10 maps its reach.
 
 ## §1 Legacy accreditation columns — `events.accrediting_body_id`, `events.cpd_hours`
 
@@ -166,6 +166,31 @@ Three read-only transactions on `muieupgkpbxpqsrjjwol` (PG 17.11, `ACTIVE_HEALTH
 **How Seoul reached 162:** at about 08:25 HKT on 2026-11-05, the session "Event accreditation product review" ran `supabase db push --linked`. It first dry-ran, found 19 pending migrations (`20261002000000` to `20261105100000`), stopped and recommended holding them. Ivan replied "Push all 19", and all 19 applied in order. Commit `6bba7cf` records it. Before that push, the last migration on Seoul predated 2026-10-02 [EXEC: transcript, reflog and commit read].
 
 The first MCP attempt failed with `password authentication failed for user "postgres"`: the platform's stored DB password no longer matched. Ivan reset it in the dashboard, and the reads then ran.
+
+## §10 Re-map after three pushes (local, 2026-11-07) [EXEC]
+
+Three migrations landed since this map: Q49 `20261106100000` (UTC pin), Q50 `20261106110000` (evidence deletes audited, verifiers `service_role` only), and Q51 `20261107100000` (role rights, from the session "Handoffs and silence consolidation"). All three are on origin and on Seoul. Seoul was **not** re-read for this pass; §9 still shows 2026-11-05. Every number below is from the local stack, read-only.
+
+| § | 2026-11-05 | 2026-11-07 | Change |
+|---|---|---|---|
+| Schema | 162 migrations; 35 tables, all RLS; 65 public fns (56 definer) | 165 (max `20261107100000`); 35, all RLS; 65 (56); `app_private` 19 | Q50 added 1 trigger fn, Q51 added 4 helpers |
+| §1 drift (legacy body without group / group without legacy) | 24 / 49 | 24 / 49 | none. Events 482, 230 with legacy body, 255 with groups |
+| §1 eligibility bug | `not_cpd ×5` on `043018e9…` | `not_cpd ×5` (run as `service_role` with an org admin override, rolled back) | **still live**. Last defined in `20261024100000`; Q51 does not touch it. Decide 1 stands |
+| §1 legacy-column fns | 3 | 3 (`event_registration_eligibility`, `freeze_cpd_config_if_credited`, `set_event_cpd_config`) | Q51 has 0 references to `accrediting_body_id` / `cpd_hours` |
+| §2 `poster_path` | 0 rows | 0 | none |
+| §3 `organisers` | 0 rows; authenticated INSERT/DELETE granted | same | none |
+| §4 check-in stores | summary drift 0/0; 155 check-ins with no evidence | 0/0; 155; 817 check-ins | Q51 rewrote `mark_attended`; it and `self_check_in` still catch `when others`, so evidence stays best-effort. Decide 3 stands |
+| §6 identity | staff has no `user_id`; 10 fns use `auth_email()` | same; staff 283, 108 with no auth user | **New:** Q51's `enforce_event_writer` and `can_write_hero_object` find the actor through `current_staff_id()`, which resolves by email. The new role rule inherits the email key and the earliest-`created_at` multi-org pick |
+| §7 fixtures | 422 events with credit; 240 orphan `users`; 144 creditless fixture bodies | 439; 240; 144 (of 264 `A2-`/`MB-`) | credit-locked fixture events +17 from test runs |
+| §8 audit chain | 0 / 70,274 bad (UTC); all bad under HK | 0 / 81,198 bad, UTC **and** HK | Q49 holds |
+| §8 evidence chain | 0 / 590 bad content; 70 link breaks | 0 / 662 (UTC and HK); 73 breaks: 70 old, 3 explained by an `evidence_deleted` chain_seq in the gap | Q50 holds. 2,262 `evidence_deleted` rows; 0 untraced deletes since the first trail (newest untraced 2026-11-06 00:43 UTC, first trail 11:23 UTC). 19,788 older deletes stay untraced |
+| §8 ledger | 0 / 795 | 0 / 820 | none |
+
+Q51's `event_writer_guard` trigger sits on 9 tables (`events`, `agenda_blocks`, `registrations`, `speaker_checkins`, `registration_checkins`, `event_accreditation_groups`, `event_accreditations`, `event_accreditation_occurrences`, `registration_roles`), all enabled. It is not on `participation_evidence` or `credit_ledger`, so it does not interact with the Q50 delete trigger.
+
+**Effect on §0:** items 1–6 are unchanged and still open. Item 0 is done. Item 7 (a) and (c) are done and on Seoul. Item 7 (b) is still a DEFERRED row. One addition for item 1's card: retiring the legacy columns (item 2) must keep `set_event_cpd_config` passing the Q51 guard on `events`.
+
+The Q51 absence claims (no legacy-column, eligibility or `auth_email()` references) come from one grep pass of the migration file, not an independent second pass.
 
 ## Verification
 
