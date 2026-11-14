@@ -955,9 +955,9 @@
     "semantic_hash": "f848737d2c26901e5affe2ecd38ddeab"
   },
   "package.json": {
-    "mtime": 1793925656.3219469,
-    "ast_hash": "f95007531d20ffa992c9c887f150f633",
-    "semantic_hash": "f95007531d20ffa992c9c887f150f633"
+    "mtime": 1794648160.1923537,
+    "ast_hash": "3f54b9843a127562b9cf4ab442506e21",
+    "semantic_hash": "3f54b9843a127562b9cf4ab442506e21"
   },
   "postcss.config.mjs": {
     "mtime": 1778773082.1053638,
@@ -1180,14 +1180,14 @@
     "semantic_hash": "bc7fd9ebe3b627597f92039e260d38be"
   },
   "CLAUDE.md": {
-    "mtime": 1794025152.0148656,
-    "ast_hash": "23a5cbd4a8e14419719b0350e28eca68",
-    "semantic_hash": "23a5cbd4a8e14419719b0350e28eca68"
+    "mtime": 1794648160.3722596,
+    "ast_hash": "27c3ef399e055ed998e707f5be232562",
+    "semantic_hash": "27c3ef399e055ed998e707f5be232562"
   },
   "README.md": {
-    "mtime": 1786639287.2599678,
-    "ast_hash": "952c3cd29f110d8017a273f554dc185d",
-    "semantic_hash": "952c3cd29f110d8017a273f554dc185d"
+    "mtime": 1794648238.204154,
+    "ast_hash": "b2aab19c56b21850d934a627ad1c0e3b",
+    "semantic_hash": "b2aab19c56b21850d934a627ad1c0e3b"
   },
   "docs/architecture/BASELINE-DELTAS.md": {
     "mtime": 1783508328.1751947,
@@ -4905,9 +4905,9 @@
     "semantic_hash": "f320eff08b89938fe57e60e039ecf464"
   },
   "docs/plans/PROJECT_STATE.md": {
-    "mtime": 1794646068.2250807,
-    "ast_hash": "5b03def908b041e96b7503496290d144",
-    "semantic_hash": "5b03def908b041e96b7503496290d144"
+    "mtime": 1794648416.2431579,
+    "ast_hash": "9512cd77538efbfaf96bc213d6587a0b",
+    "semantic_hash": "9512cd77538efbfaf96bc213d6587a0b"
   },
   "docs/plans/handoff_20261011-consolidated.md": {
     "mtime": 1791694229.504657,
@@ -4925,9 +4925,9 @@
     "semantic_hash": "4e8b04e795142a643042a93281224ee9"
   },
   ".claude/skills/eventar-graph-refresh/SKILL.md": {
-    "mtime": 1792205333.9186485,
-    "ast_hash": "2f82e96d97dfe89b0348e941e997ddd9",
-    "semantic_hash": "2f82e96d97dfe89b0348e941e997ddd9"
+    "mtime": 1794646590.4530256,
+    "ast_hash": "329dd5f77e75fda019137e1a2fb3a1fa",
+    "semantic_hash": "329dd5f77e75fda019137e1a2fb3a1fa"
   },
   ".claude/skills/eventar-graph-refresh/references/evidence-f5ab6aaa.md": {
     "mtime": 1792205333.9188738,
@@ -6110,9 +6110,9 @@
     "semantic_hash": "8baba8912ea7054a7fbe3a4a2ec8ec36"
   },
   ".claude/skills/eventar-card-git-workflow/SKILL.md": {
-    "mtime": 1793963451.0251477,
-    "ast_hash": "59e04abd3028bb0e3d6170d7d5d172ce",
-    "semantic_hash": "59e04abd3028bb0e3d6170d7d5d172ce"
+    "mtime": 1794648337.847965,
+    "ast_hash": "6c28a1eae4240ab90801a37bb717a6bb",
+    "semantic_hash": "6c28a1eae4240ab90801a37bb717a6bb"
   },
   ".claude/skills/eventar-card-git-workflow/references/evidence-24f12c6e.md": {
     "mtime": 1793720730.1197908,
@@ -7688,5 +7688,30 @@
     "mtime": 1794646137.599669,
     "ast_hash": "50826800850600a3514db85bcfcfdb37",
     "semantic_hash": "50826800850600a3514db85bcfcfdb37"
+  },
+  "scripts/check-handoff.mjs": {
+    "mtime": 1794648188.0601652,
+    "ast_hash": "5d7a11c3aae1eb8423ef52ee6549f8c0",
+    "semantic_hash": "5d7a11c3aae1eb8423ef52ee6549f8c0"
+  },
+  ".claude/skills/eventar-card-git-workflow/references/evidence-b8e089c7.md": {
+    "mtime": 1794648337.8478,
+    "ast_hash": "85447e1056143e500465bf6ab7fd587a",
+    "semantic_hash": "85447e1056143e500465bf6ab7fd587a"
+  },
+  ".claude/skills/eventar-card-git-workflow/references/evidence-f85e4908.md": {
+    "mtime": 1794648337.8438594,
+    "ast_hash": "a1cd113f04fe9026ca293674bed0bc5a",
+    "semantic_hash": "a1cd113f04fe9026ca293674bed0bc5a"
+  },
+  ".claude/skills/eventar-graph-refresh/references/evidence-41724de2.md": {
+    "mtime": 1794646590.4527752,
+    "ast_hash": "b306e5f20b2686882b7ac8ea30bca58e",
+    "semantic_hash": "b306e5f20b2686882b7ac8ea30bca58e"
+  },
+  "docs/plans/handoff_20261114-graph-state-cleanup.md": {
+    "mtime": 1794648416.0225127,
+    "ast_hash": "d49d1b0f0eaa72ac8f48ae20a60664ca",
+    "semantic_hash": "d49d1b0f0eaa72ac8f48ae20a60664ca"
   }
 }

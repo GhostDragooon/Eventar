@@ -41,4 +41,4 @@ _One screen. Each handoff REPLACES sections here; never append. Last updated 202
 - After MVP closes: declare done-when against `mvp/REVIEW-FINAL-summary-r2.md`, update this file and the vault roadmap, run `/graphify --update`.
 
 ## Pointers
-Stages: `STAGES.md`. DB: `supabase/migrations/` summary in `docs/db/SCHEMA_SUMMARY.md`. Deferred: `docs/DEFERRED.md`. DB cleanup map: `2026-11-05-db-cleanup-dependency-map.md`.
+Latest tooling handoff: `handoff_20261114-graph-state-cleanup.md`. Stages: `STAGES.md`. DB: `supabase/migrations/` summary in `docs/db/SCHEMA_SUMMARY.md`. Deferred: `docs/DEFERRED.md`. DB cleanup map: `2026-11-05-db-cleanup-dependency-map.md`.
