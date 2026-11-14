@@ -40,7 +40,10 @@
     the current build — NOT as consent to switch what you are
     building. Confirm explicitly before changing the active task.
     Active phase + carried-forward considerations live in
-    `docs/plans/PROJECT_STATE.md`. Read it first.
+    `docs/plans/PROJECT_STATE.md`. Get it from the graphify context
+    first (injected at session start; `/graphify query` for more).
+    Open the file itself only when the graph lacks the answer, or
+    before you edit it.
 14. Investigate before you escalate. When a bug, issue, correction
     or flag surfaces — your own, a review agent's, a lint rule's,
     a user report — dispatch an agent to establish (a) whether it
@@ -87,9 +90,11 @@ The shipped workshop loop (registration → confirmation email → 60-min-before
 - **Frontend (S-Organiser) is open** (Ivan's M2 unfreeze scope call, 2026-08-01). Plan + admission checklist + staging: `docs/plans/2026-08-01-m2-frontend-unfreeze.md`. **Still off-limits, each for its OWN reason and not because of the freeze:** practitioner compliance math (Q26 + Milestone C gated — the evaluator half of M2 is untouched), the practitioner app / S-Attendee (post-M4), evidence locker + share-and-verify (B6, planned S5), multi-track scheduling (needs a deliberate data-model decision, rule 13). Adopting a design token's *value* without its *role* is how the first live pass broke WCAG AA on every CTA — read the plan's Stage 1 findings before touching the palette.
 - **Block architecture guardrail (2026-07-11).** Every new feature/table/module must slot into the block map in `docs/architecture/BLOCK-ARCHITECTURE.md` (kernel K1–K3 / domain blocks B1–B8 / surfaces) and pass its new-work admission checklist before any code. Work that doesn't fit a block is a flagged decision first, not code. Kernel changes are constitutional (Decisions Log + Ivan sign-off).
 
-## Source of truth — read the Obsidian vault first
+## Source of truth — the Obsidian vault, reached through graphify
 
 ==The Obsidian vault at `/Users/ivan/Desktop/Eventar` is the source of truth for design, architecture, decisions, and cross-cutting concerns.==
+
+**Graph first, files second (Ivan, 2026-11-07 — tokens).** The vault and this repo each have a graphify graph; a SessionStart hook injects both summaries. Find what you need with `/graphify query "<question>" --budget 1500`, then open only the note **section** the graph points to. `docs/plans/PROJECT_STATE.md` is now one screen (~1.2k tokens, replaced 2026-11-14): read it whole at session start. Do not read whole vault notes — `02 — Decisions Log.md` is ~40k tokens. The old 53k-token history is `docs/plans/archive/PROJECT_STATE-full-20261107.md`: grep it, never read it whole. The table below says *which* note owns a topic; read that note through the graph. **If any read or query result is marked compressed or truncated, retrieve the full text (`headroom_retrieve` with the marker's hash) before relying on it.**
 
 Before implementing any feature, **read the relevant vault notes**:
 
@@ -188,7 +193,7 @@ The user-global rules in `~/.claude/CLAUDE.md` (skill-library-first, phase-compl
   `pnpm dev` (:3000) is the Seoul-pointed server. Running `pnpm test:rls` or `tests/cpd/` against it posts real, permanently-undeletable `credit_ledger` rows. Never run `supabase db push` or `db reset`. Never `git push` without Ivan's explicit go. Other sessions (Claude and Codex) share this tree and DB: check `ListAgents` and `git status` first, and stage only your own paths.
 - **Backtest** for mutation surfaces means executing the Server Action on :3100 and querying the row back from the local DB (recipe: memory `eventar-backtest-recipe`). Hosted-project migrations are Stage 8 work and need Ivan's go. When he gives it, `supabase db push --linked` is the route. Migration history is reconciled, and it wraps each migration in a transaction. MCP `apply_migration` does neither: it assigns its own version from server time, which forces a local rename. A raw `psql -f` leaves a half-applied migration behind when a trailing assertion fails.
 - **Do not assume a dev server is on port 3000.** The dev server may be on :3000, :3100 or :3200. Check with `lsof -nP -iTCP -sTCP:LISTEN | grep -E ':(3000|3100|3200) '` before using a port, and still never start a second server in the same project directory — Next 16 allows one per directory.
-- **Vault note and handoff doc** are the "summary docs" the protocol says must come AFTER the three checks. Vault notes go to `/Users/ivan/Desktop/Eventar/20 — Roadmap/Phase X — *.md`; handoffs go to `docs/plans/handoff_YYYYMMDD-<slug>.md`, linked from `docs/plans/PROJECT_STATE.md`. Every handoff opens with **§0 Ivan's action list**, even when he only says "handoff":
+- **Vault note and handoff doc** are the "summary docs" the protocol says must come AFTER the three checks. Vault notes go to `/Users/ivan/Desktop/Eventar/20 — Roadmap/Phase X — *.md`; handoffs go to `docs/plans/handoff_YYYYMMDD-<slug>.md`, linked from `docs/plans/PROJECT_STATE.md`. **Every handoff, every time, ends with three closing steps, in this order (Ivan, 2026-11-07; order and enforcement 2026-11-14):** (1) refresh the repo graph: `/graphify /Users/ivan/Eventar --update` (follow the `eventar-graph-refresh` skill); (2) update the vault note for this work; (3) refresh the vault graph: `/graphify "/Users/ivan/Desktop/Eventar" --update`. **No handoff is complete until all three are done. They are mandatory and automatic: run them yourself, in order, without asking, as the last work of every handoff.** The handoff's last line must read exactly: `Closing: repo graph done (<date>) · vault note done (<vault note path>) · vault graph done (<date>)`. `pnpm check:handoff` (also run by the pre-commit hook) rejects a handoff dated 2026-11-14 or later without that line. Never write "done" for a step that did not run; if one cannot run, the handoff is not done and §0 must say which step is blocked and why. Every handoff opens with **§0 Ivan's action list**, even when he only says "handoff":
   - **Decide:** recommendation first.
   - **Execute:** what only Ivan can do, in order.
   - **Queued for Claude.**
