@@ -91,8 +91,11 @@ describe.skipIf(!process.env.RLS_TESTS)('freeze_cpd_config_if_credited — event
 
     const { error: staffErr } = await admin.from('staff').insert({
       email: bodyAdmin.email,
-      role: 'body_admin',
-      full_name: 'RLS Freeze-Trigger Test Body Admin',
+      // organiser_admin, not body_admin: since Q51 (b95a987) a body_admin is read-only on events (not_event_writer),
+      // so the "still allows that organiser" test failed on the role guard, and the 42501 grant-denial test below
+      // would have passed on the wrong layer. organiser_admin passes the role guard, so only the grant can deny.
+      role: 'organiser_admin',
+      full_name: 'RLS Freeze-Trigger Test Organiser Admin',
       organisation_id: DEFAULT_ORG,
       status: 'active',
     });

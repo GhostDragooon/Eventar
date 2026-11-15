@@ -13,8 +13,14 @@ import { setDraftDirty } from '@/lib/draftDirty';
 // worker is slow when the whole suite runs at once.
 configure({ asyncUtilTimeout: 3000 });
 
-afterEach(() => { cleanup(); setDraftDirty('event-1', false); });
-beforeEach(() => { publishEvent.mockReset(); push.mockReset(); refresh.mockReset(); });
+afterEach(() => { cleanup(); setDraftDirty('event-1', false); vi.useRealTimers(); });
+beforeEach(() => {
+  publishEvent.mockReset(); push.mockReset(); refresh.mockReset();
+  // The confirm text depends on "now" (check-in opens 08:00 HKT on the event day). Pin Date only, so the async waits
+  // keep real timers: 13 Nov 2026 12:00 HKT, before check-in opens. The test was red from 14 Nov 08:00 HKT on.
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-11-13T04:00:00.000Z'));
+});
 
 const roleNote = /save your changes, then ask an organiser admin to publish this draft/i;
 const eventProps = { eventId: 'event-1', title: 'Heart Failure Update', startIso: '2026-11-14T01:00:00.000Z', timezone: 'Asia/Hong_Kong', registrationOpenIso: null };
@@ -59,6 +65,13 @@ describe('PublishDraftButton', () => {
     expect(dialog).toHaveTextContent('Registration opens now.');
     expect(dialog).toHaveTextContent('Check-in opens at 14 Nov 2026, 08:00');
     expect(publishEvent).not.toHaveBeenCalled();
+  });
+
+  it('once the check-in window has opened the confirm says so instead of giving a time', () => {
+    vi.setSystemTime(new Date('2026-11-14T00:30:00.000Z')); // 08:30 HKT, 30 min after check-in opens
+    const dialog = open();
+    expect(dialog).toHaveTextContent('Check-in is open now.');
+    expect(dialog).not.toHaveTextContent('Check-in opens at');
   });
 
   it('Keep editing closes the confirm and publishes nothing', () => {
