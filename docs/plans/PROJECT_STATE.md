@@ -1,21 +1,21 @@
 # Project State — Eventar
 
-_One screen. Each handoff REPLACES sections here; never append. Last updated 2026-11-15 from `handoff_20261114-mvp-close.md` and git `d9ed559` (five MVP-close commits on local `main`, not pushed). Full history to 2026-11-07: `archive/PROJECT_STATE-full-20261107.md` (~53k tokens: grep it, never read it whole). Code map: graphify graph._
+_One screen. Each handoff REPLACES sections here; never append. Last updated 2026-11-15 from `handoff_20261114-mvp-close.md` and git `7ca2e7d` (five MVP-close commits plus a docs commit, pushed to `origin/main` 2026-11-15; the five migrations are applied to Seoul). Full history to 2026-11-07: `archive/PROJECT_STATE-full-20261107.md` (~53k tokens: grep it, never read it whole). Code map: graphify graph._
 
 ## Now
 - Stage 10 CLOSED 2026-11-05 (Ivan, Q48). Work follows the Q48 priority order; direction in `2026-11-05-spine-first-strategy.md` (not locked).
-- **MVP spine CLOSED on local `main` (`d9ed559`; 2026-11-14 live walk, run 3).** Spine = create, publish, register, check in, record. No BLOCKER, no new MAJOR. Evidence: `mvp/REVIEW-FINAL-summary-r3.md`. Two conditions stay open: M1 (consent copy names Terms and Privacy pages that 404; legal parked) and a full `vitest run` that has not exited 0 (two load flakes, next bullets). Nothing is pushed.
-- The MVP-close work is committed, five commits ahead of `origin/main` (`1f3d958`): `9170554` S1 to S3, `c94eedf` S4, `b5f12a3` S5 and S6, `265991a` S7 and S8, `d9ed559` docs and test repairs. Previous code commit: `b95a987` (Q51). Details: r3 summary, Decisions Log Q52.
+- **MVP spine CLOSED on `main` (`7ca2e7d`, code gated at `d9ed559`; 2026-11-14 live walk, run 3).** Spine = create, publish, register, check in, record. No BLOCKER, no new MAJOR. Evidence: `mvp/REVIEW-FINAL-summary-r3.md`. Two conditions stay open: M1 (consent copy names Terms and Privacy pages that 404; legal parked) and a full `vitest run` that has not exited 0 (two load flakes, next bullets). Pushed 2026-11-15.
+- The MVP-close work is on `origin/main` (`1f3d958` to `7ca2e7d`): `9170554` S1 to S3, `c94eedf` S4, `b5f12a3` S5 and S6, `265991a` S7 and S8, `d9ed559` docs and test repairs, `7ca2e7d` state and flake rows. Previous code commit: `b95a987` (Q51). Details: r3 summary, Decisions Log Q52.
 - **Gate chain at `d9ed559` (2026-11-15, detached clean worktree, local stack):** tsc 0; eslint 0 errors and 11 warnings; `check:ui-colours` pass; `check:ui-primitives` 4 old hits in 3 files this work did not touch; em-dash scan 0; `test:rls` 50 files and 483 tests then 5 files and 57, all pass; `next build` 0. **Full `vitest run` with `RLS_TESTS=1` is NOT CLEAN.** Run 1: 2833 of 2833 passed but exit 1 on 3 unhandled errors from `EventsHome.test.tsx` (toast timer after teardown). Run 2: one `PublishDraftButton` test failed (2832 of 2833). The base commit `1f3d958` also failed one `PublishDraftButton` test. Both files pass alone, 63 of 63 three times. Both have rows in `docs/DEFERRED.md`.
-- DB: Seoul (`ap-northeast-2`) is up to date with local through `20261107100000`. Five new migrations (`20261114100000` to `20261114140000`) are LOCAL ONLY.
+- DB: Seoul (`ap-northeast-2`) is up to date with local through `20261114140000` (the five MVP-close migrations applied 2026-11-15 with `supabase db push --linked`; read back read-only: consent writes definer-only, `auth_email()` checks confirmation, 3 deferred window triggers, `update_event_with_blocks` returns jsonb, capacity trigger present). The 4 legacy out-of-window agenda blocks on 2 frozen published events were left as they are.
 - Deploy PAUSED: needs Ivan's explicit go. Prod Singapore (`ap-southeast-1`) is unprovisioned (Stage 8 precondition).
 - **Email stub-vs-real branch is the explicit post-MVP TODO** (`origin/claude/distracted-haibt-18a25a`, unmerged).
 
 ## Waiting on Ivan (recommendation first)
-1. **Push go.** Needs its own go that names the SHA (`d9ed559`), per session. Say whether the two vitest flakes block the push or ride as debt.
+1. **Vitest flakes:** accept the two as debt, or fix them first (next test-hygiene card)? The code is already pushed and applied to Seoul.
 2. **F1: DB-level window gate on `speaker_checkins`?** Today only the Server Action refuses; a direct INSERT by any org member succeeds before the window. Recommend yes: one migration like the attendee gate.
 3. **M1: consent copy.** Recommend wait for legal (your brief parked it). Reword the sentence only if you want zero open MAJORs.
-4. **Seoul apply of the five migrations:** `supabase db push --linked`. Your separate go. I first check Seoul read-only for agenda blocks outside their event window (`supabase db query --linked -f`).
+4. **Deploy** stays PAUSED (needs your explicit go). Seoul already carries the five migrations, so any app build must be the new code.
 5. **Frontend items** (need before/after shown): phone nav clips Settings at 375px (do first); `AuthBackdropCard` hex gradient and em-dash copy; UX-04 wording; bulk controls for read-only roles.
 6. **CLAUDE.md wording:** Hard Rule 1 says "OTP/password+MFA"; code sends an emailed magic link only. Hard Rule 7 ("stubbed regardless of stage") turns false once the email branch merges.
 7. Leave unless needed: staff of another org cannot edit event details through the API (pinned in `tests/rls/role_rights_q51.rls.test.ts`).
