@@ -1,20 +1,21 @@
 # Project State — Eventar
 
-_One screen. Each handoff REPLACES sections here; never append. Last updated 2026-11-14 from `handoff_20261114-mvp-close.md` and git `1f3d958` plus an uncommitted working tree. Full history to 2026-11-07: `archive/PROJECT_STATE-full-20261107.md` (~53k tokens: grep it, never read it whole). Code map: graphify graph._
+_One screen. Each handoff REPLACES sections here; never append. Last updated 2026-11-15 from `handoff_20261114-mvp-close.md` and git `d9ed559` (five MVP-close commits on local `main`, not pushed). Full history to 2026-11-07: `archive/PROJECT_STATE-full-20261107.md` (~53k tokens: grep it, never read it whole). Code map: graphify graph._
 
 ## Now
 - Stage 10 CLOSED 2026-11-05 (Ivan, Q48). Work follows the Q48 priority order; direction in `2026-11-05-spine-first-strategy.md` (not locked).
-- **MVP spine CLOSED on the working tree (2026-11-14 live walk, run 3).** Spine = create, publish, register, check in, record. No BLOCKER, no new MAJOR. Evidence: `mvp/REVIEW-FINAL-summary-r3.md`. Three conditions stay open: M1 (consent copy names Terms and Privacy pages that 404; legal parked), nothing committed, no clean-worktree gate chain at a final HEAD.
-- The MVP-close work is uncommitted on top of `origin/main` = HEAD = `1f3d958`. Last code commit: `b95a987` (Q51). Contents: security items S1 to S4, agenda and CSV and capacity rules S5 to S8 (details in the r3 summary and Decisions Log Q52).
+- **MVP spine CLOSED on local `main` (`d9ed559`; 2026-11-14 live walk, run 3).** Spine = create, publish, register, check in, record. No BLOCKER, no new MAJOR. Evidence: `mvp/REVIEW-FINAL-summary-r3.md`. Two conditions stay open: M1 (consent copy names Terms and Privacy pages that 404; legal parked) and a full `vitest run` that has not exited 0 (two load flakes, next bullets). Nothing is pushed.
+- The MVP-close work is committed, five commits ahead of `origin/main` (`1f3d958`): `9170554` S1 to S3, `c94eedf` S4, `b5f12a3` S5 and S6, `265991a` S7 and S8, `d9ed559` docs and test repairs. Previous code commit: `b95a987` (Q51). Details: r3 summary, Decisions Log Q52.
+- **Gate chain at `d9ed559` (2026-11-15, detached clean worktree, local stack):** tsc 0; eslint 0 errors and 11 warnings; `check:ui-colours` pass; `check:ui-primitives` 4 old hits in 3 files this work did not touch; em-dash scan 0; `test:rls` 50 files and 483 tests then 5 files and 57, all pass; `next build` 0. **Full `vitest run` with `RLS_TESTS=1` is NOT CLEAN.** Run 1: 2833 of 2833 passed but exit 1 on 3 unhandled errors from `EventsHome.test.tsx` (toast timer after teardown). Run 2: one `PublishDraftButton` test failed (2832 of 2833). The base commit `1f3d958` also failed one `PublishDraftButton` test. Both files pass alone, 63 of 63 three times. Both have rows in `docs/DEFERRED.md`.
 - DB: Seoul (`ap-northeast-2`) is up to date with local through `20261107100000`. Five new migrations (`20261114100000` to `20261114140000`) are LOCAL ONLY.
 - Deploy PAUSED: needs Ivan's explicit go. Prod Singapore (`ap-southeast-1`) is unprovisioned (Stage 8 precondition).
 - **Email stub-vs-real branch is the explicit post-MVP TODO** (`origin/claude/distracted-haibt-18a25a`, unmerged).
 
 ## Waiting on Ivan (recommendation first)
-1. **Commit go.** Then I run the clean-worktree gate chain at the final HEAD. Push needs its own go (pinned SHA, per session).
+1. **Push go.** Needs its own go that names the SHA (`d9ed559`), per session. Say whether the two vitest flakes block the push or ride as debt.
 2. **F1: DB-level window gate on `speaker_checkins`?** Today only the Server Action refuses; a direct INSERT by any org member succeeds before the window. Recommend yes: one migration like the attendee gate.
 3. **M1: consent copy.** Recommend wait for legal (your brief parked it). Reword the sentence only if you want zero open MAJORs.
-4. **Seoul apply of the five migrations**, after the commit: `supabase db push --linked`. Your separate go.
+4. **Seoul apply of the five migrations:** `supabase db push --linked`. Your separate go. I first check Seoul read-only for agenda blocks outside their event window (`supabase db query --linked -f`).
 5. **Frontend items** (need before/after shown): phone nav clips Settings at 375px (do first); `AuthBackdropCard` hex gradient and em-dash copy; UX-04 wording; bulk controls for read-only roles.
 6. **CLAUDE.md wording:** Hard Rule 1 says "OTP/password+MFA"; code sends an emailed magic link only. Hard Rule 7 ("stubbed regardless of stage") turns false once the email branch merges.
 7. Leave unless needed: staff of another org cannot edit event details through the API (pinned in `tests/rls/role_rights_q51.rls.test.ts`).
@@ -38,13 +39,13 @@ _One screen. Each handoff REPLACES sections here; never append. Last updated 202
 - Known defect: `/auth/callback` path-prefix heuristic misroutes organiser sub-routes under `/events/<id>/...` (finding I4, `handoff_20260925-two-persona-review.md`).
 
 ## Queued for Claude (no ruling needed)
-- After the commit go: clean-worktree gate chain at the final HEAD. The MVP-done declaration becomes final only when that chain passes and you rule on M1.
+- Flake card: `PublishDraftButton.test.tsx` and `EventsHome.test.tsx` (rows in `docs/DEFERRED.md`). Until fixed, a full `vitest run` is not a clean gate. The MVP-done declaration becomes final when that gate exits 0 (or you accept the flakes as debt) and you rule on M1.
 - Fix `scripts/walk-window.sh`: the S5 trigger blocks a plain `update events` on an event with agenda blocks.
 - Fold `components/analytics/ExportAnalyticsCsv.tsx` `esc` and the `EventsHome` duplicate into `lib/csv.ts` when next touched. No exploit today.
 - `eventar-static-gates` skill: its `PublishDraftButton` note is stale (the cause was a hard-coded date, not contention). The skills tree is peer-managed, so edit it only with that peer idle.
-- Check at commit time: `pnpm-lock.yaml` also re-resolved a few transitives with the zod bump. 6 non-zod audit advisories (build-tool transitives) are untriaged.
+- `pnpm-lock.yaml` re-resolved a few transitives with the zod bump (committed in `9170554`). 6 non-zod audit advisories (build-tool transitives) are untriaged.
 - Local DB drift, not deleted: the org has 533 events and `public.users` has 240 rows with no auth row, both from earlier RLS-test runs. `credit_ledger` is 920 rows (it was 889; the gates and the walk wrote the rest; append-only, local only).
-- Graph and vault note were refreshed 2026-11-15 on the working tree (repo graph built from `1f3d958f`; 22 changed docs wait in the next `--update`, listed in handoff §4). After the commit go, run `/graphify --update` once more so the freshness commit matches. Graph outputs stay uncommitted until your go.
+- Graph and vault note were refreshed 2026-11-15 on the working tree (repo graph built from `1f3d958f`; 22 changed docs wait in the next `--update`, listed in handoff §4). The graph is now stale against `d9ed559`: run `/graphify --update` once (it picks up the 22 docs). Graph outputs stay uncommitted until your go.
 
 ## Pointers
 Latest handoff: `handoff_20261114-mvp-close.md`. Walk evidence: `mvp/REVIEW-FINAL-summary-r3.md` plus four lens files. Stages: `STAGES.md`. DB: `supabase/migrations/` summary in `docs/db/SCHEMA_SUMMARY.md`. Deferred: `docs/DEFERRED.md`. DB cleanup map: `2026-11-05-db-cleanup-dependency-map.md`.
