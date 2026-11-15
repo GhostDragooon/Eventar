@@ -44,11 +44,12 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — F1-F5 gate'
 
   const codes: Record<string, string> = {};
 
-  async function grantF2Consents(userId: string): Promise<void> {
-    await admin.from('consent_records').insert([
-      { user_id: userId, consent_type: 'privacy_policy',   version: PP_VERSION },
-      { user_id: userId, consent_type: 'terms_of_service', version: TOS_VERSION },
-    ]);
+  // consent_records is definer-only (20261114100000): the person grants through grant_consent.
+  async function grantF2Consents(user: TestUser): Promise<void> {
+    for (const [type, version] of [['privacy_policy', PP_VERSION], ['terms_of_service', TOS_VERSION]] as const) {
+      const { error } = await user.client.rpc('grant_consent', { p_consent_type: type, p_version: version });
+      if (error) throw new Error(`grant_consent ${type}: ${error.message}`);
+    }
   }
 
   async function grantF3Profile(userId: string, workplace = 'Test Hospital'): Promise<void> {
@@ -200,14 +201,14 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — F1-F5 gate'
     await registerGuest(sinkF5.email, codes.f5);
     // Otherwise fully set up so if the client passed enforce=false it would
     // pass everything else.
-    await grantF2Consents(sinkF5.id);
+    await grantF2Consents(sinkF5);
     await grantF3Profile(sinkF5.id);
     await grantF4Licence(sinkF5);
 
     // sinkF1 — email confirmation flipped to null. Everything else satisfied.
     await sqlSuperuser(`update auth.users set email_confirmed_at = null where id = '${sinkF1.id}';`);
     await registerLinked(sinkF1, codes.f1);
-    await grantF2Consents(sinkF1.id);
+    await grantF2Consents(sinkF1);
     await grantF3Profile(sinkF1.id);
     await grantF4Licence(sinkF1);
 
@@ -218,7 +219,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — F1-F5 gate'
 
     // sinkF3 — no professional_profiles row. Everything else satisfied.
     await registerLinked(sinkF3, codes.f3);
-    await grantF2Consents(sinkF3.id);
+    await grantF2Consents(sinkF3);
     await grantF4Licence(sinkF3);
 
     // sinkF3Specialty — profile row exists (workplace/position/profession
@@ -226,7 +227,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — F1-F5 gate'
     // Proves the widened F3 check (20260916) rejects on specialty alone,
     // not just on a missing profile row entirely.
     await registerLinked(sinkF3Specialty, codes.f3spec);
-    await grantF2Consents(sinkF3Specialty.id);
+    await grantF2Consents(sinkF3Specialty);
     await admin.from('professional_profiles').insert({
       user_id: sinkF3Specialty.id,
       workplace_text: 'Test Hospital',
@@ -238,7 +239,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — F1-F5 gate'
 
     // sinkHappy — every F satisfied.
     await registerLinked(sinkHappy, codes.happy);
-    await grantF2Consents(sinkHappy.id);
+    await grantF2Consents(sinkHappy);
     await grantF3Profile(sinkHappy.id);
     await grantF4Licence(sinkHappy);
 
@@ -344,7 +345,7 @@ describe.skipIf(!process.env.RLS_TESTS)('award_attendance_credit — F1-F5 gate'
 
       // Claim + complete F1-F5 for walkInUser.
       await walkInUser.client.rpc('claim_registrations_for_user');
-      await grantF2Consents(walkInUser.id);
+      await grantF2Consents(walkInUser);
       await grantF3Profile(walkInUser.id, 'Walk-in Hospital');
       await grantF4Licence(walkInUser);
 

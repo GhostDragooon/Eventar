@@ -38,6 +38,10 @@ revoke insert, update, delete on public.audit_events          from anon, authent
 revoke insert, update, delete on public.credit_ledger         from anon, authenticated, service_role;
 revoke insert, update, delete on public.practitioner_licences from anon, authenticated, service_role;
 grant  delete                  on public.practitioner_licences to service_role;
+--   consent_records        — 20261114100000_consent_records_definer_only.sql (grant_consent / withdraw_consent
+--                            are the only writers; service_role keeps DELETE for erasure and teardown)
+revoke insert, update, delete on public.consent_records       from anon, authenticated, service_role;
+grant  delete                  on public.consent_records       to service_role;
 revoke delete                  on public.professional_profiles from anon, authenticated, service_role;
 grant  delete                  on public.professional_profiles to service_role;
 -- data_subject_requests: transition_dsr (audited) is the only way an app role changes a request.

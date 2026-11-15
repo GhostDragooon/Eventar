@@ -17,6 +17,7 @@ const CSP_REPORT_ONLY = [
 ].join('; ');
 
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
   // uploadAvatar (app/account/actions.ts) advertises "up to 5MB" — Next's
   // Server Action body cap defaults to 1MB (node_modules/next/dist/server/
   // app-render/action-handler.js), which would silently reject an ordinary
@@ -34,6 +35,8 @@ const nextConfig: NextConfig = {
       headers: [
         { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
         { key: 'X-Content-Type-Options', value: 'nosniff' },
+        // frame-ancestors above is report-only, so nothing enforces it; this does (M3, audit 2026-11-04).
+        { key: 'X-Frame-Options', value: 'DENY' },
         { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
         { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=()' },
         { key: 'Content-Security-Policy-Report-Only', value: CSP_REPORT_ONLY },

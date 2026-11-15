@@ -110,14 +110,11 @@ describe.skipIf(!process.env.RLS_TESTS)('foundations RLS', () => {
   });
 
   // ---- consent ----
-  it('alice records and reads her own consent', async () => {
-    const { error: insertError } = await alice.client
-      .from('consent_records')
-      .insert({
-        user_id: alice.id,
-        consent_type: 'terms_of_service',
-        version: 'test-1.0',
-      });
+  it('alice records (through grant_consent) and reads her own consent', async () => {
+    const { error: insertError } = await alice.client.rpc('grant_consent', {
+      p_consent_type: 'terms_of_service',
+      p_version: 'test-1.0',
+    });
     expect(insertError).toBeNull();
     const { data } = await alice.client
       .from('consent_records')
@@ -126,13 +123,15 @@ describe.skipIf(!process.env.RLS_TESTS)('foundations RLS', () => {
     expect(data).toHaveLength(1);
   });
 
-  it('alice cannot insert consent for bob (42501)', async () => {
-    const { error } = await alice.client.from('consent_records').insert({
-      user_id: bob.id,
-      consent_type: 'marketing',
-      version: 'test-1.0',
-    });
-    expect(error?.code).toBe('42501');
+  it('alice cannot insert consent rows directly, for bob or herself (42501)', async () => {
+    for (const uid of [bob.id, alice.id]) {
+      const { error } = await alice.client.from('consent_records').insert({
+        user_id: uid,
+        consent_type: 'marketing',
+        version: 'test-1.0',
+      });
+      expect(error?.code).toBe('42501');
+    }
   });
 
   // ---- DSR ----

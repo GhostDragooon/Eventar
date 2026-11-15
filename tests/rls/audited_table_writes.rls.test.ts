@@ -200,6 +200,75 @@ describe.skipIf(!process.env.RLS_TESTS)('audited-table write guard (service_role
       }
     }, 60_000);
   });
+  // ---- LIFECYCLE: consent_records (M2, security audit 2026-11-04) ----
+  // A consent row is evidence of what a person agreed to and when. grant_consent / withdraw_consent
+  // (SECURITY DEFINER, audited) are the only write paths; no API role writes the table directly.
+  describe('consent_records — lifecycle (definer-only INSERT/UPDATE, service_role DELETE retained)', () => {
+    it('authenticated is denied direct INSERT, UPDATE and DELETE with 42501', async () => {
+      const user = await createTestUser('guard-consent-write');
+      try {
+        const { data: id, error: grantErr } = await user.client.rpc('grant_consent', {
+          p_consent_type: 'terms_of_service',
+          p_version: 'guard-1',
+        });
+        if (grantErr || !id) throw new Error(`grant_consent: ${grantErr?.message}`);
+
+        const ins = await user.client
+          .from('consent_records')
+          .insert({ user_id: user.id, consent_type: 'privacy_policy', version: 'forged', granted_at: '1999-01-01T00:00:00Z' });
+        expect(ins.error?.code, 'authenticated INSERT must be 42501').toBe(PERMISSION_DENIED);
+
+        const upd = await user.client.from('consent_records').update({ version: 'forged' }).eq('id', id as string);
+        expect(upd.error?.code, 'authenticated UPDATE must be 42501').toBe(PERMISSION_DENIED);
+
+        const del = await user.client.from('consent_records').delete().eq('id', id as string);
+        expect(del.error?.code, 'authenticated DELETE must be 42501').toBe(PERMISSION_DENIED);
+
+        const { data: after } = await admin.from('consent_records').select('version, withdrawn_at').eq('id', id as string);
+        expect(after, 'the row must be untouched').toEqual([{ version: 'guard-1', withdrawn_at: null }]);
+      } finally {
+        await deleteTestUser(user);
+      }
+    }, 30_000);
+
+    it('anon and service_role are denied direct INSERT with 42501; service_role UPDATE too', async () => {
+      const anon = createAnonClient();
+      expect(
+        (await anon.from('consent_records').insert({ user_id: BOGUS, consent_type: 'marketing', version: 'x' })).error?.code,
+        'anon INSERT must be 42501',
+      ).toBe(PERMISSION_DENIED);
+      expect(
+        (await admin.from('consent_records').insert({ user_id: BOGUS, consent_type: 'marketing', version: 'x' })).error?.code,
+        'service_role INSERT must be 42501',
+      ).toBe(PERMISSION_DENIED);
+      expect(
+        (await admin.from('consent_records').update({ version: 'x' }).eq('id', BOGUS)).error?.code,
+        'service_role UPDATE must be 42501',
+      ).toBe(PERMISSION_DENIED);
+    }, 30_000);
+
+    it('the definer path still works (grant, withdraw) and service_role DELETE is retained', async () => {
+      const user = await createTestUser('guard-consent-path');
+      try {
+        const { data: id, error: grantErr } = await user.client.rpc('grant_consent', {
+          p_consent_type: 'privacy_policy',
+          p_version: 'guard-2',
+        });
+        if (grantErr || !id) throw new Error(`grant_consent: ${grantErr?.message}`);
+        const { error: wErr } = await user.client.rpc('withdraw_consent', { p_consent_id: id as string });
+        expect(wErr, 'withdraw_consent must succeed').toBeNull();
+        const { data: mid } = await admin.from('consent_records').select('withdrawn_at').eq('id', id as string).single();
+        expect(mid?.withdrawn_at, 'withdrawn_at must be stamped').not.toBeNull();
+
+        const del = await admin.from('consent_records').delete().eq('id', id as string);
+        expect(del.error, 'service_role DELETE must succeed (retained grant)').toBeNull();
+        const { data: after } = await admin.from('consent_records').select('id').eq('id', id as string);
+        expect(after, 'row must be gone after service_role DELETE').toHaveLength(0);
+      } finally {
+        await deleteTestUser(user);
+      }
+    }, 30_000);
+  });
   // ---- LIFECYCLE: participation_evidence ----
   describe('participation_evidence — lifecycle (definer-only INSERT/UPDATE, service_role DELETE retained)', () => {
     it('service_role is denied direct INSERT and UPDATE with 42501', async () => {
@@ -462,6 +531,7 @@ describe.skipIf(!process.env.RLS_TESTS)('audited-table write guard (service_role
       // lifecycle: definer-only INSERT/UPDATE (service_role keeps DELETE)
       'practitioner_licences',
       'participation_evidence',
+      'consent_records',
       // lifecycle: a person keeps a self-service write to their own row; the rest is revoked or definer-only
       'data_subject_requests',
       'credit_disputes',

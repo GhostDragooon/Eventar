@@ -116,7 +116,8 @@ describe.skipIf(!process.env.RLS_TESTS)('cross-organisation read scope: people, 
 
   async function mkPersonData(person: TestUser): Promise<void> {
     const results = await Promise.all([
-      admin.from('consent_records').insert({ user_id: person.id, consent_type: 'privacy_policy', version: `xo-${ts}` }),
+      // consent_records is definer-only (20261114100000): the person grants through grant_consent.
+      person.client.rpc('grant_consent', { p_consent_type: 'privacy_policy', p_version: `xo-${ts}` }),
       admin.from('professional_profiles').upsert({ user_id: person.id }, { onConflict: 'user_id' }),
       admin.from('society_memberships').insert({ user_id: person.id, society_code: 'HKCS' }),
       admin.from('additional_appointments').insert({ user_id: person.id, institution_name: 'Read scope fixture', title: 'Fixture' }),
