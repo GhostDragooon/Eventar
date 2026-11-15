@@ -151,7 +151,8 @@ describe.skipIf(!process.env.RLS_TESTS)('registrations link-columns immutability
   // ---------------------------------------------------------------------------
 
   // The staff member's JWT email: the registration is visible to the UPDATE only through the organisation SELECT policy.
-  const asOwner = () => ({ role: 'authenticated', email: owner.email });
+  // `sub` is required since app_private.auth_email() only honours a claim that matches a confirmed auth.users row.
+  const asOwner = () => ({ role: 'authenticated', sub: owner.id, email: owner.email });
 
   it.each([
     ['profile_snapshot', { profile_snapshot: { forged: 'by organiser' } }, /profile_snapshot is written only/i],

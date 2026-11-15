@@ -29,6 +29,9 @@ begin
     k := 'zz-q51-' || r.who || '-' || gen_random_uuid() || '@example.test';
     insert into public.staff (email, full_name, role, status, organisation_id) values (k, 'Q51 probe', r.role, 'active', r.o);
     insert into p select r.who, s.id, k, gen_random_uuid() from public.staff s where s.email = k;
+    -- app_private.auth_email() (H1, 20261114110000) only resolves a claim that belongs to a confirmed auth account.
+    insert into auth.users (id, email, email_confirmed_at, aud, role, instance_id)
+      select uid, email, now(), 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000' from p where email = k;
   end loop;
 
   insert into public.events (title, start_time, end_time, timezone, created_by, venue_name, city, country, latitude, longitude)
@@ -182,7 +185,6 @@ begin
   -- M2: a staff account is also a practitioner account; claiming its own registration on a colleague's event works.
   uid_m := r.uid;
   perform set_config('request.jwt.claims', '{}', true);
-  insert into auth.users (id, email, email_confirmed_at, aud, role) values (uid_m, r.email, now(), 'authenticated', 'authenticated');
   insert into public.users (id, full_name) values (uid_m, 'Q51 member') on conflict do nothing;
   insert into public.registrations (event_id, email, full_name, registration_code) values (ev_a, r.email, 'Self', 'Q51C' || substr(gen_random_uuid()::text, 1, 6));
   perform set_config('request.jwt.claims', jsonb_build_object('role', 'authenticated', 'email', r.email, 'sub', r.uid)::text, true);

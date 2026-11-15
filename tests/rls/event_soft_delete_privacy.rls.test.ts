@@ -153,7 +153,8 @@ describe.skipIf(!process.env.RLS_TESTS)('a soft-deleted event is private (DB-03)
     const row = (eventId: string, code: string) => ({
       event_id: eventId, email: `${code.toLowerCase()}@rls-test.invalid`, full_name: 'SoftDel Probe', registration_code: code,
     });
-    const claims = { role: 'authenticated', email: member.email };
+    // `sub` keeps the caller a STAFF member: app_private.auth_email() only honours a claim that matches a confirmed auth.users row.
+    const claims = { role: 'authenticated', sub: member.id, email: member.email };
     expect(await insertAsRoleWithGrant('authenticated', 'registrations', row(liveId, `WK-SD${RUN}A`), claims)).toEqual({ ok: true });
     const refused = await insertAsRoleWithGrant('authenticated', 'registrations', row(deletedId, `WK-SD${RUN}B`), claims);
     expect(refused.ok).toBe(false);

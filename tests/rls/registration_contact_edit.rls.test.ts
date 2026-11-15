@@ -230,7 +230,7 @@ describe.skipIf(!process.env.RLS_TESTS)('audited roster edit and the registratio
         await a.query('begin');
         await a.query('select id from public.registrations where id = $1 for no key update', [r.id]);
         await b.query('begin');
-        await b.query(`select set_config('request.jwt.claims', $1, true)`, [JSON.stringify({ role: 'authenticated', email: member.email })]);
+        await b.query(`select set_config('request.jwt.claims', $1, true)`, [JSON.stringify({ role: 'authenticated', sub: member.id, email: member.email })]);
         await b.query('set local role authenticated');
         const pending = b
           .query('select public.update_registration_contact($1, $2, $3)', [r.id, 'Late edit', `db05-${RUN}-late@rls-test.invalid`])
@@ -272,7 +272,7 @@ describe.skipIf(!process.env.RLS_TESTS)('audited roster edit and the registratio
         await a.query('begin');
         await a.query('delete from public.registrations where id = $1', [r.id]);
         await b.query('begin');
-        await b.query(`select set_config('request.jwt.claims', $1, true)`, [JSON.stringify({ role: 'authenticated', email: member.email })]);
+        await b.query(`select set_config('request.jwt.claims', $1, true)`, [JSON.stringify({ role: 'authenticated', sub: member.id, email: member.email })]);
         await b.query('set local role authenticated');
         const pending = b
           .query('select public.update_registration_contact($1, $2, $3)', [r.id, 'Too late', r.email])
@@ -407,7 +407,8 @@ describe.skipIf(!process.env.RLS_TESTS)('audited roster edit and the registratio
   // other files that run DDL in a transaction (updateAsRoleWithGrant): in parallel with the main stage they deadlock.
   describe('a check-in racing an email edit on an unattended, unlinked registration', () => {
     let liveEventId: string;
-    const claims = (u: TestUser) => JSON.stringify({ role: 'authenticated', email: u.email });
+    // `sub` is required: app_private.auth_email() only honours a claim that matches a confirmed auth.users row.
+    const claims = (u: TestUser) => JSON.stringify({ role: 'authenticated', sub: u.id, email: u.email });
     type Outcome = { ok: true; rows: unknown[] } | { ok: false; code?: string; message: string };
     // One RPC call as the signed-in actor inside an open transaction on `c`.
     const asActor = async (c: Client, u: TestUser) => {
