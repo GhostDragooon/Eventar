@@ -375,6 +375,8 @@ export async function walkInRegisterAndCheckIn(input: {
     if (regErr?.code === '23505' && regErr.message.includes('registrations_event_id_email_key')) {
       return { error: 'This email is already registered. Use code entry to check them in.' };
     }
+    // The database guard (20261114140000) closes the count-then-insert race the pre-check above cannot.
+    if (regErr?.message.includes('event_at_capacity')) return { error: 'This event is at capacity.' };
     return { error: 'Walk-in registration failed. Please try again.' };
   }
 

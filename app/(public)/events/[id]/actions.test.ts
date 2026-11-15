@@ -90,6 +90,7 @@ type StaffRow = { id: string; email: string; status: string };
 let mockAuthUser: SessionUser | null = null;
 let mockStaffRow: StaffRow | null = null;
 let mockStaffError: { code: string; message: string } | null = null;
+let mockRegistrationInsertError: { code: string; message: string } | null = null;
 let staffLookups = 0;
 // Everything the write layer sent to the DB — the B2 bug lived in the INSERT
 // payload, so the payload (not the UI) is what these tests assert on.
@@ -189,10 +190,10 @@ vi.mock('@/lib/supabase/admin', () => ({
             opOrder.push('registrations.insert');
             return {
               select: (_cols: string) => ({
-                single: async () => ({
-                  data: { id: regId, registration_code: 'WK-ABCDEF' },
-                  error: null,
-                }),
+                single: async () =>
+                  mockRegistrationInsertError
+                    ? { data: null, error: mockRegistrationInsertError }
+                    : { data: { id: regId, registration_code: 'WK-ABCDEF' }, error: null },
               }),
             };
           },
@@ -213,6 +214,7 @@ beforeEach(() => {
   mockAuthUser = null;
   mockStaffRow = null;
   mockStaffError = null;
+  mockRegistrationInsertError = null;
   staffLookups = 0;
   lastRegistrationInsert = null;
   lastEmailLogInsert = null;
@@ -368,6 +370,14 @@ describe('registerForEvent — registration window gate', () => {
     mockSendReal.mockReset();
     mockSendStub.mockReset();
     delete process.env.RESEND_API_KEY;
+  });
+
+  it('maps the database capacity guard (a concurrent submit past the limit) to the at-capacity sentence', async () => {
+    mockRegistrationInsertError = { code: '23514', message: 'event_at_capacity: event x has 1 of 1 places taken' };
+
+    const result = await registerForEvent(valid);
+
+    expect(result).toEqual({ error: 'This event is at capacity.' });
   });
 
   it('rejects when registration_close_at has passed', async () => {

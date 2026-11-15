@@ -26,6 +26,7 @@ import { MAX_ROWS, selectInBatches } from '@/lib/supabase/inBatches';
 import { SupabaseParticipationSource } from '@/evidence/src/ledger/participationSource';
 import { orchestrateParticipation } from '@/evidence/src/orchestrator';
 import type { EvidenceClaim, EvidencePackage } from '@/evidence/src/types';
+import { csvEscape as sharedCsvEscape } from '@/lib/csv';
 
 /** Fields the Q2 orchestrator emits for its own reasoning trail — Q2 internals,
  * not evidence a College clerk expects to see in the hand-off JSON. The
@@ -95,8 +96,7 @@ type CsvRow = {
 };
 
 function csvEscape(v: string | number | null | undefined): string {
-  const s = v == null ? '' : String(v);
-  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  return sharedCsvEscape(v == null ? '' : String(v));
 }
 
 function toCsv(rows: CsvRow[]): string {

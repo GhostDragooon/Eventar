@@ -274,6 +274,14 @@ describe('walkInRegisterAndCheckIn', () => {
     expect(res).toEqual({ error: 'This email is already registered. Use code entry to check them in.' });
   });
 
+  it('maps the database capacity guard (a concurrent walk-in past the limit) to the at-capacity sentence', async () => {
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, created_by: 'staff-1', deleted_at: null, ...LIVE_TIMES });
+    mockRegInsert(null, { code: '23514', message: 'event_at_capacity: event x has 1 of 1 places taken' });
+
+    const res = await walkInRegisterAndCheckIn(validInput);
+    expect(res).toEqual({ error: 'This event is at capacity.' });
+  });
+
   it('rejects at-capacity event', async () => {
     mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: 1, organisation_id: ORG_ID, deleted_at: null, ...LIVE_TIMES });
     mockCapacityCount(1);

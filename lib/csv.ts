@@ -2,13 +2,22 @@
  * Escape a single CSV field per RFC 4180.
  * Wrap in double quotes if the field contains a comma, double quote, CR, or LF.
  * Internal double quotes are doubled.
+ *
+ * A leading = + - @ tab or CR makes Excel run the cell as a formula (M4, audit 2026-11-04). Anonymous registrants
+ * type their own name and email, and organisers and college administrators open these exports in Excel, so such a
+ * cell gets a leading apostrophe and stays text. Same rule as components/dashboard/EventsHome.tsx.
+ * A signed plain number (-1.5, +2) is a number to Excel, not a formula, so it is left alone: a negative credit
+ * adjustment in the College export must stay summable.
  */
+const PLAIN_NUMBER = /^[+-]?\d+(\.\d+)?$/;
+
 export function csvEscape(field: string): string {
   if (field === '') return '';
-  if (/[",\r\n]/.test(field)) {
-    return `"${field.replace(/"/g, '""')}"`;
+  const safe = /^[=+\-@\t\r]/.test(field) && !PLAIN_NUMBER.test(field) ? `'${field}` : field;
+  if (/[",\r\n]/.test(safe)) {
+    return `"${safe.replace(/"/g, '""')}"`;
   }
-  return field;
+  return safe;
 }
 
 /**

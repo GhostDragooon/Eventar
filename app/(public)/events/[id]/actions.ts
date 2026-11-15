@@ -263,6 +263,8 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
     if (regErr?.code === '23505' && regErr.message.includes('registrations_event_id_email_key')) {
       return { error: 'That email is already registered for this event.' };
     }
+    // The database guard (20261114140000) closes the count-then-insert race the pre-check above cannot.
+    if (regErr?.message.includes('event_at_capacity')) return { error: 'This event is at capacity.' };
     return { error: 'Registration failed. Please try again.' };
   }
 
