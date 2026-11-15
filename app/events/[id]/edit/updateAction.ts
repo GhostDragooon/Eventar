@@ -59,6 +59,11 @@ function rpcErrorMessage(message: string): string {
   if (message.startsWith(SURVEY_ANSWERS_PREFIX)) {
     return `The block "${message.slice(SURVEY_ANSWERS_PREFIX.length)}" has survey answers, so it cannot be removed. Nothing was saved.`;
   }
+  // The database rule behind blockFitsEnvelope (migration 20261114120000): reached only when the pre-check was
+  // bypassed, e.g. the event's times changed in another tab. The raw message names a block uuid, not its title.
+  if (message.startsWith('agenda_block_outside_event_window:')) {
+    return 'A block runs outside the event\'s start/end window, so your changes were not saved. Check the agenda times and save again.';
+  }
   return message;
 }
 
@@ -149,7 +154,7 @@ export async function updateEvent(
   const timezone = tzFromCoords(eventParse.data.latitude, eventParse.data.longitude);
 
   // Saved in start-time order: display_order is the position in the array sent to the RPC. `order[k]` is the payload
-  // index of the block saved k-th; the read-back below maps the ids back through it.
+  // index of the block saved k-th; the RPC returns the saved ids in that same order (20261114130000).
   const order = startOrder(blockParse.data);
 
   const supabase = await supabaseServer();
@@ -162,26 +167,27 @@ export async function updateEvent(
   // Non-owner / not-visible events make the RPC RAISE; supabase surfaces that
   // here. Structured return, same shape as createEvent — never silent success.
   if (error) return { error: rpcErrorMessage(error.message) };
-  if (!data || typeof data !== 'string') return { error: 'no id returned' };
 
+  // The RPC committed: refresh the pages whether or not its reply has the shape we expect.
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/events/${eventId}/edit`);
   revalidatePath(`/events/${eventId}/details`);
   // Dashboard lists title/dates — same convention as publishEvent/createEvent.
   revalidatePath('/dashboard');
 
-  // The RPC returns the event id, not the block ids. display_order is the position in the (start-ordered) array we
-  // sent, so reading the blocks back in that order gives saved[k] = the block at payload index order[k]. A count that
-  // differs means the mapping would be wrong, so refuse it: the save itself went through, which the message says.
-  const { data: saved, error: readErr } = await supabase
-    .from('agenda_blocks')
-    .select('id')
-    .eq('event_id', idParse.data)
-    .order('display_order', { ascending: true });
-  if (readErr || !saved || saved.length !== blockParse.data.length) {
+  const saved = data as { event_id?: unknown; block_ids?: unknown } | null;
+  if (
+    !saved ||
+    typeof saved.event_id !== 'string' ||
+    !Array.isArray(saved.block_ids) ||
+    saved.block_ids.length !== order.length
+  ) {
+    // A count that differs would map the ids wrongly, so refuse it; the save itself went through, which the message says.
     return { error: 'Your changes were saved, but the agenda could not be read back. Reload this page before saving again.' };
   }
+
+  // blockIds stay in PAYLOAD order: the client writes them back by the order it sent.
   const blockIds: string[] = [];
-  saved.forEach((r, k) => { blockIds[order[k]!] = r.id; });
+  (saved.block_ids as string[]).forEach((id, k) => { blockIds[order[k]!] = id; });
   return { ok: true, blockIds };
 }

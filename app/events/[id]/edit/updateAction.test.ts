@@ -21,42 +21,21 @@ vi.mock('next/cache', () => ({
 }));
 
 // ---- mock supabase ----------------------------------------------------------
-// updateEvent writes through the update_event_with_blocks RPC, then reads the saved block ids back from
-// agenda_blocks. Every call is recorded for assertions.
+// updateEvent writes through the update_event_with_blocks RPC, which returns {event_id, block_ids} (block_ids in the
+// order the blocks were sent). Every call is recorded for assertions.
 let rpcCalls: Array<{ fn: string; params: Record<string, unknown> }> = [];
-let mockRpcResult: { data: unknown; error: { message: string } | null } = {
-  data: null,
-  error: null,
-};
+let mockRpcResult: { data: unknown; error: { message: string } | null } | null = null;
 
-// agenda_blocks as the RPC leaves it: a block sent with an id keeps it, a new one gets `new-<index>`, display_order
-// is the payload index. The physical order is reversed on purpose, so only an ORDER BY display_order puts the
-// read-back in payload order. `mockReadBack` replaces the whole result (a failed or short read).
-let tableRows: Array<{ id: string; display_order: number }> = [];
-let mockReadBack: { data: Array<{ id: string }> | null; error: { message: string } | null } | null = null;
-let readBackCalls: Array<{ table: string; eventId: string }> = [];
-
+// `mockRpcResult` replaces the whole RPC result; null (the default) answers like the real RPC: the event id and the
+// ids in the order sent, a block sent with an id keeps it and a new one gets `new-<index>`.
 vi.mock('@/lib/supabase/server', () => ({
   supabaseServer: vi.fn(async () => ({
     rpc: async (fn: string, params: Record<string, unknown>) => {
       rpcCalls.push({ fn, params });
+      if (mockRpcResult) return mockRpcResult;
       const sent = (params.blocks_input ?? []) as Array<{ id?: string }>;
-      tableRows = sent.map((b, i) => ({ id: b.id ?? `new-${i}`, display_order: i })).reverse();
-      return mockRpcResult;
+      return { data: { event_id: params.event_id_input, block_ids: sent.map((b, i) => b.id ?? `new-${i}`) }, error: null };
     },
-    from: (table: string) => ({
-      select: (_cols: string) => ({
-        eq: (_col: string, eventId: string) => ({
-          order: async (col: string, opts: { ascending: boolean }) => {
-            readBackCalls.push({ table, eventId });
-            if (mockReadBack) return mockReadBack;
-            const dir = opts.ascending ? 1 : -1;
-            const rows = [...tableRows].sort((a, b) => (a[col as 'display_order'] - b[col as 'display_order']) * dir);
-            return { data: rows.map(r => ({ id: r.id })), error: null };
-          },
-        }),
-      }),
-    }),
   })),
 }));
 
@@ -127,10 +106,7 @@ beforeEach(() => {
   requireStaffMock.mockClear();
   revalidatePathMock.mockClear();
   rpcCalls = [];
-  tableRows = [];
-  mockReadBack = null;
-  readBackCalls = [];
-  mockRpcResult = { data: eventId, error: null };
+  mockRpcResult = null;
 });
 
 describe('updateEvent', () => {
@@ -338,14 +314,14 @@ describe('updateEvent', () => {
     expect(revalidatePathMock).not.toHaveBeenCalled();
   });
 
-  it('returns an error when the RPC yields no id (no silent success)', async () => {
+  it('returns an error when the RPC reply has no ids (no silent success), and still refreshes the pages the call changed', async () => {
     mockRpcResult = { data: null, error: null };
     const result = await updateEvent(eventId, {
       event: validEvent,
       blocks: [validBlock],
     });
     expect(result).toHaveProperty('error');
-    expect(revalidatePathMock).not.toHaveBeenCalled();
+    expect(revalidatePathMock).toHaveBeenCalledWith(`/events/${eventId}/edit`);
   });
 
   it('revalidates event, edit, details, and dashboard paths on success', async () => {
@@ -377,7 +353,6 @@ describe('updateEvent', () => {
     it('returns the saved block ids in payload order, reordered and new blocks included', async () => {
       const result = await updateEvent(eventId, { event: validEvent, blocks: [blockB, blockA, validBlock] });
       expect(result).toEqual({ ok: true, blockIds: [idB, idA, 'new-2'] });
-      expect(readBackCalls).toEqual([{ table: 'agenda_blocks', eventId }]);
     });
 
     // Backtest M2: saved in start-time order. blockIds stay in PAYLOAD order (the client writes them back by the order
@@ -427,17 +402,25 @@ describe('updateEvent', () => {
       expect(rpcCalls).toHaveLength(0);
     });
 
-    it('refuses to guess the mapping when the read-back count differs, and says the save went through', async () => {
-      mockReadBack = { data: [{ id: idA }], error: null };
+    it('refuses a reply whose block ids do not match the blocks sent, says the save went through, and refreshes the pages', async () => {
+      mockRpcResult = { data: { event_id: eventId, block_ids: [idA] }, error: null };
       const result = await updateEvent(eventId, { event: validEvent, blocks: [blockA, blockB] });
-      expect(result).toEqual({ error: expect.stringMatching(/saved.*Reload/i) });
+      expect(result).toEqual({
+        error: 'Your changes were saved, but the agenda could not be read back. Reload this page before saving again.',
+      });
+      // The RPC committed, so the pages must not keep serving the old agenda.
       expect(revalidatePathMock).toHaveBeenCalledWith(`/events/${eventId}/edit`);
     });
 
-    it('returns an error when the read-back fails', async () => {
-      mockReadBack = { data: null, error: { message: 'boom' } };
+    it('turns the database window refusal into a sentence, not the raw database message', async () => {
+      mockRpcResult = {
+        data: null,
+        error: { message: 'agenda_block_outside_event_window: block 0b1c2d3e-0000-4000-8000-000000000001 runs outside its event\'s start/end window' },
+      };
       const result = await updateEvent(eventId, { event: validEvent, blocks: [blockA] });
-      expect(result).toEqual({ error: expect.stringMatching(/saved.*Reload/i) });
+      expect(result).toEqual({
+        error: 'A block runs outside the event\'s start/end window, so your changes were not saved. Check the agenda times and save again.',
+      });
     });
 
     it('turns the RPC refusal for a non-draft event into the same sentence as the action gate', async () => {

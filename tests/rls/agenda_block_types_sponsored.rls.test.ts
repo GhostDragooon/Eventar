@@ -41,8 +41,10 @@ describe.skipIf(!process.env.RLS_TESTS)('agenda_blocks kind taxonomy + sponsored
   });
 
   async function createViaRpc(blocks: Record<string, unknown>[]) {
-    const start = new Date(Date.now() + 86_400_000);
-    const end = new Date(start.getTime() + 4 * 3_600_000);
+    // The event window must cover every block (DB rule, migration 20261114120000): widen it to the blocks' times.
+    const times = blocks.flatMap((b) => [Date.parse(b.start_time as string), Date.parse(b.end_time as string)]);
+    const start = new Date(Math.min(Date.now() + 86_400_000, ...times));
+    const end = new Date(Math.max(start.getTime() + 4 * 3_600_000, ...times));
     const { data, error } = await staffUser.client.rpc('create_event_with_blocks', {
       event_input: {
         title: 'Agenda taxonomy backtest — DELETE ME',

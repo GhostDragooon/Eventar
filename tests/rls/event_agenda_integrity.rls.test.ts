@@ -41,7 +41,10 @@ describe.skipIf(!process.env.RLS_TESTS)('agenda save integrity and draft-only ed
     return data.id as string;
   }
 
-  const start = () => Date.now() + 3 * DAY;
+  // Fixed for the run: a clock read per call drifted a few ms between a block and its event, and a block that starts
+  // before its event is now refused by the DB window rule (migration 20261114120000).
+  const T0 = Date.now() + 3 * DAY;
+  const start = () => T0;
   const eventInput = (over: Record<string, unknown> = {}) => ({
     title: `DB-04 saved ${RUN} — DELETE ME`,
     start_time: new Date(start()).toISOString(),
@@ -226,6 +229,19 @@ describe.skipIf(!process.env.RLS_TESTS)('agenda save integrity and draft-only ed
       expect(await surveyBlockOf(regId)).toBe(b);
     });
 
+    it('returns the event id and the saved block ids in payload order (kept ids stay, a new block gets its own)', async () => {
+      const { id, blockIds: [a, b] } = await makeEvent('draft', ['Alpha', 'Bravo']);
+      const { data, error } = await save(owner, id, [blockInput('Bravo', 1, b), blockInput('Fresh', 2), blockInput('Alpha', 0, a)]);
+      expect(error).toBeNull();
+      const out = data as { event_id: string; block_ids: string[] };
+      expect(out.event_id).toBe(id);
+      expect(out.block_ids).toHaveLength(3);
+      expect(out.block_ids[0]).toBe(b);
+      expect(out.block_ids[2]).toBe(a);
+      const fresh = (await blocksOf(id)).find((r) => r.title === 'Fresh');
+      expect(out.block_ids[1]).toBe(fresh?.id);
+    });
+
     it("a block id from another event is refused", async () => {
       const { id } = await makeEvent('draft', ['Alpha']);
       const { id: otherEvent, blockIds: [foreign] } = await makeEvent('draft', ['Elsewhere']);
@@ -313,7 +329,7 @@ describe.skipIf(!process.env.RLS_TESTS)('agenda save integrity and draft-only ed
         await a.query('begin');
         await a.query('select id from public.events where id = $1 for no key update', [id]); // what publish_event's UPDATE takes
         await b.query('begin');
-        await b.query(`select set_config('request.jwt.claims', $1, true)`, [JSON.stringify({ role: 'authenticated', email: member.email })]);
+        await b.query(`select set_config('request.jwt.claims', $1, true)`, [JSON.stringify({ role: 'authenticated', email: member.email, sub: member.id })]);
         await b.query('set local role authenticated');
         const pending = b
           .query('select public.update_event_with_blocks($1, $2::jsonb, $3::jsonb)', [id, JSON.stringify(eventInput({ title: 'DB-04 late edit' })), '[]'])
