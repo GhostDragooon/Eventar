@@ -2,7 +2,7 @@
 
 _Draft prepared 2026-08-29. Vault is EPERM-blocked to this session; paste this entry into `/Users/ivan/Desktop/Eventar/02 — Decisions Log.md` under the next free Q-slot. Q-number is best-effort against Q40 (HKSTP grant naming, highest I've seen referenced in-repo) — bump to Q42 if Q41 is already taken._
 
-_**Number correction, 2026-11-16:** vault Q41 is taken (Core-UX design round, 2026-10-01). The vault's highest entry is Q52, so this entry pastes as **Q53**. Re-check on the day of the paste. The heading below and this file's name keep "Q41" until then, so existing links do not break._
+_**Number correction, 2026-11-16:** vault Q41 is taken (Core-UX design round, 2026-10-01). The vault's highest entry is Q52, so this entry is **Q53**. **Pasted into the vault 2026-11-16 as Q53** (consolidated with the R1 and R2 rulings below). This file keeps its name and its old heading so existing links do not break; the vault entry is the record._
 
 ---
 

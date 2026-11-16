@@ -2,7 +2,7 @@
 
 _Run 2026-08-29 by Ivan Au against `docs/architecture/BLOCK-ARCHITECTURE.md` "New-work admission checklist"._
 _Governing spec at admission time: `rag_building_guideline_v0.5.1_eventar.txt` (published 2026-08-29; v0.5.2 supersedes with retention pinned)._
-_Decisions Log entry: Q41 (2026-08-29, RAG adoption). Draft at `docs/plans/decisions-Q41-draft-rag-adoption.md` pending paste into vault `02 — Decisions Log.md`._
+_Decisions Log entry: **Q53** (vault, pasted 2026-11-16; drafted 2026-08-29 as "Q41", a number since taken by the Core-UX round; every "Q41" below means Q53). Original line: Q41 (2026-08-29, RAG adoption). Draft at `docs/plans/decisions-Q41-draft-rag-adoption.md` pending paste into vault `02 — Decisions Log.md`._
 
 ## Identity
 

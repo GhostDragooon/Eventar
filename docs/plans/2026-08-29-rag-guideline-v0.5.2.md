@@ -11,7 +11,7 @@ AMENDMENTS — v0.5.3 (2026-11-16, Ivan's rulings; the file name keeps "v0.5.2" 
 =======================================================================
 The text below this block is v0.5.2, unchanged. Where it disagrees with an item here, the item here governs. Sources: ADR-0003 §5, Decisions Log Q48, and docs/plans/2026-08-29-rag-execution-plan.md ("Revision R1", "Revision R2").
 
-A1. Decision number. Every "Q41" in this file that means RAG adoption will read "Q53" once the entry is pasted into the vault. Vault Q41 is a different decision (Core-UX round).
+A1. Decision number. RAG adoption is vault Decisions Log Q53 (pasted 2026-11-16). Every "Q41" in the text below means Q53. Vault Q41 is a different decision (Core-UX round).
 A2. §2.6 item 5 is reversed. Embedding and reranking models are LOCAL open-weight models run inside the service. Hosted embedding or reranking providers are excluded. §2.5 items 2 and 3 become a bake-off between local models. §6.7 register rows "Embedding provider" and "Reranker" become "none (local model)".
 A3. §2.6 item 6 is narrowed. No generation inside the retrieval path, ever. An offline document digest (a local LLM proposing rule statements, each with a code-verified verbatim quote, each approved by a person) is added as Stage D after Stage 6. Its output is never evidence and never enters chunks.text.
 A4. §4.3 and §6.3: consumers are eventar_staff and body_admin (own body) only. organiser_admin, organiser_member and auditor have no access to any B9 table or to /retrieve. §4.3 item 4 (organiser workflow) is removed.

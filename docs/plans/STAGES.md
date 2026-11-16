@@ -24,6 +24,8 @@
 
 > **Rescope logged 2026-08-10 (Ivan) — Decisions Log Q33.** Stages 9, 10, 12 and 13 were re-pointed at the dual-track CME/CPD launch. The versioned `body_rules` evaluator that used to be Stage 10 moved to **Stage 13**; it stays gated on Q26 and doctrine D.1. Rule 1 below forbids *silent* renumbering — this is the logged kind, and the alternative (appending as Stage 14, which would then run *before* 9–13 in calendar time) was considered and rejected as worse for the next reader. Scope record: `docs/plans/2026-08-10-dual-track-stage-scope.md`.
 
+> **Ruling logged 2026-11-16 (Ivan) — Decisions Log Q53, not a renumber.** The B9 foundation (Stages 1 and 2 of `2026-08-29-rag-execution-plan.md`: schema, security, evaluation scaffold) may start now, in parallel with Stage 8. The rest of B9 still follows Q48 below and needs Ivan's go.
+
 > **Direction logged 2026-11-05 (Ivan) — Decisions Log Q48, not a renumber.** Spine first; accreditation grows per partner. Reading note: Stage 12's "1–2 Specialty Colleges + 1 MCHK provider" is meant as "the partners who actually join"; the row text is unchanged. Placement decided the same day (Ivan, strategy doc §7): Stage 10 closed as shipped; the B9 document digest and B7 QC engines are built inside Stage 12, per partner slice; Stage 11 stays before the pilot. Rows 10 and 12 were edited in place, no stage renumbered. The current priority order (MVP close → security → Stage 8 → first partner slice) is in `PROJECT_STATE.md`.
 
 ## Translating the old names

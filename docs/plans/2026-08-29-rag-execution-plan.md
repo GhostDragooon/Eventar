@@ -49,7 +49,7 @@ None of these are code. All are blockers on the container host or on documentati
 
 - **P1. Container host account.** Pick Railway or Fly.io (per guideline §2.5 item 5). Create the account, set up a project, note the region (Singapore/Tokyo preferred for latency + PDPO alignment). Record in the external processor register (§6.7 of the guideline).
 - **P2. Vault paste of Q41.** Copy [decisions-Q41-draft-rag-adoption.md](decisions-Q41-draft-rag-adoption.md) into vault `02 — Decisions Log.md` under the next free Q. Bump Q-number if Q41 is taken.
-  - **R1:** Q41 is taken (vault Q41 = Core-UX design round, 2026-10-01). The vault's highest entry on 2026-11-16 is Q52, so RAG adoption pastes as **Q53**. Re-check the number on the day of the paste. In-repo references that still say "Q41" for RAG adoption: this file, the guideline (lines 4, 409, 1012–1074), `B9-admission-2026-08-29.md`, `BLOCK-ARCHITECTURE.md:50`. They are corrected in one sweep at paste time, not before.
+  - **R1:** Q41 is taken (vault Q41 = Core-UX design round, 2026-10-01). The vault's highest entry on 2026-11-16 is Q52, so RAG adoption is **Q53**. **Done: pasted into the vault 2026-11-16.** In-repo references that still say "Q41" for RAG adoption: this file, the guideline (lines 4, 409, 1012–1074), `B9-admission-2026-08-29.md`, `BLOCK-ARCHITECTURE.md:50`. Each of those files now carries a note that "Q41" means Q53; the old text is left in place.
 - **P3. Vault RAG note.** Paste [vault-updates-2026-08-29.md](vault-updates-2026-08-29.md) content into the vault (four notes touched).
 - **P4. Supabase pg_cron availability check.** Confirm pg_cron is enabled on the target project. Local stack: `create extension if not exists pg_cron;` If enabling requires a Supabase-paid tier that Eventar isn't on yet, that's a purchase decision — flag before Stage 1.
 - **P5. pgvector availability check.** Same as P4 but for pgvector. Should be trivially available on Supabase.
@@ -772,7 +772,7 @@ Heading regex table (`hk-regulator-v1`), tried in this order; level 1 is the top
 | # | Item | Needed before | Recommendation |
 |---|---|---|---|
 | 1 | **Supply the corpus.** Put the first source files in `scratch-demo/rag-corpus/`: at least one DOCX and the current HKCP and MCHK CPD/CME manuals. | B9-S2-B | 3 to 5 public documents is enough to start. |
-| 2 | **Vault paste.** RAG adoption into the Decisions Log as Q53, with the R1 and R2 rulings. | Stage 3 | Say "paste Q53" and an agent does it. |
+| 2 | ~~**Vault paste.**~~ Done 2026-11-16: vault Decisions Log Q53, plus an Index callout. | — | — |
 | 3 | **Review the 24 seed cases** (each quote against its source). | Stage 3 | About 2 hours, once. |
 | 4 | **Go to download model weights** from Hugging Face (two embedding models, later two rerankers; about 2 GB each). | Stage 4 | Yes, with pinned revisions. |
 | 5 | **Approve the gate targets** (R2.6, Stage 6). | Stage 6 | Keep `false_pass_rate` = 0 as the hard line. |
