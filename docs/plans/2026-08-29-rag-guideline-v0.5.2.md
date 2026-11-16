@@ -6,6 +6,24 @@ Supersedes: 2026-08-29 v0.5.1 (retention values in §6.9 pinned from skeleton to
 Predecessors: 2026-08-29 v0.5 (editorial fixes only, closed at v0.5.1); 2026-08-29 v0.4 second-pass (closed at v0.5.x).
 File purpose: Architecture, data model, ingestion mechanics, security controls, evaluation, and implementation sequence for a narrow retrieval service supporting rule-pack authoring, source lookup and version comparison against real regulator documents.
 
+=======================================================================
+AMENDMENTS — v0.5.3 (2026-11-16, Ivan's rulings; the file name keeps "v0.5.2" so links do not break)
+=======================================================================
+The text below this block is v0.5.2, unchanged. Where it disagrees with an item here, the item here governs. Sources: ADR-0003 §5, Decisions Log Q48, and docs/plans/2026-08-29-rag-execution-plan.md ("Revision R1", "Revision R2").
+
+A1. Decision number. Every "Q41" in this file that means RAG adoption will read "Q53" once the entry is pasted into the vault. Vault Q41 is a different decision (Core-UX round).
+A2. §2.6 item 5 is reversed. Embedding and reranking models are LOCAL open-weight models run inside the service. Hosted embedding or reranking providers are excluded. §2.5 items 2 and 3 become a bake-off between local models. §6.7 register rows "Embedding provider" and "Reranker" become "none (local model)".
+A3. §2.6 item 6 is narrowed. No generation inside the retrieval path, ever. An offline document digest (a local LLM proposing rule statements, each with a code-verified verbatim quote, each approved by a person) is added as Stage D after Stage 6. Its output is never evidence and never enters chunks.text.
+A4. §4.3 and §6.3: consumers are eventar_staff and body_admin (own body) only. organiser_admin, organiser_member and auditor have no access to any B9 table or to /retrieve. §4.3 item 4 (organiser workflow) is removed.
+A5. §2.4 item 7 and §3.3 PDF: the bake-off has three candidates: Docling, Unstructured, MinerU pipeline.
+A6. §16: run order after Stage 5 is 7 → 6 → D → 9. The reranker evaluation (Stage 7) is expected, not conditional. Stage 8 (external observability) is folded into Stage 9; no external platform.
+A7. §5.6: the worker polls the database. pg_cron is not used by B9.
+A8. §6.2 item 1: keys are served at /auth/v1/.well-known/jwks.json (ES256 on the local stack), not /auth/v1/keys.
+A9. §7.5: processing_jobs also has next_attempt_at (timestamptz).
+A10. §7.10: no vector index in Phase 1 (exact search). ivfflat is excluded permanently, because pgvector trains it with k-means. Any clustering in B9 uses e-means (faiss.contrib.e_means), and only where evaluation shows a gain.
+A11. §5.4: Stages 1 to 6 ship no Next.js code. The Server Action and the staff workbench page are one late stage (WB).
+A12. Stage placement (§2.2): Stages 1 and 2 may start now, in parallel with Stage 8 of the product roadmap. Stage 3 onward needs Ivan's go.
+
 IMPORTANT CONTROL
 Checked against GhostDragooon/Eventar branch main as of 2026-08-29. Eventar-native vocabulary throughout (per CONTEXT.md glossary). No unresolved item silently converted into an implementation assumption.
 

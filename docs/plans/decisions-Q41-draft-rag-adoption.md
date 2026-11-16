@@ -74,10 +74,18 @@ Guideline §3.5 lists the fifteen items. As of 2026-08-29:
 - ragflow is a pattern source only. It is not run, whole or in part.
 - D1: no LLM-written chunk context for now; the deterministic heading-chain header ships.
 - D2: reranker evaluation runs before gate calibration (order 5 → 7 → 6 → 8 → 9). Amends guideline §16.
-- D3: reranker is hosted, for public regulator documents only; the vendor still needs its own entry and register row. Self-hosting stays excluded.
+- D3: ~~reranker is hosted, for public regulator documents only~~ — reversed the same day by E1 below.
 - D4: MinerU pipeline joins the PDF bake-off beside Docling and Unstructured. Amends guideline §2.4 item 7.
 - D5: Traditional Chinese lexical search is decided after the corpus language count (pre-work P6).
 - "No reranker in Phase 1" under Architecture above is superseded by D2 and D3: a reranker is expected, subject to its evaluation.
+
+**Revision R2 rulings (Ivan, 2026-11-16)** — a cross-check found the guideline in conflict with ADR-0003 §5 and Q48. Detail in the execution plan, "Revision R2". Guideline amended as v0.5.3 (amendment block at its top).
+
+- E1: models are local and open-weight (embedding and reranker). No hosted model provider. This supersedes "No vendor pre-approved … embedding provider, reranker" under External processors above: there is none.
+- E2: only `eventar_staff` and `body_admin` (own body) may read B9 data or query it. No organiser or auditor access. No live retrieval on a product path.
+- E3: the document digest (Q48) is a separate stage after gate calibration: a local LLM proposes rule statements, each with a code-verified verbatim quote; a person approves each one.
+- E4: Stages 1 and 2 (schema, security, evaluation scaffold) may start now, in parallel with Stage 8, on public HKCP and MCHK documents. Stage 3 onward needs Ivan's go. This supersedes "Stage placement" above.
+- Architecture corrections: the worker polls the database (no pg_cron); Stages 1 to 6 ship no Next.js code; the staff workbench is one late stage.
 
 **Signed**
 
