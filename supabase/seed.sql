@@ -220,3 +220,25 @@ revoke update, delete on public.registrations from anon, authenticated;
 insert into public.staff (email, role, full_name)
 values ('MANAGER_EMAIL', 'eventar_staff', 'First Operator')
 on conflict (email, organisation_id) do nothing;
+
+-- B9 RAG. Mirror of 20261117160000_rag_grants_rls.sql: no API role writes a B9
+-- table directly, except service_role on the eight non-audited tables.
+revoke all on
+  public.documents, public.document_versions, public.document_relationships, public.document_approvals,
+  public.processing_jobs, public.parse_runs, public.parsed_elements, public.chunks,
+  public.embedding_indexes, public.retrieval_index_assignments,
+  public.pack_versions, public.pack_sources, public.pack_source_passages,
+  public.evaluation_cases, public.retrieval_traces
+  from anon;
+revoke insert, update, delete on
+  public.documents, public.document_versions, public.document_relationships, public.document_approvals,
+  public.processing_jobs, public.parse_runs, public.parsed_elements, public.chunks,
+  public.embedding_indexes, public.retrieval_index_assignments,
+  public.pack_versions, public.pack_sources, public.pack_source_passages,
+  public.evaluation_cases, public.retrieval_traces
+  from authenticated;
+revoke insert, update, delete on
+  public.processing_jobs, public.document_approvals, public.embedding_indexes,
+  public.retrieval_index_assignments, public.pack_versions, public.pack_sources,
+  public.pack_source_passages
+  from service_role;

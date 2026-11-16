@@ -349,6 +349,8 @@ alter table public.pack_source_passages
 --    not on current_staff_id(), so a person with staff rows in two
 --    organisations is still matched for the right one.
 --    A document with body_id NULL is readable by eventar_staff only (intended).
+--    An organisation_private document is readable by eventar_staff only, even when
+--    it names a body: deny by default until Ivan rules on accreditation letters.
 create function public.rag_can_read_document(p_document_id uuid) returns boolean
 language sql stable security definer set search_path to 'public', 'pg_temp' as $$
   select app_private.is_eventar_staff()
@@ -358,6 +360,7 @@ language sql stable security definer set search_path to 'public', 'pg_temp' as $
           join public.accrediting_bodies b on b.id = d.body_id
           join public.staff s on s.organisation_id = b.organisation_id
          where d.id = p_document_id
+           and d.scope_type = 'global_authority'   -- an organisation-private document is never readable by a body_admin
            and s.email = app_private.auth_email()
            and s.role = 'body_admin'
            and s.status = 'active');
@@ -409,7 +412,8 @@ create policy documents_read on public.documents for select to authenticated
 create policy document_versions_read on public.document_versions for select to authenticated
   using (public.rag_can_read_document(document_id));
 create policy document_relationships_read on public.document_relationships for select to authenticated
-  using (public.rag_can_read_version(source_document_version_id));
+  using (public.rag_can_read_version(source_document_version_id)
+     and public.rag_can_read_version(target_document_version_id));
 create policy document_approvals_read on public.document_approvals for select to authenticated
   using (public.rag_can_read_version(document_version_id));
 create policy processing_jobs_read on public.processing_jobs for select to authenticated
@@ -498,7 +502,11 @@ begin
   returning id into v_job_id;
 
   if v_job_id is null then            -- already enqueued: return it, no audit row
-    select id into v_job_id from public.processing_jobs where idempotency_key = p_idempotency_key;
+    select id into v_job_id from public.processing_jobs
+     where idempotency_key = p_idempotency_key and document_version_id = p_document_version_id;
+    if v_job_id is null then
+      raise exception 'idempotency key belongs to another document version' using errcode = '22023';
+    end if;
     return v_job_id;
   end if;
 
@@ -577,6 +585,12 @@ begin
       ('evaluating','approved'), ('evaluating','failed'),
       ('approved','active'), ('approved','retired'), ('active','retired')) then
     raise exception 'transition % -> % not allowed', v_old, p_new_status using errcode = '22023';
+  end if;
+
+  if p_new_status = 'retired' and exists (
+      select 1 from public.retrieval_index_assignments
+       where active_embedding_index_id = p_index_id and effective_to is null) then
+    raise exception 'index still has an open assignment' using errcode = '22023';
   end if;
 
   update public.embedding_indexes

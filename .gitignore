@@ -60,3 +60,7 @@ next-env.d.ts
 
 # Supabase Studio scratch queries
 /supabase/snippets/
+services/rag_api/.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
