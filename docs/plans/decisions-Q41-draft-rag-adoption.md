@@ -2,6 +2,8 @@
 
 _Draft prepared 2026-08-29. Vault is EPERM-blocked to this session; paste this entry into `/Users/ivan/Desktop/Eventar/02 — Decisions Log.md` under the next free Q-slot. Q-number is best-effort against Q40 (HKSTP grant naming, highest I've seen referenced in-repo) — bump to Q42 if Q41 is already taken._
 
+_**Number correction, 2026-11-16:** vault Q41 is taken (Core-UX design round, 2026-10-01). The vault's highest entry is Q52, so this entry pastes as **Q53**. Re-check on the day of the paste. The heading below and this file's name keep "Q41" until then, so existing links do not break._
+
 ---
 
 ## Q41. RAG service adopted as B9 (post-MVP). 2026-08-29.
@@ -65,6 +67,17 @@ Guideline §3.5 lists the fifteen items. As of 2026-08-29:
 - B9 admission: closed by `B9-admission-2026-08-29.md`.
 - Decisions Log entry: this entry.
 - Security / RLS / data-boundary / evaluation / rollback / backup / release: open — Stage-by-Stage per guideline §16.
+
+**Revision R1 rulings (Ivan, 2026-11-16)** — detail in `docs/plans/2026-08-29-rag-execution-plan.md`, "R1 flagged decisions".
+
+- Clustering: e-means only (arXiv 2611.09501, `faiss.contrib.e_means`), never k-means, and only where evaluation shows a gain. No clustering step is in the default stages.
+- ragflow is a pattern source only. It is not run, whole or in part.
+- D1: no LLM-written chunk context for now; the deterministic heading-chain header ships.
+- D2: reranker evaluation runs before gate calibration (order 5 → 7 → 6 → 8 → 9). Amends guideline §16.
+- D3: reranker is hosted, for public regulator documents only; the vendor still needs its own entry and register row. Self-hosting stays excluded.
+- D4: MinerU pipeline joins the PDF bake-off beside Docling and Unstructured. Amends guideline §2.4 item 7.
+- D5: Traditional Chinese lexical search is decided after the corpus language count (pre-work P6).
+- "No reranker in Phase 1" under Architecture above is superseded by D2 and D3: a reranker is expected, subject to its evaluation.
 
 **Signed**
 
