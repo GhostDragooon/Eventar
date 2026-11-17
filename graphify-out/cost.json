@@ -55,8 +55,15 @@
       "input_tokens": 0,
       "output_tokens": 0,
       "files": 739
+    },
+    {
+      "date": "2026-11-14T18:18:11.934140+00:00",
+      "input_tokens": 391761,
+      "output_tokens": 0,
+      "files": 5,
+      "note": "5 docs extracted (SCHEMA_SUMMARY, DEFERRED, PROJECT_STATE, handoff_20261114-mvp-close, REVIEW-FINAL-summary-r3). Tokens count chunks 1 and 2 only; chunk 3 usage was not reported. Full-corpus AST (866 code files). 22 changed docs excluded from the manifest for the next refresh."
     }
   ],
-  "total_input_tokens": 2558388,
+  "total_input_tokens": 2950149,
   "total_output_tokens": 24000
 }
