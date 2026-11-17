@@ -47,7 +47,7 @@ _One screen. Each handoff REPLACES sections here; never append. Last updated 202
 - `eventar-static-gates` skill: its `PublishDraftButton` note is stale (the cause was a hard-coded date, not contention). The skills tree is peer-managed, so edit it only with that peer idle.
 - `pnpm-lock.yaml` re-resolved a few transitives with the zod bump (committed in `9170554`). 6 non-zod audit advisories (build-tool transitives) are untriaged.
 - Local DB drift, not deleted: the org has 533 events and `public.users` has 240 rows with no auth row, both from earlier RLS-test runs. `credit_ledger` is 920 rows (it was 889; the gates and the walk wrote the rest; append-only, local only).
-- Graph and vault note were refreshed 2026-11-15 on the working tree (repo graph built from `1f3d958f`; 22 changed docs wait in the next `--update`, listed in handoff §4). The graph is now stale against `d9ed559`: run `/graphify --update` once (it picks up the 22 docs). Graph outputs stay uncommitted until your go.
+- Graphs refreshed 2026-11-17: repo graph at `dcbc3ad` (code-only AST merge, committed); vault graph refreshed (not a git repo). Changed docs (72, mostly peer skill files) still wait for one semantic `/graphify --update`. Do not run bare `graphify update .`: it collapses INFERRED edges.
 
 ## Pointers
-Latest handoff: `handoff_20261114-mvp-close.md`. Walk evidence: `mvp/REVIEW-FINAL-summary-r3.md` plus four lens files. Stages: `STAGES.md`. DB: `supabase/migrations/` summary in `docs/db/SCHEMA_SUMMARY.md`. Deferred: `docs/DEFERRED.md`. DB cleanup map: `2026-11-05-db-cleanup-dependency-map.md`.
+Latest handoff: `handoff_20261116-b9-stage1.md` (B9 Stage 1); before it `handoff_20261114-mvp-close.md`. Walk evidence: `mvp/REVIEW-FINAL-summary-r3.md` plus four lens files. Stages: `STAGES.md`. DB: `supabase/migrations/` summary in `docs/db/SCHEMA_SUMMARY.md`. Deferred: `docs/DEFERRED.md`. DB cleanup map: `2026-11-05-db-cleanup-dependency-map.md`.
