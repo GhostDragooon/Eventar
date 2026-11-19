@@ -351,8 +351,8 @@ export function ProfileClient({
           {isNew ? 'Add your professional profile' : 'Your professional profile'}
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant m-0">
-          Snapshotted onto every event you register for after this page saves.
-          Past registrations keep whatever profile you had at the time.
+          Saved onto each event you register for from now on.
+          Past registrations keep their old profile.
         </p>
       </header>
 
@@ -623,7 +623,7 @@ export function ProfileClient({
                   key={l.id}
                   className="flex flex-wrap items-baseline gap-sm border-b border-outline-variant pb-sm last:border-b-0 last:pb-0"
                 >
-                  <span className="font-title-md text-title-md text-on-surface">
+                  <span className="text-body-md font-semibold text-on-surface">
                     {l.body_short_name ?? 'Body'}
                   </span>
                   <span className="font-mono font-body-md text-body-md text-on-surface-variant">
@@ -665,7 +665,7 @@ export function ProfileClient({
             <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>info</span>
             <span className="flex-1">
               No accrediting bodies are open for self-declare right now. Please
-              contact the event organizer.
+              contact the event organiser.
             </span>
           </div>
         ) : (
@@ -745,7 +745,7 @@ export function ProfileClient({
             {appointments.map((a) => (
               <li key={a.id} className="flex items-center justify-between gap-sm border-b border-outline-variant pb-sm last:border-b-0 last:pb-0">
                 <span className="flex-1 min-w-0">
-                  <span className="font-title-md text-title-md text-on-surface">{a.institution_name}</span>
+                  <span className="text-body-md font-semibold text-on-surface">{a.institution_name}</span>
                   <span className="font-body-md text-body-md text-on-surface-variant"> — {a.title}</span>
                 </span>
                 <button
@@ -787,7 +787,7 @@ export function ProfileClient({
             {memberships.map((m) => (
               <li key={m.id} className="flex items-center justify-between gap-sm border-b border-outline-variant pb-sm last:border-b-0 last:pb-0">
                 <span className="flex-1 min-w-0">
-                  <span className="font-title-md text-title-md text-on-surface">{m.society_label ?? m.society_code}</span>
+                  <span className="text-body-md font-semibold text-on-surface">{m.society_label ?? m.society_code}</span>
                   {m.role_title && <span className="font-body-md text-body-md text-on-surface-variant"> — {m.role_title}</span>}
                 </span>
                 <button

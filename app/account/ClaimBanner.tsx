@@ -12,8 +12,8 @@ export function ClaimBanner({ count }: { count: number }) {
     >
       <p className="m-0">
         {count === 1
-          ? 'We found 1 registration made with your email as a guest. Link it to your account to see it here.'
-          : `We found ${count} registrations made with your email as a guest. Link them to your account to see them here.`}
+          ? '1 guest registration found under your email.'
+          : `${count} guest registrations found under your email.`}
       </p>
       <Link href="/account/claim" className="text-sm font-medium text-primary-ink hover:underline">
         Link past registrations

@@ -16,7 +16,7 @@ describe('ClaimBanner', () => {
   it('count 1: singular sentence, one link to the claim page', () => {
     render(<ClaimBanner count={1} />);
     expect(
-      screen.getByText('We found 1 registration made with your email as a guest. Link it to your account to see it here.'),
+      screen.getByText('1 guest registration found under your email.'),
     ).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Link past registrations' })).toHaveAttribute('href', '/account/claim');
   });
@@ -24,7 +24,7 @@ describe('ClaimBanner', () => {
   it('count N: plural sentence with the number', () => {
     render(<ClaimBanner count={4} />);
     expect(
-      screen.getByText('We found 4 registrations made with your email as a guest. Link them to your account to see them here.'),
+      screen.getByText('4 guest registrations found under your email.'),
     ).toBeTruthy();
     expect(screen.getAllByRole('link')).toHaveLength(1);
   });

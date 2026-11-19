@@ -13,9 +13,9 @@ import { signOutAndLeave } from '@/lib/signOut';
 //
 // Item set depends on account completeness (Ivan, 2026-09-21
 // AskUserQuestion): an incomplete account only sees Account + Sign
-// out — Record, Profile, and Claim past events all point
+// out — Record, Profile, and Link past registrations all point
 // at surfaces that would just bounce back to /account/complete, so they're
-// hidden rather than shown-then-redirected. Claim past events is itself
+// hidden rather than shown-then-redirected. Link past registrations is itself
 // conditional on unlinkedCount > 0 (Ivan's second call).
 //
 // Trigger keeps shrink-0 whitespace-nowrap always (previously only on
@@ -61,7 +61,7 @@ export function AccountMenu({
         { label: 'History', href: '/account/record' },
         { label: 'Profile', href: '/account/profile' },
         { label: 'Account', href: '/account' },
-        ...(unlinkedCount > 0 ? [{ label: 'Claim past events', href: '/account/claim' }] : []),
+        ...(unlinkedCount > 0 ? [{ label: 'Link past registrations', href: '/account/claim' }] : []),
       ]
     : [{ label: 'Account', href: '/account' }];
 

@@ -90,7 +90,7 @@ export default async function SettingsPage() {
             </p>
             <Link
               href="/settings/team"
-              className="inline-flex items-center gap-sm rounded-lg border border-outline-variant px-md py-sm font-label-lg text-label-lg text-primary hover:bg-surface-container-high transition-colors"
+              className="inline-flex items-center gap-sm rounded-lg border border-outline-variant px-md py-sm font-label-md text-label-md text-primary hover:bg-surface-container-high transition-colors"
             >
               <span className="material-symbols-outlined text-[20px]" aria-hidden>group</span>
               Manage team

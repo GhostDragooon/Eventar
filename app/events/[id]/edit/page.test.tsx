@@ -223,10 +223,10 @@ describe('a published or cancelled event says what is locked and what can still 
     eventRow.status = 'published';
     const tree = await draftTree('organiser_admin');
     const text = textOf(tree).replace(/\s+/g, ' ');
-    expect(text).toContain('Details are locked after publishing: nobody can change the title, date, venue or agenda yet.');
-    expect(text).toContain('change the CPD accreditation above');
-    expect(text).toContain('registration close date on the Event Manager page');
-    expect(text).toContain('cancel it from the Events page');
+    expect(text).toContain('Details are locked after publishing.');
+    expect(text).toContain('change accreditation above');
+    expect(text).toContain('registration close date on Event Manager.');
+    expect(text).toContain('cancel it from Events.');
     expect(text).not.toMatch(/ask an admin|isn.t available yet/i);
     expect(hrefsOf(tree)).toEqual(expect.arrayContaining(['/events/event-1/details', '/dashboard']));
   });
@@ -236,15 +236,15 @@ describe('a published or cancelled event says what is locked and what can still 
     eventRow.status = 'published';
     const text = textOf(await draftTree('organiser_member')).replace(/\s+/g, ' ');
     expect(text).toContain('Details are locked after publishing');
-    expect(text).not.toContain('change the CPD accreditation above');
-    expect(text).toContain('registration close date on the Event Manager page');
+    expect(text).not.toContain('change accreditation above');
+    expect(text).toContain('registration close date on Event Manager.');
   });
 
   it('cancelled: does not offer to cancel again or to change registration', async () => {
     eventRow.status = 'cancelled';
     const text = textOf(await draftTree('organiser_admin')).replace(/\s+/g, ' ');
     expect(text).toContain('Details are locked after publishing');
-    expect(text).toContain('create a new event from the Events page');
+    expect(text).not.toMatch(/create a new event/i);
     expect(text).not.toMatch(/cancel it from|registration close date/i);
   });
 });

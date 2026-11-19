@@ -30,8 +30,8 @@ export default async function AttendeeCheckinPage() {
         <ClaimBanner count={unlinkedCount} />
         <LicenceBanner missing={licenceMissing} />
         {!failed && live.length + soon.length === 0 && (
-          <EmptyState action={{ href: '/account/registrations', label: 'See my registrations' }}>
-            Nothing to check in to right now. Your pass appears here when an event you registered for is about to start.
+          <EmptyState title="Nothing here yet" action={{ href: '/account/registrations', label: 'See my registrations' }}>
+            Your pass appears here 60 minutes before an event starts.
           </EmptyState>
         )}
         {live.length > 0 && (

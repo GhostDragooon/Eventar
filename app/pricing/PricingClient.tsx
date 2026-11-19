@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { BillingPeriodToggle, type BillingPeriod } from '@/components/pricing/BillingPeriodToggle';
+import { useToast } from '@/components/ui/toast';
 import { PricingComparison, type PricingTier } from '@/components/pricing/PricingComparison';
 
 const TIERS: PricingTier[] = [
@@ -50,12 +51,11 @@ const TIERS: PricingTier[] = [
 
 export function PricingClient() {
   const [billing, setBilling] = useState<BillingPeriod>('annual');
-  const [toast, setToast] = useState<string | null>(null);
+  const { toast } = useToast();
 
   function handleChoose(id: string) {
     const tier = TIERS.find((t) => t.id === id);
-    setToast(`${tier?.name ?? id} — coming soon! We'll notify you when this plan is available.`);
-    setTimeout(() => setToast(null), 4000);
+    toast('neutral', `${tier?.name ?? id} — coming soon! We'll notify you when this plan is available.`);
   }
 
   return (
@@ -64,11 +64,6 @@ export function PricingClient() {
         <BillingPeriodToggle value={billing} onChange={setBilling} />
       </div>
       <PricingComparison tiers={TIERS} billing={billing} onChoose={handleChoose} />
-      {toast && (
-        <div role="status" className="fixed bottom-lg left-1/2 -translate-x-1/2 z-50 rounded-xl bg-inverse-surface px-lg py-md text-on-inverse-surface text-body-md shadow-lg">
-          {toast}
-        </div>
-      )}
     </>
   );
 }

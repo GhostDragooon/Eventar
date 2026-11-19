@@ -297,9 +297,7 @@ export function CompleteClient({
           A few things before you start
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant m-0">
-          Any registrations you have made are saved. Finish this and you will see them under
-          Registrations, with your past events in History. It takes about two minutes, and after that registering for an
-          event only asks about the event.
+          Takes about two minutes. After that, registering only asks about the event.
         </p>
       </header>
 
@@ -519,7 +517,7 @@ export function CompleteClient({
                       <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] text-[color:var(--on-primary-container)]" aria-hidden data-fill="1">
                         check_circle
                       </span>
-                      <span className="font-title-md text-title-md text-on-surface">{l.body_short_name ?? 'Body'}</span>
+                      <span className="text-body-md font-semibold text-on-surface">{l.body_short_name ?? 'Body'}</span>
                       <span className="font-mono font-body-md text-body-md text-on-surface-variant">{l.licence_number}</span>
                     </li>
                   ))}

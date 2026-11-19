@@ -67,7 +67,7 @@ export function RecordClient({
                 key={r.registration_id}
                 className="flex flex-wrap items-baseline gap-sm border-b border-outline-variant pb-sm last:border-b-0 last:pb-0"
               >
-                <span className="font-title-md text-title-md text-on-surface">
+                <span className="text-body-md font-semibold text-on-surface">
                   {r.event_title ?? 'Event removed'}
                 </span>
                 {r.event_start && r.event_timezone && (
@@ -79,7 +79,7 @@ export function RecordClient({
                 {r.status === 'attended' && r.check_in_at && (
                   <span className="font-body-md text-body-md text-on-surface-variant">
                     Checked in {formatInTz(r.check_in_at, r.event_timezone ?? 'UTC')}
-                    {r.check_in_method ? ` · ${r.check_in_method}` : ''}
+                    {r.check_in_method ? ` · via ${r.check_in_method === 'qr' ? 'self-scan' : 'reception'}` : ''}
                   </span>
                 )}
                 {r.status === 'attended' && <CreditChip hasCredit={r.has_credit} />}
@@ -105,7 +105,7 @@ export function RecordClient({
                 key={c.id}
                 className="flex flex-wrap items-baseline gap-sm border-b border-outline-variant pb-sm last:border-b-0 last:pb-0"
               >
-                <span className="font-title-md text-title-md text-on-surface">
+                <span className="text-body-md font-semibold text-on-surface">
                   {c.event_title ?? 'Event removed'}
                 </span>
                 <span className="font-body-md text-body-md text-on-surface-variant">
@@ -203,7 +203,7 @@ function CreditChip({ hasCredit }: { hasCredit: boolean | null }) {
     return (
       <span
         role="status"
-        aria-label="Credit: couldn't check right now"
+        aria-label="Points: couldn't check right now"
         className="font-label-md text-label-md px-sm py-0 rounded-full uppercase inline-flex items-center gap-sm border bg-surface-container text-on-surface-variant border-outline-variant italic"
       >
         Couldn&apos;t check
@@ -213,14 +213,14 @@ function CreditChip({ hasCredit }: { hasCredit: boolean | null }) {
   return (
     <span
       role="status"
-      aria-label={hasCredit ? 'Credit: on record' : 'Credit: not yet on record'}
+      aria-label={hasCredit ? 'Points: on record' : 'Points: not on record yet'}
       className={`font-label-md text-label-md px-sm py-0 rounded-full uppercase inline-flex items-center gap-sm border ${
         hasCredit
           ? 'bg-success-container text-on-success-container border-transparent'
           : 'bg-surface-container text-on-surface-variant border-outline-variant'
       }`}
     >
-      {hasCredit ? 'On record' : 'Not yet on record'}
+      {hasCredit ? 'Points on record' : 'Points not on record yet'}
     </span>
   );
 }

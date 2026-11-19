@@ -463,19 +463,15 @@ export default async function EventDetailsPage({
           aria-labelledby="evidence-export-heading"
           className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg mt-lg"
         >
-          <h2 id="evidence-export-heading" className="text-title-md font-semibold text-on-surface mb-xs">
+          <h2 id="evidence-export-heading" className="font-title-lg text-title-lg text-on-surface mb-xs">
             Evidence export
           </h2>
           <p className="text-body-sm text-on-surface-variant mb-md">
-            Downloads the Q2 participation claims (JSON) plus a flat one-row-per-credit CSV. Each package
-            carries an RFC 8785 canonical hash of the accrediting body&rsquo;s current rule pack, so a
-            reader can pin the export to the pack version it was generated against.
+            Participation claims (JSON) plus a one-row-per-credit CSV.
           </p>
           <EvidenceExportButton eventId={event.id} disabled={creditsIssued === 0} />
           <p className="text-body-sm text-on-surface-variant mt-lg mb-md">
-            A College/MCHK-oriented package: one row per credit entry, with practitioner identity,
-            licence, and evidence in plain columns a body&rsquo;s administrator can read directly
-            &mdash; no JSON payload to parse.
+            One row per credit with practitioner identity, licence and evidence, readable without parsing JSON.
           </p>
           <CollegeExportButton eventId={event.id} disabled={creditsIssued === 0} />
         </section>
@@ -560,7 +556,7 @@ export default async function EventDetailsPage({
           aria-labelledby="attendance-evidence-heading"
           className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg mt-lg"
         >
-          <h2 id="attendance-evidence-heading" className="text-title-md font-semibold text-on-surface mb-xs">
+          <h2 id="attendance-evidence-heading" className="font-title-lg text-title-lg text-on-surface mb-xs">
             Attendance evidence
           </h2>
           <div className="flex flex-wrap gap-lg text-body-md text-on-surface-variant mb-md">

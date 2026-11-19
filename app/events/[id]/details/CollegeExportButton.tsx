@@ -46,12 +46,12 @@ export function CollegeExportButton({
   const help =
     state.kind === 'error' ? state.message
     : state.kind === 'ok' ? `Downloaded ${state.rowCount} credit ${state.rowCount === 1 ? 'row' : 'rows'}.`
-    : disabled ? 'Available once credit has been posted for this event.'
+    : disabled ? 'Available once credit is posted.'
     : null;
 
   return (
     <div className="space-y-2">
-      <Button type="button" onClick={onClick} disabled={disabled || isLoading} aria-disabled={disabled || isLoading} title={disabled ? 'Available once credit has been posted for this event' : undefined} className="gap-xs">
+      <Button type="button" onClick={onClick} disabled={disabled || isLoading} aria-disabled={disabled || isLoading} className="gap-xs">
         <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>download</span>
         {isLoading ? 'Preparing…' : 'Export College package (CSV)'}
       </Button>

@@ -55,7 +55,7 @@ describe('AccountClient — walk-in claim banner', () => {
       />,
     );
     expect(screen.queryByRole('button', { name: /link \d+ registrations? to my account/i })).not.toBeInTheDocument();
-    expect(screen.queryByText(/unlinked registrations? for your email/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/guest registrations? found under your email/i)).not.toBeInTheDocument();
   });
 
   it('renders the banner when the count is > 0, with matching count wording', () => {
@@ -66,7 +66,7 @@ describe('AccountClient — walk-in claim banner', () => {
         initialUnlinkedCount={2}
       />,
     );
-    expect(screen.getByText(/we found 2 unlinked registrations for your email/i)).toBeInTheDocument();
+    expect(screen.getByText(/2 guest registrations found under your email/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /link \d+ registrations? to my account/i })).toBeInTheDocument();
   });
 
@@ -78,7 +78,7 @@ describe('AccountClient — walk-in claim banner', () => {
         initialUnlinkedCount={1}
       />,
     );
-    expect(screen.getByText(/we found 1 unlinked registration for your email/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 guest registration found under your email/i)).toBeInTheDocument();
   });
 
   it('clicking "Link them" calls claimMyRegistrations and clears the banner', async () => {

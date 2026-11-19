@@ -168,7 +168,7 @@ export function AccountClient({
           kind: 'success',
           message:
             n === 0
-              ? 'Nothing new to link. Your registrations are already up to date.'
+              ? 'Nothing new to link.'
               : n === 1
                 ? 'Linked 1 registration to your account.'
                 : `Linked ${n} registrations to your account.`,
@@ -227,8 +227,7 @@ export function AccountClient({
           Your account
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant m-0">
-          Update how your name and contact appear on registrations.
-          Full name is used for emails, badges, and your event roster.
+          Your name appears on emails, badges and rosters.
         </p>
       </header>
 
@@ -258,10 +257,10 @@ export function AccountClient({
             done={profileAndMembershipReady}
             label={
               profileAndMembershipReady === true
-                ? 'Profile & membership number complete'
-                : 'Finish your profile & membership number'
+                ? 'Profile & licence complete'
+                : 'Finish your profile & licence'
             }
-            unknownLabel="Couldn't check profile & membership right now — refresh"
+            unknownLabel="Couldn't check profile & licence right now — refresh"
             href="/account/profile"
           />
           <ReadinessRow
@@ -277,9 +276,7 @@ export function AccountClient({
           />
         </ul>
         <p className="mt-md font-body-md text-body-md text-on-surface-variant m-0">
-          Points release automatically at check-in once all three are in
-          place. Your History isn&apos;t a substitute for iCMECPD or your
-          college; it&apos;s a running log of what you did through Eventar.
+          Points release at check-in once all three are in place.
         </p>
       </section>
 
@@ -302,13 +299,10 @@ export function AccountClient({
               <span className="material-symbols-outlined text-[calc(20px*var(--text-scale))]" data-fill="1">link</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-title-md text-title-md text-on-surface m-0">
+              <p className="text-body-md font-semibold text-on-surface m-0">
                 {unlinkedCount === 1
-                  ? 'We found 1 unlinked registration for your email.'
-                  : `We found ${unlinkedCount} unlinked registrations for your email.`}
-              </p>
-              <p className="font-body-md text-body-md text-on-surface-variant m-0 mt-xs">
-                Link them to your account so CME/CPD points can be released once your profile is complete.
+                  ? '1 guest registration found under your email.'
+                  : `${unlinkedCount} guest registrations found under your email.`}
               </p>
             </div>
           </div>
@@ -325,7 +319,7 @@ export function AccountClient({
                     : `Link ${unlinkedCount} registrations to my account`
               }
             >
-              {claimPending ? 'Linking…' : 'Link them'}
+              {claimPending ? 'Linking…' : 'Link past registrations'}
             </Button>
           </div>
         </div>

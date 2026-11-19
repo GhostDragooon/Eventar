@@ -89,7 +89,7 @@ export function EmailDeliveryStrip({
       className="mt-md rounded-[14px] border border-outline-variant bg-surface-container-low p-md"
     >
       <div className="flex items-baseline gap-sm flex-wrap">
-        <h3 id="email-delivery-heading" className="text-label-lg font-semibold text-on-surface">
+        <h3 id="email-delivery-heading" className="text-body-md font-semibold text-on-surface">
           Email delivery
         </h3>
         <span
@@ -105,9 +105,7 @@ export function EmailDeliveryStrip({
       </div>
       {!deliveryLive && (
         <p className="mt-xs text-body-sm text-on-surface-variant">
-          RESEND_API_KEY is unset — new sends will record as stalled. Any
-          &ldquo;sent&rdquo; rows above are historic (from an earlier run
-          when the key was set).
+          Email is off on this server. New sends record as stalled.
         </p>
       )}
       <div className="mt-sm overflow-x-auto">

@@ -50,10 +50,9 @@ export function ClaimClient({
       <header className="space-y-xs">
         <p className="text-label-md font-semibold uppercase tracking-[0.18em] m-0">
           <span className="text-[color:var(--on-primary-container)]">Account</span>
-          <span className="text-on-surface-variant"> · Link past events</span>
         </p>
         <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">
-          Link your past registrations
+          Link past registrations
         </h1>
       </header>
 
@@ -67,18 +66,12 @@ export function ClaimClient({
           </div>
           <div className="flex-1">
             <h2 className="font-headline-sm text-[calc(20px*var(--text-scale))] text-on-surface m-0">
-              We&apos;ll link any past registration under {email || 'your email'}
+              Guest registrations under {email || 'your email'}
             </h2>
             <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
-              This connects registrations you made as a guest — before you
-              had an account — to this profile, so held CME/CPD points can be
-              released once your profile and licence are complete.
+              Registrations you made as a guest move to this account, so held
+              CME/CPD points can release.
             </p>
-            <ul className="font-body-md text-body-md text-on-surface-variant mt-md list-disc pl-lg space-y-xs">
-              <li>Only matches your own verified email — nobody else&apos;s.</li>
-              <li>Safe to run again — nothing happens if there&apos;s nothing new to link.</li>
-              <li>Won&apos;t change any name or details you already saved on a past registration.</li>
-            </ul>
           </div>
         </div>
 
@@ -92,11 +85,10 @@ export function ClaimClient({
               info
             </span>
             <span className="flex-1">
-              Your email isn&apos;t verified yet.{' '}
+              Verify your email first.{' '}
               <Link href="/account" className="font-medium text-primary-ink underline">
-                Head to your account
-              </Link>{' '}
-              to resend the confirmation link.
+                Resend the link
+              </Link>
             </span>
           </div>
         )}
@@ -126,10 +118,9 @@ export function ClaimClient({
               info
             </span>
             <span className="flex-1">
-              Nothing to link — no past guest registrations were found under
-              your email. You&apos;re all set.{' '}
+              No past guest registrations found under your email.{' '}
               <Link href="/account" className="font-medium text-primary-ink underline">
-                Back to your account
+                Back to account
               </Link>
               .
             </span>
@@ -154,7 +145,7 @@ export function ClaimClient({
             Back to account
           </Link>
           <Button type="button" onClick={onClaim} disabled={pending || !emailVerified}>
-            {pending ? 'Linking…' : 'Link my past registrations'}
+            {pending ? 'Linking…' : 'Link past registrations'}
           </Button>
         </div>
       </section>

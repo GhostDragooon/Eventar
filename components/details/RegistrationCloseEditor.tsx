@@ -88,7 +88,7 @@ export function RegistrationCloseEditor({ eventId, current, readOnly = false }: 
         <p className="font-label-md text-label-md text-on-surface-variant">Saved.</p>
       )}
       <p className="font-label-md text-label-md text-on-surface-variant">
-        Leave empty to keep registration open until event starts.
+        Leave empty to close registration when check-in opens, 60 minutes before the start.
       </p>
     </div>
   );

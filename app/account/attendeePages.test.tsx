@@ -59,8 +59,8 @@ describe('Registrations', () => {
   it('empty: says there is nothing, where past events went, and one way forward to Events', async () => {
     loaded.items = [reg('p', 'Over already', -10)];
     render(await RegistrationsPage());
-    expect(screen.getByText(/not registered for any upcoming events/i)).toBeTruthy();
-    expect(screen.getByText(/Past events are in History/)).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'No upcoming events' })).toBeTruthy();
+    expect(screen.queryByText(/Past events are in History/)).toBeNull();
     expect(screen.getByRole('link', { name: 'Find events' })).toHaveAttribute('href', '/events');
     expect(screen.queryByText('Over already')).toBeNull();
   });
@@ -122,7 +122,8 @@ describe('Registrations: when check-in opens', () => {
     first.unmount();
     vi.setSystemTime(new Date('2026-12-13T12:00:00Z'));
     render(await RegistrationsPage());
-    expect(screen.getAllByText('Check-in is open')).toHaveLength(2); // the section title and the row
+    expect(screen.getByRole('heading', { name: 'Happening now' })).toBeTruthy();
+    expect(screen.getAllByText('Check-in is open')).toHaveLength(1); // the row status line
     expect(screen.queryByText(/Check-in opens at/)).toBeNull();
   });
 });
@@ -145,7 +146,7 @@ describe('Check-in', () => {
   it('empty: points to Registrations, not to a pass that does not exist', async () => {
     loaded.items = [reg('far', 'Next month', 24 * 30)];
     render(await CheckinPage());
-    expect(screen.getByText(/Nothing to check in to right now/)).toBeTruthy();
+    expect(screen.getByText(/Your pass appears here 60 minutes before an event starts/)).toBeTruthy();
     expect(screen.getByRole('link', { name: 'See my registrations' })).toHaveAttribute('href', '/account/registrations');
     expect(screen.queryByRole('link', { name: 'Show my pass' })).toBeNull();
   });
@@ -154,7 +155,7 @@ describe('Check-in', () => {
     loaded.items = [reg('l', 'Open now', -0.5), reg('s', 'Tonight', 6), reg('far', 'Next month', 24 * 30)];
     render(await CheckinPage());
     expect(screen.getAllByRole('link', { name: 'Show my pass' })).toHaveLength(2);
-    expect(screen.getByText('Check-in is open')).toBeTruthy();
+    expect(screen.getByText('Check-in is open')).toBeTruthy(); // the Check-in page has no section title for this
     expect(screen.getByText(/Check-in opens at/)).toBeTruthy();
     expect(screen.queryByText('Next month')).toBeNull();
   });
@@ -183,7 +184,7 @@ describe('guest-registration banner (Registrations and Check-in)', () => {
   ])('%s: count 1 is singular, with the link to the claim page', async (_n, Page) => {
     loaded.unlinkedCount = 1;
     render(await Page());
-    expect(screen.getByText(/We found 1 registration made with your email as a guest\./)).toBeTruthy();
+    expect(screen.getByText('1 guest registration found under your email.')).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Link past registrations' })).toHaveAttribute('href', '/account/claim');
   });
 
@@ -193,7 +194,7 @@ describe('guest-registration banner (Registrations and Check-in)', () => {
   ])('%s: count N is plural', async (_n, Page) => {
     loaded.unlinkedCount = 5;
     render(await Page());
-    expect(screen.getByText(/We found 5 registrations made with your email as a guest\./)).toBeTruthy();
+    expect(screen.getByText('5 guest registrations found under your email.')).toBeTruthy();
   });
 
   it('the banner sits next to a failed-read alert, not instead of it', async () => {
@@ -201,7 +202,7 @@ describe('guest-registration banner (Registrations and Check-in)', () => {
     loaded.unlinkedCount = 2;
     render(await RegistrationsPage());
     expect(screen.getByRole('alert').textContent).toMatch(/could not be loaded/);
-    expect(screen.getByText(/We found 2 registrations/)).toBeTruthy();
+    expect(screen.getByText(/2 guest registrations found/)).toBeTruthy();
   });
 });
 

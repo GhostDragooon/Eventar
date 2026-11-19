@@ -44,9 +44,9 @@ export function TeamClient({
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-outline-variant bg-surface-container-lowest">
-                <th className="px-md py-sm font-title-sm text-title-sm text-on-surface-variant">Name</th>
-                <th className="px-md py-sm font-title-sm text-title-sm text-on-surface-variant">Email</th>
-                <th className="px-md py-sm font-title-sm text-title-sm text-on-surface-variant">Role</th>
+                <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant">Name</th>
+                <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant">Email</th>
+                <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant">Role</th>
               </tr>
             </thead>
             <tbody>

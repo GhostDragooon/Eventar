@@ -93,7 +93,7 @@ describe('/checkin — copy', () => {
   it('empty: says nothing is published and what to do, not "No open events"', async () => {
     h.tables = { events: [], registrations: [] };
     const t = await text();
-    expect(t).toContain('No published events to check in. Publish an event and its check-in desk appears here.');
+    expect(t).toContain('No published events.');
     expect(t).not.toContain('No open events');
     expect(t).toContain('Nothing live right now · 0 coming up');
   });

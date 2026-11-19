@@ -46,12 +46,12 @@ export function AttendanceExportButton({
   const help =
     state.kind === 'error' ? state.message
     : state.kind === 'ok' ? `Downloaded ${state.rowCount} evidence ${state.rowCount === 1 ? 'record' : 'records'}.`
-    : disabled ? 'Available once attendance evidence has been recorded.'
+    : disabled ? 'Available once attendance is recorded.'
     : null;
 
   return (
     <div className="space-y-2">
-      <Button type="button" onClick={onClick} disabled={disabled || isLoading} aria-disabled={disabled || isLoading} title={disabled ? 'Available once attendance evidence has been recorded' : undefined} className="gap-xs">
+      <Button type="button" onClick={onClick} disabled={disabled || isLoading} aria-disabled={disabled || isLoading} className="gap-xs">
         <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>download</span>
         {isLoading ? 'Preparing…' : 'Export attendance evidence (CSV)'}
       </Button>

@@ -899,7 +899,7 @@ describe('NewEventForm — create mode, publishing role and the saved-event link
 // ---- Round 2 (2026-10-09): what the second review found on the create form ----------
 
 async function fillValidEvent() {
-  fireEvent.change(screen.getByPlaceholderText('Workshop on TDD'), { target: { value: 'Test event' } });
+  fireEvent.change(screen.getByPlaceholderText('e.g. Annual cardiology update'), { target: { value: 'Test event' } });
   fireEvent.change(screen.getByPlaceholderText(/search a venue/i), { target: { value: 'Rosewood' } });
   const venue = await screen.findByRole('option', { name: /Rosewood Sand Hill/ });
   fireEvent.click(within(venue).getByRole('button'));
@@ -937,7 +937,7 @@ describe('NewEventForm: a validation message appears in the section it names', (
 
   it('puts the venue message under Date & venue, and clears it on the next attempt that gets further', async () => {
     render(<NewEventForm {...createBase} submit={okSubmit()} />);
-    fireEvent.change(screen.getByPlaceholderText('Workshop on TDD'), { target: { value: 'Only a name' } });
+    fireEvent.change(screen.getByPlaceholderText('e.g. Annual cardiology update'), { target: { value: 'Only a name' } });
     fireEvent.click(screen.getByRole('button', { name: /save draft/i }));
     const alert = screen.getByRole('alert');
     expect(alert).toHaveTextContent('Still needed to continue: venue, date, start time, end time.');
@@ -1002,9 +1002,9 @@ describe('NewEventForm: a chosen accrediting body needs its hours', () => {
 
 describe('NewEventForm: the create buttons and notes, round 2', () => {
   // Where Publish is the blue button, say what it costs BEFORE the click.
-  it('warns publishers that details cannot be edited after publishing, and not other roles', () => {
+  it('keeps the one-way warning out of the form body; the confirm dialog carries it', () => {
     const { unmount } = render(<NewEventForm {...createBase} submit={okSubmit()} />);
-    expect(screen.getByText(/publish event makes the registration page live\. details cannot be edited after publishing yet, so check them first/i)).toBeInTheDocument();
+    expect(screen.queryByText(/details cannot be edited after publishing/i)).not.toBeInTheDocument();
     unmount();
     render(<NewEventForm {...createBase} canPublish={false} submit={okSubmit()} />);
     expect(screen.queryByText(/details cannot be edited after publishing/i)).not.toBeInTheDocument();
@@ -1049,6 +1049,7 @@ describe('NewEventForm: create mode, Publish confirms before it publishes', () =
     const dialog = screen.getByRole('dialog', { name: 'Publish this event?' });
     expect(dialog).toHaveTextContent('Test event');
     expect(dialog).toHaveTextContent('Registration opens now.');
+    expect(dialog).toHaveTextContent('Details cannot be edited after publishing yet, so check them first.');
     expect(dialog).toHaveTextContent(/Check-in opens at .*60 minutes before the start/);
     expect(submit).not.toHaveBeenCalled();
 
@@ -1357,7 +1358,7 @@ describe('NewEventForm: Cancel asks before it discards unsaved changes', () => {
 
   it('create: a typed name opens the dialog; Discard changes goes to the dashboard', () => {
     render(<NewEventForm {...createBase} submit={okSubmit()} />);
-    fireEvent.change(screen.getByPlaceholderText('Workshop on TDD'), { target: { value: 'Half done' } });
+    fireEvent.change(screen.getByPlaceholderText('e.g. Annual cardiology update'), { target: { value: 'Half done' } });
     fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }));
     expect(pushMock).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }));

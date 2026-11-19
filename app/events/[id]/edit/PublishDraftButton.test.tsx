@@ -36,15 +36,11 @@ function confirm(dialog: HTMLElement) {
 
 describe('PublishDraftButton', () => {
   // A published event is read-only until a later package, so the card says so BEFORE
-  // the one-way step, at reading size, right above the button (not in 12px grey).
-  it('warns that details cannot be edited after publishing, above the button, and ties the button to it', () => {
+  // the one-way step (now in the confirm dialog).
+  it('shows the Publish button without a separate warning paragraph (the confirm dialog carries it)', () => {
     render(<PublishDraftButton {...eventProps} canPublish />);
-    const warning = screen.getByText(/details cannot be edited after publishing yet, so check them first/i);
-    const button = screen.getByRole('button', { name: 'Publish event' });
-    expect(warning.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(warning.className).toMatch(/text-body-md/);
-    expect(warning.id).not.toBe('');
-    expect(button).toHaveAttribute('aria-describedby', warning.id);
+    expect(screen.getByRole('button', { name: 'Publish event' })).toBeInTheDocument();
+    expect(screen.queryByText(/cannot be edited after publishing/i)).toBeNull();
   });
 
   it('does not show that warning to a role that cannot publish', () => {

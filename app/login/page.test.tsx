@@ -159,7 +159,6 @@ describe('/login — signed-in practitioner (D1)', () => {
     // True for any non-organiser session, and says how to become one: the old
     // line claimed a "practitioner account" the visitor may never have made.
     expect(screen.getByText(/organiser log in is for organiser emails only/i)).toBeInTheDocument();
-    expect(screen.getByText(/open the invite link your admin sent you/i)).toBeInTheDocument();
     expect(screen.queryByText(/isn't on an organiser team|staff list|organi[sz]er list/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/a practitioner account/i)).not.toBeInTheDocument();
     // The form and the allowlist notice are hidden while the panel shows.
@@ -331,7 +330,7 @@ describe('/login — failures fail visibly (rule 12)', () => {
     getAccountMenuState.mockRejectedValue(new Error('server action failed'));
     visit('next=%2Fevents%2Fnew');
     expect(await screen.findByLabelText(/email address/i)).toBeInTheDocument();
-    expect(screen.getByRole('alert')).toHaveTextContent(/could not check your organizer access/i);
+    expect(screen.getByRole('alert')).toHaveTextContent(/could not check your organiser access/i);
     expect(router.replace).not.toHaveBeenCalled();
     expect(signOut).not.toHaveBeenCalled();
   });
@@ -343,7 +342,7 @@ describe('/login — failures fail visibly (rule 12)', () => {
     getAccountMenuState.mockResolvedValue({ isStaff: false, accountComplete: false, unlinkedCount: 0, staffUnknown: true });
     visit('next=%2Fevents%2Fnew');
     expect(await screen.findByLabelText(/email address/i)).toBeInTheDocument();
-    expect(screen.getByRole('alert')).toHaveTextContent(/could not check your organizer access/i);
+    expect(screen.getByRole('alert')).toHaveTextContent(/could not check your organiser access/i);
     expect(screen.queryByText(/organiser team/i)).not.toBeInTheDocument();
     expect(router.replace).not.toHaveBeenCalled();
     expect(signOut).not.toHaveBeenCalled();

@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,6 @@ export default function PublishDraftButton({
   registrationOpenIso: string | null;
 }) {
   const router = useRouter();
-  const warningId = useId();
   const dirty = useDraftDirty(eventId);
   // The facts are worked out when the organiser clicks (they depend on "now"), and double as "is it open".
   const [facts, setFacts] = useState<PublishFacts | null>(null);
@@ -88,12 +87,6 @@ export default function PublishDraftButton({
 
   return (
     <div className="space-y-sm">
-      {/* The one-way warning sits HERE, at reading size and directly above the button,
-          not in the card's 12px grey body where it was the quietest text on the card
-          (user-lens 2026-10-09). A published event is read-only until package P9b. */}
-      <p id={warningId} className="font-body-md text-body-md text-on-surface">
-        Details cannot be edited after publishing yet, so check them first.
-      </p>
       {/* text-on-primary!: tailwind-merge reads `text-label-md` (a font size) as
           a text colour and drops the Button's own `text-on-primary`; the `!`
           keeps both. Same workaround as MagicLinkSignInForm.
@@ -103,7 +96,6 @@ export default function PublishDraftButton({
       <Button
         type="button"
         onClick={onPublishClick}
-        aria-describedby={warningId}
         className="min-h-11 w-full font-label-md text-label-md text-on-primary!"
       >
         Publish event

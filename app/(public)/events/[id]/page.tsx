@@ -434,14 +434,14 @@ function PartnerStrip({
   if (hosts.length === 0 && orgs.length === 0) return null;
   return (
     <section
-      aria-label="Hosts and organizers"
+      aria-label="Hosts and organisers"
       className="flex flex-col gap-sm border-t border-outline-variant pt-md"
     >
       {hosts.length > 0 && (
         <PartnerRow label="Hosted by" partners={hosts} />
       )}
       {orgs.length > 0 && (
-        <PartnerRow label="Organized by" partners={orgs} />
+        <PartnerRow label="Organised by" partners={orgs} />
       )}
     </section>
   );

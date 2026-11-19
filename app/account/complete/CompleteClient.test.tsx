@@ -93,8 +93,7 @@ describe('CompleteClient — where "Done" goes', () => {
 // registrations are saved ("any": a brand-new account has none, and the page does not know); finishing puts them under Registrations, and History is where past events go.
 describe('CompleteClient — the lead explains the redirect', () => {
   const LEAD =
-    'Any registrations you have made are saved. Finish this and you will see them under Registrations, with your past events in History. ' +
-    'It takes about two minutes, and after that registering for an event only asks about the event.';
+    'Takes about two minutes. After that, registering only asks about the event.';
 
   it.each([1, 4])('step %i: says any registrations are saved (true with none too) and where they are after finishing', (step) => {
     render(

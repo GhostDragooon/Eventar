@@ -78,7 +78,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       title: `Sends failing — ${ev.title}`,
       detail: `${n} message${n === 1 ? '' : 's'} failed · attendees may have no pass`,
       meta: 'now',
-      metaSub: 'retry from Details',
+      metaSub: 'view sends',
       href: `/events/${eventId}/details`,
     });
   }

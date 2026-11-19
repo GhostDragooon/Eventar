@@ -31,7 +31,7 @@ export default function BasicsSection({ value, onChange }: Props) {
         <Input
           value={value.title}
           onChange={(e) => onChange({ title: e.target.value })}
-          placeholder="Workshop on TDD"
+          placeholder="e.g. Annual cardiology update"
           required
         />
       </label>
@@ -41,7 +41,7 @@ export default function BasicsSection({ value, onChange }: Props) {
         <Input
           value={value.topic}
           onChange={(e) => onChange({ topic: e.target.value })}
-          placeholder="engineering · onboarding · etc."
+          placeholder="e.g. cardiology"
         />
       </label>
 
@@ -51,7 +51,7 @@ export default function BasicsSection({ value, onChange }: Props) {
           value={value.description}
           onChange={(e) => onChange({ description: e.target.value })}
           rows={4}
-          placeholder="One paragraph about the workshop."
+          placeholder="One paragraph about the event."
         />
       </label>
     </div>

@@ -39,7 +39,7 @@ const CATEGORIES: { key: string; label: string }[] = [
 function lifecycleStatus(lifecycle: Lifecycle): EventCardStatus {
   if (lifecycle === 'registering') return { label: 'Registering', tone: 'success' };
   if (lifecycle === 'live') return { label: 'Live', tone: 'success' };
-  return { label: 'Starts soon', tone: 'neutral' };
+  return { label: 'Not open', tone: 'neutral' };
 }
 
 export function EventsListClient({ events }: { events: PublicEventCard[] }) {

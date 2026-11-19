@@ -232,7 +232,7 @@ export default function SurveyForm({
                       03. Value Proposition
                     </span>
                     <span className="block font-title-lg text-body-lg font-semibold text-on-surface">
-                      What was the most valuable aspect of this summit?
+                      What was the most valuable aspect of this event?
                       <span className={HINT_TAG_CLASS}>pick one</span>
                     </span>
                   </legend>

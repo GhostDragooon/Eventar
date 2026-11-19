@@ -52,14 +52,14 @@ describe('History: guest-registration banner', () => {
   it('count 1: singular, with the link to the claim page', async () => {
     s.count = { ok: true, data: { count: 1 } };
     render(await RecordPage());
-    expect(screen.getByText(/We found 1 registration made with your email as a guest\./)).toBeTruthy();
+    expect(screen.getByText('1 guest registration found under your email.')).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Link past registrations' })).toHaveAttribute('href', '/account/claim');
   });
 
   it('count N: plural', async () => {
     s.count = { ok: true, data: { count: 3 } };
     render(await RecordPage());
-    expect(screen.getByText(/We found 3 registrations made with your email as a guest\./)).toBeTruthy();
+    expect(screen.getByText('3 guest registrations found under your email.')).toBeTruthy();
   });
 
   it.each([

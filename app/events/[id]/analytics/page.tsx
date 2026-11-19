@@ -184,7 +184,7 @@ export default async function EventAnalyticsPage({
       </div>
       <section
         aria-label="Headline metrics"
-        className="mb-lg p-lg bg-surface-container-lowest border border-outline-variant rounded-xxl shadow-sm grid grid-cols-1 md:grid-cols-3 gap-lg"
+        className="mb-lg p-lg bg-surface-container-lowest border border-outline-variant rounded-[20px] shadow-sm grid grid-cols-1 md:grid-cols-3 gap-lg"
       >
         <RingGauge
           label="Registered"
@@ -222,7 +222,7 @@ export default async function EventAnalyticsPage({
         <span className="inline-flex items-center justify-center w-[30px] h-[22px] rounded-md text-[calc(11px*var(--text-scale))] font-bold tabular-nums bg-primary-container text-on-primary-container" aria-hidden>02</span>
         <h2 className="text-[calc(20px*var(--text-scale))] font-extrabold tracking-[-0.025em] text-on-surface">Feedback</h2>
       </div>
-      <div className="bg-surface-container-lowest border border-outline-variant rounded-xxl shadow-sm overflow-hidden">
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-[20px] shadow-sm overflow-hidden">
         <BarDistributionSlice
           icon="event_note"
           iconBg="fixed"
@@ -240,7 +240,7 @@ export default async function EventAnalyticsPage({
           icon="insights"
           iconBg="tertiary-fixed"
           title="Value Drivers (Q3)"
-          prompt={'"What was the most valuable aspect of this summit?"'}
+          prompt={'"What was the most valuable aspect of this event?"'}
           distribution={q3}
           layout="stack"
         />

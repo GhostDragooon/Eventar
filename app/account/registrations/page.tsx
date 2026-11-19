@@ -24,12 +24,10 @@ export default async function RegistrationsPage() {
         <ClaimBanner count={unlinkedCount} />
         <LicenceBanner missing={licenceMissing} />
         {!failed && live.length + upcoming.length === 0 && (
-          <EmptyState action={{ href: '/events', label: 'Find events' }}>
-            You are not registered for any upcoming events. Past events are in History.
-          </EmptyState>
+          <EmptyState title="No upcoming events" action={{ href: '/events', label: 'Find events' }} />
         )}
         {live.length > 0 && (
-          <Section title="Check-in is open">
+          <Section title="Happening now">
             <Rows items={live} mode="list" nowMs={nowMs} />
           </Section>
         )}

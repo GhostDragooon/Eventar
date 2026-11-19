@@ -222,7 +222,7 @@ function ManualCodeDialog({
                 id="manual-code-hint"
                 className="text-center font-label-md text-label-md text-on-surface-variant"
               >
-                {submitting ? 'Checking in…' : '6 characters (no 0, O, 1, I, or L). Legacy WK- codes also accepted.'}
+                {submitting ? 'Checking in…' : '6 characters (no 0, O, 1, I, or L).'}
               </p>
             )}
           </>

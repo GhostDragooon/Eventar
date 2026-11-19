@@ -64,10 +64,11 @@ describe('RegistrationSection — G6 confirmations "sent" wording', () => {
   });
 
   it('omits the Confirmations stat on the drafted lifecycle (publish copy only)', () => {
-    const { queryByText, getByText } = render(
+    const { queryByText, getByText, getByRole } = render(
       <RegistrationSection {...baseProps} lifecycle="drafted" confirmationsSent={5} />,
     );
-    expect(getByText('Publish to begin registration.')).toBeInTheDocument();
+    expect(getByText('Publish this event to open registration.')).toBeInTheDocument();
+    expect(getByRole('link', { name: 'Edit event' })).toHaveAttribute('href', expect.stringMatching(/^\/events\/.+\/edit$/));
     expect(queryByText('Confirmations')).toBeNull();
     expect(queryByText('5 sent')).toBeNull();
   });

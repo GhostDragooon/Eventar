@@ -20,7 +20,7 @@ describe('resolveAuthError', () => {
     expect(resolveAuthError('exchange_failed')).toMatch(/different browser or app/i);
     expect(resolveAuthError('exchange_failed')).toMatch(/same browser/i);
     expect(resolveAuthError('not_authorized')).toMatch(/couldn't log you in as an organiser/i);
-    expect(resolveAuthError('unavailable')).toMatch(/could not check your organizer access/i);
+    expect(resolveAuthError('unavailable')).toMatch(/could not check your organiser access/i);
   });
 
   // D1 (2026-09-25): proxy.ts no longer signs a signed-in non-organiser out;
@@ -61,7 +61,7 @@ describe('resolveAuthError', () => {
     expect(resolveAuthError('not_authorized', 'attendee')).toMatch(/email is not recognised/i);
     expect(resolveAuthError('not_authorized', 'attendee')).not.toMatch(/organizer|staff/i);
     expect(resolveAuthError('unavailable', 'attendee')).toMatch(/could not verify your account/i);
-    expect(resolveAuthError('unavailable', 'attendee')).not.toMatch(/organizer access|staff access/i);
+    expect(resolveAuthError('unavailable', 'attendee')).not.toMatch(/organi[sz]er access|staff access/i);
   });
 });
 

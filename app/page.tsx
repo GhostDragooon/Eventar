@@ -39,7 +39,7 @@ const FEATURES = {
     },
     {
       t: 'Check in once, on the day',
-      d: 'Scan your personal QR at the door. If your profile and membership number are set up, CME/CPD points are released straight to your Eventar record.',
+      d: 'Scan your personal QR at the door. If your profile and licence are set up, CME/CPD points are released straight to your Eventar record.',
     },
     {
       t: 'See what you did through Eventar',

@@ -83,20 +83,20 @@ describe('RecordClient — attendance section', () => {
   it('renders an attended row with a net-active credit as "On record", not the attended-status colour', () => {
     render(<RecordClient attendance={[attendanceRow({ has_credit: true })]} credits={[]} />);
     expect(screen.getByText('HK Cardiology Update 2026')).toBeInTheDocument();
-    expect(screen.getByRole('status', { name: /credit: on record/i })).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: /points: on record/i })).toBeInTheDocument();
   });
 
   it('renders an attended row with no active credit as "Not yet on record" — never success-green (spec §7)', () => {
     render(<RecordClient attendance={[attendanceRow({ has_credit: false })]} credits={[]} />);
-    expect(screen.getByRole('status', { name: /credit: not yet on record/i })).toBeInTheDocument();
-    expect(screen.queryByRole('status', { name: /credit: on record/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('status', { name: /points: not on record yet/i })).toBeInTheDocument();
+    expect(screen.queryByRole('status', { name: /points: on record/i })).not.toBeInTheDocument();
   });
 
   it('renders "Couldn\'t check" (not a confident "Not yet on record") when the ledger read failed', () => {
     render(<RecordClient attendance={[attendanceRow({ has_credit: null })]} credits={[]} />);
-    expect(screen.getByRole('status', { name: /credit: couldn.t check right now/i })).toBeInTheDocument();
-    expect(screen.queryByRole('status', { name: /credit: not yet on record/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('status', { name: /credit: on record/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('status', { name: /points: couldn.t check right now/i })).toBeInTheDocument();
+    expect(screen.queryByRole('status', { name: /points: not on record yet/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('status', { name: /points: on record/i })).not.toBeInTheDocument();
   });
 
   it('falls back to "Event removed" when the admin event lookup found nothing', () => {

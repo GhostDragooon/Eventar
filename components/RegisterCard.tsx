@@ -8,7 +8,6 @@ import { cn } from '@/lib/utils';
 import { registerForEvent } from '@/app/(public)/events/[id]/actions';
 import type { EmailDelivery } from '@/app/(public)/events/[id]/schema';
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
-import { DevEmailStubStrip } from '@/components/dev/DevEmailStubStrip';
 
 type Props = {
   eventId: string;
@@ -82,7 +81,6 @@ export default function RegisterCard({
   maxAttendees,
   currentCount,
   lifecycle,
-  deliveryLive,
   defaultName,
   defaultEmail,
   signInHref,
@@ -161,10 +159,6 @@ export default function RegisterCard({
               : <>Closer to the event we&apos;ll email your personal check-in pass.</>}
           </p>
         </div>
-        {/* Item 3: inline dev-stub marker in the success block. Rendered here
-            only when the parent tells us delivery is stubbed; the same strip
-            appears at the top of the operator dashboard. */}
-        {!deliveryLive && <DevEmailStubStrip />}
         {/* Cancel fine print: only mention "reply to your confirmation email"
             when a confirmation email was actually accepted by the provider.
             In the queued_dev (stub) and failed branches, no email reached the
@@ -175,7 +169,7 @@ export default function RegisterCard({
           <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant m-0">
             {state.emailDelivery === 'sent'
               ? 'Need to cancel? Reply to your confirmation email.'
-              : 'Need to cancel? See event staff at check-in — this browser tab is your proof of registration.'}
+              : 'Need to cancel? See event staff at check-in.'}
           </p>
         )}
         {/* FR-003: a way into the account from the result. Signed out (the host says so
@@ -230,19 +224,21 @@ export default function RegisterCard({
   // 60-min check-in window are the most common visitors of this state, and
   // "closed" alone is a dead end for them — point them to staff instead.
   if (lifecycle !== 'registering') {
-    const { title, body } =
+    const { title, body }: { title: string; body?: string } =
       lifecycle === 'completed'
-        ? { title: 'Event ended', body: 'This event has already ended.' }
+        ? { title: 'Event ended' }
         : lifecycle === 'live'
           ? {
               title: 'Event in progress',
               body: 'Registration has closed. If you’re at the venue, please see the event staff at check-in.',
             }
-          : { title: 'Registration closed', body: 'Registration for this event has closed.' };
+          : lifecycle === 'cancelled'
+            ? { title: 'Event cancelled' }
+            : { title: 'Registration isn’t open' };
     return (
       <Section>
         <h2 className="font-title-lg text-title-lg text-on-surface m-0">{title}</h2>
-        <p className="font-body-md text-body-md text-on-surface-variant m-0">{body}</p>
+        {body && <p className="font-body-md text-body-md text-on-surface-variant m-0">{body}</p>}
       </Section>
     );
   }
@@ -253,8 +249,7 @@ export default function RegisterCard({
       <Section>
         <h2 className="font-title-lg text-title-lg text-on-surface m-0">At capacity</h2>
         <p className="font-body-md text-body-md text-on-surface-variant m-0">
-          This event is at capacity ({currentCount}/{maxAttendees} registered).
-          Future events will open registration soon.
+          {currentCount}/{maxAttendees} registered.
         </p>
       </Section>
     );
@@ -305,9 +300,9 @@ export default function RegisterCard({
           <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>account_circle</span>
           <span className="flex-1">
             <Link href={signInHref} className="text-primary-ink hover:underline font-semibold">
-              Log in or sign up first
+              Log in or sign up
             </Link>{' '}
-            to link this registration to your account — required to release CME/CPD points for accredited events.
+            to release CME/CPD points for accredited events.
           </span>
         </p>
       )}
@@ -353,13 +348,11 @@ export default function RegisterCard({
         >
           <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>link</span>
           <span className="flex-1">
-            We noticed{' '}
             {unlinkedRegistrationsCount === 1
-              ? '1 earlier registration'
-              : `${unlinkedRegistrationsCount} earlier registrations`}{' '}
-            under this email that aren&apos;t linked to your account yet.{' '}
+              ? '1 earlier registration under this email isn’t linked to your account.'
+              : `${unlinkedRegistrationsCount} earlier registrations under this email aren’t linked to your account.`}{' '}
             <Link href="/account" className="text-primary-ink hover:underline font-semibold">
-              Link {unlinkedRegistrationsCount === 1 ? 'it' : 'them'}
+              Link past registrations
             </Link>
             .
           </span>
@@ -436,7 +429,7 @@ function Section({ children }: { children: React.ReactNode }) {
  * Success-block sentence per emailDelivery branch (playbook item 1).
  * Verbatim from Eventar_Demo_Diagnose_and_Optimize.txt §2.1(1):
  *   sent    → "A confirmation has been sent to …"
- *   queued_dev → "You're registered. Email delivery is in dev mode — check the operator console."
+ *   queued_dev → "You're registered. We couldn't send email; show this screen to staff."
  *   failed  → "You're registered. We couldn't send email; show this screen to staff."
  * The email string is a JSX fragment only for the `sent` branch (it renders
  * `<strong>{email}</strong>` inline); the other two never name the recipient,
@@ -454,8 +447,8 @@ function successDeliveryCopy(emailDelivery: EmailDelivery, email: string, isStaf
   // this screen to show it to staff, which makes no sense here.
   if (emailDelivery === 'queued_dev') {
     return isStaff
-      ? 'Registered. Email delivery is in dev mode, so check the operator console.'
-      : "You're registered. Email delivery is in dev mode — check the operator console.";
+      ? 'Registered. No confirmation email was sent.'
+      : "You're registered. We couldn't send email; show this screen to staff.";
   }
   // failed
   return isStaff

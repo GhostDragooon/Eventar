@@ -165,10 +165,6 @@ function LoginForm() {
         submitLabel="Next"
       />
 
-      <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant text-center m-0">
-        The link expires after 15 minutes and works once.
-      </p>
-
       <details className="group">
         <summary className="cursor-pointer font-body-md text-body-md text-[color:var(--on-primary-container)] hover:underline list-none">
           Trouble logging in?
@@ -177,13 +173,10 @@ function LoginForm() {
           <li>
             {isInvite
               ? 'Log-in links expire after 15 minutes and work once. Request a fresh one above.'
-              : 'Links expire after 15 minutes and work once — request a fresh one above.'}
+              : 'Links expire after 15 minutes and work once. Request a new one above.'}
           </li>
           <li>Check spam, and make sure you opened the newest email.</li>
-          <li>
-            Open the link in the same browser you asked for it in. A link opened on another device,
-            or inside a mail app&apos;s built-in browser, won&apos;t log you in.
-          </li>
+          <li>Open the link in the same browser you asked for it in.</li>
           {isInvite ? (
             <li>
               Your invite link is separate from the log-in link, and works once. If it stops
@@ -191,15 +184,7 @@ function LoginForm() {
             </li>
           ) : (
             <>
-              <li>
-                Only organiser emails can log in. If yours isn&apos;t on the list, ask an admin to
-                add you.
-              </li>
-              <li>Changing address? Log in with your current one, then update it from Settings.</li>
-              <li>
-                Lost access to your inbox entirely? Ask an admin to update your organiser record —
-                magic-link-only log-in means we can&apos;t self-serve you back in from this screen.
-              </li>
+              <li>Only organiser emails can log in. Ask an admin to add yours.</li>
             </>
           )}
         </ul>
@@ -272,8 +257,7 @@ function PractitionerPanel({
           </>
         ) : (
           <>You&apos;re signed in. Organiser log in is for organiser emails only.</>
-        )}{' '}
-        Attending events? Your account is below. Invited as an organiser? Open the invite link your admin sent you.
+        )}
       </p>
       <div className="flex flex-col gap-sm">
         {hasRecord ? (

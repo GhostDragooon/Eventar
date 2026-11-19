@@ -35,7 +35,8 @@ describe('RegisterCard — registration window (form layer of the 3-layer rule)'
   it('hides the form and explains closure when lifecycle is upcoming', () => {
     render(<RegisterCard {...baseProps} lifecycle="upcoming" />);
     expect(screen.queryByRole('button', { name: /register/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/registration for this event has closed/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /registration isn.t open/i })).toBeInTheDocument();
+    expect(screen.queryByText(/has closed/i)).not.toBeInTheDocument();
   });
 
   it('hides the form and points walk-ups to check-in staff when the event is live', () => {
@@ -48,13 +49,20 @@ describe('RegisterCard — registration window (form layer of the 3-layer rule)'
   it('hides the form with an "ended" message when the event is completed', () => {
     render(<RegisterCard {...baseProps} lifecycle="completed" />);
     expect(screen.queryByRole('button', { name: /register/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/this event has already ended/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /event ended/i })).toBeInTheDocument();
+    expect(screen.queryByText(/already ended/i)).not.toBeInTheDocument();
+  });
+
+  it('says "Event cancelled" with no body when the event is cancelled', () => {
+    render(<RegisterCard {...baseProps} lifecycle="cancelled" />);
+    expect(screen.getByRole('heading', { name: 'Event cancelled' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /register/i })).not.toBeInTheDocument();
   });
 
   it('prefers the closed message over the capacity message when both apply', () => {
     render(<RegisterCard {...baseProps} maxAttendees={10} currentCount={10} lifecycle="completed" />);
     expect(screen.queryByText(/at capacity/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/this event has already ended/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /event ended/i })).toBeInTheDocument();
   });
 });
 
@@ -79,7 +87,7 @@ describe('RegisterCard — self-serve walk-in orchestration', () => {
     const { rerender } = render(
       <RegisterCard {...baseProps} lifecycle="registering" />,
     );
-    expect(screen.queryByRole('link', { name: /log in or sign up first/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^log in or sign up$/i })).not.toBeInTheDocument();
 
     rerender(
       <RegisterCard
@@ -88,7 +96,7 @@ describe('RegisterCard — self-serve walk-in orchestration', () => {
         signInHref="/account/sign-in?next=/events/xyz"
       />,
     );
-    const link = screen.getByRole('link', { name: /log in or sign up first/i });
+    const link = screen.getByRole('link', { name: /^log in or sign up$/i });
     expect(link).toHaveAttribute('href', '/account/sign-in?next=/events/xyz');
   });
 
@@ -100,7 +108,7 @@ describe('RegisterCard — self-serve walk-in orchestration', () => {
         signInHref="/account/sign-in?next=/events/xyz"
       />,
     );
-    expect(screen.queryByRole('link', { name: /log in or sign up first/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^log in or sign up$/i })).not.toBeInTheDocument();
   });
 
   it('renders the "Registering as" attribution line when signed-in defaults are present', () => {
@@ -185,8 +193,8 @@ describe('RegisterCard — self-serve walk-in orchestration', () => {
         unlinkedRegistrationsCount={2}
       />,
     );
-    expect(screen.getByText(/we noticed 2 earlier registrations/i)).toBeInTheDocument();
-    const link = screen.getByRole('link', { name: /^link them$/i });
+    expect(screen.getByText(/2 earlier registrations under this email aren.t linked to your account/i)).toBeInTheDocument();
+    const link = screen.getByRole('link', { name: /^link past registrations$/i });
     expect(link).toHaveAttribute('href', '/account');
   });
 
@@ -201,8 +209,8 @@ describe('RegisterCard — self-serve walk-in orchestration', () => {
         unlinkedRegistrationsCount={1}
       />,
     );
-    expect(screen.getByText(/we noticed 1 earlier registration/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /^link it$/i })).toBeInTheDocument();
+    expect(screen.getByText(/1 earlier registration under this email isn.t linked to your account/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^link past registrations$/i })).toBeInTheDocument();
   });
 
   it('hides the discovery-beat line when signed-out (count is meaningless without a session)', () => {
@@ -214,7 +222,7 @@ describe('RegisterCard — self-serve walk-in orchestration', () => {
         unlinkedRegistrationsCount={5}
       />,
     );
-    expect(screen.queryByText(/we noticed/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/earlier registrations? under this email/i)).not.toBeInTheDocument();
   });
 });
 
@@ -252,8 +260,8 @@ describe('RegisterCard — organiser (staff) session (D2)', () => {
 
   it('hides the "we noticed N earlier registrations" claim nudge', () => {
     render(<RegisterCard {...staffProps} />);
-    expect(screen.queryByText(/we noticed/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /^link them$/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/earlier registrations? under this email/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^link past registrations$/i })).not.toBeInTheDocument();
   });
 
   it('keeps the form fully usable: submitting sends exactly what was typed', async () => {
@@ -309,7 +317,7 @@ describe('RegisterCard — organiser (staff) session (D2)', () => {
     expect(screen.queryByText(D2_LINE)).not.toBeInTheDocument();
     // …and keeps its own attribution + nudge, unchanged.
     expect(screen.getByText(/registering as/i)).toBeInTheDocument();
-    expect(screen.getByText(/we noticed 2 earlier registrations/i)).toBeInTheDocument();
+    expect(screen.getByText(/2 earlier registrations under this email aren.t linked to your account/i)).toBeInTheDocument();
   });
 });
 

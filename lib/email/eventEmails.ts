@@ -187,7 +187,7 @@ async function runBulkSend(
   // ticks, so setting the key afterwards would never recover the scheduler.
   if (emailMisconfigured()) {
     console.error('[runBulkSend] RESEND_API_KEY is unset in production, nothing sent', { purpose, eventId });
-    return zero('Email is not configured on this server (RESEND_API_KEY is unset). Nothing was sent.');
+    return zero('Email is off on this server. Nothing was sent.');
   }
 
   const admin = supabaseAdmin();

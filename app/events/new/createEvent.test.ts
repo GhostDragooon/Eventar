@@ -100,7 +100,7 @@ describe('createEvent — publishing', () => {
   it('a 42501 on a DRAFT is not dressed up as a publish refusal', async () => {
     rpc.mockResolvedValue({ data: null, error: { code: '42501', message: 'something else' } });
     const res = await createEvent({ event, blocks: [], status: 'draft' });
-    expect(res).toEqual({ error: 'something else' });
+    expect(res).toEqual({ error: 'Could not save the event. Try again.' });
   });
 });
 

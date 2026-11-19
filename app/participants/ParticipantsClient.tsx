@@ -61,11 +61,11 @@ export function ParticipantsClient({ participants }: { participants: Participant
         <table className="w-full text-left">
           <thead>
             <tr className="border-b border-outline-variant bg-surface-container-lowest">
-              <th className="px-md py-sm font-title-sm text-title-sm text-on-surface-variant">Name</th>
-              <th className="px-md py-sm font-title-sm text-title-sm text-on-surface-variant">Email</th>
-              <th className="px-md py-sm font-title-sm text-title-sm text-on-surface-variant text-right">Events</th>
-              <th className="px-md py-sm font-title-sm text-title-sm text-on-surface-variant text-right">Attended</th>
-              <th className="px-md py-sm font-title-sm text-title-sm text-on-surface-variant">Last registration</th>
+              <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant">Name</th>
+              <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant">Email</th>
+              <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant text-right">Events</th>
+              <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant text-right">Attended</th>
+              <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant">Last registration</th>
             </tr>
           </thead>
           <tbody>

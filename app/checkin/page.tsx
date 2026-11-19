@@ -6,6 +6,8 @@ import { StaffShell } from '@/components/shell/StaffShell';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 import { formatInTz } from '@/lib/tz';
 import { ownEvents } from '@/app/dashboard/data';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 export const metadata = {
   title: 'Check-in',
@@ -90,7 +92,8 @@ export default async function CheckinIndexPage() {
 
       {rows.length === 0 ? (
         <div className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-xl text-center">
-          <p className="font-body-md text-body-md text-on-surface-variant">No published events to check in. Publish an event and its check-in desk appears here.</p>
+          <p className="font-body-md text-body-md text-on-surface-variant">No published events.</p>
+          <Link href="/events/new" className={cn(buttonVariants(), 'mt-md h-11 gap-sm px-lg font-label-md text-label-md')}>Create event</Link>
         </div>
       ) : (
         <ul className="flex flex-col gap-sm">

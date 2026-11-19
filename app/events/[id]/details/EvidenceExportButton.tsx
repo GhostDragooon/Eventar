@@ -61,7 +61,7 @@ export function EvidenceExportButton({
   const help =
     state.kind === 'error' ? state.message
     : state.kind === 'ok' ? `Downloaded ${state.entryCount} ledger ${state.entryCount === 1 ? 'entry' : 'entries'} across ${state.bodyCount} ${state.bodyCount === 1 ? 'body' : 'bodies'}.`
-    : disabled ? 'Available once credit has posted for this event.'
+    : disabled ? 'Available once credit is posted.'
     : null;
 
   return (

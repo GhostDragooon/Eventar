@@ -67,7 +67,7 @@ describe('EmailDeliveryStrip', () => {
     expect(screen.getByText(/^stubbed$/i)).toBeTruthy();
     // Being explicit about WHY the stripes are stalled so a reviewer does not
     // read it as a delivery failure (rule 12, "fail visibly, not silently").
-    expect(screen.getByText(/RESEND_API_KEY is unset/i)).toBeTruthy();
+    expect(screen.getByText(/Email is off on this server\. New sends record as stalled/i)).toBeTruthy();
   });
 
   it('ignores rows for purposes the strip does not surface (harden vs schema drift)', () => {

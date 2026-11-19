@@ -1,3 +1,6 @@
+import Link from 'next/link';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
 import { SectionShell, SectionStub } from './SectionChrome';
 import { RegistrationCloseEditor } from './RegistrationCloseEditor';
@@ -49,7 +52,10 @@ export function RegistrationSection({
   if (lifecycle === 'drafted') {
     return (
       <SectionShell index="01" title="Registration" meta="not open yet">
-        <p className="font-body-md text-body-md text-on-surface-variant">Publish to begin registration.</p>
+        <p className="font-body-md text-body-md text-on-surface-variant">Publish this event to open registration.</p>
+        <Link href={`/events/${eventId}/edit`} className={cn(buttonVariants({ variant: 'outline' }), 'mt-sm min-h-11 px-md')}>
+          Edit event
+        </Link>
       </SectionShell>
     );
   }

@@ -117,7 +117,7 @@ export function NeedsAttention({ items, limit }: { items: AttentionItem[]; limit
         // Spec rule 6: every empty state names the next action. This one is a
         // genuinely good state, so it says so rather than inventing a task.
         <p className="px-lg py-xl text-center text-[calc(13px*var(--text-scale))] text-on-surface-variant">
-          Nothing needs you. Sends are landing, accreditations are confirmed and no survey closes today.
+          Nothing needs attention.
         </p>
       ) : (
         <>

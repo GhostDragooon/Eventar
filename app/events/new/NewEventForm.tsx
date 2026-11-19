@@ -620,8 +620,8 @@ export default function NewEventForm(props: Props) {
             onChange={setHostedBy}
           />
           <PartnersSection
-            label="Organized by"
-            emptyHint="Add the bodies that organize this event (optional)."
+            label="Organised by"
+            emptyHint="Add the bodies that organise this event (optional)."
             value={organizedBy}
             onChange={setOrganizedBy}
           />
@@ -904,14 +904,6 @@ export default function NewEventForm(props: Props) {
           Your role can&apos;t publish events. Save a draft and ask an organiser admin to publish it.
         </p>
       )}
-      {/* Where Publish is the blue button, say what it costs BEFORE the click: a published
-          event is read-only until package P9b, so a first-time organiser could publish a
-          typo they cannot fix (user-lens 2026-10-09). The edit card says the same. */}
-      {!isEdit && canPublish && (
-        <p className="font-body-md text-body-md text-on-surface-variant">
-          Publish event makes the registration page live. Details cannot be edited after publishing yet, so check them first.
-        </p>
-      )}
       {!isEdit && canPublish && confirmFacts && (
         <PublishConfirmDialog
           open
@@ -933,11 +925,11 @@ export default function NewEventForm(props: Props) {
         description="You have changes that are not saved. Leaving now loses them."
         footer={
           <>
-            <Button type="button" variant="outline" className="min-h-11 px-md" onClick={leave}>
-              Discard changes
-            </Button>
-            <Button type="button" className="min-h-11 px-md" onClick={() => setConfirmDiscard(false)}>
+            <Button type="button" variant="outline" className="min-h-11 px-md" onClick={() => setConfirmDiscard(false)}>
               Keep editing
+            </Button>
+            <Button type="button" className="min-h-11 px-md bg-error text-on-error hover:bg-error/90" onClick={leave}>
+              Discard changes
             </Button>
           </>
         }

@@ -99,7 +99,7 @@ describe('bulk send in production without an email key', () => {
 
     for (let tick = 1; tick <= 4; tick++) {
       const r = await sendReminderToRegistrants(event);
-      expect(r.error).toMatch(/not configured/i);
+      expect(r.error).toMatch(/email is off on this server/i);
       expect(r).toMatchObject({ sent: 0, failed: 0, gaveUp: 0 });
     }
     expect(rows).toHaveLength(0);
@@ -117,7 +117,7 @@ describe('bulk send in production without an email key', () => {
     vi.stubEnv('RESEND_API_KEY', '');
 
     const r = await sendReminderToRegistrants(event, { manual: true });
-    expect(r.error).toMatch(/not configured/i);
+    expect(r.error).toMatch(/email is off on this server/i);
     expect(rows).toHaveLength(0);
   });
 

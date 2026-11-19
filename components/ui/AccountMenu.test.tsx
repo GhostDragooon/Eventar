@@ -29,13 +29,13 @@ describe('AccountMenu', () => {
     expect(screen.getByRole('menuitem', { name: /^profile$/i })).toHaveAttribute('href', '/account/profile');
     expect(screen.getByRole('menuitem', { name: /^account$/i })).toHaveAttribute('href', '/account');
     expect(screen.getByRole('menuitem', { name: /sign out/i })).toBeInTheDocument();
-    expect(screen.queryByRole('menuitem', { name: /claim past events/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /link past registrations/i })).not.toBeInTheDocument();
   });
 
-  it('shows "Claim past events" only when unlinkedCount > 0', () => {
+  it('shows "Link past registrations" only when unlinkedCount > 0', () => {
     render(<AccountMenu complete unlinkedCount={3} />);
     fireEvent.click(screen.getByRole('button', { name: /^account$/i }));
-    expect(screen.getByRole('menuitem', { name: /claim past events/i })).toHaveAttribute('href', '/account/claim');
+    expect(screen.getByRole('menuitem', { name: /link past registrations/i })).toHaveAttribute('href', '/account/claim');
   });
 
   it('an incomplete account only shows Account + Sign out — no History, Profile, or Claim', () => {
@@ -47,7 +47,7 @@ describe('AccountMenu', () => {
     expect(screen.getByRole('menuitem', { name: /sign out/i })).toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: /^history$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: /^profile$/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('menuitem', { name: /claim past events/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /link past registrations/i })).not.toBeInTheDocument();
   });
 
   it('Escape closes the open menu', () => {

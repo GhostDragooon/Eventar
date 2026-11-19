@@ -97,23 +97,10 @@ function AttendeeSignInForm() {
           Trouble logging in?
         </summary>
         <ul className="mt-sm font-body-md text-[calc(13px*var(--text-scale))] text-on-surface-variant leading-relaxed list-disc pl-lg flex flex-col gap-xs">
-          <li>Links expire after 15 minutes and work once — request a fresh one above.</li>
+          <li>Links expire after 15 minutes and work once. Request a new one above.</li>
           <li>Check spam, and make sure you opened the newest email.</li>
-          <li>
-            Open the link in the same browser you asked for it in. A link opened on another device,
-            or inside a mail app&apos;s built-in browser, won&apos;t log you in.
-          </li>
-          <li>
-            Use the same address you registered with — we look up the account by that address.
-          </li>
-          <li>
-            Link never arrives? Try another browser, or ask the event organiser about your
-            registration.
-          </li>
-          <li>
-            Lost the inbox entirely? We can&apos;t recover a magic-link account from this screen.
-            Contact the event organiser.
-          </li>
+          <li>Open the link in the same browser you asked for it in.</li>
+          <li>Use the address you registered with.</li>
         </ul>
       </details>
     </AttendeeSignInShell>

@@ -594,6 +594,9 @@ function CheckedInView({
           </span>
         </p>
       )}
+      <Link href="/events" className="text-primary-ink hover:underline font-semibold text-center">
+        Browse events
+      </Link>
     </>
   );
 }

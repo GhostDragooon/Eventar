@@ -57,7 +57,7 @@ const STEPS_BY_AUDIENCE: Record<Audience, readonly { t: string; d: string; art: 
     },
     {
       t: 'Points land on your Eventar record',
-      d: 'Once your profile and membership number are complete, points release straight to your Eventar record — no forms to submit later.',
+      d: 'Once your profile and licence are complete, points release straight to your Eventar record — no forms to submit later.',
       art: 'ledger',
     },
     {

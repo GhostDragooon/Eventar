@@ -6,6 +6,8 @@ import { StaffShell } from '@/components/shell/StaffShell';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 import { formatInTz } from '@/lib/tz';
 import { ownEvents } from '@/app/dashboard/data';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 export const metadata = {
   title: 'History',
@@ -91,7 +93,8 @@ export default async function AnalyticsIndexPage() {
 
       {completed.length === 0 ? (
         <div className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-xl text-center">
-          <p className="font-body-md text-body-md text-on-surface-variant">No completed events yet. An event appears here once it has finished.</p>
+          <p className="font-body-md text-body-md text-on-surface-variant">No completed events yet.</p>
+          <Link href="/dashboard" className={cn(buttonVariants(), 'mt-md h-11 gap-sm px-lg font-label-md text-label-md')}>Go to events</Link>
         </div>
       ) : (
         <ul className="flex flex-col gap-sm">

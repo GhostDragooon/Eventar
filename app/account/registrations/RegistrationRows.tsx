@@ -40,10 +40,10 @@ export function LoadFailed() {
 }
 
 /** The empty state: where you are, what to do, where it goes next. One primary action. */
-export function EmptyState({ children, action }: { children: React.ReactNode; action: { href: string; label: string } }) {
+export function EmptyState({ title, children, action }: { title: string; children?: React.ReactNode; action: { href: string; label: string } }) {
   return (
-    <Section title="Nothing here yet">
-      <p className="m-0 mb-md font-body-md text-body-md text-on-surface-variant">{children}</p>
+    <Section title={title}>
+      {children && <p className="m-0 mb-md font-body-md text-body-md text-on-surface-variant">{children}</p>}
       <Link href={action.href} className={PRIMARY}>
         {action.label}
       </Link>
@@ -72,7 +72,7 @@ function Row({ r, mode, nowMs }: { r: AttendanceRecordView; mode: 'list' | 'pass
   return (
     <li className="flex flex-wrap items-center justify-between gap-md border-b border-outline-variant pb-md last:border-b-0 last:pb-0">
       <div className="min-w-0 flex-1 basis-60 space-y-xs">
-        <p className="m-0 font-title-md text-title-md text-on-surface">
+        <p className="m-0 text-body-md font-semibold text-on-surface">
           <Link href={`/events/${r.event_id}`} className="hover:underline">
             {r.event_title ?? 'Event removed'}
           </Link>

@@ -26,7 +26,7 @@ export function formatSendResult(r: EmailSendCounts): string {
   if (r.error) return r.error;
   const parts: string[] = [];
   if (r.sent) parts.push(`${r.sent} sent`);
-  if (r.queued) parts.push(`${r.queued} logged (dev — not emailed)`);
+  if (r.queued) parts.push(`${r.queued} recorded, not emailed`);
   if (r.skipped) parts.push(`${r.skipped} already sent`);
   // A 'queued' row that will never be delivered. Reporting it as "already
   // sent" — which is what it looked like before this counter existed — is a

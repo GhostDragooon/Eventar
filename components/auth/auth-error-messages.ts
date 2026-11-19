@@ -22,7 +22,7 @@ const AUTH_ERROR_MESSAGES_ORGANIZER: Readonly<Record<string, string>> = {
     "This log-in link couldn't be completed. It may have expired, or been opened in a different browser or app from the one you asked for it in. Request a new link below and open it in the same browser.",
   not_authorized: ORGANISER_WRONG_DOOR,
   unavailable:
-    'We could not check your organizer access just now. This is on our side — please try again in a moment.',
+    'We could not check your organiser access just now. This is on our side — please try again in a moment.',
   // `staff` allows one email in two organisations; the single-row read then fails (PGRST116) and proxy.ts
   // sends the person here. Not a transient outage, so no "try again". Organiser door only (CX-07).
   multiple_organisations:

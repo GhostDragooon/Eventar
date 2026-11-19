@@ -151,9 +151,10 @@ export async function createEvent(input: {
     if (statusParse.data === 'published' && error.code === '42501') {
       return { error: PUBLISH_REFUSED };
     }
-    return { error: error.message };
+    console.error('createEvent failed', error.code);
+    return { error: 'Could not save the event. Try again.' };
   }
-  if (!data || typeof data !== 'string') return { error: 'no id returned' };
+  if (!data || typeof data !== 'string') return { error: 'Could not save the event. Try again.' };
 
   // CPD accreditation, if the organiser set it on the create form. Routed
   // through set_event_cpd_config — the SAME audited definer the /edit and

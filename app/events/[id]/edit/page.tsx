@@ -377,23 +377,16 @@ export default async function StaffEventEditPage({
           )}
           {writable && event.status !== 'draft' && (
             <p className="font-body-md text-body-md text-on-surface-variant">
-              Details are locked after publishing: nobody can change the title, date, venue or agenda yet.
-              {event.status === 'published' ? (
+              Details are locked after publishing.
+              {event.status === 'published' && (
                 <>
                   {/* Said only to a role that can set accreditation; a member was told it could, next to "Your
                       role can't set accreditation" (user-lens 2026-11-07). */}
-                  {canAccredit ? ' You can still change the CPD accreditation above (until credit has been issued) and, while' : ' While'}
-                  {' '}registration is open, the registration close date on the{' '}
-                  <Link href={`/events/${event.id}/details`} className="text-primary-ink hover:underline">Event Manager</Link>{' '}
-                  page. To stop this event, cancel it from the{' '}
-                  <Link href="/dashboard" className="text-primary-ink hover:underline">Events</Link>{' '}
-                  page; to change anything else, create a new event there.
-                </>
-              ) : (
-                <>
-                  {' '}To run it with different details, create a new event from the{' '}
-                  <Link href="/dashboard" className="text-primary-ink hover:underline">Events</Link>{' '}
-                  page.
+                  {canAccredit ? ' You can still change accreditation above and the' : ' You can still change the'}
+                  {' '}registration close date on{' '}
+                  <Link href={`/events/${event.id}/details`} className="text-primary-ink hover:underline">Event Manager</Link>.
+                  {' '}To stop this event, cancel it from{' '}
+                  <Link href="/dashboard" className="text-primary-ink hover:underline">Events</Link>.
                 </>
               )}
             </p>
@@ -493,7 +486,7 @@ export default async function StaffEventEditPage({
                 body={
                   registrationClosed
                     ? `Registration closed (${atCapacity ? 'capacity reached' : 'event ended'}).`
-                    : 'Available once registration closes (event ends or capacity is reached).'
+                    : 'Available once registration closes.'
                 }
               >
                 <ExportRegistrantsButton eventId={event.id} disabled={!registrationClosed} />

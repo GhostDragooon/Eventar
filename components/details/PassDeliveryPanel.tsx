@@ -27,7 +27,7 @@ function Panel({ meta, children }: { meta: string; children: React.ReactNode }) 
   return (
     <div className="mt-md rounded-[14px] border border-outline-variant bg-surface-container-low p-md">
       <div className="flex items-baseline gap-sm">
-        <h3 className="text-label-lg font-semibold text-on-surface">Pass delivery</h3>
+        <h3 className="text-body-md font-semibold text-on-surface">Pass delivery</h3>
         <span className="ml-auto font-label-md text-label-md normal-case tracking-normal tabular-nums text-on-surface-variant">
           {meta}
         </span>
@@ -102,14 +102,14 @@ export function PassDeliveryPanel({
     <Panel
       meta={
         stubbed
-          ? `${logged} logged (dev — not emailed)`
+          ? `${logged} recorded, not emailed`
           : `${sent} of ${registrations.length} delivered${retrying > 0 ? ` · ${retrying} retrying` : ''}`
       }
     >
       {flagged.length === 0 ? (
         <p className="mt-sm text-body-sm text-on-surface-variant">
           {stubbed
-            ? 'No email provider is configured, so passes were recorded but never sent. Nothing is wrong with this event.'
+            ? 'Passes were recorded, not sent. Email is off on this server.'
             : sent === registrations.length
               ? 'Everyone has their check-in pass.'
               : 'Nothing needs attention yet — passes go out when check-in opens.'}

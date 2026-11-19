@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 // Designed confirmation dialog — replaces window.confirm() everywhere.
 // Accessible: role=dialog + aria-modal, focus moves to the primary action,
@@ -63,35 +65,25 @@ export function ConfirmDialog({
       {/* Scrim — strong enough to isolate the dialog. Backdrop click cancels;
           it is NOT a named button (a second "Cancel" in the a11y tree reads
           as a duplicate) — keyboard users have Escape + the real Cancel. */}
-      <div aria-hidden onClick={backdropCancels ? onCancel : undefined} className="absolute inset-0 bg-black/50" />
-      <div className="relative w-full max-w-[420px] rounded-[16px] bg-surface-container-lowest border border-outline-variant shadow-xl p-lg">
+      <div aria-hidden onClick={backdropCancels ? onCancel : undefined} className="absolute inset-0 bg-on-surface/60" />
+      <div className="relative w-full max-w-[420px] rounded-[20px] bg-surface-container-lowest border border-outline-variant shadow-xl p-lg">
         <h2 id="confirm-dialog-title" className="text-[calc(18px*var(--text-scale))] font-bold tracking-[-0.01em] text-on-surface mb-xs">
           {title}
         </h2>
         <p id="confirm-dialog-body" className="font-body-md text-body-md text-on-surface-variant mb-lg">{body}</p>
         <div className="flex justify-end gap-sm">
-          <button
-            ref={cancelRef}
-            type="button"
-            onClick={onCancel}
-            disabled={pending}
-            className="min-h-11 px-lg py-sm rounded-lg border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-50"
-          >
+          <Button ref={cancelRef} type="button" variant="outline" onClick={onCancel} disabled={pending} className="min-h-11 px-lg">
             {cancelLabel}
-          </button>
-          <button
+          </Button>
+          <Button
             ref={confirmRef}
             type="button"
             onClick={onConfirm}
             disabled={pending || confirmDisabled}
-            className={`min-h-11 px-lg py-sm rounded-lg font-label-md text-label-md transition-opacity disabled:opacity-50 ${
-              tone === 'danger'
-                ? 'bg-[color:var(--error)] text-white hover:opacity-90'
-                : 'bg-primary text-on-primary hover:opacity-90'
-            }`}
+            className={cn('min-h-11 px-lg', tone === 'danger' && 'bg-error text-on-error hover:bg-error/90')}
           >
             {pending ? 'Working…' : confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -56,7 +56,7 @@ describe('ConfirmDialog', () => {
 
   it('danger tone paints the confirm button with the error color', () => {
     const { getByRole } = render(<ConfirmDialog {...baseProps} tone="danger" />);
-    expect(getByRole('button', { name: 'Delete 3 events' }).className).toContain('var(--error)');
+    expect(getByRole('button', { name: 'Delete 3 events' }).className).toContain('bg-error');
   });
 
   it('disables both actions while pending', () => {

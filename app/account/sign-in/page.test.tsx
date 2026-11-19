@@ -44,8 +44,8 @@ describe('AttendeeSignInPage — trouble-signing-in help', () => {
     // (user-lens BLOCKER 2 fix).
     expect(screen.getByText(/links expire after 15 minutes/i)).toBeInTheDocument();
     expect(screen.getByText(/check spam/i)).toBeInTheDocument();
-    expect(screen.getByText(/same address you registered with/i)).toBeInTheDocument();
-    expect(screen.getByText(/contact the event organiser/i)).toBeInTheDocument();
+    expect(screen.getByText(/use the address you registered with/i)).toBeInTheDocument();
+    expect(screen.queryByText(/contact the event organiser/i)).not.toBeInTheDocument();
     // No "soft-security reassurance" that reads as a policy statement.
     expect(screen.queryByText(/we don.t restrict who can register/i)).not.toBeInTheDocument();
     // Never leak the "staff" framing on the attendee door.
