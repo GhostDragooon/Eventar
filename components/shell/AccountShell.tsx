@@ -49,7 +49,7 @@ function useSignOut() {
 
 function SignOutError({ message }: { message: string | null }) {
   return message ? (
-    <p role="alert" className="m-0 px-md text-[calc(13px*var(--text-scale))] text-error">
+    <p role="alert" className="m-0 px-md text-[calc(0.8125rem*var(--text-scale))] text-error">
       {message}
     </p>
   ) : null;
@@ -64,10 +64,10 @@ function Icon({ name, className }: { name: string; className?: string }) {
 }
 
 function RailRow({ item, current }: { item: (typeof NAV)[number]; current: boolean }) {
-  const base = 'nav-item flex min-h-11 w-full items-center gap-sm rounded-lg px-md text-[calc(14px*var(--text-scale))] font-medium';
+  const base = 'nav-item flex min-h-11 w-full items-center gap-sm rounded-lg px-md text-[calc(0.875rem*var(--text-scale))] font-medium';
   const inner = (
     <>
-      <Icon name={item.icon} className="text-[calc(20px*var(--text-scale))]" />
+      <Icon name={item.icon} className="text-[calc(1.25rem*var(--text-scale))]" />
       <span className="reserve-bold flex-1 whitespace-nowrap text-left" data-text={item.label}>{item.label}</span>
     </>
   );
@@ -93,14 +93,14 @@ function TabBar({ pathname }: { pathname: string }) {
       {NAV.map((item) => {
         const current = currentLabel(pathname) === item.label;
         const cls = cn(
-          'nav-item relative flex min-h-12 min-w-11 flex-col items-center justify-center gap-[2px] whitespace-nowrap px-[2px] text-[calc(11px*var(--text-scale))] font-semibold',
+          'nav-item relative flex min-h-12 min-w-11 flex-col items-center justify-center gap-[2px] whitespace-nowrap px-[2px] text-[calc(0.6875rem*var(--text-scale))] font-semibold',
           current ? 'text-primary-ink' : 'text-on-surface-variant',
         );
         const inner = (
           <>
             {/* UX-02 review: the current tab needs a cue that is not colour (WCAG 1.4.1), so it gets a 2 px top rule. */}
             {current && <span aria-hidden data-current-rule className="absolute inset-x-1 -top-xs h-[2px] rounded-full bg-primary-ink" />}
-            <Icon name={item.icon} className="text-[calc(22px*var(--text-scale))]" />
+            <Icon name={item.icon} className="text-[calc(1.375rem*var(--text-scale))]" />
             <span>{item.label}</span>
           </>
         );
@@ -115,7 +115,7 @@ function TabBar({ pathname }: { pathname: string }) {
 }
 
 const SKIP =
-  'sr-only focus:not-sr-only focus:absolute focus:left-md focus:top-md focus:z-50 focus:rounded-full focus:bg-primary focus:px-md focus:py-sm focus:text-[calc(13px*var(--text-scale))] focus:font-semibold focus:text-on-primary';
+  'sr-only focus:not-sr-only focus:absolute focus:left-md focus:top-md focus:z-50 focus:rounded-full focus:bg-primary focus:px-md focus:py-sm focus:text-[calc(0.8125rem*var(--text-scale))] focus:font-semibold focus:text-on-primary';
 
 export function AccountShell({
   children,
@@ -139,7 +139,7 @@ export function AccountShell({
         </a>
         <header className="flex min-h-14 items-center justify-between gap-md border-b border-outline-variant bg-surface px-md">
           <BrandMark href={null} />
-          <span className="flex min-w-0 items-center gap-sm text-[calc(13px*var(--text-scale))] text-on-surface-variant">
+          <span className="flex min-w-0 items-center gap-sm text-[calc(0.8125rem*var(--text-scale))] text-on-surface-variant">
             {email && <span className="hidden truncate sm:inline">{email}</span>}
             <button
               // ui-primitive-allow: bar action beside the brand, an outline pill (the rail's Sign out is a borderless nav row)
@@ -158,7 +158,7 @@ export function AccountShell({
           </div>
         )}
         {email && (
-          <p className="truncate border-b border-outline-variant bg-surface px-md py-xs text-[calc(12px*var(--text-scale))] text-on-surface-variant sm:hidden">
+          <p className="truncate border-b border-outline-variant bg-surface px-md py-xs text-[calc(0.75rem*var(--text-scale))] text-on-surface-variant sm:hidden">
             Signed in as {email}
           </p>
         )}
@@ -194,9 +194,9 @@ export function AccountShell({
               type="button"
               disabled={signingOut}
               onClick={signOut}
-              className="nav-item mt-xs flex min-h-11 w-full items-center gap-sm rounded-lg px-md text-[calc(14px*var(--text-scale))] font-medium text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
+              className="nav-item mt-xs flex min-h-11 w-full items-center gap-sm rounded-lg px-md text-[calc(0.875rem*var(--text-scale))] font-medium text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
             >
-              <Icon name="logout" className="text-[calc(20px*var(--text-scale))]" />
+              <Icon name="logout" className="text-[calc(1.25rem*var(--text-scale))]" />
               {signingOut ? 'Signing out…' : 'Sign out'}
             </button>
             <SignOutError message={signOutError} />

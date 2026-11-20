@@ -73,7 +73,7 @@ export function PublicShell({
         beforeAuth={
           pill && (
             <span
-              className={`inline-flex items-center gap-xs rounded-full px-sm py-[3px] text-[calc(11px*var(--text-scale))] font-semibold ${
+              className={`inline-flex items-center gap-xs rounded-full px-sm py-[3px] text-[calc(0.6875rem*var(--text-scale))] font-semibold ${
                 pill.tone === 'success'
                   ? 'bg-success-container text-on-success-container'
                   : 'bg-surface-container-high text-on-surface-variant'

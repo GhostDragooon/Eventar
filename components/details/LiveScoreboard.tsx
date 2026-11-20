@@ -65,16 +65,16 @@ export function LiveScoreboard({
       style={{ background: 'radial-gradient(120% 140% at 0% 0% in oklch, #123420 0%, #0A0A0A 55%)' }}
       aria-label="Event status"
     >
-      <p className="text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-[0.18em] text-white/50 mb-md">Status</p>
+      <p className="text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-[0.18em] text-white/50 mb-md">Status</p>
 
       <div className="flex flex-wrap items-baseline gap-x-xl gap-y-sm mb-md">
         <div>
-          <span className="text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-[0.18em] text-white/50 mr-md align-middle">{leftK}</span>
-          <span className={`text-[calc(34px*var(--text-scale))] font-extrabold tracking-[-0.02em] tabular-nums align-middle ${accent}`}>{leftV}</span>
+          <span className="text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-[0.18em] text-white/50 mr-md align-middle">{leftK}</span>
+          <span className={`text-[calc(2.125rem*var(--text-scale))] font-extrabold tracking-[-0.02em] tabular-nums align-middle ${accent}`}>{leftV}</span>
         </div>
         <div>
-          <span className="text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-[0.18em] text-white/50 mr-md align-middle">{rightK}</span>
-          <span className="text-[calc(34px*var(--text-scale))] font-extrabold tracking-[-0.02em] tabular-nums align-middle text-white">{rightV}</span>
+          <span className="text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-[0.18em] text-white/50 mr-md align-middle">{rightK}</span>
+          <span className="text-[calc(2.125rem*var(--text-scale))] font-extrabold tracking-[-0.02em] tabular-nums align-middle text-white">{rightV}</span>
         </div>
       </div>
 
@@ -84,7 +84,7 @@ export function LiveScoreboard({
           <div className="h-[6px] w-full rounded-full bg-white/10 overflow-hidden mb-xs" aria-hidden>
             <div className="h-full w-full origin-left rounded-full bg-[#4ADE80] transition-transform duration-1000 ease-linear motion-reduce:transition-none" style={{ transform: `scaleX(${isUpcoming ? 0 : pct / 100})` }} />
           </div>
-          <div className="flex justify-between text-[calc(11px*var(--text-scale))] tabular-nums text-white/50 mb-lg">
+          <div className="flex justify-between text-[calc(0.6875rem*var(--text-scale))] tabular-nums text-white/50 mb-lg">
             <span>{startLabel} start</span>
             <span className={isLive ? 'text-[#4ADE80]' : ''}>{nowLabel} now</span>
             <span>{endLabel} end</span>
@@ -121,10 +121,10 @@ function StatTile({ n, of, label, sub, tone }: { n: number; of?: number | null; 
   return (
     <div className="rounded-[14px] border border-white/10 bg-white/[0.03] p-md">
       <p className="leading-none mb-sm">
-        <span className={`text-[calc(30px*var(--text-scale))] font-extrabold tracking-[-0.02em] tabular-nums ${color}`}>{n}</span>
+        <span className={`text-[calc(1.875rem*var(--text-scale))] font-extrabold tracking-[-0.02em] tabular-nums ${color}`}>{n}</span>
         {of != null && <span className="text-body-md text-white/40"> / {of}</span>}
       </p>
-      <p className="text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-[0.14em] text-white/50">
+      <p className="text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-[0.14em] text-white/50">
         {label}<span className="text-white/30"> · {sub}</span>
       </p>
     </div>

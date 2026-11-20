@@ -306,19 +306,19 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
   }
 
   const btn = 'min-h-11 gap-xs px-md font-label-md text-label-md';
-  const icon16 = 'text-[calc(16px*var(--text-scale))]';
+  const icon16 = 'text-[calc(1rem*var(--text-scale))]';
 
   return (
     <>
       <header className="mb-md flex flex-wrap items-center justify-between gap-md">
         <div>
-          <h1 className="text-[calc(28px*var(--text-scale))] font-bold tracking-[-0.02em] text-on-surface">Events</h1>
-          <p className="text-[calc(13px*var(--text-scale))] text-on-surface-variant">
+          <h1 className="text-[calc(1.75rem*var(--text-scale))] font-bold tracking-[-0.02em] text-on-surface">Events</h1>
+          <p className="text-[calc(0.8125rem*var(--text-scale))] text-on-surface-variant">
             {counts.active} active event{counts.active === 1 ? '' : 's'}. Finished events are in <Link href="/analytics" className="underline underline-offset-2 hover:text-on-surface">History</Link>.
           </p>
         </div>
         <Link href="/events/new" className={cn(buttonVariants(), 'h-11 gap-xs px-lg font-label-md text-label-md')}>
-          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>add</span>New event
+          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))]" aria-hidden>add</span>New event
         </Link>
       </header>
 
@@ -333,7 +333,7 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
               {t.label}
               <span className="sr-only">, </span>
               {/* bg-primary + text-on-primary, not the shipped text-white on --on-primary-container (1.32:1 in dark). */}
-              <span className={cn('ml-xs inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[calc(11px*var(--text-scale))] font-semibold', on ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant')}>{n}</span>
+              <span className={cn('ml-xs inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[calc(0.6875rem*var(--text-scale))] font-semibold', on ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant')}>{n}</span>
               {on && <span className="absolute -bottom-px left-0 right-0 h-[2px] rounded-full bg-[color:var(--on-primary-container)]" aria-hidden />}
             </button>
           );
@@ -342,7 +342,7 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
 
       <div className="mb-md flex flex-col gap-sm sm:flex-row">
         <div className="relative flex-1">
-          <span className="material-symbols-outlined pointer-events-none absolute left-md top-1/2 -translate-y-1/2 text-[calc(18px*var(--text-scale))] text-on-surface-variant" aria-hidden>search</span>
+          <span className="material-symbols-outlined pointer-events-none absolute left-md top-1/2 -translate-y-1/2 text-[calc(1.125rem*var(--text-scale))] text-on-surface-variant" aria-hidden>search</span>
           <Input
             type="text" value={query} onChange={(e) => setQuery(e.target.value)}
             placeholder="Search events" aria-label="Search events"
@@ -350,7 +350,7 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
           />
         </div>
         <div className="inline-flex min-h-11 shrink-0 items-center gap-sm rounded-lg border border-outline-variant bg-surface-container-lowest px-md">
-          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] text-on-surface-variant" aria-hidden>swap_vert</span>
+          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] text-on-surface-variant" aria-hidden>swap_vert</span>
           <span className="font-label-md text-label-md uppercase text-on-surface-variant">Sort</span>
           <Select
             items={SORT_ITEMS}
@@ -413,7 +413,7 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
           </p>
           {events.length === 0 && (
             <Link href="/events/new" className={cn(buttonVariants(), 'mt-md h-11 gap-sm px-lg font-label-md text-label-md')}>
-              <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>add</span>Create your first event
+              <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))]" aria-hidden>add</span>Create your first event
             </Link>
           )}
         </div>
@@ -426,7 +426,7 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
       )}
 
       {events.length >= FETCH_CAP && (
-        <p className="mt-lg text-[calc(13px*var(--text-scale))] text-on-surface-variant">
+        <p className="mt-lg text-[calc(0.8125rem*var(--text-scale))] text-on-surface-variant">
           Only the {FETCH_CAP} events with the latest dates are loaded, so older ones may be missing here. Finished events are in History.
         </p>
       )}
@@ -493,9 +493,9 @@ function EventRow({ e, nowMs, selected, onToggle, onRestore, inBin, pending }: {
       </div>
       <div className={cn('grid grid-cols-[56px_minmax(0,1fr)] gap-xs rounded-[16px] border bg-surface-container-lowest p-xs', selected ? 'border-[color:var(--primary-fixed-dim)]' : 'border-outline-variant')}>
         <div className="flex flex-col items-center justify-center rounded-[12px] bg-surface-container text-center">
-          <span className="text-[calc(22px*var(--text-scale))] font-bold leading-none tabular-nums text-on-surface">{day}</span>
-          <span className="mt-xs text-[calc(12px*var(--text-scale))] leading-none text-on-surface-variant">{weekday} {month}</span>
-          {otherYear && <span className="mt-[2px] text-[calc(11px*var(--text-scale))] leading-none tabular-nums text-on-surface-variant">{year}</span>}
+          <span className="text-[calc(1.375rem*var(--text-scale))] font-bold leading-none tabular-nums text-on-surface">{day}</span>
+          <span className="mt-xs text-[calc(0.75rem*var(--text-scale))] leading-none text-on-surface-variant">{weekday} {month}</span>
+          {otherYear && <span className="mt-[2px] text-[calc(0.6875rem*var(--text-scale))] leading-none tabular-nums text-on-surface-variant">{year}</span>}
         </div>
         <div className="flex min-w-0 flex-col rounded-[12px] bg-surface-container p-xs">
           <div className="flex min-w-0 flex-wrap items-center gap-x-sm">
@@ -503,9 +503,9 @@ function EventRow({ e, nowMs, selected, onToggle, onRestore, inBin, pending }: {
             <Link href={`/events/${e.id}/details`} className="line-clamp-3 font-title-lg text-title-lg font-semibold text-on-surface transition-colors hover:text-[color:var(--on-primary-container)]">{e.title}</Link>
           </div>
           <div className="-mt-xs pb-xs">
-            <div className="mt-xs flex flex-wrap items-center gap-x-md gap-y-xs text-[calc(12.5px*var(--text-scale))] text-on-surface-variant">
-              <span className="inline-flex items-center gap-xs tabular-nums"><span className="material-symbols-outlined text-[calc(14px*var(--text-scale))]" aria-hidden>schedule</span>{e.timeLabel}</span>
-              {e.venueName && <span className="inline-flex min-w-0 items-center gap-xs"><span className="material-symbols-outlined text-[calc(14px*var(--text-scale))]" aria-hidden>location_on</span><span className="truncate">{e.venueName}</span></span>}
+            <div className="mt-xs flex flex-wrap items-center gap-x-md gap-y-xs text-[calc(0.78125rem*var(--text-scale))] text-on-surface-variant">
+              <span className="inline-flex items-center gap-xs tabular-nums"><span className="material-symbols-outlined text-[calc(0.875rem*var(--text-scale))]" aria-hidden>schedule</span>{e.timeLabel}</span>
+              {e.venueName && <span className="inline-flex min-w-0 items-center gap-xs"><span className="material-symbols-outlined text-[calc(0.875rem*var(--text-scale))]" aria-hidden>location_on</span><span className="truncate">{e.venueName}</span></span>}
               {e.category && CATEGORY_LABEL[e.category] && <span>{CATEGORY_LABEL[e.category]}</span>}
               {e.lifecycle !== 'drafted' && (
                 <span className="tabular-nums">
@@ -513,12 +513,12 @@ function EventRow({ e, nowMs, selected, onToggle, onRestore, inBin, pending }: {
                 </span>
               )}
             </div>
-            {passed && <p className="mt-xs text-[calc(12.5px*var(--text-scale))] font-medium text-on-surface">The date has passed. Edit the date to publish this draft.</p>}
+            {passed && <p className="mt-xs text-[calc(0.78125rem*var(--text-scale))] font-medium text-on-surface">The date has passed. Edit the date to publish this draft.</p>}
           </div>
           <div className={cn('mt-xs grid gap-sm', e.lifecycle === 'drafted' || e.lifecycle === 'cancelled' ? 'grid-cols-2' : 'grid-cols-3')}>
             {inBin ? (
               <Button type="button" variant="outline" onClick={onRestore} disabled={pending} className={cn(link, 'col-span-3')}>
-                <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>restore_from_trash</span>Restore
+                <span className="material-symbols-outlined text-[calc(1rem*var(--text-scale))]" aria-hidden>restore_from_trash</span>Restore
               </Button>
             ) : (
               <>

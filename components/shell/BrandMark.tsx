@@ -34,15 +34,15 @@ export function BrandMark({
       <span
         className={`grid place-items-center rounded-lg bg-primary font-semibold text-on-primary ${
           compact
-            ? 'h-[26px] w-[26px] text-[calc(15px*var(--text-scale))]'
-            : 'h-[30px] w-[30px] text-[calc(17px*var(--text-scale))]'
+            ? 'h-[26px] w-[26px] text-[calc(0.9375rem*var(--text-scale))]'
+            : 'h-[30px] w-[30px] text-[calc(1.0625rem*var(--text-scale))]'
         }`}
         aria-hidden
       >
         E
       </span>
       <span
-        className={`${hideWordmarkOnPhone ? 'hidden sm:inline ' : ''}text-[calc(16px*var(--text-scale))] font-semibold tracking-[-0.01em] text-on-surface`}
+        className={`${hideWordmarkOnPhone ? 'hidden sm:inline ' : ''}text-[calc(1rem*var(--text-scale))] font-semibold tracking-[-0.01em] text-on-surface`}
       >
         Eventar
       </span>

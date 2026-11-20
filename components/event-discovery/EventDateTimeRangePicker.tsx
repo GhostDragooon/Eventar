@@ -86,7 +86,7 @@ export function EventDateTimeRangePicker({ value, onChange }: Props) {
         // role="alert" so the conflict is announced when it appears, not just
         // drawn (matches CreateEventWizard's basics error).
         <p role="alert" className="font-body-md text-body-md text-error flex items-center gap-xs">
-          <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>
+          <span className="material-symbols-outlined text-[calc(1rem*var(--text-scale))]" aria-hidden>
             warning
           </span>
           {error}

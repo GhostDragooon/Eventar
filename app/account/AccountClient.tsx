@@ -296,7 +296,7 @@ export function AccountClient({
               aria-hidden
               className="w-10 h-10 rounded-full bg-surface-container-lowest text-primary-ink flex items-center justify-center shrink-0"
             >
-              <span className="material-symbols-outlined text-[calc(20px*var(--text-scale))]" data-fill="1">link</span>
+              <span className="material-symbols-outlined text-[calc(1.25rem*var(--text-scale))]" data-fill="1">link</span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-body-md font-semibold text-on-surface m-0">
@@ -626,9 +626,9 @@ function SectionCard({
           aria-hidden
           className="w-10 h-10 rounded-full bg-primary-fixed text-primary-ink flex items-center justify-center"
         >
-          <span className="material-symbols-outlined text-[calc(20px*var(--text-scale))]">{icon}</span>
+          <span className="material-symbols-outlined text-[calc(1.25rem*var(--text-scale))]">{icon}</span>
         </div>
-        <h2 className="font-headline-sm text-[calc(20px*var(--text-scale))] text-on-surface">{title}</h2>
+        <h2 className="font-headline-sm text-[calc(1.25rem*var(--text-scale))] text-on-surface">{title}</h2>
       </div>
       {children}
     </section>
@@ -666,7 +666,7 @@ function ReadinessRow({
   return (
     <li className="flex items-center gap-sm m-0">
       <span
-        className="material-symbols-outlined text-[calc(18px*var(--text-scale))] shrink-0"
+        className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] shrink-0"
         aria-hidden
         data-fill={isDone ? '1' : undefined}
         style={isDone ? { color: 'var(--on-primary-container)' } : undefined}

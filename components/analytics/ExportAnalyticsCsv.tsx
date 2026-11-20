@@ -45,7 +45,7 @@ export function ExportAnalyticsCsv({
       onClick={download}
       className="gap-xs font-label-md text-label-md py-sm px-lg shrink-0"
     >
-      <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>download</span>
+      <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))]" aria-hidden>download</span>
       Export CSV
     </Button>
   );

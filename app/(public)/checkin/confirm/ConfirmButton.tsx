@@ -61,7 +61,7 @@ export default function ConfirmButton({
           role="alert"
           className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm m-0"
         >
-          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
+          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
           <span>{state.message}</span>
         </p>
       )}

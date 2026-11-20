@@ -76,13 +76,13 @@ function ToastItem({ t, onDismiss }: { t: Toast; onDismiss: (id: number) => void
   return (
     <div
       role="status"
-      className={`pointer-events-auto flex items-center gap-sm w-full rounded-[12px] bg-[#0A0A0A] text-white shadow-lg px-md py-sm text-[calc(13px*var(--text-scale))] font-medium transition-[opacity,translate] motion-reduce:translate-y-0 ${
+      className={`pointer-events-auto flex items-center gap-sm w-full rounded-[12px] bg-[#0A0A0A] text-white shadow-lg px-md py-sm text-[calc(0.8125rem*var(--text-scale))] font-medium transition-[opacity,translate] motion-reduce:translate-y-0 ${
         t.leaving ? 'duration-200 ease-in' : 'duration-250 ease-[cubic-bezier(0.32,0.72,0,1)]'
       } ${shown ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full'}`}
     >
       <span
         aria-hidden
-        className={`material-symbols-outlined text-[calc(18px*var(--text-scale))] shrink-0 ${
+        className={`material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] shrink-0 ${
           t.tone === 'success' ? 'text-[#4ADE80]' : t.tone === 'error' ? 'text-[#F87171]' : 'text-white/60'
         }`}
       >
@@ -100,7 +100,7 @@ function ToastItem({ t, onDismiss }: { t: Toast; onDismiss: (id: number) => void
         aria-label="Dismiss notification"
         className="shrink-0 text-white/50 hover:text-white transition-colors"
       >
-        <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>close</span>
+        <span className="material-symbols-outlined text-[calc(1rem*var(--text-scale))]" aria-hidden>close</span>
       </button>
     </div>
   );

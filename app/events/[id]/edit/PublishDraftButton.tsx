@@ -102,7 +102,7 @@ export default function PublishDraftButton({
       </Button>
       {notice && dirty && (
         <p role="alert" className="flex items-start gap-xs font-body-md text-body-md text-error">
-          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
+          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
           You have changes that are not saved. Save them first, then publish.
         </p>
       )}

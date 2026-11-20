@@ -88,8 +88,6 @@ vi.mock('@/app/account/actions', () => ({ getUnlinkedRegistrationCount }));
 vi.mock('@/lib/accountCompleteness', () => ({
   isAccountComplete: vi.fn(async () => ({ complete: true })),
 }));
-vi.mock('@/lib/qr', () => ({ buildEventQrPng: vi.fn(async () => ({ pngBase64: 'UE5H' })) }));
-vi.mock('@/lib/origin', () => ({ getRequestOrigin: vi.fn(async () => 'http://localhost:3000') }));
 // The page returns an element tree that these tests inspect without rendering,
 // so the components only need to exist as distinct, findable types.
 vi.mock('@/components/RegisterCard', () => ({ default: function RegisterCard() { return null; } }));

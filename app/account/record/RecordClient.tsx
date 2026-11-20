@@ -157,9 +157,9 @@ function SectionCard({
           aria-hidden
           className="w-10 h-10 rounded-full bg-primary-fixed text-primary-ink flex items-center justify-center"
         >
-          <span className="material-symbols-outlined text-[calc(20px*var(--text-scale))]">{icon}</span>
+          <span className="material-symbols-outlined text-[calc(1.25rem*var(--text-scale))]">{icon}</span>
         </div>
-        <h2 className="font-headline-sm text-[calc(20px*var(--text-scale))] text-on-surface">{title}</h2>
+        <h2 className="font-headline-sm text-[calc(1.25rem*var(--text-scale))] text-on-surface">{title}</h2>
       </div>
       {children}
     </section>

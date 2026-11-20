@@ -500,13 +500,13 @@ function TimeFields({
       </div>
       {touched && errors.endBeforeStart && (
         <p className="font-body-md text-body-md text-error flex items-center gap-xs">
-          <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>warning</span>
+          <span className="material-symbols-outlined text-[calc(1rem*var(--text-scale))]" aria-hidden>warning</span>
           End must be after Start.
         </p>
       )}
       {touched && errors.envelope && !errors.endBeforeStart && (
         <p className="font-body-md text-body-md text-error flex items-center gap-xs">
-          <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>warning</span>
+          <span className="material-symbols-outlined text-[calc(1rem*var(--text-scale))]" aria-hidden>warning</span>
           This block runs outside the event’s start/end window.
         </p>
       )}
@@ -538,7 +538,7 @@ function BlockErrorBanner({
       role="alert"
       className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
     >
-      <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
+      <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
       <span>
         Still needed to continue: {missing.length < 2 ? missing[0] : `${missing.slice(0, -1).join(', ')} and ${missing[missing.length - 1]}`}.
       </span>

@@ -132,7 +132,7 @@ export default function RegisterCard({
     return (
       <Section>
         <span className="font-label-md text-label-md px-sm py-xs rounded-full uppercase inline-flex items-center gap-sm bg-success-container text-on-success-container border border-transparent self-start">
-          <span className="material-symbols-outlined text-[calc(14px*var(--text-scale))]" data-fill="1" aria-hidden>check_circle</span>
+          <span className="material-symbols-outlined text-[calc(0.875rem*var(--text-scale))]" data-fill="1" aria-hidden>check_circle</span>
           {isStaff ? 'Guest registered' : <>You’re registered</>}
         </span>
         <h2
@@ -170,7 +170,7 @@ export default function RegisterCard({
             class of rule-12 lie the primary copy fix just closed. Not shown to
             an organiser: this tab is not the guest's proof of anything. */}
         {!isStaff && (
-          <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant m-0">
+          <p className="font-body-md text-[calc(0.75rem*var(--text-scale))] text-on-surface-variant m-0">
             {state.emailDelivery === 'sent'
               ? 'Need to cancel? Reply to your confirmation email.'
               : 'Need to cancel? See event staff at check-in.'}
@@ -291,7 +291,7 @@ export default function RegisterCard({
   // ─── States 1, 2, 4: Initial / Submitting / Error ─────────────────────
   return (
     <Section>
-      <h2 className="font-title-lg text-title-lg text-on-surface m-0">Register</h2>
+      <h2 className="font-title-lg text-title-lg text-on-surface m-0 -mb-sm">Register</h2>
       {/* Walk-in flow nudge (signed-out only). Copy is honest for both CPD
           and non-CPD events — "release CME/CPD points for accredited events"
           scopes the promise to the case where it matters, so a general
@@ -299,9 +299,9 @@ export default function RegisterCard({
           banner on /checkin/confirm for tone continuity. */}
       {signInHref && (
         <p
-          className="font-body-md text-body-md text-on-surface-variant bg-surface-container border border-outline-variant rounded-lg px-md py-sm flex items-start gap-sm m-0"
+          className="font-body-md text-body-md text-on-surface-variant bg-primary-fixed border border-outline-variant rounded-lg px-md py-sm flex items-start gap-sm m-0"
         >
-          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>account_circle</span>
+          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>account_circle</span>
           <span className="flex-1">
             <Link href={signInHref} className="text-primary-ink hover:underline font-semibold">
               Log in or sign up
@@ -350,7 +350,7 @@ export default function RegisterCard({
           role="status"
           className="font-body-md text-body-md text-on-surface-variant bg-primary-fixed border border-outline-variant rounded-lg px-md py-sm flex items-start gap-sm m-0"
         >
-          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>link</span>
+          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>link</span>
           <span className="flex-1">
             {unlinkedRegistrationsCount === 1
               ? '1 earlier registration under this email isn’t linked to your account.'
@@ -364,7 +364,7 @@ export default function RegisterCard({
       )}
       <form className="flex flex-col gap-md" onSubmit={onSubmit}>
         <label className="block">
-          <span className="block font-label-md text-label-md text-on-surface uppercase tracking-wider mb-xs">
+          <span className="block font-label-md text-label-md text-on-surface uppercase tracking-wider mb-sm">
             Full name
           </span>
           <Input
@@ -382,7 +382,7 @@ export default function RegisterCard({
           />
         </label>
         <label className="block">
-          <span className="block font-label-md text-label-md text-on-surface uppercase tracking-wider mb-xs">
+          <span className="block font-label-md text-label-md text-on-surface uppercase tracking-wider mb-sm">
             Email
           </span>
           <Input
@@ -404,7 +404,7 @@ export default function RegisterCard({
             role="alert"
             className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm outline-none"
           >
-            <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>
+            <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>
               warning
             </span>
             <span>{errorMessage}</span>

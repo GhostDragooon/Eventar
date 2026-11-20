@@ -416,7 +416,7 @@ export default async function StaffEventEditPage({
                   className="inline-flex items-center gap-xs font-label-md text-label-md text-primary-ink hover:underline"
                 >
                   View public page
-                  <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>open_in_new</span>
+                  <span className="material-symbols-outlined text-[calc(1rem*var(--text-scale))]" aria-hidden>open_in_new</span>
                 </Link>
               </ActionCard>
 
@@ -430,7 +430,7 @@ export default async function StaffEventEditPage({
                   className="inline-flex items-center gap-xs font-label-md text-label-md text-primary-ink hover:underline"
                 >
                   View details
-                  <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>arrow_forward</span>
+                  <span className="material-symbols-outlined text-[calc(1rem*var(--text-scale))]" aria-hidden>arrow_forward</span>
                 </Link>
               </ActionCard>
 
@@ -444,7 +444,7 @@ export default async function StaffEventEditPage({
                   className="inline-flex items-center gap-xs font-label-md text-label-md text-primary-ink hover:underline"
                 >
                   View analytics
-                  <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>arrow_forward</span>
+                  <span className="material-symbols-outlined text-[calc(1rem*var(--text-scale))]" aria-hidden>arrow_forward</span>
                 </Link>
               </ActionCard>
 
@@ -462,7 +462,7 @@ export default async function StaffEventEditPage({
                     className="inline-flex items-center gap-xs font-label-md text-label-md text-primary-ink hover:underline"
                   >
                     View poster
-                    <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>open_in_new</span>
+                    <span className="material-symbols-outlined text-[calc(1rem*var(--text-scale))]" aria-hidden>open_in_new</span>
                   </Link>
                 </div>
               </ActionCard>
@@ -651,9 +651,9 @@ function Section({
     <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm">
       <div className="flex items-center gap-md mb-md">
         <div aria-hidden className={`w-10 h-10 rounded-full flex items-center justify-center ${iconBg} ${iconColor}`}>
-          <span className="material-symbols-outlined text-[calc(20px*var(--text-scale))]">{icon}</span>
+          <span className="material-symbols-outlined text-[calc(1.25rem*var(--text-scale))]">{icon}</span>
         </div>
-        <h2 className="font-headline-sm text-[calc(20px*var(--text-scale))] text-on-surface">{title}</h2>
+        <h2 className="font-headline-sm text-[calc(1.25rem*var(--text-scale))] text-on-surface">{title}</h2>
       </div>
       <div className="space-y-xs">{children}</div>
     </section>
@@ -674,12 +674,12 @@ function ActionCard({
   return (
     <div className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-md shadow-sm">
       <div className="flex items-start gap-sm mb-sm">
-        <span className="material-symbols-outlined text-primary-ink text-[calc(20px*var(--text-scale))] mt-[2px]" aria-hidden>
+        <span className="material-symbols-outlined text-primary-ink text-[calc(1.25rem*var(--text-scale))] mt-[2px]" aria-hidden>
           {icon}
         </span>
         <div className="flex-1 min-w-0">
-          <h3 className="font-title-lg text-[calc(16px*var(--text-scale))] text-on-surface leading-tight">{title}</h3>
-          <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant mt-xs">{body}</p>
+          <h3 className="font-title-lg text-[calc(1rem*var(--text-scale))] text-on-surface leading-tight">{title}</h3>
+          <p className="font-body-md text-[calc(0.75rem*var(--text-scale))] text-on-surface-variant mt-xs">{body}</p>
         </div>
       </div>
       <div className="mt-sm">{children}</div>

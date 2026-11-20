@@ -91,7 +91,7 @@ function AttendeeSignInForm() {
         <summary className="cursor-pointer font-body-md text-body-md text-[color:var(--on-primary-container)] hover:underline list-none">
           Trouble logging in?
         </summary>
-        <ul className="mt-sm font-body-md text-[calc(13px*var(--text-scale))] text-on-surface-variant leading-relaxed list-disc pl-lg flex flex-col gap-xs">
+        <ul className="mt-sm font-body-md text-[calc(0.8125rem*var(--text-scale))] text-on-surface-variant leading-relaxed list-disc pl-lg flex flex-col gap-xs">
           <li>Links expire after 15 minutes and work once. Request a new one above.</li>
           <li>Check spam, and make sure you opened the newest email.</li>
           <li>Open the link in the same browser you asked for it in, and use the address you registered with.</li>

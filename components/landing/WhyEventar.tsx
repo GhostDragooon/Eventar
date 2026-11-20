@@ -59,28 +59,28 @@ export function WhyEventar() {
     <section className="mx-auto mt-[46px] max-w-[1200px]">
       <div className="rounded-[18px] bg-surface-container-low p-xl">
         <div className="flex flex-wrap items-center justify-between gap-md">
-          <span className="text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-[.08em] text-on-surface-variant">
+          <span className="text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-[.08em] text-on-surface-variant">
             Why Eventar
           </span>
-          <p className="flex flex-wrap items-center gap-xs text-[calc(12px*var(--text-scale))] text-on-surface-variant">
+          <p className="flex flex-wrap items-center gap-xs text-[calc(0.75rem*var(--text-scale))] text-on-surface-variant">
             Rule-aware for <b className="font-semibold text-on-surface">8 Hong Kong accrediting bodies</b>
           </p>
         </div>
 
-        <h2 className="mt-sm text-[calc(26px*var(--text-scale))] font-semibold tracking-[-0.01em] text-on-surface">
+        <h2 className="mt-sm text-[calc(1.625rem*var(--text-scale))] font-semibold tracking-[-0.01em] text-on-surface">
           Simplify administration. Strengthen evidence.
         </h2>
 
         <div className="mt-lg grid gap-md md:grid-cols-3">
           {POINTS.map((p) => {
             const linkClass = cn(
-              'mt-md inline-flex items-center gap-xs text-[calc(12.5px*var(--text-scale))] font-semibold',
+              'mt-md inline-flex items-center gap-xs text-[calc(0.78125rem*var(--text-scale))] font-semibold',
               p.photo ? 'text-white' : p.dark ? 'text-inverse-primary' : 'text-primary-ink',
             );
             const linkContent = (
               <>
                 {p.linkLabel}
-                <span className="material-symbols-outlined text-[calc(15px*var(--text-scale))]" aria-hidden>arrow_forward</span>
+                <span className="material-symbols-outlined text-[calc(0.9375rem*var(--text-scale))]" aria-hidden>arrow_forward</span>
               </>
             );
 
@@ -126,8 +126,8 @@ export function WhyEventar() {
                 </div>
 
                 <div className="relative mt-auto">
-                  <h3 className="text-[calc(15px*var(--text-scale))] font-semibold leading-snug">{p.title}</h3>
-                  <p className={cn('mt-sm text-[calc(13px*var(--text-scale))] leading-[1.55]', p.photo ? 'text-white/85' : p.dark ? 'text-inverse-on-surface/80' : 'text-on-surface-variant')}>
+                  <h3 className="text-[calc(0.9375rem*var(--text-scale))] font-semibold leading-snug">{p.title}</h3>
+                  <p className={cn('mt-sm text-[calc(0.8125rem*var(--text-scale))] leading-[1.55]', p.photo ? 'text-white/85' : p.dark ? 'text-inverse-on-surface/80' : 'text-on-surface-variant')}>
                     {p.body}
                   </p>
                   {p.href.startsWith('#') ? (

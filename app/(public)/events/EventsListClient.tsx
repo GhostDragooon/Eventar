@@ -100,7 +100,7 @@ export function EventsListClient({ events }: { events: PublicEventCard[] }) {
                   setCat(c.key);
                 }
               }}
-              className={`relative shrink-0 pb-md pt-sm cursor-pointer text-[calc(14px*var(--text-scale))] font-semibold transition-colors ${
+              className={`relative shrink-0 pb-md pt-sm cursor-pointer text-[calc(0.875rem*var(--text-scale))] font-semibold transition-colors ${
                 active ? 'text-on-surface' : 'text-on-surface-variant hover:text-on-surface'
               }`}
             >

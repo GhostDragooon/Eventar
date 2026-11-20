@@ -71,19 +71,19 @@ export function StickyLiveBar({
         aria-hidden={!pinned}
       >
         <div className="flex items-center gap-md h-[44px] px-grid-margin bg-[#0A0A0A] text-white shadow-md">
-          <span className="live-pill-pulse inline-flex items-center gap-xs px-sm py-[2px] rounded-full border border-[#4ADE80] text-[#4ADE80] text-[calc(11px*var(--text-scale))] font-bold uppercase tracking-[0.12em]">
+          <span className="live-pill-pulse inline-flex items-center gap-xs px-sm py-[2px] rounded-full border border-[#4ADE80] text-[#4ADE80] text-[calc(0.6875rem*var(--text-scale))] font-bold uppercase tracking-[0.12em]">
             <span aria-hidden>●</span>Live
           </span>
-          <span className="flex-1 min-w-0 truncate text-[calc(13px*var(--text-scale))] font-semibold">{title}</span>
-          <span className="hidden sm:inline text-[calc(12px*var(--text-scale))] tabular-nums text-white/70">
+          <span className="flex-1 min-w-0 truncate text-[calc(0.8125rem*var(--text-scale))] font-semibold">{title}</span>
+          <span className="hidden sm:inline text-[calc(0.75rem*var(--text-scale))] tabular-nums text-white/70">
             {fmtDur(now - startMs)} elapsed · {fmtDur(endMs - now)} to wrap
           </span>
           <Link
             href={`/events/${eventId}/checkin`}
             tabIndex={pinned ? 0 : -1}
-            className="inline-flex items-center gap-xs bg-primary text-on-primary px-md py-[6px] rounded-full text-[calc(12px*var(--text-scale))] font-semibold hover:opacity-90 transition-opacity shrink-0"
+            className="inline-flex items-center gap-xs bg-primary text-on-primary px-md py-[6px] rounded-full text-[calc(0.75rem*var(--text-scale))] font-semibold hover:opacity-90 transition-opacity shrink-0"
           >
-            <span className="material-symbols-outlined text-[calc(15px*var(--text-scale))]" aria-hidden>group</span>
+            <span className="material-symbols-outlined text-[calc(0.9375rem*var(--text-scale))]" aria-hidden>group</span>
             Open check-in →
           </Link>
         </div>

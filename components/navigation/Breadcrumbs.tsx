@@ -45,7 +45,7 @@ export function Breadcrumbs({
 }) {
   return (
     <nav aria-label="Breadcrumb" className={className}>
-      <ol className="flex flex-wrap items-center gap-[6px] text-[calc(14px*var(--text-scale))] text-on-surface-variant">
+      <ol className="flex flex-wrap items-center gap-[6px] text-[calc(0.875rem*var(--text-scale))] text-on-surface-variant">
         {items.map((item, index) => {
           const last = index === items.length - 1;
           const Icon = item.icon;

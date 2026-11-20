@@ -81,7 +81,7 @@ export default async function CheckinIndexPage() {
     <StaffShell staff={{ email: staff.email, role: staff.role }}>
       <header className="mb-lg">
         <p className="text-label-md font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-xs">Check-in</p>
-        <h1 className="text-[calc(30px*var(--text-scale))] leading-[1.1] font-extrabold tracking-[-0.025em] text-on-surface">Check-in: choose an event</h1>
+        <h1 className="text-[calc(1.875rem*var(--text-scale))] leading-[1.1] font-extrabold tracking-[-0.025em] text-on-surface">Check-in: choose an event</h1>
         <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
           Open the desk for an event that is live now or coming up. A desk opens 60 minutes before the start.
         </p>
@@ -108,7 +108,7 @@ export default async function CheckinIndexPage() {
                   <div className="flex items-center gap-sm flex-wrap">
                     <p className="font-title-lg text-title-lg font-semibold text-on-surface truncate">{e.title}</p>
                     {e.lifecycle === 'live' && (
-                      <span className="inline-flex items-center gap-xs px-sm py-[3px] rounded-full text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-wide bg-success-container text-on-success-container shrink-0">
+                      <span className="inline-flex items-center gap-xs px-sm py-[3px] rounded-full text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-wide bg-success-container text-on-success-container shrink-0">
                         <span className="w-[6px] h-[6px] rounded-full bg-[color:var(--success)]" aria-hidden />Live
                       </span>
                     )}
@@ -119,12 +119,12 @@ export default async function CheckinIndexPage() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="leading-none">
-                    <span className={`text-[calc(24px*var(--text-scale))] font-extrabold tracking-[-0.02em] tabular-nums ${e.lifecycle === 'live' ? 'text-[color:var(--success)]' : 'text-on-surface'}`}>{e.attended}</span>
+                    <span className={`text-[calc(1.5rem*var(--text-scale))] font-extrabold tracking-[-0.02em] tabular-nums ${e.lifecycle === 'live' ? 'text-[color:var(--success)]' : 'text-on-surface'}`}>{e.attended}</span>
                     <span className="text-body-md text-on-surface-variant"> / {e.registered}</span>
                   </p>
                   <p className="font-label-md text-label-md text-on-surface-variant normal-case tracking-normal mt-[2px]">checked in</p>
                 </div>
-                <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] text-on-surface-variant shrink-0" aria-hidden>arrow_forward</span>
+                <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] text-on-surface-variant shrink-0" aria-hidden>arrow_forward</span>
               </Link>
             </li>
           ))}

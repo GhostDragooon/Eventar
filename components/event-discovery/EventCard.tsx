@@ -37,10 +37,10 @@ export function EventCard({ event, saved = false, onSaveChange, href, onOpen }: 
       className="flex w-[64px] shrink-0 flex-col items-center justify-center rounded-[12px] border border-outline-variant bg-surface-container-low py-sm"
       aria-hidden
     >
-      <span className="text-[calc(22px*var(--text-scale))] font-extrabold leading-none tabular-nums text-on-surface">
+      <span className="text-[calc(1.375rem*var(--text-scale))] font-extrabold leading-none tabular-nums text-on-surface">
         {event.dateBlock.day}
       </span>
-      <span className="mt-[2px] text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-wider text-on-surface-variant">
+      <span className="mt-[2px] text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-wider text-on-surface-variant">
         {event.dateBlock.month}
       </span>
     </div>
@@ -129,7 +129,7 @@ export function EventCard({ event, saved = false, onSaveChange, href, onOpen }: 
             )}
             {event.status && (
               <span
-                className={`inline-flex items-center gap-xs rounded-full px-sm py-[3px] text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-wide ${
+                className={`inline-flex items-center gap-xs rounded-full px-sm py-[3px] text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-wide ${
                   event.status.tone === 'success'
                     ? 'bg-success-container text-on-success-container'
                     : 'bg-surface-container-high text-on-surface-variant'

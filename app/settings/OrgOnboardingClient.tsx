@@ -121,7 +121,7 @@ export function OrgOnboardingClient({
                 type="button"
                 key={p.code}
                 onClick={() => toggle(professionsServed, setProfessionsServed, p.code)}
-                className={`rounded-full px-sm py-1 text-[calc(12px*var(--text-scale))] border ${
+                className={`rounded-full px-sm py-1 text-[calc(0.75rem*var(--text-scale))] border ${
                   professionsServed.includes(p.code)
                     ? 'bg-primary-fixed text-primary-ink border-transparent'
                     : 'bg-transparent text-on-surface-variant border-outline-variant'
@@ -143,7 +143,7 @@ export function OrgOnboardingClient({
                 type="button"
                 key={s.code}
                 onClick={() => toggle(specialtiesServed, setSpecialtiesServed, s.code)}
-                className={`rounded-full px-sm py-1 text-[calc(12px*var(--text-scale))] border ${
+                className={`rounded-full px-sm py-1 text-[calc(0.75rem*var(--text-scale))] border ${
                   specialtiesServed.includes(s.code)
                     ? 'bg-primary-fixed text-primary-ink border-transparent'
                     : 'bg-transparent text-on-surface-variant border-outline-variant'

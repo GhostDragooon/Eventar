@@ -25,7 +25,7 @@ export function PageHeader({ title, lead }: { title: string; lead: string }) {
 export function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section aria-label={title} className="rounded-[20px] border border-outline-variant bg-surface-container-lowest p-lg shadow-sm">
-      <h2 className="mb-md font-headline-sm text-[calc(20px*var(--text-scale))] text-on-surface">{title}</h2>
+      <h2 className="mb-md font-headline-sm text-[calc(1.25rem*var(--text-scale))] text-on-surface">{title}</h2>
       {children}
     </section>
   );

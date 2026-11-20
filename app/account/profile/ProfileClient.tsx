@@ -372,7 +372,7 @@ export function ProfileClient({
             : 'font-body-md text-body-md text-on-surface-variant bg-surface-container border border-outline-variant rounded-lg px-md py-sm flex items-start gap-sm'
         }
       >
-        <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>
+        <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>
           {gatesReady ? 'check_circle' : 'info'}
         </span>
         <span className="flex-1">
@@ -518,7 +518,7 @@ export function ProfileClient({
                               : [...form.degree_codes, d.code],
                           )
                         }
-                        className={`rounded-full px-sm py-1 text-[calc(12px*var(--text-scale))] border ${
+                        className={`rounded-full px-sm py-1 text-[calc(0.75rem*var(--text-scale))] border ${
                           checked
                             ? 'bg-primary-fixed text-primary-ink border-transparent'
                             : 'bg-transparent text-on-surface-variant border-outline-variant'
@@ -601,9 +601,9 @@ export function ProfileClient({
             aria-hidden
             className="w-10 h-10 rounded-full bg-primary-fixed text-primary-ink flex items-center justify-center"
           >
-            <span className="material-symbols-outlined text-[calc(20px*var(--text-scale))]">verified</span>
+            <span className="material-symbols-outlined text-[calc(1.25rem*var(--text-scale))]">verified</span>
           </div>
-          <h2 className="font-headline-sm text-[calc(20px*var(--text-scale))] text-on-surface">Licences</h2>
+          <h2 className="font-headline-sm text-[calc(1.25rem*var(--text-scale))] text-on-surface">Licences</h2>
         </div>
         {licences.length === 0 ? (
           <p className="font-body-md text-body-md text-on-surface-variant m-0">
@@ -662,7 +662,7 @@ export function ProfileClient({
             role="status"
             className="mt-md font-body-md text-body-md text-on-surface-variant bg-surface-container border border-outline-variant rounded-lg px-md py-sm flex items-start gap-sm"
           >
-            <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>info</span>
+            <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>info</span>
             <span className="flex-1">
               No accrediting bodies are open for self-declare right now. Please
               contact the event organiser.
@@ -702,7 +702,7 @@ export function ProfileClient({
                 />
                 {/* C3 — helper text so an attendee filling this out for the
                     first time knows which number the form is asking for. */}
-                <span className="block mt-xs font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant">
+                <span className="block mt-xs font-body-md text-[calc(0.75rem*var(--text-scale))] text-on-surface-variant">
                   The number your college or council uses for you — the same
                   one you’d use on a CME/CPD claim form.
                 </span>
@@ -754,7 +754,7 @@ export function ProfileClient({
                   aria-label={`Remove ${a.institution_name}`}
                   className="shrink-0 text-on-surface-variant hover:text-on-surface"
                 >
-                  <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>close</span>
+                  <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))]" aria-hidden>close</span>
                 </button>
               </li>
             ))}
@@ -796,7 +796,7 @@ export function ProfileClient({
                   aria-label={`Remove ${m.society_label ?? m.society_code}`}
                   className="shrink-0 text-on-surface-variant hover:text-on-surface"
                 >
-                  <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>close</span>
+                  <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))]" aria-hidden>close</span>
                 </button>
               </li>
             ))}
@@ -880,9 +880,9 @@ function SectionCard({
           aria-hidden
           className="w-10 h-10 rounded-full bg-primary-fixed text-primary-ink flex items-center justify-center"
         >
-          <span className="material-symbols-outlined text-[calc(20px*var(--text-scale))]">{icon}</span>
+          <span className="material-symbols-outlined text-[calc(1.25rem*var(--text-scale))]">{icon}</span>
         </div>
-        <h2 className="font-headline-sm text-[calc(20px*var(--text-scale))] text-on-surface">{title}</h2>
+        <h2 className="font-headline-sm text-[calc(1.25rem*var(--text-scale))] text-on-surface">{title}</h2>
       </div>
       {children}
     </section>

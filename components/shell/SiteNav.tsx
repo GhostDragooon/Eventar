@@ -18,11 +18,11 @@ import { useScrollFade } from '@/lib/useScrollFade';
 // whitespace-nowrap + shrink-0 keep each label intact at 375px; the item group's
 // overflow-x-auto is the safety net (user-lens 2026-09-19).
 const NAV_ITEM =
-  'nav-item tap-44 shrink-0 whitespace-nowrap rounded-full px-[11px] py-[7px] text-[calc(13px*var(--text-scale))] font-medium';
+  'nav-item tap-44 inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-[11px] py-[7px] text-[calc(0.8125rem*var(--text-scale))] font-medium';
 const NAV_IDLE = 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface';
 const NAV_ACTIVE = 'bg-surface-container-high font-semibold text-on-surface';
 const PILL =
-  'tap-44 shrink-0 whitespace-nowrap rounded-full bg-primary px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary';
+  'tap-44 shrink-0 whitespace-nowrap rounded-full bg-primary px-md py-[7px] text-[calc(0.78125rem*var(--text-scale))] font-semibold text-on-primary';
 const PILL_MOTION =
   'transition-[translate,scale] duration-150 ease-out hover:-translate-y-px active:scale-[.97] motion-reduce:transition-none motion-reduce:hover:translate-y-0';
 

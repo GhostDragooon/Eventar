@@ -55,32 +55,32 @@ function AttentionRow({ it }: { it: AttentionItem }) {
           className={`mt-[2px] grid h-[26px] w-[26px] shrink-0 place-items-center rounded-lg ${TONE[it.tone].chip}`}
           aria-hidden
         >
-          <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]">
+          <span className="material-symbols-outlined text-[calc(1rem*var(--text-scale))]">
             {it.icon || TONE[it.tone].icon}
           </span>
         </span>
 
         <span className="min-w-0 flex-1">
-          <span className="block text-[calc(13.5px*var(--text-scale))] font-semibold leading-snug text-on-surface">
+          <span className="block text-[calc(0.84375rem*var(--text-scale))] font-semibold leading-snug text-on-surface">
             {it.title}
           </span>
-          <span className="mt-[2px] block text-[calc(12.5px*var(--text-scale))] leading-snug text-on-surface-variant">
+          <span className="mt-[2px] block text-[calc(0.78125rem*var(--text-scale))] leading-snug text-on-surface-variant">
             {it.detail}
           </span>
         </span>
 
         <span className="shrink-0 text-right">
-          <span className="block text-[calc(12.5px*var(--text-scale))] font-semibold tabular-nums text-on-surface">
+          <span className="block text-[calc(0.78125rem*var(--text-scale))] font-semibold tabular-nums text-on-surface">
             {it.meta}
           </span>
           {it.metaSub && (
-            <span className="block text-[calc(11.5px*var(--text-scale))] text-on-surface-variant">
+            <span className="block text-[calc(0.71875rem*var(--text-scale))] text-on-surface-variant">
               {it.metaSub}
             </span>
           )}
         </span>
 
-        <span className="material-symbols-outlined mt-[2px] shrink-0 text-[calc(18px*var(--text-scale))] text-on-surface-variant" aria-hidden>
+        <span className="material-symbols-outlined mt-[2px] shrink-0 text-[calc(1.125rem*var(--text-scale))] text-on-surface-variant" aria-hidden>
           chevron_right
         </span>
       </Link>
@@ -102,11 +102,11 @@ export function NeedsAttention({ items, limit }: { items: AttentionItem[]; limit
       <header className="flex flex-wrap items-baseline justify-between gap-sm border-b border-outline-variant px-lg py-md">
         <h2
           id="needs-attention-heading"
-          className="text-[calc(15px*var(--text-scale))] font-semibold text-on-surface"
+          className="text-[calc(0.9375rem*var(--text-scale))] font-semibold text-on-surface"
         >
           Needs attention
         </h2>
-        <p className="text-[calc(12px*var(--text-scale))] text-on-surface-variant">
+        <p className="text-[calc(0.75rem*var(--text-scale))] text-on-surface-variant">
           {items.length === 0
             ? 'nothing right now'
             : `${items.length} item${items.length === 1 ? '' : 's'} · every row links to its fix`}
@@ -116,7 +116,7 @@ export function NeedsAttention({ items, limit }: { items: AttentionItem[]; limit
       {items.length === 0 ? (
         // Spec rule 6: every empty state names the next action. This one is a
         // genuinely good state, so it says so rather than inventing a task.
-        <p className="px-lg py-xl text-center text-[calc(13px*var(--text-scale))] text-on-surface-variant">
+        <p className="px-lg py-xl text-center text-[calc(0.8125rem*var(--text-scale))] text-on-surface-variant">
           Nothing needs attention.
         </p>
       ) : (

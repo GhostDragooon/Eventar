@@ -65,14 +65,14 @@ export function PublishConfirmDialog({
       <ul id={listId} className="space-y-sm font-body-md text-body-md text-on-surface">
         {rows.map(([icon, text]) => (
           <li key={icon} className="flex items-start gap-sm">
-            <span className="material-symbols-outlined mt-[2px] text-[calc(18px*var(--text-scale))] text-on-surface-variant" aria-hidden>{icon}</span>
+            <span className="material-symbols-outlined mt-[2px] text-[calc(1.125rem*var(--text-scale))] text-on-surface-variant" aria-hidden>{icon}</span>
             <span className="min-w-0 flex-1">{text}</span>
           </li>
         ))}
       </ul>
       {error && (
         <p role="alert" className="mt-md flex items-start gap-xs font-body-md text-body-md text-error">
-          <span className="material-symbols-outlined mt-[2px] text-[calc(18px*var(--text-scale))]" aria-hidden>warning</span>
+          <span className="material-symbols-outlined mt-[2px] text-[calc(1.125rem*var(--text-scale))]" aria-hidden>warning</span>
           <span className="min-w-0 flex-1">{error}</span>
         </p>
       )}

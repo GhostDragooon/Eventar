@@ -61,9 +61,9 @@ export function ScanAndManual({
           onClick={onScanClick}
           disabled={closedMessage != null}
           aria-describedby={closedMessage ? 'checkin-closed-note' : undefined}
-          className="min-h-[64px] w-full gap-sm text-[calc(16px*var(--text-scale))] font-bold"
+          className="min-h-[64px] w-full gap-sm text-[calc(1rem*var(--text-scale))] font-bold"
         >
-          <span className="material-symbols-outlined text-[calc(22px*var(--text-scale))]" aria-hidden>
+          <span className="material-symbols-outlined text-[calc(1.375rem*var(--text-scale))]" aria-hidden>
             qr_code_scanner
           </span>
           Scan badge
@@ -76,9 +76,9 @@ export function ScanAndManual({
           onClick={() => setCodeOpen(true)}
           disabled={closedMessage != null}
           aria-describedby={closedMessage ? 'checkin-closed-note' : undefined}
-          className="min-h-[64px] w-full gap-sm text-[calc(16px*var(--text-scale))] font-bold"
+          className="min-h-[64px] w-full gap-sm text-[calc(1rem*var(--text-scale))] font-bold"
         >
-          <span className="material-symbols-outlined text-[calc(22px*var(--text-scale))]" aria-hidden>
+          <span className="material-symbols-outlined text-[calc(1.375rem*var(--text-scale))]" aria-hidden>
             keyboard
           </span>
           Enter code
@@ -209,7 +209,7 @@ function ManualCodeDialog({
               aria-invalid={state.kind === 'error' || undefined}
               aria-describedby={state.kind === 'error' ? 'manual-code-error' : 'manual-code-hint'}
               className={
-                'w-full rounded-lg border-2 bg-surface-container-lowest px-md py-sm text-center font-mono text-[calc(24px*var(--text-scale))] uppercase tracking-[0.16em] text-on-surface focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 ' +
+                'w-full rounded-lg border-2 bg-surface-container-lowest px-md py-sm text-center font-mono text-[calc(1.5rem*var(--text-scale))] uppercase tracking-[0.16em] text-on-surface focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 ' +
                 (state.kind === 'error' ? 'border-error' : 'border-outline-variant')
               }
             />

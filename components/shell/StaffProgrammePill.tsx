@@ -19,14 +19,14 @@ export function StaffProgrammePill() {
   return (
     <div className="flex shrink-0 items-center gap-sm">
       <span
-        className="hidden text-[calc(12px*var(--text-scale))] text-on-surface-variant sm:inline"
+        className="hidden text-[calc(0.75rem*var(--text-scale))] text-on-surface-variant sm:inline"
         aria-hidden
       >
         You’re viewing the public page
       </span>
       <Link
         href="/dashboard"
-        className="tap-44 shrink-0 whitespace-nowrap rounded-full bg-primary px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary transition-[translate,scale] duration-150 ease-out hover:-translate-y-px active:scale-[.97] motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+        className="tap-44 shrink-0 whitespace-nowrap rounded-full bg-primary px-md py-[7px] text-[calc(0.78125rem*var(--text-scale))] font-semibold text-on-primary transition-[translate,scale] duration-150 ease-out hover:-translate-y-px active:scale-[.97] motion-reduce:transition-none motion-reduce:hover:translate-y-0"
       >
         Events
       </Link>

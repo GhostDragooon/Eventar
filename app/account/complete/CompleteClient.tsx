@@ -521,7 +521,7 @@ export function CompleteClient({
                 <ul className="flex flex-col gap-sm m-0 p-0 list-none mb-md">
                   {licences.map((l) => (
                     <li key={l.id} className="flex items-center gap-sm">
-                      <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] text-[color:var(--on-primary-container)]" aria-hidden data-fill="1">
+                      <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] text-[color:var(--on-primary-container)]" aria-hidden data-fill="1">
                         check_circle
                       </span>
                       <span className="text-body-md font-semibold text-on-surface">{l.body_short_name ?? 'Body'}</span>
@@ -711,9 +711,9 @@ function SectionCard({ icon, title, children }: { icon: string; title: string; c
     <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm">
       <div className="flex items-center gap-md mb-md">
         <div aria-hidden className="w-10 h-10 rounded-full bg-primary-fixed text-primary-ink flex items-center justify-center">
-          <span className="material-symbols-outlined text-[calc(20px*var(--text-scale))]">{icon}</span>
+          <span className="material-symbols-outlined text-[calc(1.25rem*var(--text-scale))]">{icon}</span>
         </div>
-        <h2 className="font-headline-sm text-[calc(20px*var(--text-scale))] text-on-surface">{title}</h2>
+        <h2 className="font-headline-sm text-[calc(1.25rem*var(--text-scale))] text-on-surface">{title}</h2>
       </div>
       {children}
     </section>

@@ -105,12 +105,12 @@ export default function DateTimeSection({ value, onChange, venueTz }: Props) {
 
         {value.startMinutes !== null && value.endMinutes !== null && value.endMinutes <= value.startMinutes && (
           <p className="font-body-md text-body-md text-error flex items-center gap-xs">
-            <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>warning</span>
+            <span className="material-symbols-outlined text-[calc(1rem*var(--text-scale))]" aria-hidden>warning</span>
             End must be after Start.
           </p>
         )}
 
-        <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant">
+        <p className="font-body-md text-[calc(0.75rem*var(--text-scale))] text-on-surface-variant">
           Times are in your local timezone. The event page will display them in
           the venue’s local time.
         </p>

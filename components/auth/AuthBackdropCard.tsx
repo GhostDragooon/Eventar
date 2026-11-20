@@ -62,9 +62,9 @@ export function AuthBackdropCard({
         </div>
 
         <div className="hidden max-w-sm text-white lg:block">
-          <p className="text-[calc(28px*var(--text-scale))] font-bold tracking-tight">{asideTitle}</p>
-          <p className="mt-sm text-[calc(15px*var(--text-scale))] leading-relaxed text-white/80">{body}</p>
-          <p className="mt-lg text-[calc(13px*var(--text-scale))] text-white/70">
+          <p className="text-[calc(1.75rem*var(--text-scale))] font-bold tracking-tight">{asideTitle}</p>
+          <p className="mt-sm text-[calc(0.9375rem*var(--text-scale))] leading-relaxed text-white/80">{body}</p>
+          <p className="mt-lg text-[calc(0.8125rem*var(--text-scale))] text-white/70">
             <Link href="/" className="underline-offset-2 hover:underline">
               Back to home
             </Link>
@@ -76,7 +76,7 @@ export function AuthBackdropCard({
         </div>
       </div>
 
-      <p className="relative z-[1] pb-lg text-center text-[calc(13px*var(--text-scale))] text-white/80 lg:hidden">
+      <p className="relative z-[1] pb-lg text-center text-[calc(0.8125rem*var(--text-scale))] text-white/80 lg:hidden">
         <Link href="/" className="underline-offset-2 hover:underline">
           Home
         </Link>
@@ -99,10 +99,10 @@ export function AuthSsoSlotPlaceholder() {
       {/* TODO(auth-sso): wire real providers; keep this divider pattern from Auth 3 */}
       <div className="flex items-center gap-sm text-on-surface-variant">
         <span className="h-px flex-1 bg-outline-variant" />
-        <span className="text-[calc(12px*var(--text-scale))]">or</span>
+        <span className="text-[calc(0.75rem*var(--text-scale))]">or</span>
         <span className="h-px flex-1 bg-outline-variant" />
       </div>
-      <p className="text-center text-[calc(12px*var(--text-scale))] text-on-surface-variant">
+      <p className="text-center text-[calc(0.75rem*var(--text-scale))] text-on-surface-variant">
         SSO coming later
       </p>
     </div>

@@ -143,15 +143,15 @@ function FeatureBand({
 }) {
   return (
     <section id={id} className="mx-auto mt-[46px] max-w-[1200px] px-[15px]">
-      <h2 className="text-center text-[calc(26px*var(--text-scale))] font-semibold tracking-[-0.01em] text-on-surface">
+      <h2 className="text-center text-[calc(1.625rem*var(--text-scale))] font-semibold tracking-[-0.01em] text-on-surface">
         {title}
       </h2>
-      <p className="mt-[6px] text-center text-[calc(13.5px*var(--text-scale))] text-on-surface-variant">{sub}</p>
+      <p className="mt-[6px] text-center text-[calc(0.84375rem*var(--text-scale))] text-on-surface-variant">{sub}</p>
       <div className="mt-lg grid gap-md md:grid-cols-3">
         {FEATURES[audience].map((f) => (
           <article key={f.t} className="rounded-[14px] border border-outline-variant bg-surface-container-lowest p-lg">
-            <h3 className="text-[calc(15px*var(--text-scale))] font-semibold leading-snug text-on-surface">{f.t}</h3>
-            <p className="mt-sm text-[calc(13px*var(--text-scale))] leading-[1.55] text-on-surface-variant">{f.d}</p>
+            <h3 className="text-[calc(0.9375rem*var(--text-scale))] font-semibold leading-snug text-on-surface">{f.t}</h3>
+            <p className="mt-sm text-[calc(0.8125rem*var(--text-scale))] leading-[1.55] text-on-surface-variant">{f.d}</p>
           </article>
         ))}
       </div>

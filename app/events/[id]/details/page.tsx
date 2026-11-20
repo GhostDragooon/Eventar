@@ -377,7 +377,7 @@ export default async function EventDetailsPage({
         <div className="min-w-0">
           <p className="text-label-md font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-xs">Event Manager</p>
           <div className="flex items-center gap-sm flex-wrap">
-            <h1 className="text-[calc(30px*var(--text-scale))] leading-[1.1] font-extrabold tracking-[-0.025em] text-on-surface">{event.title}</h1>
+            <h1 className="text-[calc(1.875rem*var(--text-scale))] leading-[1.1] font-extrabold tracking-[-0.025em] text-on-surface">{event.title}</h1>
             {structuralLocked && <LockIcon />}
             <StatusChip lifecycle={lifecycle} />
           </div>
@@ -409,7 +409,7 @@ export default async function EventDetailsPage({
 
       {regs.length >= 50 && (
         <div role="alert" className="mt-md flex items-center gap-sm rounded-xl border border-outline-variant bg-tertiary-container/40 px-lg py-md text-body-md text-on-tertiary-container">
-          <span className="material-symbols-outlined text-[calc(20px*var(--text-scale))]" aria-hidden>warning</span>
+          <span className="material-symbols-outlined text-[calc(1.25rem*var(--text-scale))]" aria-hidden>warning</span>
           <span><strong>{regs.length}</strong> registrations — you may want to review capacity before accepting more.</span>
         </div>
       )}
@@ -563,13 +563,13 @@ export default async function EventDetailsPage({
             <span><strong className="text-on-surface">{evidenceCount}</strong> evidence {evidenceCount === 1 ? 'record' : 'records'}</span>
             {missingEvidence > 0 && (
               <span className="flex items-center gap-xs text-warning">
-                <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>warning</span>
+                <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))]" aria-hidden>warning</span>
                 {missingEvidence} check-in{missingEvidence === 1 ? '' : 's'} without evidence
               </span>
             )}
             {missingEvidence === 0 && attended > 0 && evidenceCount > 0 && (
               <span className="flex items-center gap-xs text-success">
-                <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>check_circle</span>
+                <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))]" aria-hidden>check_circle</span>
                 Evidence in sync with check-ins
               </span>
             )}
@@ -608,7 +608,7 @@ export default async function EventDetailsPage({
 function LockIcon() {
   return (
     <span
-      className="material-symbols-outlined text-[calc(14px*var(--text-scale))] text-on-surface-variant align-middle"
+      className="material-symbols-outlined text-[calc(0.875rem*var(--text-scale))] text-on-surface-variant align-middle"
       title="Locked since registration opened"
       aria-label="Locked since registration opened"
       role="img"
@@ -629,30 +629,30 @@ function ActionToolbar({ eventId, lifecycle, writable = true }: { eventId: strin
   return (
     <div className="flex gap-xs flex-wrap shrink-0">
       <Link href={`/events/${eventId}/edit`} className={outline}>
-        <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>{writable ? 'edit' : 'visibility'}</span>{writable ? 'Edit' : 'View'}
+        <span className="material-symbols-outlined text-[calc(1rem*var(--text-scale))]" aria-hidden>{writable ? 'edit' : 'visibility'}</span>{writable ? 'Edit' : 'View'}
       </Link>
       {showRoster && (
         <>
           <Link href={`/events/${eventId}/registrations`} className={outline}>
-            <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>group</span>Registrations
+            <span className="material-symbols-outlined text-[calc(1rem*var(--text-scale))]" aria-hidden>group</span>Registrations
           </Link>
           <Link href={`/events/${eventId}/checkin`} className={lifecycle === 'live' ? live : outline}>
-            <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>how_to_reg</span>Check-in
+            <span className="material-symbols-outlined text-[calc(1rem*var(--text-scale))]" aria-hidden>how_to_reg</span>Check-in
           </Link>
         </>
       )}
       {showPublic && (
         <Link href={`/events/${eventId}`} target="_blank" rel="noreferrer" className={outline}>
-          <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>open_in_new</span>Public
+          <span className="material-symbols-outlined text-[calc(1rem*var(--text-scale))]" aria-hidden>open_in_new</span>Public
         </Link>
       )}
       {canAnalytics ? (
         <Link href={`/events/${eventId}/analytics`} className={outline}>
-          <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>insights</span>Analytics
+          <span className="material-symbols-outlined text-[calc(1rem*var(--text-scale))]" aria-hidden>insights</span>Analytics
         </Link>
       ) : (
         <span className={`${base} border-outline-variant text-on-surface-variant opacity-50 cursor-not-allowed`}>
-          <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>insights</span>Analytics (after the event)
+          <span className="material-symbols-outlined text-[calc(1rem*var(--text-scale))]" aria-hidden>insights</span>Analytics (after the event)
         </span>
       )}
     </div>

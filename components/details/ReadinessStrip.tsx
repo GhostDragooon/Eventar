@@ -53,15 +53,15 @@ export function ReadinessStrip({ cells }: { cells: ReadinessCell[] }) {
           border on every child (which double-draws at the seams). */}
       {cells.map((c) => (
         <div key={c.label} className="bg-surface-container-lowest px-md py-sm">
-          <p className="flex items-center gap-xs text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-[.07em] text-on-surface-variant">
+          <p className="flex items-center gap-xs text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-[.07em] text-on-surface-variant">
             <span className={`h-[6px] w-[6px] shrink-0 rounded-full ${DOT[c.state]}`} aria-hidden />
             {c.label}
           </p>
-          <p className="mt-[3px] text-[calc(17px*var(--text-scale))] font-semibold tabular-nums leading-tight text-on-surface">
+          <p className="mt-[3px] text-[calc(1.0625rem*var(--text-scale))] font-semibold tabular-nums leading-tight text-on-surface">
             {c.value}
           </p>
           {c.note && (
-            <p className={`mt-[1px] text-[calc(11.5px*var(--text-scale))] ${NOTE[c.state]}`}>{c.note}</p>
+            <p className={`mt-[1px] text-[calc(0.71875rem*var(--text-scale))] ${NOTE[c.state]}`}>{c.note}</p>
           )}
         </div>
       ))}

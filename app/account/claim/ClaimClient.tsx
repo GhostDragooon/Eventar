@@ -62,10 +62,10 @@ export function ClaimClient({
             aria-hidden
             className="w-10 h-10 rounded-full bg-primary-fixed text-primary-ink flex items-center justify-center shrink-0"
           >
-            <span className="material-symbols-outlined text-[calc(20px*var(--text-scale))]">link</span>
+            <span className="material-symbols-outlined text-[calc(1.25rem*var(--text-scale))]">link</span>
           </div>
           <div className="flex-1">
-            <h2 className="font-headline-sm text-[calc(20px*var(--text-scale))] text-on-surface m-0">
+            <h2 className="font-headline-sm text-[calc(1.25rem*var(--text-scale))] text-on-surface m-0">
               Guest registrations under {email || 'your email'}
             </h2>
             <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
@@ -81,7 +81,7 @@ export function ClaimClient({
             aria-live="polite"
             className="font-body-md text-body-md text-on-warning-container bg-warning-container border border-warning-container rounded-lg px-md py-sm flex items-start gap-sm"
           >
-            <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>
+            <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>
               info
             </span>
             <span className="flex-1">
@@ -99,7 +99,7 @@ export function ClaimClient({
             aria-live="polite"
             className="font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm flex items-start gap-sm"
           >
-            <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden data-fill="1">
+            <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden data-fill="1">
               check_circle
             </span>
             <span className="flex-1">
@@ -114,7 +114,7 @@ export function ClaimClient({
             aria-live="polite"
             className="font-body-md text-body-md text-on-surface-variant bg-surface-container border border-outline-variant rounded-lg px-md py-sm flex items-start gap-sm"
           >
-            <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>
+            <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>
               info
             </span>
             <span className="flex-1">

@@ -423,10 +423,10 @@ function PassView({
             <p className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-xs m-0">
               Manual check-in code
             </p>
-            <code className="font-mono font-extrabold text-[calc(26px*var(--text-scale))] tracking-[0.14em] text-[color:var(--on-primary-container)]">
+            <code className="font-mono font-extrabold text-[calc(1.625rem*var(--text-scale))] tracking-[0.14em] text-[color:var(--on-primary-container)]">
               {code}
             </code>
-            <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant mt-xs m-0">
+            <p className="font-body-md text-[calc(0.75rem*var(--text-scale))] text-on-surface-variant mt-xs m-0">
               If the QR won’t scan, give reception this code instead.
             </p>
           </div>
@@ -505,7 +505,7 @@ function CheckedInView({
           className="inline-flex items-center justify-center w-[72px] h-[72px] rounded-full bg-[color:var(--success)] text-white shadow-[0_0_0_8px_rgba(22,163,74,0.15)]"
           aria-hidden
         >
-          <span className="material-symbols-outlined text-[calc(40px*var(--text-scale))]">check</span>
+          <span className="material-symbols-outlined text-[calc(2.5rem*var(--text-scale))]">check</span>
         </span>
         <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">You’re checked in.</h1>
         {(checkInAt || via) && (
@@ -529,7 +529,7 @@ function CheckedInView({
           aria-live="polite"
           className="font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm flex items-start gap-sm m-0"
         >
-          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden data-fill="1">check_circle</span>
+          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden data-fill="1">check_circle</span>
           <span className="flex-1"><abbr title="Continuing medical education">CME</abbr>/<abbr title="Continuing professional development">CPD</abbr> points recorded.</span>
         </p>
       )}
@@ -539,7 +539,7 @@ function CheckedInView({
           aria-live="polite"
           className="font-body-md text-body-md text-on-surface-variant bg-surface-container border border-outline-variant rounded-lg px-md py-sm flex items-start gap-sm m-0"
         >
-          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>info</span>
+          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>info</span>
           <span className="flex-1">
             CME/CPD points are pending.{' '}
             {/* H1 — signed-in visitors go straight to the claim page; only
@@ -565,7 +565,7 @@ function CheckedInView({
           aria-live="polite"
           className="font-body-md text-body-md text-on-surface-variant bg-surface-container border border-outline-variant rounded-lg px-md py-sm flex items-start gap-sm m-0"
         >
-          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>info</span>
+          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>info</span>
           <span className="flex-1">
             {/* H7 — 'missing' isn't one thing. For a signed-in attendee it
                 most often means an F1–F5 gate failed (profile, licence,

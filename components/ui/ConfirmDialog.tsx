@@ -67,7 +67,7 @@ export function ConfirmDialog({
           as a duplicate) — keyboard users have Escape + the real Cancel. */}
       <div aria-hidden onClick={backdropCancels ? onCancel : undefined} className="absolute inset-0 bg-on-surface/60" />
       <div className="relative w-full max-w-[420px] origin-center animate-overlay-in rounded-[20px] bg-popover border border-outline-variant shadow-xl p-lg">
-        <h2 id="confirm-dialog-title" className="text-[calc(18px*var(--text-scale))] font-bold tracking-[-0.01em] text-on-surface mb-xs">
+        <h2 id="confirm-dialog-title" className="text-[calc(1.125rem*var(--text-scale))] font-bold tracking-[-0.01em] text-on-surface mb-xs">
           {title}
         </h2>
         <p id="confirm-dialog-body" className="font-body-md text-body-md text-on-surface-variant mb-lg">{body}</p>

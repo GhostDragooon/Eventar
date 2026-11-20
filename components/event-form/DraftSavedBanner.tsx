@@ -43,7 +43,7 @@ export function DraftSavedBanner({
       )}
       {showSaved && (
         <p className="flex items-start gap-sm rounded-lg border border-success-container bg-success-container px-md py-sm font-body-md text-body-md text-on-success-container">
-          <span className="material-symbols-outlined mt-[2px] text-[calc(18px*var(--text-scale))]" aria-hidden data-fill="1">check_circle</span>
+          <span className="material-symbols-outlined mt-[2px] text-[calc(1.125rem*var(--text-scale))]" aria-hidden data-fill="1">check_circle</span>
           <span className="min-w-0 flex-1">
             {canPublish ? (
               <>

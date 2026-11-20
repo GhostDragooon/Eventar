@@ -76,7 +76,7 @@ export default function GlobalError({
       <p className="text-label-md font-semibold uppercase tracking-[0.18em] text-[color:var(--error)] mb-sm">
         Something broke
       </p>
-      <h1 className="text-[calc(30px*var(--text-scale))] font-extrabold tracking-[-0.03em] mb-sm">
+      <h1 className="text-[calc(1.875rem*var(--text-scale))] font-extrabold tracking-[-0.03em] mb-sm">
         {copy.heading}
       </h1>
       <p className="font-body-md text-body-md text-on-surface-variant mb-lg max-w-[440px]">{copy.body}</p>
@@ -107,7 +107,7 @@ export default function GlobalError({
           }}
           className="min-h-11 gap-xs font-label-md text-label-md text-on-primary! py-sm px-lg"
         >
-          <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>refresh</span>
+          <span className="material-symbols-outlined text-[calc(1rem*var(--text-scale))]" aria-hidden>refresh</span>
           Try again
         </Button>
       </div>

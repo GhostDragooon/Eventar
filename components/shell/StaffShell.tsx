@@ -92,14 +92,14 @@ export function NavRow({
 }) {
   const inner = (
     <>
-      <span className="material-symbols-outlined text-[calc(20px*var(--text-scale))]" aria-hidden>
+      <span className="material-symbols-outlined text-[calc(1.25rem*var(--text-scale))]" aria-hidden>
         {icon}
       </span>
       {/* No `truncate`: at 248px every label fits, and truncating clipped
           "Communications" to "Communicati…" once the Soon chip took its space. */}
       <span className="reserve-bold flex-1 whitespace-nowrap text-left" data-text={label}>{label}</span>
       {count !== undefined && (
-        <span className="rounded-full bg-surface-container-high px-sm py-[1px] text-[calc(11px*var(--text-scale))] font-semibold text-on-surface-variant">
+        <span className="rounded-full bg-surface-container-high px-sm py-[1px] text-[calc(0.6875rem*var(--text-scale))] font-semibold text-on-surface-variant">
           {count}
         </span>
       )}
@@ -107,7 +107,7 @@ export function NavRow({
   );
 
   const base =
-    'nav-item flex w-full items-center gap-sm rounded-full px-md py-sm text-[calc(13.5px*var(--text-scale))] font-medium';
+    'nav-item flex w-full items-center gap-sm rounded-full px-md py-sm text-[calc(0.84375rem*var(--text-scale))] font-medium';
 
   if (!href) {
     return (
@@ -120,7 +120,7 @@ export function NavRow({
         className={`${base} cursor-default text-on-surface-variant/45`}
       >
         {inner}
-        <span className="rounded-full border border-outline-variant px-sm py-[1px] text-[calc(10px*var(--text-scale))] font-semibold uppercase tracking-[.06em] text-on-surface-variant/70">
+        <span className="rounded-full border border-outline-variant px-sm py-[1px] text-[calc(0.625rem*var(--text-scale))] font-semibold uppercase tracking-[.06em] text-on-surface-variant/70">
           Soon
         </span>
       </span>
@@ -161,7 +161,7 @@ export function StaffShell(props: StaffShellProps) {
     <div className="app-atmo flex min-h-dvh w-full flex-col text-on-surface">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-md focus:top-md focus:z-50 focus:rounded-full focus:bg-primary focus:px-md focus:py-sm focus:text-[calc(13px*var(--text-scale))] focus:font-semibold focus:text-on-primary"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-md focus:top-md focus:z-50 focus:rounded-full focus:bg-primary focus:px-md focus:py-sm focus:text-[calc(0.8125rem*var(--text-scale))] focus:font-semibold focus:text-on-primary"
       >
         Skip to content
       </a>
@@ -184,7 +184,7 @@ export function StaffShell(props: StaffShellProps) {
             {backHref && backLabel && (
               <Link
                 href={backHref}
-                className="nav-item block max-w-full truncate px-md text-[calc(13px*var(--text-scale))] text-on-surface-variant hover:text-on-surface"
+                className="nav-item block max-w-full truncate px-md text-[calc(0.8125rem*var(--text-scale))] text-on-surface-variant hover:text-on-surface"
               >
                 <span aria-hidden>← </span>
                 Back to {backLabel}
@@ -205,7 +205,7 @@ export function StaffShell(props: StaffShellProps) {
               ))}
 
               {/* ADMIN group, per the mockup. */}
-              <p className="mt-md hidden px-md text-[calc(10px*var(--text-scale))] font-semibold uppercase tracking-[.1em] text-on-surface-variant/70 md:block">
+              <p className="mt-md hidden px-md text-[calc(0.625rem*var(--text-scale))] font-semibold uppercase tracking-[.1em] text-on-surface-variant/70 md:block">
                 Admin
               </p>
               <NavRow label="Settings" href="/settings" icon="settings" active={pathname === '/settings' || pathname.startsWith('/settings/')} />
@@ -219,15 +219,15 @@ export function StaffShell(props: StaffShellProps) {
                 type="button"
                 disabled={signingOut}
                 onClick={signOut}
-                className="nav-item flex w-full items-center gap-sm rounded-full px-md py-sm text-[calc(13.5px*var(--text-scale))] font-medium text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
+                className="nav-item flex w-full items-center gap-sm rounded-full px-md py-sm text-[calc(0.84375rem*var(--text-scale))] font-medium text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
               >
-                <span className="material-symbols-outlined text-[calc(20px*var(--text-scale))]" aria-hidden>
+                <span className="material-symbols-outlined text-[calc(1.25rem*var(--text-scale))]" aria-hidden>
                   logout
                 </span>
                 <span className="flex-1 whitespace-nowrap text-left">{signingOut ? 'Signing out…' : 'Sign out'}</span>
               </button>
               {signOutError && (
-                <p role="alert" className="m-0 px-md pt-xs text-[calc(13px*var(--text-scale))] text-error">
+                <p role="alert" className="m-0 px-md pt-xs text-[calc(0.8125rem*var(--text-scale))] text-error">
                   {signOutError}
                 </p>
               )}
@@ -241,22 +241,22 @@ export function StaffShell(props: StaffShellProps) {
                 handler; Settings and Sign out are the rows above. */}
             <div className="mt-auto flex items-center gap-sm rounded-[12px] px-md py-sm">
               <span
-                className="grid h-[30px] w-[30px] flex-shrink-0 place-items-center rounded-full bg-primary-container text-[calc(12px*var(--text-scale))] font-semibold text-on-primary-container"
+                className="grid h-[30px] w-[30px] flex-shrink-0 place-items-center rounded-full bg-primary-container text-[calc(0.75rem*var(--text-scale))] font-semibold text-on-primary-container"
                 aria-hidden
               >
                 {staff.email.slice(0, 2).toUpperCase()}
               </span>
               <div className="min-w-0">
-                <div className="truncate text-[calc(13px*var(--text-scale))] font-semibold leading-tight text-on-surface">
+                <div className="truncate text-[calc(0.8125rem*var(--text-scale))] font-semibold leading-tight text-on-surface">
                   {firstName(staff.full_name) || staff.email.split('@')[0]}
                 </div>
                 <div
-                  className="max-w-[160px] truncate text-[calc(11.5px*var(--text-scale))] text-on-surface-variant"
+                  className="max-w-[160px] truncate text-[calc(0.71875rem*var(--text-scale))] text-on-surface-variant"
                   title={staff.email}
                 >
                   {staff.email}
                 </div>
-                <div className="text-[calc(11.5px*var(--text-scale))] text-on-surface-variant">{ROLE_LABELS[staff.role]}</div>
+                <div className="text-[calc(0.71875rem*var(--text-scale))] text-on-surface-variant">{ROLE_LABELS[staff.role]}</div>
               </div>
             </div>
           </div>

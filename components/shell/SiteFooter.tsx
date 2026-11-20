@@ -23,7 +23,7 @@ export function SiteFooter({ links = true, onEvents = false }: { links?: boolean
   return (
     <footer className="mt-xxl w-full border-t border-outline-variant px-lg py-xl">
       <div className="mx-auto flex max-w-[980px] flex-wrap items-center justify-between gap-md">
-        <p className="text-[calc(12.5px*var(--text-scale))] text-on-surface-variant">
+        <p className="text-[calc(0.78125rem*var(--text-scale))] text-on-surface-variant">
           By <span className="font-bold text-on-surface">Eventar</span> · <abbr title="Continuing professional development">CPD</abbr> infrastructure, Hong Kong
         </p>
 
@@ -34,24 +34,24 @@ export function SiteFooter({ links = true, onEvents = false }: { links?: boolean
                 /events and goes nowhere. */}
             <Link
               href="/#how-it-works"
-              className="nav-item tap-44 text-[calc(12.5px*var(--text-scale))] text-on-surface-variant hover:text-on-surface"
+              className="nav-item tap-44 text-[calc(0.78125rem*var(--text-scale))] text-on-surface-variant hover:text-on-surface"
             >
               How it works
             </Link>
             <Link
               href="/#platform"
-              className="nav-item tap-44 text-[calc(12.5px*var(--text-scale))] text-on-surface-variant hover:text-on-surface"
+              className="nav-item tap-44 text-[calc(0.78125rem*var(--text-scale))] text-on-surface-variant hover:text-on-surface"
             >
               Platform
             </Link>
             {onEvents ? (
-              <span aria-current="page" className="text-[calc(12.5px*var(--text-scale))] font-semibold text-on-surface">
+              <span aria-current="page" className="text-[calc(0.78125rem*var(--text-scale))] font-semibold text-on-surface">
                 Upcoming events
               </span>
             ) : (
               <Link
                 href="/events"
-                className="nav-item tap-44 text-[calc(12.5px*var(--text-scale))] text-on-surface-variant hover:text-on-surface"
+                className="nav-item tap-44 text-[calc(0.78125rem*var(--text-scale))] text-on-surface-variant hover:text-on-surface"
               >
                 Upcoming events
               </Link>

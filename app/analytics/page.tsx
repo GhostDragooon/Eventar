@@ -87,7 +87,7 @@ export default async function AnalyticsIndexPage() {
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role }}>
       <header className="mb-lg">
-        <h1 className="text-[calc(30px*var(--text-scale))] leading-[1.1] font-extrabold tracking-[-0.025em] text-on-surface">History</h1>
+        <h1 className="text-[calc(1.875rem*var(--text-scale))] leading-[1.1] font-extrabold tracking-[-0.025em] text-on-surface">History</h1>
         <p className="font-body-md text-body-md text-on-surface-variant mt-xs">{completed.length} completed event{completed.length === 1 ? '' : 's'}. Pick one to review it.</p>
       </header>
 
@@ -113,14 +113,14 @@ export default async function AnalyticsIndexPage() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="leading-none">
-                    <span className="text-[calc(24px*var(--text-scale))] font-extrabold tracking-[-0.02em] tabular-nums text-on-surface">{e.attended}</span>
+                    <span className="text-[calc(1.5rem*var(--text-scale))] font-extrabold tracking-[-0.02em] tabular-nums text-on-surface">{e.attended}</span>
                     <span className="text-body-md text-on-surface-variant"> / {e.registered} attended</span>
                   </p>
                   <p className="font-label-md text-label-md text-[color:var(--on-primary-container)] font-semibold normal-case tracking-normal mt-[2px]">
                     {e.responses} response{e.responses === 1 ? '' : 's'}
                   </p>
                 </div>
-                <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] text-on-surface-variant shrink-0" aria-hidden>insights</span>
+                <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] text-on-surface-variant shrink-0" aria-hidden>insights</span>
               </Link>
             </li>
           ))}
@@ -128,7 +128,7 @@ export default async function AnalyticsIndexPage() {
       )}
 
       {(events ?? []).length >= HISTORY_CAP && (
-        <p className="mt-lg text-[calc(13px*var(--text-scale))] text-on-surface-variant">
+        <p className="mt-lg text-[calc(0.8125rem*var(--text-scale))] text-on-surface-variant">
           Showing the newest {HISTORY_CAP} completed events. Older ones are not listed here yet.
         </p>
       )}

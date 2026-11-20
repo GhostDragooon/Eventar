@@ -161,7 +161,7 @@ function LoginForm() {
         <summary className="cursor-pointer font-body-md text-body-md text-[color:var(--on-primary-container)] hover:underline list-none">
           Trouble logging in?
         </summary>
-        <ul className="mt-sm font-body-md text-[calc(13px*var(--text-scale))] text-on-surface-variant leading-relaxed list-disc pl-lg flex flex-col gap-xs">
+        <ul className="mt-sm font-body-md text-[calc(0.8125rem*var(--text-scale))] text-on-surface-variant leading-relaxed list-disc pl-lg flex flex-col gap-xs">
           <li>
             {isInvite
               ? 'Log-in links expire after 15 minutes and work once. Request a fresh one above.'

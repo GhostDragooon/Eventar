@@ -2,8 +2,6 @@ import { notFound, redirect } from 'next/navigation';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import type { AgendaTopic } from '@/lib/agenda';
-import { buildEventQrPng } from '@/lib/qr';
-import { getRequestOrigin } from '@/lib/origin';
 import RegisterCard from '@/components/RegisterCard';
 import { BackToRegistrations } from './BackToRegistrations';
 import { PublicShell } from '@/components/shell/PublicShell';
@@ -196,14 +194,6 @@ export default async function PublicEventPage({
   // their staff email — that would silently register them as an attendee.
   const signedInEmail = signedInUser && !isStaff ? signedInUser.email ?? null : null;
 
-  // Origin via NEXT_PUBLIC_SITE_URL (with header fallback in dev) — prevents
-  // host-header spoofing from poisoning the QR URL. See lib/origin.ts.
-  const origin = await getRequestOrigin();
-  const { pngBase64 } = await buildEventQrPng(
-    { id: event.id, title: event.title },
-    origin,
-  );
-
   // §1 event-meta: row 1 = address (muted), row 2 = date + time (date accented).
   const dateLabel = formatDate(event.start_time, event.timezone);
   const timeLabel = formatTimeRange(event.start_time, event.end_time, event.timezone);
@@ -351,19 +341,6 @@ export default async function PublicEventPage({
           signedIn={signedInUser !== null}
           isStaff={isStaff}
         />
-
-        {/* Share QR — compact, sits inside the rhythm; no separate card chrome. */}
-        <section className="flex items-center gap-md">
-          {/* eslint-disable-next-line @next/next/no-img-element -- inline base64 data URL */}
-          <img
-            src={`data:image/png;base64,${pngBase64}`}
-            alt="QR code for this event"
-            className="w-24 h-24 border border-outline-variant rounded-lg bg-surface-container-lowest p-xs"
-          />
-          <p className="font-body-md text-body-md text-on-surface-variant m-0 flex-1 min-w-0">
-            Scan or share this code to open this event on another device.
-          </p>
-        </section>
       </div>
     </PublicShell>
   );

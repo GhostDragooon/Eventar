@@ -14,7 +14,7 @@ export default function NotFound() {
         <p className="text-label-md font-semibold uppercase tracking-[0.18em] text-[color:var(--on-primary-container)] mb-sm">
           404
         </p>
-        <h1 className="text-[calc(34px*var(--text-scale))] font-extrabold tracking-[-0.03em] text-on-surface mb-sm">
+        <h1 className="text-[calc(2.125rem*var(--text-scale))] font-extrabold tracking-[-0.03em] text-on-surface mb-sm">
           This page doesn’t exist.
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant mb-lg">
@@ -27,7 +27,7 @@ export default function NotFound() {
           </Link>
           <Link href="/events" className={cn(buttonVariants({ variant: 'default' }), 'min-h-11 gap-xs px-lg')}>
             Upcoming events
-            <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>arrow_forward</span>
+            <span className="material-symbols-outlined text-[calc(1rem*var(--text-scale))]" aria-hidden>arrow_forward</span>
           </Link>
         </div>
       </div>

@@ -65,9 +65,9 @@ export function Scoreboard({
       style={{ background: 'radial-gradient(120% 140% at 0% 0% in oklch, #123420 0%, #0A0A0A 55%)' }}
     >
       <div className="flex items-center justify-between mb-md">
-        <p className="text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-[0.18em] text-white/50">Status</p>
+        <p className="text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-[0.18em] text-white/50">Status</p>
         <span
-          className={`inline-flex items-center gap-xs px-sm py-[2px] rounded-full border text-[calc(11px*var(--text-scale))] font-bold uppercase tracking-[0.12em] ${
+          className={`inline-flex items-center gap-xs px-sm py-[2px] rounded-full border text-[calc(0.6875rem*var(--text-scale))] font-bold uppercase tracking-[0.12em] ${
             isLive ? 'border-[#4ADE80] text-[#4ADE80] live-pill-pulse' : 'border-white/25 text-white/70'
           }`}
         >
@@ -80,7 +80,7 @@ export function Scoreboard({
           or the closed/cancelled state once there's nothing left to count
           down to. */}
       <p
-        className="text-[calc(44px*var(--text-scale))] leading-none font-extrabold tracking-[-0.03em] tabular-nums mb-lg"
+        className="text-[calc(2.75rem*var(--text-scale))] leading-none font-extrabold tracking-[-0.03em] tabular-nums mb-lg"
         aria-live="polite"
       >
         {headline}
@@ -88,12 +88,12 @@ export function Scoreboard({
 
       <div className="flex flex-wrap items-end justify-between gap-md">
         <p className="leading-none">
-          <span className={`text-[calc(34px*var(--text-scale))] font-extrabold tracking-[-0.02em] tabular-nums ${isLive ? 'text-[#4ADE80]' : 'text-white'}`}>
+          <span className={`text-[calc(2.125rem*var(--text-scale))] font-extrabold tracking-[-0.02em] tabular-nums ${isLive ? 'text-[#4ADE80]' : 'text-white'}`}>
             {attended}
           </span>
           <span className="text-body-md text-white/40"> / {registered} checked in</span>
         </p>
-        <p className="text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-[0.14em] text-white/50">
+        <p className="text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-[0.14em] text-white/50">
           Attendance · {isLive ? 'live' : isClosed ? 'final' : isCancelled ? 'n/a' : 'pending'}
         </p>
       </div>

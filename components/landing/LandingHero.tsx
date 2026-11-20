@@ -108,7 +108,7 @@ export function LandingHero({
             the margin-collapse outright, no ambiguity). 17px label-to-pill
             is unchanged, not part of this instruction. */}
         <div className="mb-[47px] flex flex-col items-center gap-[17px]">
-          <span className="text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-[.08em] text-on-surface-variant">
+          <span className="text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-[.08em] text-on-surface-variant">
             I’m a&hellip;
           </span>
           <div
@@ -128,7 +128,7 @@ export function LandingHero({
                 role="tab"
                 aria-selected={aud === k}
                 onClick={() => onAudienceChange(k)}
-                className={`relative z-[1] whitespace-nowrap rounded-full px-[14px] py-[10px] text-[calc(12px*var(--text-scale))] font-semibold transition-colors sm:px-[22px] sm:text-[calc(13px*var(--text-scale))] ${
+                className={`relative z-[1] whitespace-nowrap rounded-full px-[14px] py-[10px] text-[calc(0.75rem*var(--text-scale))] font-semibold transition-colors sm:px-[22px] sm:text-[calc(0.8125rem*var(--text-scale))] ${
                   aud === k ? 'text-on-primary' : 'text-on-surface-variant'
                 }`}
               >
@@ -159,7 +159,7 @@ export function LandingHero({
             of how many lines the copy underneath it wraps to. */}
         <div className="mt-xl grid items-start gap-xl text-center lg:grid-cols-2 lg:text-left">
           <div className="hero-copy">
-            <span className="inline-flex items-center gap-sm rounded-full border border-outline-variant bg-surface-container-lowest px-md py-[5px] text-[calc(12px*var(--text-scale))] font-semibold text-on-surface-variant">
+            <span className="inline-flex items-center gap-sm rounded-full border border-outline-variant bg-surface-container-lowest px-md py-[5px] text-[calc(0.75rem*var(--text-scale))] font-semibold text-on-surface-variant">
               <span className="h-[6px] w-[6px] rounded-full bg-primary" aria-hidden />
               {c.chip}
             </span>
@@ -180,7 +180,7 @@ export function LandingHero({
                 shorter, even with items-start fixing the top. Scales with
                 --text-scale like every other size on this page, not a bare
                 px value that would clip at the Large text-size setting. */}
-            <p className="mx-auto mt-md max-w-[56ch] min-h-[calc(16px*1.6*3*var(--text-scale))] text-[calc(16px*var(--text-scale))] leading-[1.6] text-on-surface-variant lg:mx-0">
+            <p className="mx-auto mt-md max-w-[56ch] min-h-[calc(16px*1.6*3*var(--text-scale))] text-[calc(1rem*var(--text-scale))] leading-[1.6] text-on-surface-variant lg:mx-0">
               {c.sub}
             </p>
 
@@ -198,7 +198,7 @@ export function LandingHero({
                 <Link
                   key={cta.href}
                   href={cta.href}
-                  className="rounded-full bg-primary px-[19px] py-[9px] text-[calc(13px*var(--text-scale))] font-semibold text-on-primary transition-shadow hover:shadow-[0_8px_22px_rgba(13,116,226,.35)]"
+                  className="rounded-full bg-primary px-[19px] py-[9px] text-[calc(0.8125rem*var(--text-scale))] font-semibold text-on-primary transition-shadow hover:shadow-[0_8px_22px_rgba(13,116,226,.35)]"
                 >
                   {cta.label}
                 </Link>
@@ -208,7 +208,7 @@ export function LandingHero({
             {/* "8 bodies" means encoded rulebooks, NOT endorsements — the
                 artifact is explicit about that and the copy must not imply
                 otherwise. */}
-            <p className="mt-[18px] flex flex-wrap items-center justify-center gap-sm text-[calc(12px*var(--text-scale))] text-on-surface-variant lg:justify-start">
+            <p className="mt-[18px] flex flex-wrap items-center justify-center gap-sm text-[calc(0.75rem*var(--text-scale))] text-on-surface-variant lg:justify-start">
               Rule-aware for <b className="font-semibold text-on-surface">8 Hong Kong accrediting bodies</b>
               <span className="text-on-surface-variant">· HKICPA · Law Society · HKIE · HKCR · +4</span>
             </p>

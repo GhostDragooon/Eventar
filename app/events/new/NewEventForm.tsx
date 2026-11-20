@@ -646,7 +646,7 @@ export default function NewEventForm(props: Props) {
             <VenueSection value={venue} onChange={setVenue} />
             <div>
               <CapacityField value={basics} onChange={(p) => setBasics({ ...basics, ...p })} />
-              <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant mt-xs">
+              <p className="font-body-md text-[calc(0.75rem*var(--text-scale))] text-on-surface-variant mt-xs">
                 Leave blank for unlimited — registration then closes only on the close date.
               </p>
             </div>
@@ -728,7 +728,7 @@ export default function NewEventForm(props: Props) {
               ? new Date(`${regClose.date}T${formatMinutes24h(regClose.minutes)}:00`).toISOString() : null;
             const w = registrationWindow(openIso, closeIso);
             if (!w) return (
-              <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant">
+              <p className="font-body-md text-[calc(0.75rem*var(--text-scale))] text-on-surface-variant">
                 Leave blank to open at publish and close when check-in starts (60 min before the event).
               </p>
             );
@@ -950,7 +950,7 @@ export default function NewEventForm(props: Props) {
           role="alert"
           className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm outline-none"
         >
-          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
+          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
           <span className="flex-1">{err}</span>
         </p>
       )}
@@ -971,7 +971,7 @@ export default function NewEventForm(props: Props) {
           data-testid="save-confirmation"
           className="font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm flex items-start gap-sm"
         >
-          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden data-fill="1">check_circle</span>
+          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden data-fill="1">check_circle</span>
           <span className="flex-1">Saved.</span>
         </p>
       )}
@@ -1005,7 +1005,7 @@ function FormSection({
 }) {
   return (
     <section ref={ref} className="space-y-md scroll-mt-grid-margin">
-      <h2 className="font-headline-sm text-[calc(20px*var(--text-scale))] text-on-surface flex items-baseline gap-sm">
+      <h2 className="font-headline-sm text-[calc(1.25rem*var(--text-scale))] text-on-surface flex items-baseline gap-sm">
         <span className="text-primary-ink font-bold">{number} ·</span>
         <span>{title}</span>
         {optional && (
@@ -1021,7 +1021,7 @@ function FormSection({
           tabIndex={-1}
           className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm outline-none"
         >
-          <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
+          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
           <span className="flex-1">{error}</span>
         </p>
       )}
@@ -1062,7 +1062,7 @@ function ProgressStrip({
       // the checkmarks report the same `v1`/`v2`/`v4` validation flags that
       // drive submit-time scroll-to-first-invalid, so the state is real and
       // must not be flattened into navigation.
-      className="mt-0 flex list-none flex-wrap items-center gap-[6px] rounded-lg border border-outline-variant bg-surface-container-lowest p-md text-[calc(14px*var(--text-scale))] text-on-surface-variant"
+      className="mt-0 flex list-none flex-wrap items-center gap-[6px] rounded-lg border border-outline-variant bg-surface-container-lowest p-md text-[calc(0.875rem*var(--text-scale))] text-on-surface-variant"
     >
       {steps.map((step, i) => {
         const badgeClass = step.complete
@@ -1075,7 +1075,7 @@ function ProgressStrip({
           <li key={step.n} className="flex items-center gap-[6px]">
             <span
               aria-hidden
-              className={`grid size-[18px] shrink-0 place-items-center rounded-full border text-[calc(10.5px*var(--text-scale))] font-semibold ${badgeClass}`}
+              className={`grid size-[18px] shrink-0 place-items-center rounded-full border text-[calc(0.65625rem*var(--text-scale))] font-semibold ${badgeClass}`}
             >
               {/* lucide, matching Breadcrumbs — and immune to the icon-font
                   sizing trap by construction: an SVG sizes by width/height,

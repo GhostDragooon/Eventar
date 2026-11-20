@@ -67,7 +67,7 @@ export function EvidenceExportButton({
   return (
     <div className="space-y-2">
       <Button type="button" onClick={onClick} disabled={disabled || isLoading} className="gap-xs">
-        <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>download</span>
+        <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))]" aria-hidden>download</span>
         {isLoading ? 'Preparing…' : 'Export evidence (JSON + CSV)'}
       </Button>
       {help && (
@@ -80,7 +80,7 @@ export function EvidenceExportButton({
           }
         >
           {state.kind === 'error' && (
-            <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
+            <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
           )}
           {help}
         </p>

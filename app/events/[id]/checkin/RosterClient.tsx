@@ -297,7 +297,7 @@ export default function RosterClient({
             <FilterPill active={statusFilter === 'registered'} onClick={() => setStatusFilter('registered')} label={`Pending (${registeredTotal - attendedCount})`} />
           </div>
           <div className="relative w-full md:w-64">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[calc(18px*var(--text-scale))]" aria-hidden>search</span>
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[calc(1.125rem*var(--text-scale))]" aria-hidden>search</span>
             <input
               type="text"
               value={search}
@@ -425,9 +425,9 @@ function RosterRowItem({
           {r.full_name}
         </p>
         {eligibility && ELIGIBILITY_NOTE[eligibility] && (
-          <p className="mt-[2px] flex items-start gap-xs font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant">
+          <p className="mt-[2px] flex items-start gap-xs font-body-md text-[calc(0.75rem*var(--text-scale))] text-on-surface-variant">
             <span
-              className="material-symbols-outlined text-[calc(14px*var(--text-scale))] leading-none mt-[2px]"
+              className="material-symbols-outlined text-[calc(0.875rem*var(--text-scale))] leading-none mt-[2px]"
               aria-hidden
             >
               error
@@ -436,7 +436,7 @@ function RosterRowItem({
           </p>
         )}
       </div>
-      <code className="font-body-md text-[calc(13px*var(--text-scale))] text-on-surface-variant tabular-nums">
+      <code className="font-body-md text-[calc(0.8125rem*var(--text-scale))] text-on-surface-variant tabular-nums">
         {r.registration_code}
       </code>
       {isAttended ? (
