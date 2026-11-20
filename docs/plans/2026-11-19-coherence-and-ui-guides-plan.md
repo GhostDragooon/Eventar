@@ -364,3 +364,17 @@ Route: `app/dev-preview-uiport/typography/page.tsx`. It uses the real primitives
 3. Apply M2, then S2, then T2, one component layer at a time: globals.css tokens, then `components/ui`, then the shells, then the call sites.
 4. Run Batch 3 rows 3 to 6 inside this pass, since they share Dialog, menus and toast.
 5. Batches 4 and 5, Step 6 and Step 7 continue as planned. Batch 4's type and radius mapping now uses the amended rulings: headline-lg is fluid, and menu rows are concentric.
+
+---
+
+## Render rounds S1 and T1: built 2026-11-20 (dev-only, uncommitted)
+
+Routes: `app/dev-preview-uiport/styling/` (S1, 9 rows) and `app/dev-preview-uiport/typography/` (T1, 9 rows). Both read live tokens and the DOM; tsc and eslint clean; no overflow at 375px. Delete both with `batch3/` and `motion/` at close.
+
+### Picks recorded (Ivan, 2026-11-20)
+- **T row 5, small caps: semantic only, no visual change.** Wrap acronyms in `<abbr>` (title on first use per surface); keep plain caps. This amends typography ruling 2. Reason: measured synthesised small caps are 5.81px glyphs at 12px and 7.26px at 14px (plain 8.71px and 10.16px).
+- **S row 7, icon swap: keep scale 0.8 with blur(4px), 200ms.** emil-design-eng prefers 0.9; Ivan chose to keep 0.8.
+
+### Measured findings still awaiting a pick (no ruling yet)
+- S1: concentric radius (revised 2026-11-20: select popup goes 10px to 12px to match AccountMenu; both then use 8px rows. AccountMenu rows 10px to 8px, select items unchanged at 8px; row height 38px vs 28px left as is, Ivan to decide); alpha border (identical on white, darker and tonal on tinted grounds; both far under 3:1 for input borders, today too); OKLCH matched L (ink spread visible 0.063 light, 0.080 dark; matching lifts lowest text contrast 6.55 to 7.13 light, 8.47 to 9.56 dark; dark containers are alpha tints, port must keep alpha); gradients in oklch (subtle by eye); dark depth (menu step 0.052 L, `#141414` to `#202020`); viewport (8 `min-h-screen` + 2 `md:h-screen`, the plan said 7 + 2).
+- T1: reserved bold (pill shift 2.34px to 0; CompleteClient step label showed no shift); text-box trim (0px gain on fixed-height controls: T2 item 3 buys nothing); underline offset (auto to 2.8px at 14px); fluid type (hero range 32 to 48px is an assumption to confirm; headline-lg 28 to 39px); curly quotes (67 straight apostrophes in user-facing literals, 56 app + 11 components + 0 lib/email; the plan's "about 109" does not match, recount before T2); middle truncation (`.pdf` kept after); hyphens (5 lines and 58.8px avg gap to 4 lines and 8.9px); title clamp (card heights 423/651/488/813 to 423/488/488/488).
