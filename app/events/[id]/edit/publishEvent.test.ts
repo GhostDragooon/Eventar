@@ -43,7 +43,7 @@ describe('publishEvent', () => {
   it.each(['body_admin', 'auditor'] as const)('%s is refused with a plain reason, before the database is asked', async (role) => {
     mockRole = role;
     await expect(publishEvent(EVENT_ID)).resolves.toEqual({
-      error: expect.stringMatching(/can't publish events\. Ask an organiser admin to publish this draft/i),
+      error: expect.stringMatching(/can’t publish events\. Ask an organiser admin to publish this draft/i),
     });
     expect(rpc).not.toHaveBeenCalled();
     expect(revalidatePath).not.toHaveBeenCalled();
@@ -57,7 +57,7 @@ describe('publishEvent', () => {
   });
 
   it('a 42501 from the database comes back as a result, not a crash, and revalidates nothing', async () => {
-    rpc.mockResolvedValue({ data: null, error: { code: '42501', message: "publish_event: event x not found or not in caller's organisation" } });
+    rpc.mockResolvedValue({ data: null, error: { code: '42501', message: "publish_event: event x not found or not in caller’s organisation" } });
     await expect(publishEvent(EVENT_ID)).resolves.toEqual({ error: 'Cannot publish: event not found or not in your organisation.' });
     expect(revalidatePath).not.toHaveBeenCalled();
   });
@@ -65,7 +65,7 @@ describe('publishEvent', () => {
   it('explains when the event is no longer an active draft', async () => {
     rpc.mockResolvedValue({ data: null, error: { code: '22023', message: 'publish_event: only an active draft can be published' } });
     await expect(publishEvent(EVENT_ID)).resolves.toEqual({
-      error: "This event can't be published because it is no longer a current draft. It may have been cancelled or deleted.",
+      error: "This event can’t be published because it is no longer a current draft. It may have been cancelled or deleted.",
       stale: true,
     });
     // Plain words, not the database's vocabulary.

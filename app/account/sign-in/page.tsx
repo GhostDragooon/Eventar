@@ -1,13 +1,12 @@
 'use client';
 
-// Attendee sign-in — same Auth 3 backdrop shell as organiser /login.
-// Differences: no ControlledAccessNotice; sendAttendeeMagicLink; attendee copy.
+// Attendee sign-in — same SiteShell + white card as /account/sign-up.
 
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { sendAttendeeMagicLink } from './actions';
-import { AuthBackdropCard } from '@/components/auth/AuthBackdropCard';
+import { SiteShell } from '@/components/shell/SiteShell';
 import { MagicLinkSignInForm } from '@/components/auth/MagicLinkSignInForm';
 import { resolveAuthError } from '@/components/auth/auth-error-messages';
 import { attendeeNextPath } from './attendeeNext';
@@ -22,7 +21,15 @@ export default function AttendeeSignInPage() {
 }
 
 function AttendeeSignInShell({ children }: { children?: React.ReactNode } = {}) {
-  return <AuthBackdropCard door="attendee">{children}</AuthBackdropCard>;
+  return (
+    <SiteShell active="signin">
+      <div className="mx-auto w-full max-w-md px-grid-margin py-xl">
+        <div className="flex flex-col gap-lg bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm">
+          {children}
+        </div>
+      </div>
+    </SiteShell>
+  );
 }
 
 function AttendeeSignInForm() {
@@ -58,24 +65,9 @@ function AttendeeSignInForm() {
 
   return (
     <AttendeeSignInShell>
-      <p className="text-label-md font-semibold uppercase tracking-[0.18em] m-0">
-        <span className="text-[color:var(--on-primary-container)]">Attendee</span>
-        <span className="text-on-surface-variant"> · Log in</span>
-      </p>
       <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">Log in</h1>
       <p className="font-body-md text-body-md text-on-surface-variant m-0">
-        New user?{' '}
-        <Link
-          href={next ? `/account/sign-up?next=${encodeURIComponent(next)}` : '/account/sign-up'}
-          className="font-semibold text-[color:var(--on-primary-container)] hover:underline"
-        >
-          Sign up
-        </Link>
-        . We&apos;ll email a one-time link — no password.
-      </p>
-      <p className="font-body-md text-body-md text-on-surface-variant m-0">
-        Guest registration still works without an account. This door is for linking past
-        registrations, your profile, and held CME/CPD points.
+        We’ll email a one-time link, no password.
       </p>
       <MagicLinkSignInForm
         submitMagicLink={sendAttendeeMagicLink}
@@ -83,13 +75,16 @@ function AttendeeSignInForm() {
         placeholder="you@example.com"
         submitLabel="Next"
         next={next}
-        audience="attendee"
       />
 
-      {/* TODO(auth-sso): same slot as organiser when enabled */}
-
-      <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant text-center m-0">
-        The link expires after 15 minutes and works once.
+      <p className="font-body-md text-body-md text-on-surface-variant text-center m-0">
+        New here?{' '}
+        <Link
+          href={next ? `/account/sign-up?next=${encodeURIComponent(next)}` : '/account/sign-up'}
+          className="text-[color:var(--on-primary-container)] hover:underline"
+        >
+          Sign up
+        </Link>
       </p>
 
       <details className="group">
@@ -99,8 +94,7 @@ function AttendeeSignInForm() {
         <ul className="mt-sm font-body-md text-[calc(13px*var(--text-scale))] text-on-surface-variant leading-relaxed list-disc pl-lg flex flex-col gap-xs">
           <li>Links expire after 15 minutes and work once. Request a new one above.</li>
           <li>Check spam, and make sure you opened the newest email.</li>
-          <li>Open the link in the same browser you asked for it in.</li>
-          <li>Use the address you registered with.</li>
+          <li>Open the link in the same browser you asked for it in, and use the address you registered with.</li>
         </ul>
       </details>
     </AttendeeSignInShell>

@@ -75,11 +75,11 @@ export const NOT_EVENT_WRITER = 'Only the organiser who created this event, or a
 /** Q51: why this account may not change this event. A read-only role is told about its role, not about a creator:
  *  a body_admin may well have created an old draft itself before Q51. */
 export function eventWriteRefusal(role: string): string {
-  return role === 'body_admin' || role === 'auditor' ? "Your role can't change events. Ask an organiser admin." : NOT_EVENT_WRITER;
+  return role === 'body_admin' || role === 'auditor' ? "Your role can’t change events. Ask an organiser admin." : NOT_EVENT_WRITER;
 }
 
 /** Q51: body_admin and auditor are read-only; shown on /events/new and returned by createEvent. */
-export const CREATE_REFUSED = "Your role can't create events. Ask an organiser admin or member to create it.";
+export const CREATE_REFUSED = "Your role can’t create events. Ask an organiser admin or member to create it.";
 
 /** The same reason derived from the clock, for controls that follow it. `null` means check-in is open. */
 export function checkInGateMessage(lifecycle: Lifecycle): string | null {

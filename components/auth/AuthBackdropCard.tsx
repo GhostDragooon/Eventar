@@ -50,7 +50,7 @@ export function AuthBackdropCard({
             background:
               // The brand blue stepped toward black, so the white aside copy keeps contrast in both themes (the
               // palette's own dark stops flip light in dark mode, which would put white text on pale blue).
-              'radial-gradient(120% 80% at 70% 40%, color-mix(in srgb, var(--primary) 55%, black) 0%, color-mix(in srgb, var(--primary) 28%, black) 45%, black 100%)',
+              'radial-gradient(120% 80% at 70% 40%, color-mix(in oklch, var(--primary) 55%, black) 0%, color-mix(in oklch, var(--primary) 28%, black) 45%, black 100%)',
           }}
         />
         <div className="absolute inset-0 bg-black/20" />

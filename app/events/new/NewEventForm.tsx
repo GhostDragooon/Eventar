@@ -36,6 +36,7 @@ import { formatMinutes24h } from '@/components/event-form/DateTimeSection';
 import { PublishConfirmDialog } from '@/components/event-form/PublishConfirmDialog';
 import { markDraftSaved, resetDraftStatus, setDraftDirty } from '@/lib/draftDirty';
 import { publishFacts, type PublishFacts } from '@/lib/publishFacts';
+import { shake } from '@/lib/motion/shake';
 
 // `preview` is edit-mode only — same write path as `draft` (no status sent)
 // but Save & Preview opens the public page in a new tab after save resolves.
@@ -325,11 +326,18 @@ export default function NewEventForm(props: Props) {
   // The failing section scrolls itself into view; its alert then takes focus without a
   // second scroll, so keyboard and screen-reader users land on the message too.
   useEffect(() => {
-    if (fieldErr) document.getElementById('form-field-error')?.focus({ preventScroll: true });
+    if (fieldErr) {
+      const el = document.getElementById('form-field-error');
+      el?.focus({ preventScroll: true });
+      shake(el);
+    }
   }, [fieldErr]);
   // A server refusal takes focus.
   useEffect(() => {
-    if (err) errRef.current?.focus();
+    if (err) {
+      errRef.current?.focus();
+      shake(errRef.current);
+    }
   }, [err]);
 
   const v1 = basicsValid(basics);
@@ -417,7 +425,7 @@ export default function NewEventForm(props: Props) {
     if (props.mode === 'create' && cpdBodyId) {
       const hours = Number(cpdHours);
       if (cpdHours.trim() === '' || !Number.isFinite(hours) || hours <= 0 || hours > 24) {
-        invalid('cpd', cpdRef, 'Enter the CPD hours (more than 0, up to 24) for the accrediting body, or set it back to "Not accredited".');
+        invalid('cpd', cpdRef, 'Enter the CPD hours (more than 0, up to 24) for the accrediting body, or set it back to “Not accredited”.');
         return;
       }
     }
@@ -755,12 +763,12 @@ export default function NewEventForm(props: Props) {
                 what appears, what stays unchanged, and the one non-obvious
                 effect an organiser would not guess. */}
             <span className="block font-body-md text-body-md text-on-surface-variant mt-xs">
-              Their pass page gets a &ldquo;Confirm I&rsquo;m here&rdquo; button. Leave this off and the
+              Their pass page gets a &ldquo;Confirm I’m here&rdquo; button. Leave this off and the
               pass tells them to see reception instead. Staff scanning at the door keeps working
               either way.
             </span>
             <span className="block font-body-md text-body-md text-on-surface-variant mt-xs">
-              On a CPD-accredited event this posts attendance credit with no staff member present.
+              On a <abbr title="Continuing professional development">CPD</abbr>-accredited event this posts attendance credit with no staff member present.
             </span>
           </span>
         </label>
@@ -776,16 +784,16 @@ export default function NewEventForm(props: Props) {
         <FormSection ref={cpdRef} number="7" title="CPD accreditation" optional error={fieldErr?.section === 'cpd' ? fieldErr.message : null}>
           {!canAccredit ? (
             <p className="rounded-lg bg-surface-container-low px-md py-sm font-body-md text-body-md text-on-surface-variant max-w-prose">
-              Your role can&apos;t set accreditation. You can still create the event without it and ask an organiser admin to add it later.
+              Your role can’t set accreditation. You can still create the event without it and ask an organiser admin to add it later.
             </p>
           ) : props.cpdBodiesUnavailable ? (
             <p className="rounded-lg bg-error-container px-md py-sm font-body-md text-body-md text-on-error-container max-w-prose">
-              The list of accrediting bodies couldn&rsquo;t be loaded. Save the event and set its accreditation from
+              The list of accrediting bodies couldn’t be loaded. Save the event and set its accreditation from
               the event page.
             </p>
           ) : props.cpdBodies.length === 0 ? (
             <p className="rounded-lg bg-warning-container px-md py-sm font-body-md text-body-md text-on-warning-container max-w-prose">
-              Your organisation isn&rsquo;t authorised by any accrediting body yet, so events can&rsquo;t be marked
+              Your organisation isn’t authorised by any accrediting body yet, so events can’t be marked
               CPD-accredited. This is arranged with the body directly.
             </p>
           ) : (
@@ -901,7 +909,7 @@ export default function NewEventForm(props: Props) {
 
       {!isEdit && !canPublish && (
         <p className="font-body-md text-body-md text-on-surface-variant">
-          Your role can&apos;t publish events. Save a draft and ask an organiser admin to publish it.
+          Your role can’t publish events. Save a draft and ask an organiser admin to publish it.
         </p>
       )}
       {!isEdit && canPublish && confirmFacts && (

@@ -223,7 +223,7 @@ describe('EventsHome', () => {
       fireEvent.change(screen.getByLabelText('Search events'), { target: { value: 'bravo' } });
       expect(screen.getByText('1 selected')).toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
-      expect(screen.getByRole('dialog')).toHaveTextContent('Delete "Bravo"?');
+      expect(screen.getByRole('dialog')).toHaveTextContent('Delete “Bravo”?');
       fireEvent.click(screen.getByRole('button', { name: 'Delete 1 event' }));
       expect(softDeleteMock).toHaveBeenCalledWith(['b1']);
     });
@@ -248,7 +248,7 @@ describe('EventsHome', () => {
       renderManage([event({ id: 'e-1', title: 'Sample Event' })]);
       tickAndDelete();
       const dialog = screen.getByRole('dialog');
-      expect(dialog).toHaveTextContent('Delete "Sample Event"?');
+      expect(dialog).toHaveTextContent('Delete “Sample Event”?');
       expect(dialog).toHaveTextContent('Deleted bucket');
       expect(softDeleteMock).not.toHaveBeenCalled();
     });
@@ -315,7 +315,7 @@ describe('EventsHome', () => {
       fireEvent.click(screen.getByLabelText('Select Cancel Me'));
       fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
       const dialog = screen.getByRole('dialog');
-      expect(dialog).toHaveTextContent('Cancel "Cancel Me"?');
+      expect(dialog).toHaveTextContent('Cancel “Cancel Me”?');
       expect(dialog).toHaveTextContent('nobody is emailed');
     });
 
@@ -334,7 +334,7 @@ describe('EventsHome', () => {
       fireEvent.click(screen.getByLabelText('Select Colleague talk'));
       fireEvent.click(screen.getByRole('button', { name: button }));
       const dialog = screen.getByRole('dialog');
-      expect(dialog).toHaveTextContent(`You can't ${verb} “Colleague talk”.`);
+      expect(dialog).toHaveTextContent(`You can’t ${verb} “Colleague talk”.`);
       expect(dialog).toHaveTextContent('Unselect it, or ask an organiser admin.');
       const go = within(dialog).getByRole('button', { name: verb === 'cancel' ? 'Cancel 2 events' : 'Delete 2 events' });
       expect(go).toBeDisabled();

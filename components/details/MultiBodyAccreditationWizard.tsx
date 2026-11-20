@@ -187,7 +187,7 @@ export function MultiBodyAccreditationWizard({ eventId, startTime, bodies, bodyD
     return (
       <div className="mt-md space-y-sm">
         <p className="rounded-lg bg-surface-container-low px-md py-sm text-body-md text-on-surface-variant">
-          Your role can&rsquo;t set accreditation. An organiser admin can add or change it from this page.
+          Your role can’t set accreditation. An organiser admin can add or change it from this page.
         </p>
         {groups.length > 0 && (
           <ul className="space-y-xs text-body-md text-on-surface">
@@ -221,7 +221,7 @@ export function MultiBodyAccreditationWizard({ eventId, startTime, bodies, bodyD
           <h2 className="font-heading text-headline-sm text-on-surface">Multiple accrediting bodies</h2>
           <p className="mt-xs text-body-md text-on-surface-variant">
             For events accredited by more than one body at once (each awarding its own points, per day if needed).
-            Only one body? Use the &ldquo;Accrediting body&rdquo; field above instead — the two can&rsquo;t be mixed.
+            Only one body? Use the &ldquo;Accrediting body&rdquo; field above instead — the two can’t be mixed.
           </p>
         </div>
         <button
@@ -366,7 +366,7 @@ export function MultiBodyAccreditationWizard({ eventId, startTime, bodies, bodyD
                   />
                   <p className="mt-xs text-label-md text-on-surface-variant">
                     Leave blank unless the body has told you which category code to use for each role (chair,
-                    presenter, attendee) — most haven&rsquo;t published this yet.
+                    presenter, attendee) — most haven’t published this yet.
                   </p>
                 </div>
               </div>

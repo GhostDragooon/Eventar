@@ -288,7 +288,7 @@ export default async function StaffEventEditPage({
               body={
                 canPublish
                   ? 'Makes the registration page live with the version you last saved, and unlocks the event QR code.'
-                  : "Your role can't publish events."
+                  : "Your role can’t publish events."
               }
             >
               <PublishDraftButton

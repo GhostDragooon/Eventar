@@ -39,8 +39,8 @@ afterEach(cleanup);
 const open = async () => render(await StaffCheckinPage({ params: Promise.resolve({ id: 'e1' }) }));
 
 describe('Check-in page header', () => {
-  const EDIT_ALL = "Live capture only: scan, enter a code or add a walk-in. To edit a person's details or roles, open Registrations.";
-  const EDIT_DETAILS = "Live capture only: scan, enter a code or add a walk-in. To edit a person's details, open Registrations.";
+  const EDIT_ALL = "Live capture only: scan, enter a code or add a walk-in. To edit a person’s details or roles, open Registrations.";
+  const EDIT_DETAILS = "Live capture only: scan, enter a code or add a walk-in. To edit a person’s details, open Registrations.";
 
   beforeEach(() => { h.event.created_by = 'u1'; });
 

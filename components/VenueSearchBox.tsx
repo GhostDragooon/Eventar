@@ -130,7 +130,7 @@ export default function VenueSearchBox({ onSelect }: Props) {
       {open && !tooShort && (displayResults.length > 0 || searching) && (
         <ul
           id={listId}
-          className="absolute z-20 left-0 right-0 mt-xs max-h-72 overflow-y-auto rounded-lg border border-outline-variant bg-surface-container-lowest shadow-lg"
+          className="absolute z-20 left-0 right-0 mt-xs origin-top animate-overlay-in max-h-72 overflow-y-auto rounded-lg border border-outline-variant bg-popover shadow-lg"
           role="listbox"
         >
           {searching && (
@@ -155,10 +155,10 @@ export default function VenueSearchBox({ onSelect }: Props) {
       )}
 
       {!tooShort && !searching && current && displayResults.length === 0 && open && (
-        <div className="absolute z-20 left-0 right-0 mt-xs rounded-lg border border-outline-variant bg-surface-container-lowest shadow-lg px-md py-sm font-body-md text-body-md text-on-surface-variant">
+        <div className="absolute z-20 left-0 right-0 mt-xs rounded-lg border border-outline-variant bg-popover shadow-lg px-md py-sm font-body-md text-body-md text-on-surface-variant">
           {found.failed
             ? 'Venue search is not responding. Try again in a moment.'
-            : <>No matches. Try a more specific name or the venue&apos;s address.</>}
+            : <>No matches. Try a more specific name or the venue’s address.</>}
         </div>
       )}
     </div>

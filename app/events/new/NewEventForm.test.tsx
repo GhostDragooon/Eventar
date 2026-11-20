@@ -806,14 +806,14 @@ describe('NewEventForm — create mode, publishing role and the saved-event link
   it('offers Publish event by default', () => {
     render(<NewEventForm {...createProps} submit={vi.fn(async () => ({ ok: true as const }))} />);
     expect(screen.getByRole('button', { name: /publish event/i })).toBeInTheDocument();
-    expect(screen.queryByText(/your role can't publish events/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/your role can’t publish events/i)).not.toBeInTheDocument();
   });
 
   it('hides Publish event for a role that cannot publish, says why, and keeps Save draft', () => {
     render(<NewEventForm {...createProps} canPublish={false} submit={vi.fn(async () => ({ ok: true as const }))} />);
     expect(screen.queryByRole('button', { name: /publish event/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save draft/i })).toBeInTheDocument();
-    expect(screen.getByText(/your role can't publish events\. save a draft and ask an organiser admin to publish it\./i)).toBeInTheDocument();
+    expect(screen.getByText(/your role can’t publish events\. save a draft and ask an organiser admin to publish it\./i)).toBeInTheDocument();
   });
 
   // One primary action per card (D16). With Publish hidden, Save draft is the only
@@ -846,7 +846,7 @@ describe('NewEventForm — create mode, publishing role and the saved-event link
         submit={vi.fn(async () => ({ ok: true as const }))}
       />,
     );
-    expect(screen.getByText(/your role can't set accreditation\. you can still create the event without it/i)).toBeInTheDocument();
+    expect(screen.getByText(/your role can’t set accreditation\. you can still create the event without it/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/accrediting body/i)).not.toBeInTheDocument();
   });
 
@@ -860,7 +860,7 @@ describe('NewEventForm — create mode, publishing role and the saved-event link
         submit={vi.fn(async () => ({ ok: true as const }))}
       />,
     );
-    expect(screen.queryByText(/your role can't publish events/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/your role can’t publish events/i)).not.toBeInTheDocument();
   });
 
   // Create mode is the only real path: createEvent returns {error, eventId} on a partial
@@ -970,7 +970,7 @@ describe('NewEventForm: a chosen accrediting body needs its hours', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /save draft/i }));
     const empty = screen.getByRole('alert');
-    expect(empty).toHaveTextContent(/enter the cpd hours \(more than 0, up to 24\) for the accrediting body, or set it back to "not accredited"/i);
+    expect(empty).toHaveTextContent(/enter the cpd hours \(more than 0, up to 24\) for the accrediting body, or set it back to “not accredited”/i);
     expect(sectionHeading(empty)).toMatch(/CPD accreditation/);
     expect(submit).not.toHaveBeenCalled();
 
@@ -1284,14 +1284,14 @@ describe('NewEventForm: a refused agenda save names the block and the reason', (
 
   it('end before start: says so, by title and times, and paints the block red though it was never touched', async () => {
     const { alert, submit, view } = await save([block({ title: 'Late talk', start_time: buildIso(EVENT_DATE, '11:00'), end_time: buildIso(EVENT_DATE, '10:30') })]);
-    expect(alert).toHaveTextContent('"Late talk" (11:00 AM to 10:30 AM): the end time must be after the start time.');
+    expect(alert).toHaveTextContent('“Late talk” (11:00 AM to 10:30 AM): the end time must be after the start time.');
     expect(view.container.querySelector('[data-block-id="bx"]')?.className).toContain('border-error');
     expect(submit).not.toHaveBeenCalled();
   });
 
   it('outside the window: says so and names the event window', async () => {
     const { alert } = await save([block({ title: 'Early bird', start_time: buildIso(EVENT_DATE, '08:00'), end_time: buildIso(EVENT_DATE, '09:30') })]);
-    expect(alert).toHaveTextContent('"Early bird" (08:00 AM to 09:30 AM) must sit inside the event\'s time window, 09:00 AM to 04:00 PM.');
+    expect(alert).toHaveTextContent('“Early bird” (08:00 AM to 09:30 AM) must sit inside the event’s time window, 09:00 AM to 04:00 PM.');
   });
 
   it('missing title: names the block by its times', async () => {
@@ -1301,7 +1301,7 @@ describe('NewEventForm: a refused agenda save names the block and the reason', (
 
   it('topic without a speaker: says which topic', async () => {
     const { alert } = await save([block({ topics: [{ title: 'Fine', speaker_name: 'S' }, { title: 'Half', speaker_name: '' }] })]);
-    expect(alert).toHaveTextContent('"Opening" (09:00 AM to 10:00 AM) needs a title and a speaker for topic 2.');
+    expect(alert).toHaveTextContent('“Opening” (09:00 AM to 10:00 AM) needs a title and a speaker for topic 2.');
   });
 
   it('names the first block in start order and never uses a position number', async () => {
@@ -1309,7 +1309,7 @@ describe('NewEventForm: a refused agenda save names the block and the reason', (
       block({ id: 'b2', title: 'Second', start_time: buildIso(EVENT_DATE, '13:00'), end_time: buildIso(EVENT_DATE, '12:00') }),
       block({ id: 'b1', title: 'First', start_time: buildIso(EVENT_DATE, '11:00'), end_time: buildIso(EVENT_DATE, '10:00') }),
     ]);
-    expect(alert).toHaveTextContent(/"First"/);
+    expect(alert).toHaveTextContent(/“First”/);
     expect(alert.textContent).not.toMatch(/block \d/i);
   });
 });

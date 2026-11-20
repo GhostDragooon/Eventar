@@ -27,7 +27,7 @@ export default async function SurveyPage({
           <EmptyState
             icon="quiz"
             title="No survey code"
-            body="Open this page from the survey link we emailed you, or scan your personal QR code. If you can't find it, ask the event organiser for help."
+            body="Open this page from the survey link we emailed you, or scan your personal QR code. If you can’t find it, ask the event organiser for help."
           />
         </PageWrap>
       </PublicShell>
@@ -132,7 +132,7 @@ export default async function SurveyPage({
           <EmptyState
             icon="hourglass_empty"
             title="Survey not available yet"
-            body="This survey opens once you've been checked in at the event. If you've already attended, please ask the organiser."
+            body="This survey opens once you’ve been checked in at the event. If you’ve already attended, please ask the organiser."
           />
         </PageWrap>
       </PublicShell>
@@ -157,7 +157,7 @@ export default async function SurveyPage({
           <EmptyState
             icon="check_circle"
             title="Thanks — already submitted"
-            body={`We've already recorded your feedback for ${event.title}.`}
+            body={`We’ve already recorded your feedback for ${event.title}.`}
           />
         </PageWrap>
       </PublicShell>

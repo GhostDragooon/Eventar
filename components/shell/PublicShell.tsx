@@ -1,8 +1,5 @@
-import Link from 'next/link';
-import { BrandMark } from './BrandMark';
 import { SiteFooter } from './SiteFooter';
-import { AccountMenu } from '@/components/ui/AccountMenu';
-import { StaffProgrammePill } from './StaffProgrammePill';
+import { SiteNav } from './SiteNav';
 
 // Attendee-surface shell (check-in pass, survey, public event page, register).
 //
@@ -67,35 +64,14 @@ export function PublicShell({
   unlinkedCount?: number;
 }) {
   return (
-    <div className="app-atmo flex min-h-screen flex-col text-on-surface">
-      <nav
-        aria-label="Primary"
-        className="glass-nav sticky top-[10px] z-[5] mx-[18px] flex items-center justify-between gap-md rounded-full py-sm pl-md pr-sm"
-      >
-        <BrandMark href={signedIn && !isStaff ? '/events' : '/'} />
-
-        {/* Short/long label below sm (2026-09-23 user-lens, SiteShell parity):
-            the Account control's shrink-0 now claims a guaranteed width on
-            this shell too, leaving less room for this link at 375px. */}
-        <Link
-          href="/events"
-          className="nav-item shrink-0 whitespace-nowrap rounded-full px-[11px] py-[7px] text-[calc(13px*var(--text-scale))] font-medium text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
-        >
-          <span className="sm:hidden">Events</span>
-          <span className="hidden sm:inline">Upcoming events</span>
-        </Link>
-        {/* Organiser door from any public page (doctrine section 1); hidden below sm for room. */}
-        {!signedIn && (
-          <Link
-            href="/login"
-            className="nav-item hidden shrink-0 whitespace-nowrap rounded-full px-[11px] py-[7px] text-[calc(13px*var(--text-scale))] font-medium text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface sm:inline-block"
-          >
-            Organiser log in
-          </Link>
-        )}
-
-        <div className="flex items-center gap-sm">
-          {pill && (
+    <div className="app-atmo flex min-h-dvh flex-col text-on-surface">
+      <SiteNav
+        signedIn={signedIn}
+        isStaff={isStaff}
+        accountComplete={accountComplete}
+        unlinkedCount={unlinkedCount}
+        beforeAuth={
+          pill && (
             <span
               className={`inline-flex items-center gap-xs rounded-full px-sm py-[3px] text-[calc(11px*var(--text-scale))] font-semibold ${
                 pill.tone === 'success'
@@ -111,24 +87,9 @@ export function PublicShell({
               />
               {pill.label}
             </span>
-          )}
-
-          {signedIn ? (
-            isStaff ? (
-              <StaffProgrammePill />
-            ) : (
-              <AccountMenu complete={accountComplete} unlinkedCount={unlinkedCount} />
-            )
-          ) : (
-            <Link
-              href="/account/sign-in"
-              className="rounded-full bg-primary px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary transition-transform duration-150 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-            >
-              Log in
-            </Link>
-          )}
-        </div>
-      </nav>
+          )
+        }
+      />
 
       <main className="w-full flex-1">{children}</main>
 

@@ -110,7 +110,7 @@ export function AccountClient({
         setEmailNew('');
         setEmailChangeStatus({
           kind: 'success',
-          message: `Confirmation sent to ${result.data.new_email}. Click the link there to complete the change — your email won't update until you do.`,
+          message: `Confirmation sent to ${result.data.new_email}. Click the link there to complete the change — your email won’t update until you do.`,
         });
       } else {
         setEmailChangeStatus({
@@ -245,7 +245,7 @@ export function AccountClient({
           id="cme-readiness-heading"
           className="font-label-md text-label-md font-semibold uppercase tracking-wider text-on-surface-variant m-0 mb-sm"
         >
-          CME/CPD readiness
+          <abbr title="Continuing medical education">CME</abbr>/<abbr title="Continuing professional development">CPD</abbr> readiness
         </h2>
         <ul className="flex flex-col gap-xs m-0 p-0 list-none">
           <ReadinessRow
@@ -260,7 +260,7 @@ export function AccountClient({
                 ? 'Profile & licence complete'
                 : 'Finish your profile & licence'
             }
-            unknownLabel="Couldn't check profile & licence right now — refresh"
+            unknownLabel="Couldn’t check profile & licence right now — refresh"
             href="/account/profile"
           />
           <ReadinessRow
@@ -496,7 +496,7 @@ export function AccountClient({
         <SectionCard icon="mark_email_unread" title="Verify your email" id="verify-email">
           <p className="font-body-md text-body-md text-on-surface-variant m-0">
             Your email <span className="font-medium text-on-surface">{email}</span>{' '}
-            hasn&apos;t been verified yet. Verification is required before we can link
+            hasn’t been verified yet. Verification is required before we can link
             past registrations or release CME/CPD points.
           </p>
           <div className="mt-md flex items-center justify-between flex-wrap gap-md">

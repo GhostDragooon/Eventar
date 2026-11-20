@@ -233,7 +233,7 @@ describe('RegisterCard — self-serve walk-in orchestration', () => {
 // attribution + claim nudge, which both describe an attendee account the
 // organiser does not have.
 describe('RegisterCard — organiser (staff) session (D2)', () => {
-  const D2_LINE = "You're signed in as an organiser. This creates a guest registration.";
+  const D2_LINE = "You’re signed in as an organiser. This creates a guest registration.";
   // What the page passes for a staff session: signedIn stays true (a session
   // exists), no prefill, and — if the count were ever non-zero — the nudge.
   const staffProps = {
@@ -376,7 +376,7 @@ describe('RegisterCard — success card (organiser) follow-through', () => {
   // The fields describe the guest, not the person at the keyboard (user-lens round 2, m5).
   it('asks for the guest, not "your" name, when an organiser is typing', () => {
     render(<RegisterCard {...staffProps} />);
-    expect(screen.getByPlaceholderText("Guest's name")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Guest’s name")).toBeInTheDocument();
     expect(screen.getByPlaceholderText('guest@example.com')).toBeInTheDocument();
     expect(screen.queryByPlaceholderText('Your name')).not.toBeInTheDocument();
   });
@@ -451,7 +451,7 @@ describe('RegisterCard — a failed registration', () => {
     render(<RegisterCard {...props} />);
     fillAndSubmit();
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/couldn't complete the registration just now/i);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/couldn’t complete the registration just now/i);
     expect(screen.getByRole('textbox', { name: /full name/i })).toHaveValue('Alice Wong');
     expect(screen.getByRole('button', { name: /^register$/i })).toBeEnabled();
   });

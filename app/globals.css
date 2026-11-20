@@ -161,12 +161,15 @@
      multiplied by --text-scale so /settings → Text size can scale the whole
      M3 token family. Arbitrary text-[Npx] literals elsewhere in components
      won't scale until they're migrated to tokens (v1 caveat). */
+  --text-hero: calc(clamp(32px, 25.6px + 1.7vw, 48px) * var(--text-scale)); /* landing h1, fluid (T2) */
+  --text-hero--line-height: 1.1;
+  --text-hero--letter-spacing: -0.02em;
   --text-display: calc(48px * var(--text-scale));
   --text-display--line-height: 1.2;
   --text-display--letter-spacing: -0.02em;
   --text-display--font-weight: 700;
 
-  --text-headline-lg: calc(39px * var(--text-scale));
+  --text-headline-lg: calc(clamp(28px, 23.6px + 1.17vw, 39px) * var(--text-scale)); /* fluid: 28px at 375, 39px from ~1320 (T2) */
   --text-headline-lg--line-height: 1.25;
   --text-headline-lg--font-weight: 700;
 
@@ -313,7 +316,7 @@
   --primary-ink: #1c3c94;
   --on-primary: #ffffff;
   --primary-container: #eaf2fd;
-  --on-primary-container: #1c3c94;
+  --on-primary-container: #23449d;
   --primary-fixed: #eaf2fd;
   --primary-fixed-dim: #d5e6fb; /* one-step-stronger ramp tint */
   --on-primary-fixed: #1a1a1a;
@@ -362,12 +365,12 @@
   /* --outline picks up the ramp's steel (#4494BC is non-text-only at ~3:1,
      which is exactly what a border is). --outline-variant already matched. */
   --outline: #8c8c8c;
-  --outline-variant: #eaeaea;
+  --outline-variant: rgba(0, 0, 0, 0.082); /* alpha: reads #eaeaea on white, tonal on tinted grounds (S2) */
 
   --error: #c0362c;
   --on-error: #ffffff;
   --error-container: #fbe9e7;
-  --on-error-container: #872017;
+  --on-error-container: #892218;
 
   /* Status hues (redesign §7a) — contrast-tuned in the M2 remap but still
      SEMANTIC and still off the brand ramp: blue never signals verification.
@@ -375,10 +378,10 @@
   --success: #1e874b;
   --on-success: #052e16; /* dark green — readable on --success in both modes */
   --success-container: #e4f2e9;
-  --on-success-container: #0e5a2e;
+  --on-success-container: #115c2f;
   --warning: #b26b00;
   --warning-container: #f9efd9;
-  --on-warning-container: #7a4a00;
+  --on-warning-container: #6c4101;
   --danger: #c0362c;
 
   /* A.2: inverse-* = the dark-scheme equivalents (dark surface, light text,
@@ -434,7 +437,7 @@
     --primary-ink: #7fb0f4;
     --on-primary: #0b1b3e;
     --primary-container: rgba(108, 170, 239, 0.14);
-    --on-primary-container: #cfe2fa;
+    --on-primary-container: #c3d6ed;
     --primary-fixed: rgba(108, 170, 239, 0.14);
     --primary-fixed-dim: rgba(108, 170, 239, 0.24);
     --on-primary-fixed: #f0f0f0;
@@ -475,18 +478,19 @@
     --on-surface-variant: #a6a6a6;
 
     --outline: #707070;
-    --outline-variant: #262626;
+    --outline-variant: rgba(255, 255, 255, 0.077); /* alpha: reads #262626 on #141414 (S2) */
+    --popover: var(--surface-container-high); /* dark depth: menus, popovers, dialogs sit one step above the card (S2) */
 
     --error: #ec6a5e;
     --on-error: #0a0a0a;
     --error-container: rgba(236, 106, 94, 0.16);
-    --on-error-container: #f5b3ac;
+    --on-error-container: #fec3bc;
 
     /* Dark containers = translucent (spec pill table, glassmorphic). */
     --success: #4cc47d;
     --on-success: #052e16;
     --success-container: rgba(76, 196, 125, 0.15);
-    --on-success-container: #a8e6c0;
+    --on-success-container: #a7e5bf;
     --warning: #e0a73c;
     --warning-container: rgba(224, 167, 60, 0.16);
     --on-warning-container: #f1cf8e;
@@ -514,7 +518,7 @@
   --primary-ink: #7fb0f4;
   --on-primary: #0b1b3e;
   --primary-container: rgba(108, 170, 239, 0.14);
-  --on-primary-container: #cfe2fa;
+  --on-primary-container: #c3d6ed;
   --primary-fixed: rgba(108, 170, 239, 0.14);
   --primary-fixed-dim: rgba(108, 170, 239, 0.24);
   --on-primary-fixed: #f0f0f0;
@@ -555,17 +559,18 @@
   --on-surface-variant: #a6a6a6;
 
   --outline: #707070;
-  --outline-variant: #262626;
+  --outline-variant: rgba(255, 255, 255, 0.077); /* alpha: reads #262626 on #141414 (S2) */
+  --popover: var(--surface-container-high); /* dark depth: menus, popovers, dialogs sit one step above the card (S2) */
 
   --error: #ec6a5e;
   --on-error: #0a0a0a;
   --error-container: rgba(236, 106, 94, 0.16);
-  --on-error-container: #f5b3ac;
+  --on-error-container: #fec3bc;
 
   --success: #4cc47d;
   --on-success: #052e16;
   --success-container: rgba(76, 196, 125, 0.15);
-  --on-success-container: #a8e6c0;
+  --on-success-container: #a7e5bf;
   --warning: #e0a73c;
   --warning-container: rgba(224, 167, 60, 0.16);
   --on-warning-container: #f1cf8e;
@@ -629,13 +634,52 @@
     -webkit-font-feature-settings: 'liga';
     font-feature-settings: 'liga';
     -webkit-font-smoothing: antialiased;
-    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    font-variation-settings: 'FILL' 0, 'wght' var(--icon-wght, 400), 'GRAD' 0, 'opsz' 24;
   }
   .material-symbols-outlined.filled,
   .material-symbols-outlined[data-fill='1'] {
-    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    font-variation-settings: 'FILL' 1, 'wght' var(--icon-wght, 400), 'GRAD' 0, 'opsz' 24;
   }
+  /* Icon weight follows its label: wght 500 inside semibold text (S2). */
+  .font-semibold, .font-bold { --icon-wght: 500; }
+  /* lucide default stroke 2 is heavy beside Geist at 14px (S2). */
+  svg.lucide { stroke-width: 1.5; }
+  /* Links and underlines clear descenders (T2). */
+  :where(a), .underline { text-underline-offset: 0.2em; }
+  /* abbr is semantic only: no dotted underline, no small caps (Ivan 2026-11-20). */
+  abbr[title] { text-decoration: none; }
 }
+
+/* In @layer components so Tailwind utilities (e.g. md:[mask-image:none]) can override these helpers. */
+@layer components {
+  /* Hit area to 44px without changing the look: an invisible ::after grows each edge by half the
+     shortfall, and does nothing when the element is already 44px or taller. */
+  .tap-44 { position: relative; }
+  .tap-44::after { content: ""; position: absolute; inset-inline: 0; inset-block: min(0px, calc((100% - 44px) / 2)); }
+/* Reserved bold: nav labels switch to semibold when active; a hidden semibold copy
+   (data-text) sets the width so siblings never shift. Weight must match font-semibold (T2). */
+.reserve-bold { display: inline-block; }
+.reserve-bold::after { content: attr(data-text); display: block; height: 0; overflow: hidden; visibility: hidden; font-weight: 600; user-select: none; pointer-events: none; }
+
+/* Hyphenate long running text in narrow columns (T2). */
+.prose-hyphen { hyphens: auto; }
+
+/* Scroll rows fade only on a side that has hidden content; data attrs set by useScrollFade (S2). */
+.scroll-fade {
+  --fl: 0px; --fr: 0px;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--fl), #000 calc(100% - var(--fr)), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 var(--fl), #000 calc(100% - var(--fr)), transparent 100%);
+}
+.scroll-fade[data-fade-start='1'] { --fl: 28px; }
+.scroll-fade[data-fade-end='1'] { --fr: 28px; }
+
+/* Blurred icon swap: outgoing state blurs and fades, incoming reverses (S2). Opacity only under reduced motion. */
+.icon-swap { position: relative; display: inline-grid; place-items: center; }
+.icon-swap > * { grid-area: 1 / 1; transition: opacity 200ms cubic-bezier(0.32, 0.72, 0, 1), filter 200ms cubic-bezier(0.32, 0.72, 0, 1), scale 200ms cubic-bezier(0.32, 0.72, 0, 1); }
+.icon-swap > [data-state='out'] { opacity: 0; filter: blur(4px); scale: 0.8; }
+@media (prefers-reduced-motion: reduce) { .icon-swap > * { transition: opacity 200ms linear; filter: none !important; scale: 1 !important; } }
+}
+
 
 /* ---------------------------------------------------------------------------
  * Phase 6.5 — Live status pill background-only pulse
@@ -710,9 +754,9 @@ html {
 
 .hero-ground {
   background:
-    radial-gradient(680px 340px at 82% -6%, rgba(108, 170, 239, 0.34), transparent 66%),
-    radial-gradient(560px 320px at 3% 2%, rgba(68, 148, 188, 0.24), transparent 66%),
-    radial-gradient(520px 280px at 46% -8%, rgba(28, 60, 148, 0.14), transparent 64%),
+    radial-gradient(680px 340px at 82% -6% in oklch, rgba(108, 170, 239, 0.34), transparent 66%),
+    radial-gradient(560px 320px at 3% 2% in oklch, rgba(68, 148, 188, 0.24), transparent 66%),
+    radial-gradient(520px 280px at 46% -8% in oklch, rgba(28, 60, 148, 0.14), transparent 64%),
     var(--surface-container-lowest, #fff);
   background-repeat: no-repeat;
 }
@@ -727,8 +771,8 @@ html {
 .hero-atmo {
   background-image: radial-gradient(rgba(28, 60, 148, 0.24) 1px, transparent 1.5px);
   background-size: 18px 18px;
-  -webkit-mask-image: radial-gradient(880px 520px at 66% 0%, #000 40%, transparent 80%);
-  mask-image: radial-gradient(880px 520px at 66% 0%, #000 40%, transparent 80%);
+  -webkit-mask-image: radial-gradient(880px 520px at 66% 0% in oklch, #000 40%, transparent 80%);
+  mask-image: radial-gradient(880px 520px at 66% 0% in oklch, #000 40%, transparent 80%);
 }
 
 /* THE SHARED NAV MATERIAL — one design language across every shell.
@@ -739,7 +783,7 @@ html {
    Was `.landing-nav`, scoped to the landing only; that scoping is precisely
    what made every other page look like a different site. */
 .glass-nav {
-  background: linear-gradient(177deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.06));
+  background: linear-gradient(177deg in oklch, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.06));
   /* Prefixed FIRST, unprefixed LAST. With them the other way round Lightning
      CSS emitted ONLY `-webkit-backdrop-filter` (verified in the built chunk),
      and Firefox supports the unprefixed property without aliasing the webkit
@@ -759,8 +803,8 @@ html {
    wash so they belong to the same world without competing with data. */
 .app-atmo {
   background:
-    radial-gradient(760px 300px at 88% -10%, rgba(108, 170, 239, 0.13), transparent 68%),
-    radial-gradient(520px 260px at 2% -4%, rgba(68, 148, 188, 0.09), transparent 68%),
+    radial-gradient(760px 300px at 88% -10% in oklch, rgba(108, 170, 239, 0.13), transparent 68%),
+    radial-gradient(520px 260px at 2% -4% in oklch, rgba(68, 148, 188, 0.09), transparent 68%),
     var(--background);
 }
 /* Dark uses the SAME two-path mechanism as the token block above (:root.dark
@@ -773,13 +817,13 @@ html {
    users got a white frosted pill with a near-white border on a #0a0a0a page. */
 :root.dark .app-atmo {
   background:
-    radial-gradient(760px 300px at 88% -10%, rgba(108, 170, 239, 0.1), transparent 68%),
+    radial-gradient(760px 300px at 88% -10% in oklch, rgba(108, 170, 239, 0.1), transparent 68%),
     var(--background);
 }
 @media (prefers-color-scheme: dark) {
   :root:not(.light) .app-atmo {
     background:
-      radial-gradient(760px 300px at 88% -10%, rgba(108, 170, 239, 0.1), transparent 68%),
+      radial-gradient(760px 300px at 88% -10% in oklch, rgba(108, 170, 239, 0.1), transparent 68%),
       var(--background);
   }
 }
@@ -846,15 +890,15 @@ html {
 :root.dark .hero-ground,
 :root.dark .hero-zone {
   background:
-    radial-gradient(680px 340px at 82% -6%, rgba(108, 170, 239, 0.22), transparent 66%),
-    radial-gradient(560px 320px at 3% 2%, rgba(68, 148, 188, 0.17), transparent 66%),
+    radial-gradient(680px 340px at 82% -6% in oklch, rgba(108, 170, 239, 0.22), transparent 66%),
+    radial-gradient(560px 320px at 3% 2% in oklch, rgba(68, 148, 188, 0.17), transparent 66%),
     var(--background);
 }
 :root.dark .hero-atmo {
   background-image: radial-gradient(rgba(108, 170, 239, 0.2) 1px, transparent 1.5px);
 }
 :root.dark .glass-nav {
-  background: linear-gradient(177deg, rgba(40, 44, 54, 0.34), rgba(18, 18, 20, 0.05));
+  background: linear-gradient(177deg in oklch, rgba(40, 44, 54, 0.34), rgba(18, 18, 20, 0.05));
   -webkit-backdrop-filter: blur(30px) saturate(1.9);
   backdrop-filter: blur(30px) saturate(1.9);
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -866,15 +910,15 @@ html {
   :root:not(.light) .hero-ground,
   :root:not(.light) .hero-zone {
     background:
-      radial-gradient(680px 340px at 82% -6%, rgba(108, 170, 239, 0.22), transparent 66%),
-      radial-gradient(560px 320px at 3% 2%, rgba(68, 148, 188, 0.17), transparent 66%),
+      radial-gradient(680px 340px at 82% -6% in oklch, rgba(108, 170, 239, 0.22), transparent 66%),
+      radial-gradient(560px 320px at 3% 2% in oklch, rgba(68, 148, 188, 0.17), transparent 66%),
       var(--background);
   }
   :root:not(.light) .hero-atmo {
     background-image: radial-gradient(rgba(108, 170, 239, 0.2) 1px, transparent 1.5px);
   }
   :root:not(.light) .glass-nav {
-    background: linear-gradient(177deg, rgba(40, 44, 54, 0.34), rgba(18, 18, 20, 0.05));
+    background: linear-gradient(177deg in oklch, rgba(40, 44, 54, 0.34), rgba(18, 18, 20, 0.05));
     -webkit-backdrop-filter: blur(30px) saturate(1.9);
     backdrop-filter: blur(30px) saturate(1.9);
     border: 1px solid rgba(255, 255, 255, 0.16);
@@ -918,4 +962,34 @@ html {
 }
 @media (prefers-reduced-motion: reduce) {
   .bulk-bar-in { animation-name: bulkBarFade; }
+}
+
+/* ---------------------------------------------------------------------------
+   Motion pass M2 (locked 2026-11-19; specimen app/dev-preview-uiport/motion).
+   --------------------------------------------------------------------------- */
+@theme {
+  --animate-overlay-in: overlay-in 250ms cubic-bezier(0.32, 0.72, 0, 1);
+  --animate-accordion-down: accordion-down 250ms cubic-bezier(0.32, 0.72, 0, 1);
+  --animate-accordion-up: accordion-up 200ms cubic-bezier(0.32, 0.72, 0, 1);
+  @keyframes overlay-in { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
+  @keyframes accordion-down { from { height: 0; } to { height: var(--accordion-panel-height); } }
+  @keyframes accordion-up { from { height: var(--accordion-panel-height); } to { height: 0; } }
+}
+
+/* Theme switch: no colour transitions while the class swaps (lib/theme.ts applyTheme). */
+.theme-switching, .theme-switching * { transition: none !important; }
+
+/* Native <details> and keyword-height collapsibles animate open/close. */
+:root { interpolate-size: allow-keywords; }
+details::details-content {
+  block-size: 0; overflow: clip;
+  transition: block-size 250ms cubic-bezier(0.32, 0.72, 0, 1), content-visibility 250ms allow-discrete;
+}
+details[open]::details-content { block-size: auto; }
+
+/* Reduced motion: the new motion keeps its fade and drops the travel. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-overlay-in { animation-name: none; }
+  details::details-content { transition: none; }
+  [class*='animate-accordion'] { animation-duration: 1ms; }
 }

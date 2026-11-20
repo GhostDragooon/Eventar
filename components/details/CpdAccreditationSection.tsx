@@ -155,7 +155,7 @@ export function CpdAccreditationSection({
     <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
       <div className="flex flex-wrap items-start justify-between gap-md">
         <div>
-          <h2 className="font-heading text-headline-sm text-on-surface">CPD accreditation</h2>
+          <h2 className="font-heading text-headline-sm text-on-surface"><abbr title="Continuing professional development">CPD</abbr> accreditation</h2>
           <p className="mt-xs text-body-md text-on-surface-variant">
             Attendees with a verified licence at this body earn credit automatically when they check in.
           </p>
@@ -174,28 +174,28 @@ export function CpdAccreditationSection({
       {multiBodyConfigured && (
         <p className="mt-md rounded-lg bg-primary-container px-md py-sm text-body-md text-on-primary-container">
           This event is accredited via the multiple-body wizard below, so the field here is locked — any value it
-          shows is left over from before the wizard was used and is not what&rsquo;s actually in effect.
+          shows is left over from before the wizard was used and is not what’s actually in effect.
         </p>
       )}
 
       {bodiesUnavailable && (
         <p className="mt-md rounded-lg bg-error-container px-md py-sm text-body-md text-on-error-container">
-          The list of accrediting bodies could not be loaded, so accreditation can&rsquo;t be changed right now. Existing
+          The list of accrediting bodies could not be loaded, so accreditation can’t be changed right now. Existing
           accreditation is unaffected. Reload to try again.
         </p>
       )}
 
       {noAuthorisedBodies && !bodiesUnavailable && (
         <p className="mt-md rounded-lg bg-warning-container px-md py-sm text-body-md text-on-warning-container">
-          Your organisation isn&rsquo;t yet authorised by any accrediting body, so events can&rsquo;t be marked as
-          CPD-accredited. This is arranged with the body directly &mdash; reloading won&rsquo;t change it. Existing
+          Your organisation isn’t yet authorised by any accrediting body, so events can’t be marked as
+          CPD-accredited. This is arranged with the body directly &mdash; reloading won’t change it. Existing
           accreditation is unaffected.
         </p>
       )}
 
       {roleBlocked && (
         <p className="mt-md rounded-lg bg-surface-container-low px-md py-sm text-body-md text-on-surface-variant">
-          Your role can&rsquo;t set accreditation. An organiser admin can add or change it from this page.
+          Your role can’t set accreditation. An organiser admin can add or change it from this page.
         </p>
       )}
 

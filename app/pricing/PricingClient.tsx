@@ -55,7 +55,7 @@ export function PricingClient() {
 
   function handleChoose(id: string) {
     const tier = TIERS.find((t) => t.id === id);
-    toast('neutral', `${tier?.name ?? id} — coming soon! We'll notify you when this plan is available.`);
+    toast('neutral', `${tier?.name ?? id} — coming soon! We’ll notify you when this plan is available.`);
   }
 
   return (

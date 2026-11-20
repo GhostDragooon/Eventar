@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Sheet } from '@/components/ui/Sheet';
+import { useIsMobile } from '@/lib/useIsMobile';
 
 export type Workspace = { id: string; name: string; description?: string };
 
@@ -22,6 +24,7 @@ export function WorkspaceSwitcher({
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const mobile = useIsMobile();
 
   const current = workspaces.find((x) => x.id === currentId);
   const filtered = useMemo(
@@ -31,7 +34,8 @@ export function WorkspaceSwitcher({
 
   // Outside-click + Escape close, matching DatePicker/TimePicker15.
   useEffect(() => {
-    if (!open) return;
+    // Below 768px the picker is a Sheet in a portal; Drawer owns dismissal there.
+    if (!open || mobile) return;
     function onDocClick(e: MouseEvent) {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     }
@@ -44,7 +48,7 @@ export function WorkspaceSwitcher({
       document.removeEventListener('mousedown', onDocClick);
       document.removeEventListener('keydown', onKey);
     };
-  }, [open]);
+  }, [open, mobile]);
 
   function openPicker() {
     setQuery('');
@@ -78,27 +82,8 @@ export function WorkspaceSwitcher({
     }
   }
 
-  return (
-    <div ref={rootRef} className="relative">
-      <Button
-        type="button"
-        variant="outline"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        onClick={() => (open ? setOpen(false) : openPicker())}
-        className="flex min-h-11 w-full items-center justify-between px-md text-left"
-      >
-        <span>
-          <strong className="block text-on-surface">{current?.name ?? 'Select workspace'}</strong>
-          <small className="text-on-surface-variant">{current?.description}</small>
-        </span>
-        <span className="material-symbols-outlined" aria-hidden>
-          expand_more
-        </span>
-      </Button>
-
-      {open && (
-        <div className="absolute z-30 mt-xs w-full min-w-72 rounded-[12px] border border-outline-variant bg-surface-container-lowest p-sm shadow-lg">
+  const menu = (
+    <>
           <label className="sr-only" htmlFor="workspace-search">
             Search workspaces
           </label>
@@ -159,7 +144,37 @@ export function WorkspaceSwitcher({
               Create workspace
             </button>
           )}
+    </>
+  );
+
+  return (
+    <div ref={rootRef} className="relative">
+      <Button
+        type="button"
+        variant="outline"
+        aria-haspopup={mobile ? 'dialog' : 'listbox'}
+        aria-expanded={open}
+        onClick={() => (open ? setOpen(false) : openPicker())}
+        className="flex min-h-11 w-full items-center justify-between px-md text-left"
+      >
+        <span>
+          <strong className="block text-on-surface">{current?.name ?? 'Select workspace'}</strong>
+          <small className="text-on-surface-variant">{current?.description}</small>
+        </span>
+        <span className="material-symbols-outlined" aria-hidden>
+          expand_more
+        </span>
+      </Button>
+
+      {open && !mobile && (
+        <div className="absolute z-30 mt-xs w-full min-w-72 origin-top-left animate-overlay-in rounded-[12px] border border-outline-variant bg-popover p-sm shadow-lg">
+          {menu}
         </div>
+      )}
+      {mobile && (
+        <Sheet open={open} onOpenChange={setOpen} title="Workspace switcher">
+          {menu}
+        </Sheet>
       )}
     </div>
   );

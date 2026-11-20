@@ -3,9 +3,8 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { sendMagicLink } from './actions';
-import { AuthBackdropCard } from '@/components/auth/AuthBackdropCard';
+import { SiteShell } from '@/components/shell/SiteShell';
 import { MagicLinkSignInForm } from '@/components/auth/MagicLinkSignInForm';
-import { ControlledAccessNotice } from '@/components/auth/ControlledAccessNotice';
 import { AuthStatusMessage } from '@/components/auth/AuthStatusMessage';
 import { resolveAuthError } from '@/components/auth/auth-error-messages';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -24,15 +23,14 @@ export default function LoginPage() {
 }
 
 function LoginLayout({ children }: { children: React.ReactNode }) {
-  return <AuthBackdropCard door="organiser">{children}</AuthBackdropCard>;
-}
-
-function Eyebrow() {
   return (
-    <p className="text-label-md font-semibold uppercase tracking-[0.18em] m-0">
-      <span className="text-[color:var(--on-primary-container)]">Organiser</span>
-      <span className="text-on-surface-variant"> · Log in</span>
-    </p>
+    <SiteShell active="organiser">
+      <div className="mx-auto w-full max-w-md px-grid-margin py-xl">
+        <div className="flex flex-col gap-lg bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm">
+          {children}
+        </div>
+      </div>
+    </SiteShell>
   );
 }
 
@@ -124,32 +122,18 @@ function LoginForm() {
 
   return (
     <LoginLayout>
-      <Eyebrow />
       <h1
         ref={headingRef}
         tabIndex={-1}
         className="font-headline-lg text-headline-lg text-on-surface m-0 outline-none"
       >
-        {isInvite ? 'Log in to accept your invite' : 'Log in'}
+        {isInvite ? 'Log in to accept your invite' : 'Organiser log in'}
       </h1>
       <p className="font-body-md text-body-md text-on-surface-variant m-0">
-        {isInvite ? (
-          "No password. We'll email a one-tap link, then return you to your invite."
-        ) : (
-          <>
-            Staff emails only. Need an account as a practitioner?{' '}
-            <Link
-              href="/account/sign-up"
-              className="font-semibold text-[color:var(--on-primary-container)] hover:underline"
-            >
-              Attendee sign up
-            </Link>
-            .
-          </>
-        )}
+        {isInvite
+          ? 'No password. We’ll email a one-tap link, then return you to your invite.'
+          : 'Organiser emails only. No access? Contact an admin.'}
       </p>
-
-      {!isInvite && <ControlledAccessNotice contactLabel="Contact an admin to be added" />}
 
       <MagicLinkSignInForm
         submitMagicLink={sendMagicLink}
@@ -161,9 +145,17 @@ function LoginForm() {
               : urlErr
         }
         next={next}
-        audience={isInvite ? 'invitee' : 'organizer'}
         submitLabel="Next"
       />
+
+      {(urlErrorCode === 'not_authorized' || urlErrorCode === 'not_organiser') && !signedOutHere && (
+        <p className="font-body-md text-body-md text-on-surface-variant m-0">
+          Attending an event?{' '}
+          <Link href="/account/sign-up" className="font-semibold text-[color:var(--on-primary-container)] hover:underline">
+            Sign up
+          </Link>
+        </p>
+      )}
 
       <details className="group">
         <summary className="cursor-pointer font-body-md text-body-md text-[color:var(--on-primary-container)] hover:underline list-none">
@@ -175,16 +167,18 @@ function LoginForm() {
               ? 'Log-in links expire after 15 minutes and work once. Request a fresh one above.'
               : 'Links expire after 15 minutes and work once. Request a new one above.'}
           </li>
-          <li>Check spam, and make sure you opened the newest email.</li>
-          <li>Open the link in the same browser you asked for it in.</li>
           {isInvite ? (
-            <li>
-              Your invite link is separate from the log-in link, and works once. If it stops
-              working, ask your admin for a new one.
-            </li>
+            <>
+              <li>
+                Your invite link is separate from the log-in link, and works once. If it stops
+                working, ask your admin for a new one.
+              </li>
+              <li>Check spam, and open the link in the same browser you asked for it in.</li>
+            </>
           ) : (
             <>
-              <li>Only organiser emails can log in. Ask an admin to add yours.</li>
+              <li>Check spam, and make sure you opened the newest email.</li>
+              <li>Open the link in the same browser you asked for it in.</li>
             </>
           )}
         </ul>
@@ -246,17 +240,16 @@ function PractitionerPanel({
 
   return (
     <>
-      <Eyebrow />
       <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">Organiser log in</h1>
       <p className="font-body-md text-body-md text-on-surface-variant m-0">
         {email ? (
           <>
-            You&apos;re signed in as{' '}
+            You’re signed in as{' '}
             <strong className="font-semibold text-on-surface [overflow-wrap:anywhere]">{email}</strong>.
             Organiser log in is for organiser emails only.
           </>
         ) : (
-          <>You&apos;re signed in. Organiser log in is for organiser emails only.</>
+          <>You’re signed in. Organiser log in is for organiser emails only.</>
         )}
       </p>
       <div className="flex flex-col gap-sm">
@@ -282,7 +275,7 @@ function PractitionerPanel({
 function LoginShell() {
   return (
     <LoginLayout>
-      <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">Log in</h1>
+      <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">Organiser log in</h1>
       <p className="font-body-md text-body-md text-on-surface-variant m-0">Loading…</p>
     </LoginLayout>
   );

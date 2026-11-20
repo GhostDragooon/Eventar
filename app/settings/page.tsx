@@ -86,7 +86,7 @@ export default async function SettingsPage() {
         {canManageTeam ? (
           <>
             <p className="font-body-md text-body-md text-on-surface-variant mb-md">
-              Manage your organisation&apos;s members and invite new teammates.
+              Manage your organisation’s members and invite new teammates.
             </p>
             <Link
               href="/settings/team"

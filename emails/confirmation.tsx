@@ -59,12 +59,12 @@ export default function ConfirmationEmail({
   outlookCalUrl,
   icsUrl,
 }: ConfirmationEmailProps) {
-  const greeting = firstName ? `You're in, ${firstName}.` : "You're in.";
+  const greeting = firstName ? `You’re in, ${firstName}.` : "You’re in.";
 
   return (
     <Html lang="en">
       <Head />
-      <Preview>{`You're registered: ${eventTitle}`}</Preview>
+      <Preview>{`You’re registered: ${eventTitle}`}</Preview>
       <Body style={{ backgroundColor: COLOR_BG, fontFamily: FONT_SANS, margin: 0, padding: '32px 0', color: COLOR_TEXT }}>
         <Container style={{ maxWidth: '560px', margin: '0 auto', padding: '0 24px' }}>
 
@@ -109,7 +109,7 @@ export default function ConfirmationEmail({
           </Row>
 
           <Text style={{ color: COLOR_MUTED, fontSize: '15px', lineHeight: 1.55, margin: '0 0 24px' }}>
-            Your spot is confirmed. Here&apos;s what to expect between now and the event.
+            Your spot is confirmed. Here’s what to expect between now and the event.
           </Text>
 
           {/* Event card — blue left border = event identity. */}
@@ -173,11 +173,11 @@ export default function ConfirmationEmail({
             }}
           >
             <Text style={{ color: GREEN, fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 8px' }}>
-              What&apos;s next
+              What’s next
             </Text>
             <Text style={{ color: COLOR_MUTED, fontSize: '14px', lineHeight: 1.6, margin: 0 }}>
-              60 minutes before the event starts we&apos;ll email your personal check-in pass —
-              a QR code plus a manual code. Bring it on the day and you&apos;re through the door
+              60 minutes before the event starts we’ll email your personal check-in pass —
+              a QR code plus a manual code. Bring it on the day and you’re through the door
               in seconds. Nothing else to do until then.
             </Text>
           </Section>
@@ -206,7 +206,7 @@ export default function ConfirmationEmail({
             By <span style={{ fontWeight: 700, color: COLOR_TEXT }}>Eventar</span>
           </Text>
           <Text style={{ color: '#9CA3AF', fontSize: '11px', lineHeight: 1.5, margin: '4px 0 0' }}>
-            You&apos;re receiving this because you registered for {eventTitle}. This is a
+            You’re receiving this because you registered for {eventTitle}. This is a
             transactional message about your registration.
           </Text>
 

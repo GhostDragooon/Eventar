@@ -1,6 +1,7 @@
 'use client';
 
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useScrollFade } from '@/lib/useScrollFade';
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
 import { EventCard, type EventCardStatus } from '@/components/event-discovery/EventCard';
 
@@ -45,6 +46,7 @@ function lifecycleStatus(lifecycle: Lifecycle): EventCardStatus {
 export function EventsListClient({ events }: { events: PublicEventCard[] }) {
   const [cat, setCat] = useState('all');
   const listRef = useRef<HTMLDivElement>(null);
+  useScrollFade(listRef);
   const tabRefs = useRef(new Map<string, HTMLDivElement>());
   const [indicator, setIndicator] = useState<{ left: number; width: number } | null>(null);
 
@@ -75,7 +77,7 @@ export function EventsListClient({ events }: { events: PublicEventCard[] }) {
         ref={listRef}
         role="tablist"
         aria-label="Event categories"
-        className="relative flex items-center justify-center gap-[40px] overflow-x-auto border-b border-outline-variant mb-lg"
+        className="scroll-fade relative flex items-center justify-center-safe gap-[40px] overflow-x-auto border-b border-outline-variant mb-lg"
       >
         {CATEGORIES.map((c) => {
           const active = cat === c.key;
@@ -98,7 +100,7 @@ export function EventsListClient({ events }: { events: PublicEventCard[] }) {
                   setCat(c.key);
                 }
               }}
-              className={`relative shrink-0 pb-md pt-xs cursor-pointer text-[calc(14px*var(--text-scale))] font-semibold transition-colors ${
+              className={`relative shrink-0 pb-md pt-sm cursor-pointer text-[calc(14px*var(--text-scale))] font-semibold transition-colors ${
                 active ? 'text-on-surface' : 'text-on-surface-variant hover:text-on-surface'
               }`}
             >
@@ -109,8 +111,8 @@ export function EventsListClient({ events }: { events: PublicEventCard[] }) {
         {indicator && (
           <span
             aria-hidden
-            className="absolute bottom-0 h-[2px] bg-[color:var(--on-primary-container)] rounded-full transition-[left,width] duration-250 ease-out"
-            style={{ left: indicator.left, width: indicator.width }}
+            className="absolute bottom-0 left-0 h-[2px] w-px origin-left bg-[color:var(--on-primary-container)] transition-transform duration-250 ease-out motion-reduce:transition-none"
+            style={{ transform: `translateX(${indicator.left}px) scaleX(${indicator.width})` }}
           />
         )}
       </div>

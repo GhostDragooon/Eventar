@@ -14,7 +14,7 @@
  * unknown errors instead of swallowing them with "something went wrong."
  */
 export function humanizeCameraError(e: unknown): string {
-  const suffix = ' You can use the "Enter code" button instead.';
+  const suffix = ' You can use the “Enter code” button instead.';
 
   if (!(e instanceof Error)) {
     return `Camera unavailable.${suffix}`;
@@ -31,7 +31,7 @@ export function humanizeCameraError(e: unknown): string {
     case 'NotReadableError':
       return `The camera is in use by another app. Close other camera apps and try again.${suffix}`;
     case 'SecurityError':
-      return `The browser blocked camera access — this usually means the page isn't served over HTTPS.${suffix}`;
+      return `The browser blocked camera access — this usually means the page isn’t served over HTTPS.${suffix}`;
     default:
       return `Camera unavailable: ${e.message}.${suffix}`;
   }

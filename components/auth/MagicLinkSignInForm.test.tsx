@@ -12,12 +12,11 @@ configure({ asyncUtilTimeout: 3000 });
 afterEach(cleanup);
 
 describe('MagicLinkSignInForm', () => {
-  // The button reads "Next", which does not say an email is sent; the help line does, so the button points at it.
-  it('describes the submit button with the line that says a link is emailed', () => {
+  it('renders no helper paragraph under the field', () => {
     render(<MagicLinkSignInForm submitMagicLink={async () => ({ ok: true as const })} submitLabel="Next" />);
-    const help = document.getElementById('magic-link-help');
-    expect(help?.textContent).toMatch(/one-time log-in link/i);
-    expect(screen.getByRole('button', { name: /^next$/i })).toHaveAttribute('aria-describedby', 'magic-link-help');
+    expect(document.getElementById('magic-link-help')).toBeNull();
+    expect(screen.queryByText(/does not reveal/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^next$/i })).toBeInTheDocument();
   });
 
   it('passes form data to the host action and reports a neutral success message', async () => {
@@ -116,26 +115,5 @@ describe('MagicLinkSignInForm', () => {
     expect(await screen.findByText(/could not send link/i)).toBeInTheDocument();
     expect(screen.queryByText(/expired or was already used/i)).not.toBeInTheDocument();
     expect(screen.getAllByRole('alert')).toHaveLength(1);
-  });
-
-  it('help copy references the organizer list by default (audience unset)', () => {
-    render(<MagicLinkSignInForm submitMagicLink={async () => ({ ok: true })} />);
-    expect(screen.getByText(/organi[sz]er list/i)).toBeInTheDocument();
-    expect(screen.queryByText(/account already exists/i)).not.toBeInTheDocument();
-  });
-
-  // An invitee is not on the list yet: accepting the invite is what adds them.
-  it('help copy drops the allowlist and says which address to use when audience="invitee"', () => {
-    render(<MagicLinkSignInForm submitMagicLink={async () => ({ ok: true })} audience="invitee" />);
-    expect(screen.getByText(/use the address you want for your organiser account/i)).toBeInTheDocument();
-    expect(screen.queryByText(/organi[sz]er list/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/account already exists/i)).not.toBeInTheDocument();
-  });
-
-  it('help copy drops the organizer framing when audience="attendee"', () => {
-    render(<MagicLinkSignInForm submitMagicLink={async () => ({ ok: true })} audience="attendee" />);
-    expect(screen.getByText(/account already exists/i)).toBeInTheDocument();
-    expect(screen.queryByText(/organi[sz]er list/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/staff list/i)).not.toBeInTheDocument();
   });
 });

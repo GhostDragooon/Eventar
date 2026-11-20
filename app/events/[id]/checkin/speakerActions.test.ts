@@ -385,7 +385,7 @@ describe('toggleSpeakerCheckin: signed-out session and event state', () => {
   it('answers a server-side sign-out with the door message instead of throwing', async () => {
     requireStaffMock.mockRejectedValueOnce(new NotAuthorizedError());
     const result = await toggleSpeakerCheckin(eventId, 'Ada Lovelace');
-    expect(result).toEqual({ error: "You've been signed out. This check-in was not saved. Log in again to continue." });
+    expect(result).toEqual({ error: "You’ve been signed out. This check-in was not saved. Log in again to continue." });
     expect(lastInsert).toBeNull();
   });
 

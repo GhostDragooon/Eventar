@@ -229,7 +229,7 @@ describe('walkInRegisterAndCheckIn', () => {
     ['live', LIVE_TIMES],
     ['not yet open', NOT_YET_OPEN_TIMES],
     ['ended', ENDED_TIMES],
-  ])("another organisation's staff get the access error for a %s event, whatever its lifecycle", async (_label, times) => {
+  ])("another organisation’s staff get the access error for a %s event, whatever its lifecycle", async (_label, times) => {
     mockRequireStaff.mockResolvedValueOnce({ ...staff, organisation_id: 'org-other' });
     mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, created_by: 'staff-1', deleted_at: null, ...times });
     await expect(walkInRegisterAndCheckIn(validInput)).resolves.toEqual({ error: 'You do not have access to this event.' });
@@ -237,7 +237,7 @@ describe('walkInRegisterAndCheckIn', () => {
 
   // Q45, 2026-10-14: a server-side sign-out mid-event must come back as a
   // message, not a throw that froze the dialog on "Registering…".
-  const SIGNED_OUT = "You've been signed out. This walk-in was not saved. Reload and log in again.";
+  const SIGNED_OUT = "You’ve been signed out. This walk-in was not saved. Reload and log in again.";
 
   it('signed out (session ended server-side): returns the signed-out message instead of throwing', async () => {
     mockRequireStaff.mockRejectedValueOnce(new MockNotAuthorizedError('no session'));

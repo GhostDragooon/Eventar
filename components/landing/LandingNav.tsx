@@ -1,133 +1,35 @@
-import Link from 'next/link';
-import { BrandMark } from '@/components/shell/BrandMark';
-import { AccountMenu } from '@/components/ui/AccountMenu';
+import { SiteNav } from '@/components/shell/SiteNav';
 import { LandingAuthPill } from './LandingAuthPill';
 
-const NAV_ITEM =
-  'nav-item rounded-full px-[11px] py-[7px] text-[calc(13px*var(--text-scale))] font-medium text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface';
-
 /**
- * The artifact's glass pill nav — floats over the hero's gradient rather than
- * sitting in a bordered bar. Deliberately NOT `SiteShell`'s nav: that one is
- * the app's three-column chrome (Home / Upcoming events / Sign in) and belongs
- * on `/events`, where the visitor is already inside the product. The landing is
- * a marketing surface and gets marketing navigation.
+ * The landing nav is the shared SiteNav (2026-11-20, Ivan: one top nav on every
+ * public and auth page). The landing-only anchors and "Start an Event" left the
+ * nav; their sections stay on the page.
  *
- * Sticky at top:10px so it detaches from the page edge as you scroll — the
- * "pill floating on the page" read only works if it never touches the top.
+ * Sticky at top:10px, as a direct child of the `.hero-ground` column flexbox
+ * (app/page.tsx): the gradient must start at y=0 and the sticky containing block
+ * must be the full document. The width classes reproduce the old 1200px content
+ * column inset by 15px so the pill lines up with the sections below; explicit
+ * width is load-bearing because a flex item's `mx-auto` disables cross-axis stretch.
  *
- * Sits at PAGE level (a child of the `.hero-ground` root in app/page.tsx), not
- * inside `.hero-zone`. Both constraints have to hold at once: the gradient must
- * start at y=0 or a white band appears above the pill, and the nav's containing
- * block must be the full document or `position: sticky` releases at the hero's
- * bottom edge and the landing loses its nav for the remaining ~1400px. Moving
- * the glow to `.hero-ground` satisfies both.
- *
- * Outer wrapper carries `max-w-[1200px] mx-auto px-[15px]` (2026-08-21) —
- * same box every content section below uses — so the pill's own left/right
- * edge lines up with the hero/WhyEventar/etc. panels beneath it instead of
- * floating wider (the old `mx-[18px]` measured from the viewport edge, not
- * from the shared content column). `sticky`/`z-index` moved to this wrapper;
- * the `<nav>` itself is just the pill, full width of the wrapper.
- *
- * `w-full` is load-bearing (2026-08-21): this div is a direct child of
- * `.hero-ground`'s column flexbox, and a flex item's `mx-auto` overrides
- * the default cross-axis stretch — without an explicit width, the div
- * shrinks to its content (~793px) and centers *that*, instead of stretching
- * to the container width first so `max-w-[1200px]` has 1200px to clamp.
- * Every sibling box below (Hero, WhyEventar, ...) sits inside `<main>`, a
- * plain block context with no flex parent, so it never hit this.
+ * `app/page.tsx` is dynamic and always passes `signedIn`, so SiteNav's own CTA renders.
+ * The `LandingAuthPill` client island is the fallback for a caller that omits `signedIn`
+ * (it resolves the session in the browser); `/` no longer takes that path.
  */
-/**
- * The state-aware auth CTA is a small client island (`LandingAuthPill`) so
- * this nav (and by extension the whole landing page) can stay a static
- * prerender — Dev-lens MODERATE 1, 2026-09-06. If a caller needs to force
- * the pill's initial state (SSR test rig, non-browser context), pass
- * `signedIn` and the pill renders that state instead of the client island.
- */
-export function LandingNav({ signedIn }: { signedIn?: boolean } = {}) {
+export function LandingNav({
+  signedIn,
+  isStaff = false,
+  accountComplete = true,
+  unlinkedCount = 0,
+}: { signedIn?: boolean; isStaff?: boolean; accountComplete?: boolean; unlinkedCount?: number } = {}) {
   return (
-    <div className="sticky top-[10px] z-[5] mx-auto w-full max-w-[1200px] px-[15px]">
-      <nav
-        aria-label="Primary"
-        className="glass-nav flex items-center justify-between gap-md rounded-full py-sm pl-md pr-sm"
-      >
-      <BrandMark />
-
-      {/* Every item lands on something that exists. All four previously
-          pointed at /events, so the nav offered four labels and one
-          destination — the "nothing goes where it says" bug.
-
-          Three are in-page anchors because the section they name IS on this
-          page; only "Upcoming events" leaves for a route. Anchors are plain
-          <a>: next/link's client router has nothing to prefetch for a hash on
-          the current document. */}
-      <div className="hidden items-center gap-[2px] md:flex">
-        {[
-          { label: 'How it works', href: '#how-it-works' },
-          { label: 'Platform', href: '#platform' },
-          { label: 'For organisers', href: '#for-organisers' },
-          { label: 'Upcoming events', href: '/events', route: true },
-        ].map((l) =>
-          l.route ? (
-            <Link key={l.label} href={l.href} className={NAV_ITEM}>
-              {l.label}
-            </Link>
-          ) : (
-            <a key={l.label} href={l.href} className={NAV_ITEM}>
-              {l.label}
-            </a>
-          ),
-        )}
-      </div>
-
-      <div className="flex items-center gap-xs">
-        {/* Added 2026-08-20: was Log-in-only, so a visitor with an event to
-            run had no path other than clicking Log in and hoping. Outline,
-            not filled: Log in stays the one emphasised action, unchanged
-            from Ivan's 2026-08-08 call.
-            2026-09-24: retargeted from /events/new to /login?next=/events/new
-            per Ivan's "two pathways" call — a signed-in practitioner clicking
-            this used to have their session silently destroyed by proxy.ts
-            (which signs out any session lacking a staff row before bouncing
-            to /login?error=not_authorized). Now the round-trip goes through
-            /login first: an anonymous visitor still lands on the login form
-            same as before, a practitioner keeps their session and just sees
-            the organiser sign-in page. */}
-        <Link
-          href="/login?next=/events/new"
-          className="rounded-full border border-outline px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-surface transition-transform duration-150 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-        >
-          Start an Event
-        </Link>
-
-        {/* State-aware attendee-first door — Ivan 2026-09-06, superseding the
-            2026-08-08 "one label for one destination" call. Signed-in → Account,
-            signed-out → Sign in on the attendee door. Organizer's /login is
-            still reachable via the "Start an Event" pill left of this
-            (requireStaff() there catches an anon caller).
-
-            Uses the client island by default so `app/page.tsx` stays a static
-            prerender. If a caller pins `signedIn`, render that server-side
-            instead (SSR test rig or a non-browser context). */}
-        {signedIn === undefined ? (
-          <LandingAuthPill />
-        ) : signedIn ? (
-          // Pinned-signedIn path (SSR test rig / non-browser caller) has no
-          // server-fetched completeness signal to pass — assumes complete,
-          // nothing to claim. The client-island path above (the real
-          // production path) fetches the real values.
-          <AccountMenu complete unlinkedCount={0} />
-        ) : (
-          <Link
-            href="/account/sign-in"
-            className="rounded-full bg-primary px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary transition-transform duration-150 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-          >
-            Log in
-          </Link>
-        )}
-      </div>
-      </nav>
-    </div>
+    <SiteNav
+      className="mx-auto w-[calc(100%-30px)] max-w-[1170px]"
+      signedIn={signedIn ?? false}
+      isStaff={isStaff}
+      accountComplete={accountComplete}
+      unlinkedCount={unlinkedCount}
+      authSlot={signedIn === undefined ? <LandingAuthPill /> : undefined}
+    />
   );
 }

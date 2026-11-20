@@ -34,8 +34,8 @@ const FILTERS: { key: 'all' | Status; label: string }[] = [
 function emptyMessage(term: string, filter: 'all' | Status): string {
   if (!term && filter === 'all') return 'No one has registered yet.';
   if (!term) return `No registrations are ${filter}.`;
-  if (filter === 'all') return `No registrations match "${term}".`;
-  return `No registrations are ${filter} and match "${term}".`;
+  if (filter === 'all') return `No registrations match “${term}”.`;
+  return `No registrations are ${filter} and match “${term}”.`;
 }
 
 export default function RegistrationsClient({
@@ -235,7 +235,6 @@ function RegistrationItem({
               aria-disabled={pending.has(`${r.id}:${role}`) || undefined}
               aria-pressed={has}
               aria-label={`${role} — ${r.full_name}${locked ? ` (locked: ${r.status === 'attended' ? 'already attended' : 'cancelled'})` : ''}`}
-              title={locked ? (r.status === 'attended' ? 'Already attended: a role change now would not change the credit already posted.' : 'Cancelled registrations cannot take a role.') : undefined}
               onClick={() => !pending.has(`${r.id}:${role}`) && onToggleRole(role, has)}
               className={`min-h-11 rounded-full px-md font-label-md text-label-md capitalize transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary-ink disabled:opacity-50 ${
                 has
@@ -247,6 +246,12 @@ function RegistrationItem({
             </button>
           );
         })}
+        {canEditRoles && (r.status === 'attended' || r.status === 'cancelled') && (
+          // Visible reason for the locked chips (was a hover-only title, invisible on touch).
+          <span className="font-label-md text-label-md text-on-surface-variant">
+            {r.status === 'attended' ? 'Roles locked: credit already posted' : 'Roles locked: cancelled'}
+          </span>
+        )}
         <span className="rounded-full bg-surface-container-high px-sm font-label-md text-label-md text-on-surface-variant">
           {STATUS_LABEL[r.status]}
         </span>
@@ -312,7 +317,6 @@ function EditDialog({
       open
       onOpenChange={(o) => !o && !saving && onClose()}
       title="Edit registration"
-      description="Correct a mistyped name or email. Each change is recorded with who made it and which fields changed."
     >
       <form onSubmit={submit} className="flex flex-col gap-sm">
         <label className="flex flex-col gap-xs font-label-md text-label-md text-on-surface">
@@ -329,28 +333,28 @@ function EditDialog({
             disabled={emailLocked}
             required
             maxLength={254}
-            aria-describedby={error ? 'edit-email-note edit-error' : 'edit-email-note'}
+            aria-describedby={[emailLocked && 'edit-email-note', error && 'edit-error'].filter(Boolean).join(' ') || undefined}
             aria-invalid={error ? true : undefined}
           />
         </label>
-        <p id="edit-email-note" className="font-body-md text-body-md text-on-surface-variant">
-          {row.linked
-            ? 'This registration belongs to an Eventar account, so its email cannot be changed here. The name can.'
-            : attended
-              ? 'This person has already checked in, so their email cannot be changed. The name can.'
-              : 'Their check-in code stays the same, so a pass already emailed to them keeps working.'}
-        </p>
+        {emailLocked && (
+          <p id="edit-email-note" className="font-body-md text-body-md text-on-surface-variant">
+            {row.linked
+              ? 'This registration belongs to an Eventar account, so its email cannot be changed here. The name can.'
+              : 'Email can’t change after check-in.'}
+          </p>
+        )}
         {error && (
           <p id="edit-error" role="alert" className="font-body-md text-body-md text-error">
             {error}
           </p>
         )}
-        <div className="flex flex-wrap gap-sm">
-          <Button type="submit" disabled={saving} className="min-h-11 px-md font-label-md text-label-md">
-            {saving ? 'Saving…' : 'Save changes'}
-          </Button>
+        <div className="mt-md flex justify-end gap-sm">
           <Button type="button" variant="outline" onClick={onClose} disabled={saving} className="min-h-11 px-md font-label-md text-label-md">
             Cancel
+          </Button>
+          <Button type="submit" disabled={saving} className="min-h-11 px-md font-label-md text-label-md">
+            {saving ? 'Saving…' : 'Save changes'}
           </Button>
         </div>
       </form>

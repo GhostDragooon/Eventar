@@ -90,8 +90,8 @@ export function RegistrationSection({
               </p>
               <div className="w-full bg-surface-container-highest h-3 rounded-full overflow-hidden mt-sm">
                 <div
-                  className="bg-primary h-full rounded-full transition-all"
-                  style={{ width: `${Math.min(pct, 100)}%` }}
+                  className="bg-primary h-full w-full origin-left rounded-full transition-transform motion-reduce:transition-none"
+                  style={{ transform: `scaleX(${Math.min(pct, 100) / 100})` }}
                   role="progressbar"
                   aria-valuenow={pct}
                   aria-valuemin={0}

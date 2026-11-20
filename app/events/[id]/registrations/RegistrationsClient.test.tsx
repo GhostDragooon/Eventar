@@ -61,7 +61,7 @@ describe('Registrations list', () => {
     expect(screen.getByText('Lin Chan')).toBeTruthy();
     expect(screen.queryByText('Alex Wong')).toBeNull();
     fireEvent.change(screen.getByLabelText('Search name or email'), { target: { value: 'zzz' } });
-    expect(screen.getByText('No registrations match "zzz".')).toBeTruthy();
+    expect(screen.getByText('No registrations match “zzz”.')).toBeTruthy();
   });
 
   it('an empty filter or search says which one emptied the list (acceptance walk, dev m: bare "No matches.")', () => {
@@ -69,7 +69,7 @@ describe('Registrations list', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancelled (0)' }));
     expect(screen.getByText('No registrations are cancelled.')).toBeTruthy();
     fireEvent.change(screen.getByLabelText('Search name or email'), { target: { value: 'Alex' } });
-    expect(screen.getByText('No registrations are cancelled and match "Alex".')).toBeTruthy();
+    expect(screen.getByText('No registrations are cancelled and match “Alex”.')).toBeTruthy();
     expect(screen.queryByText('No matches.')).toBeNull();
   });
 });
@@ -80,7 +80,8 @@ describe('Edit dialog', () => {
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: 'Edit Alex Wong' }));
     const dialog = screen.getByRole('dialog');
-    expect(within(dialog).getByText(/check-in code stays the same/i)).toBeTruthy();
+    // Batch 3 row 3: the default note was deleted from the dialog.
+    expect(within(dialog).queryByText(/check-in code stays the same/i)).toBeNull();
     fireEvent.change(within(dialog).getByLabelText('Email'), { target: { value: 'Alex.Wong@Example.invalid' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
@@ -109,7 +110,7 @@ describe('Edit dialog', () => {
     expect(email.disabled).toBe(true);
     expect(email.getAttribute('aria-describedby')).toContain('edit-email-note');
     expect((within(dialog).getByLabelText('Full name') as HTMLInputElement).disabled).toBe(false);
-    expect(within(dialog).getByText(/already checked in, so their email cannot be changed/)).toBeTruthy();
+    expect(within(dialog).getByText(/Email can.t change after check-in\./)).toBeTruthy();
     expect(within(dialog).queryByText(/belongs to an Eventar account/)).toBeNull();
   });
 

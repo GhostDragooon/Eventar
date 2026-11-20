@@ -62,7 +62,7 @@ export function LiveScoreboard({
   return (
     <section
       className="rounded-[20px] p-lg mb-xl text-white relative overflow-hidden"
-      style={{ background: 'radial-gradient(120% 140% at 0% 0%, #123420 0%, #0A0A0A 55%)' }}
+      style={{ background: 'radial-gradient(120% 140% at 0% 0% in oklch, #123420 0%, #0A0A0A 55%)' }}
       aria-label="Event status"
     >
       <p className="text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-[0.18em] text-white/50 mb-md">Status</p>
@@ -82,7 +82,7 @@ export function LiveScoreboard({
       {!isDone && !isDraft && (
         <>
           <div className="h-[6px] w-full rounded-full bg-white/10 overflow-hidden mb-xs" aria-hidden>
-            <div className="h-full rounded-full bg-[#4ADE80] transition-[width] duration-1000 ease-linear" style={{ width: `${isUpcoming ? 0 : pct}%` }} />
+            <div className="h-full w-full origin-left rounded-full bg-[#4ADE80] transition-transform duration-1000 ease-linear motion-reduce:transition-none" style={{ transform: `scaleX(${isUpcoming ? 0 : pct / 100})` }} />
           </div>
           <div className="flex justify-between text-[calc(11px*var(--text-scale))] tabular-nums text-white/50 mb-lg">
             <span>{startLabel} start</span>

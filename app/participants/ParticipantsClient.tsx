@@ -94,7 +94,7 @@ export function ParticipantsClient({ participants }: { participants: Participant
 
       <p className="text-body-sm text-on-surface-variant">
         {filtered.length} participant{filtered.length !== 1 ? 's' : ''}
-        {search && ` matching "${search}"`}
+        {search && ` matching “${search}”`}
       </p>
     </div>
   );

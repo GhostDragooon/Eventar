@@ -123,7 +123,7 @@ export function HowItWorks({ audience }: { audience: Audience }) {
         {STEPS.map((s, i) => (
           <Fragment key={s.t}>
             {i > 0 && <div className="mt-7 h-0 flex-1 border-t-2 border-dashed border-outline-variant" aria-hidden />}
-            <div className="flex w-[152px] shrink-0 flex-col items-center text-center">
+            <div className="flex w-[112px] shrink-0 lg:w-[152px] flex-col items-center text-center">
               <StepCircle icon={ICONS[s.art]} index={i} />
               <h3 className="mt-md text-[calc(13px*var(--text-scale))] font-semibold leading-snug text-on-surface">{s.t}</h3>
               <p className="mt-xs text-[calc(11.5px*var(--text-scale))] leading-[1.5] text-on-surface-variant">{s.d}</p>

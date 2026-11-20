@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { Sheet } from '@/components/ui/Sheet';
+import { useIsMobile } from '@/lib/useIsMobile';
 
 /**
  * DISPUTED SHAPE — flagged for Ivan, not silently resolved.
@@ -27,6 +29,28 @@ export function SplitActionButton({
   onAction: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const mobile = useIsMobile();
+
+  const menu = (
+    <div role="menu">
+          {actions.map((action) => (
+            // ui-primitive-allow: menu item inside an open popover, not a standalone action
+            <button
+              key={action.id}
+              type="button"
+              role="menuitem"
+              disabled={action.disabled}
+              onClick={() => {
+                onAction(action.id);
+                setOpen(false);
+              }}
+              className="min-h-11 w-full rounded-md px-md text-left text-on-surface hover:bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+            >
+              {action.label}
+            </button>
+          ))}
+    </div>
+  );
 
   return (
     <div className="relative inline-flex">
@@ -42,32 +66,22 @@ export function SplitActionButton({
       <button
         type="button"
         aria-label="More actions"
-        aria-haspopup="menu"
+        aria-haspopup={mobile ? 'dialog' : 'menu'}
         aria-expanded={open}
         onClick={() => setOpen(!open)}
         className="grid min-h-11 min-w-11 place-items-center rounded-r-lg border-l border-on-primary bg-primary text-on-primary focus:z-10 focus:outline-none focus:ring-2 focus:ring-primary"
       >
         <span className="material-symbols-outlined" aria-hidden>expand_more</span>
       </button>
-      {open && (
-        <div role="menu" className="absolute right-0 top-full z-30 mt-xs min-w-52 rounded-[12px] border border-outline-variant bg-surface-container-lowest p-xs shadow-lg">
-          {actions.map((action) => (
-            // ui-primitive-allow: menu item inside an open popover, not a standalone action
-            <button
-              key={action.id}
-              type="button"
-              role="menuitem"
-              disabled={action.disabled}
-              onClick={() => {
-                onAction(action.id);
-                setOpen(false);
-              }}
-              className="min-h-11 w-full rounded-lg px-md text-left text-on-surface hover:bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-            >
-              {action.label}
-            </button>
-          ))}
+      {open && !mobile && (
+        <div className="absolute right-0 top-full z-30 mt-xs min-w-52 origin-top-right animate-overlay-in rounded-[12px] border border-outline-variant bg-popover p-xs shadow-lg">
+          {menu}
         </div>
+      )}
+      {mobile && (
+        <Sheet open={open} onOpenChange={setOpen} title="More actions">
+          {menu}
+        </Sheet>
       )}
     </div>
   );

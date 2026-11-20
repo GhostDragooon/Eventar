@@ -1,3 +1,5 @@
+import { supabaseServer } from '@/lib/supabase/server';
+import { getAccountMenuState } from '@/app/account/actions';
 import { LandingNav } from '@/components/landing/LandingNav';
 import { AudienceExperience } from '@/components/landing/AudienceExperience';
 import { WhyEventar } from '@/components/landing/WhyEventar';
@@ -62,17 +64,38 @@ const FEATURES = {
   ],
 } as const;
 
-export default function LandingPage() {
+// Dynamic since 2026-11-20 (Ivan): the server reads the session so a signed-in visitor
+// never sees "Organiser log in" flash before hydration. Cost: no CDN prerender for `/`
+// (the 2026-09-06 dev-lens finding that moved this into a client island).
+export const dynamic = 'force-dynamic';
+
+export default async function LandingPage() {
+  const supabase = await supabaseServer();
+  // eslint-disable-next-line no-restricted-syntax -- no-session is a valid public state
+  const { data: authRes } = await supabase.auth.getUser();
+  const signedIn = Boolean(authRes?.user);
+  // Decorative read: a throw degrades the menu, never the page (same posture as /events).
+  let menuState: { isStaff: boolean; accountComplete: boolean; unlinkedCount: number } | null = null;
+  if (signedIn) {
+    try {
+      menuState = await getAccountMenuState();
+    } catch {
+      menuState = null;
+    }
+  }
   return (
-    <div className="hero-ground flex min-h-screen flex-col text-on-surface">
+    <div className="hero-ground flex min-h-dvh flex-col text-on-surface">
       {/* Page-level, so `position: sticky` is bound by the whole document and
           the nav stays reachable to the footer. It does NOT reintroduce the
           white band it was moved to fix: `.hero-ground` paints the glow from
           y=0 on this container, so the nav floats on the gradient rather than
           on `bg-background`. */}
-      {/* Auth-varying pill sits inside LandingNav as a client island, so this
-          page stays a static prerender (Dev-lens MODERATE 1, 2026-09-06). */}
-      <LandingNav />
+      <LandingNav
+        signedIn={signedIn}
+        isStaff={menuState?.isStaff ?? false}
+        accountComplete={menuState?.accountComplete ?? false}
+        unlinkedCount={menuState?.unlinkedCount ?? 0}
+      />
 
       <main className="flex-1">
         {/* LedgerWindow now renders inside LandingHero itself (its right

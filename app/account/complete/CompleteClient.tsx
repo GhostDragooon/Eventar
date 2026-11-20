@@ -55,6 +55,13 @@ export function CompleteClient({
 }) {
   const router = useRouter();
   const [step, setStep] = useState(Math.min(Math.max(initialStep, 1), 4));
+  // Slide direction, derived during render when the step changes (no effect, no ref).
+  const [prevStep, setPrevStep] = useState(step);
+  const [direction, setDirection] = useState<'next' | 'back'>('next');
+  if (step !== prevStep) {
+    setPrevStep(step);
+    setDirection(step < prevStep ? 'back' : 'next');
+  }
 
   // Step 1 — consent
   const [consentChecked, setConsentChecked] = useState(false);
@@ -244,9 +251,9 @@ export function CompleteClient({
             isSignedOutError(result.error)
               ? signedOutCopy(result.error)
               : result.error === 'already_declared'
-              ? "You've already declared this licence number at that body."
+              ? "You’ve already declared this licence number at that body."
               : result.error === 'body_inactive'
-                ? "That body isn't accepting new licences right now."
+                ? "That body isn’t accepting new licences right now."
                 : result.error === 'rate_limited'
                   ? 'Too many attempts in a short window. Please wait a moment.'
                   : result.error === 'invalid_input'
@@ -303,11 +310,11 @@ export function CompleteClient({
 
       <StepIndicator current={step} />
 
-      <StepPanel stepKey={step}>
+      <StepPanel stepKey={step} direction={direction}>
         {step === 1 && (
           <SectionCard icon="fact_check" title="Privacy and terms">
             <p className="font-body-md text-body-md text-on-surface-variant m-0">
-              Eventar uses your professional identity to release CME/CPD credit for events you attend.
+              Eventar uses your professional identity to release <abbr title="Continuing medical education">CME</abbr>/<abbr title="Continuing professional development">CPD</abbr> credit for events you attend.
               By continuing you agree to the terms and privacy policy we will publish before launch.
             </p>
             <label className="mt-md flex items-start gap-sm cursor-pointer">
@@ -608,29 +615,38 @@ export function CompleteClient({
   );
 }
 
-// Restrained CSS-only step transition (emilkowalski-motion: transform +
-// opacity only, ~200ms, no library — none is installed in this project).
-// Remounts on stepKey change via key={stepKey}, then flips into its
-// entered state on the next frame. motion-reduce collapses to an instant
-// swap, same pattern as SiteShell's nav CTA hover.
-function StepPanel({ children, stepKey }: { children: React.ReactNode; stepKey: number }) {
+// Step slide (motion pattern 4): the new step enters from the side it logically
+// comes from (next = right, back = left), 350ms, inside an overflow-clip frame.
+// Remounts on stepKey change, then flips into its entered state on the next
+// frame. Reduced motion: no slide, instant swap. The clip margin keeps focus
+// rings at the panel edges from being cut off.
+function StepPanel({
+  children,
+  stepKey,
+  direction,
+}: {
+  children: React.ReactNode;
+  stepKey: number;
+  direction: 'next' | 'back';
+}) {
   return (
-    <div key={stepKey}>
-      <StepPanelInner>{children}</StepPanelInner>
+    <div className="overflow-clip [overflow-clip-margin:8px]">
+      <StepPanelInner key={stepKey} direction={direction}>{children}</StepPanelInner>
     </div>
   );
 }
 
-function StepPanelInner({ children }: { children: React.ReactNode }) {
+function StepPanelInner({ children, direction }: { children: React.ReactNode; direction: 'next' | 'back' }) {
   const [entered, setEntered] = useState(false);
   useEffect(() => {
     const id = requestAnimationFrame(() => setEntered(true));
     return () => cancelAnimationFrame(id);
   }, []);
+  const from = direction === 'back' ? '-translate-x-full' : 'translate-x-full';
   return (
     <div
-      className={`transition-all duration-200 ease-out motion-reduce:transition-none motion-reduce:transform-none ${
-        entered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
+      className={`transition-[translate] duration-[350ms] ease-[cubic-bezier(0.77,0,0.175,1)] motion-reduce:transition-none motion-reduce:translate-x-0 ${
+        entered ? 'translate-x-0' : from
       }`}
     >
       {children}
@@ -642,15 +658,18 @@ function StepPanelInner({ children }: { children: React.ReactNode }) {
 // indicator or progress bar; allow back navigation"). Four small dots
 // with labels; current step filled, completed steps show a check.
 function StepIndicator({ current }: { current: number }) {
+  // Below sm the four labels cannot fit beside their dots (about 12px each at 375px), so the
+  // dots carry the position and one "Step N of 4: Label" line names the current step.
   return (
-    <ol className="flex items-center gap-xs m-0 p-0 list-none" aria-label="Progress">
+    <div className="py-xs">
+    <ol className="flex items-center gap-sm m-0 p-0 list-none" aria-label="Progress">
       {STEP_LABELS.map((label, i) => {
         const n = i + 1;
         const done = n < current;
         const active = n === current;
         return (
           <li key={label} className="flex items-center gap-xs flex-1 min-w-0">
-            <div className="flex items-center gap-xs flex-1 min-w-0">
+            <div className="flex items-center gap-xs flex-1 sm:flex-none min-w-0">
               <span
                 aria-current={active ? 'step' : undefined}
                 className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-semibold ${
@@ -668,11 +687,11 @@ function StepIndicator({ current }: { current: number }) {
                 )}
               </span>
               <span
-                className={`font-label-md text-label-md truncate ${
+                className={`sr-only sm:not-sr-only shrink-0 font-label-md text-label-md ${
                   active ? 'text-on-surface font-semibold' : 'text-on-surface-variant'
                 }`}
               >
-                {label}
+                <span className="reserve-bold" data-text={label}>{label}</span>
               </span>
             </div>
             {n < STEP_LABELS.length && <span className="h-px flex-1 bg-outline-variant" aria-hidden />}
@@ -680,6 +699,10 @@ function StepIndicator({ current }: { current: number }) {
         );
       })}
     </ol>
+    <p className="sm:hidden mt-sm mb-0 font-label-md text-label-md text-on-surface-variant">
+      Step {current} of {STEP_LABELS.length}: <span className="font-semibold text-on-surface">{STEP_LABELS[current - 1]}</span>
+    </p>
+    </div>
   );
 }
 

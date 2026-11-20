@@ -20,12 +20,15 @@ import Link from 'next/link';
 export function BrandMark({
   href = '/',
   compact = false,
+  hideWordmarkOnPhone = false,
 }: {
+  /** Hides the "Eventar" word below `sm` (SiteNav: frees ~60px so the nav labels fit at 375px). The link keeps its aria-label. */
+  hideWordmarkOnPhone?: boolean;
   /** `null` draws the mark with no link (the onboarding bar: a link out would drop the wizard's `?next=`). */
   href?: string | null;
   compact?: boolean;
 }) {
-  const cls = `flex items-center gap-sm${compact ? ' px-sm py-xs' : ''}`;
+  const cls = `tap-44 flex items-center gap-sm${compact ? ' px-sm py-xs' : ''}`;
   const inner = (
     <>
       <span
@@ -38,7 +41,9 @@ export function BrandMark({
       >
         E
       </span>
-      <span className="text-[calc(16px*var(--text-scale))] font-semibold tracking-[-0.01em] text-on-surface">
+      <span
+        className={`${hideWordmarkOnPhone ? 'hidden sm:inline ' : ''}text-[calc(16px*var(--text-scale))] font-semibold tracking-[-0.01em] text-on-surface`}
+      >
         Eventar
       </span>
     </>

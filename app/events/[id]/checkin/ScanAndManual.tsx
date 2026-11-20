@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { isValidRegistrationCode } from '@/lib/registrationCode';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/Dialog';
+import { shake } from '@/lib/motion/shake';
 
 /**
  * Check-in entry (E.4). Two peer actions — scan a badge, or type the code —
@@ -105,6 +106,7 @@ function ManualCodeDialog({
   const [state, setState] = useState<CodeState>({ kind: 'idle' });
   const inputRef = useRef<HTMLInputElement>(null);
   const doneRef = useRef<HTMLButtonElement>(null);
+  const errorRef = useRef<HTMLParagraphElement>(null);
 
   useEffect(() => {
     if (state.kind === 'ok') doneRef.current?.focus();
@@ -115,6 +117,7 @@ function ManualCodeDialog({
     if (state.kind === 'error') {
       inputRef.current?.focus();
       inputRef.current?.select();
+      shake(errorRef.current);
     }
   }, [state.kind]);
 
@@ -156,7 +159,7 @@ function ManualCodeDialog({
           </span>
         ) : (
           <span>
-            Type the attendee&rsquo;s code. It checks them in as soon as it&rsquo;s complete &mdash; no need to press
+            Type the attendee’s code. It checks them in as soon as it’s complete &mdash; no need to press
             anything.
           </span>
         )
@@ -181,8 +184,10 @@ function ManualCodeDialog({
                 : 'bg-surface-container text-on-surface-variant')
           }
         >
-          <span className="material-symbols-outlined" data-fill={state.kind === 'ok' ? '1' : undefined}>
-            {state.kind === 'ok' ? 'check_circle' : state.kind === 'error' ? 'error' : 'keyboard'}
+          <span className="icon-swap">
+            <span className="material-symbols-outlined" aria-hidden data-state={state.kind !== 'ok' && state.kind !== 'error' ? 'in' : 'out'}>keyboard</span>
+            <span className="material-symbols-outlined" aria-hidden data-fill="1" data-state={state.kind === 'ok' ? 'in' : 'out'}>check_circle</span>
+            <span className="material-symbols-outlined" aria-hidden data-state={state.kind === 'error' ? 'in' : 'out'}>error</span>
           </span>
         </div>
 
@@ -212,6 +217,7 @@ function ManualCodeDialog({
             {state.kind === 'error' ? (
               <p
                 id="manual-code-error"
+                ref={errorRef}
                 role="alert"
                 className="text-center font-body-md text-body-md text-error"
               >

@@ -213,7 +213,7 @@ describe('AccountClient — verify-email section', () => {
       />,
     );
     expect(screen.queryByRole('button', { name: /resend verification email/i })).not.toBeInTheDocument();
-    expect(screen.queryByText(/hasn't been verified yet/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/hasn’t been verified yet/i)).not.toBeInTheDocument();
   });
 
   it('renders the section and lists the pending email when emailConfirmed is false', () => {
@@ -227,7 +227,7 @@ describe('AccountClient — verify-email section', () => {
     );
     // Copy references the unverified address explicitly so the user knows
     // which inbox to check.
-    expect(screen.getByText(/hasn't been verified yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/hasn’t been verified yet/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /resend verification email/i })).toBeInTheDocument();
   });
 

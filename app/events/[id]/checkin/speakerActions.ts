@@ -19,7 +19,7 @@ const NO_ACCESS = 'You do not have access to this event.';
 
 // Same sentence markAttended gives (./actions.ts keeps its copy private: a 'use server' file cannot export a constant
 // or a helper without publishing it as an action). A server-side sign-out is a message, not a throw that freezes the card.
-const SIGNED_OUT = "You've been signed out. This check-in was not saved. Log in again to continue.";
+const SIGNED_OUT = "You’ve been signed out. This check-in was not saved. Log in again to continue.";
 const NOT_FOUND = 'Check-in failed — event not found or not in your organisation.';
 
 type ToggleResult =

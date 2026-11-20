@@ -62,7 +62,7 @@ export function Scoreboard({
     <section
       aria-label="Check-in scoreboard"
       className="rounded-[20px] p-lg text-white"
-      style={{ background: 'radial-gradient(120% 140% at 0% 0%, #123420 0%, #0A0A0A 55%)' }}
+      style={{ background: 'radial-gradient(120% 140% at 0% 0% in oklch, #123420 0%, #0A0A0A 55%)' }}
     >
       <div className="flex items-center justify-between mb-md">
         <p className="text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-[0.18em] text-white/50">Status</p>
@@ -107,8 +107,8 @@ export function Scoreboard({
         aria-label={`${attended} of ${registered} checked in`}
       >
         <div
-          className="bg-[#4ADE80] h-full rounded-full transition-[width] duration-500"
-          style={{ width: `${pct}%` }}
+          className="bg-[#4ADE80] h-full w-full origin-left rounded-full transition-transform duration-500 motion-reduce:transition-none"
+          style={{ transform: `scaleX(${pct / 100})` }}
         />
       </div>
     </section>

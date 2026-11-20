@@ -216,7 +216,7 @@ describe('ProfileClient — Licences SectionCard', () => {
     await act(async () => {
       fireEvent.submit(number.closest('form')!);
     });
-    expect(screen.getByText(/isn't accepting new licences/i)).toBeInTheDocument();
+    expect(screen.getByText(/isn’t accepting new licences/i)).toBeInTheDocument();
   });
 
   it('F3+F4 readiness banner: shows F3 "done" but F4 "not yet" when profile is complete and no licence is declared', () => {

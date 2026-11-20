@@ -15,7 +15,7 @@ afterEach(cleanup);
 describe('SpeakersCard empty state', () => {
   it('states that no speakers are listed and gives no instruction to edit the agenda', () => {
     render(<SpeakersCard eventId="e1" eventTimezone="Asia/Hong_Kong" speakerNames={[]} initialCheckins={[]} canCheckIn />);
-    expect(screen.getByText("No speakers are listed on this event's agenda.")).toBeInTheDocument();
+    expect(screen.getByText("No speakers are listed on this event’s agenda.")).toBeInTheDocument();
     expect(screen.queryByText(/add them to the agenda/i)).toBeNull();
   });
 });

@@ -68,7 +68,7 @@ function RailRow({ item, current }: { item: (typeof NAV)[number]; current: boole
   const inner = (
     <>
       <Icon name={item.icon} className="text-[calc(20px*var(--text-scale))]" />
-      <span className="flex-1 whitespace-nowrap text-left">{item.label}</span>
+      <span className="reserve-bold flex-1 whitespace-nowrap text-left" data-text={item.label}>{item.label}</span>
     </>
   );
   return (
@@ -133,7 +133,7 @@ export function AccountShell({
 
   if (variant === 'onboarding') {
     return (
-      <div className="app-atmo flex min-h-screen flex-col text-on-surface">
+      <div className="app-atmo flex min-h-dvh flex-col text-on-surface">
         <a href="#main-content" className={SKIP}>
           Skip to content
         </a>
@@ -171,14 +171,14 @@ export function AccountShell({
   }
 
   return (
-    <div className="app-atmo flex min-h-screen w-full flex-col text-on-surface">
+    <div className="app-atmo flex min-h-dvh w-full flex-col text-on-surface">
       <a href="#main-content" className={SKIP}>
         Skip to content
       </a>
       <div className="flex flex-1 flex-col md:flex-row">
         <aside
           aria-label="Your Eventar portal"
-          className="hidden shrink-0 bg-sidebar md:sticky md:top-0 md:flex md:h-screen md:w-[232px] md:flex-col md:self-start md:border-r md:border-outline-variant"
+          className="hidden shrink-0 bg-sidebar md:sticky md:top-0 md:flex md:h-dvh md:w-[232px] md:flex-col md:self-start md:border-r md:border-outline-variant"
         >
           <div className="flex h-full flex-col gap-xs overflow-y-auto p-md">
             <div className="pb-sm">

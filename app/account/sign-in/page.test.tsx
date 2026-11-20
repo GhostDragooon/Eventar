@@ -38,13 +38,11 @@ describe('AttendeeSignInPage — trouble-signing-in help', () => {
     await waitFor(() =>
       expect(screen.getByText(/trouble logging in\?/i)).toBeInTheDocument(),
     );
-    // Bullets — first two ported from /login (link expiry, spam). Bullet 3
-    // guides at the actual common failure (typo/wrong address at signup).
-    // Bullets 4/5 acknowledge the honest dead end when the inbox is lost
-    // (user-lens BLOCKER 2 fix).
+    // Three bullets at most: expiry, spam/newest email, same browser + registered address.
     expect(screen.getByText(/links expire after 15 minutes/i)).toBeInTheDocument();
     expect(screen.getByText(/check spam/i)).toBeInTheDocument();
     expect(screen.getByText(/use the address you registered with/i)).toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')).toHaveLength(3);
     expect(screen.queryByText(/contact the event organiser/i)).not.toBeInTheDocument();
     // No "soft-security reassurance" that reads as a policy statement.
     expect(screen.queryByText(/we don.t restrict who can register/i)).not.toBeInTheDocument();
@@ -53,14 +51,14 @@ describe('AttendeeSignInPage — trouble-signing-in help', () => {
     expect(screen.queryByText(/staff record/i)).not.toBeInTheDocument();
   });
 
-  it('MagicLinkSignInForm receives audience="attendee" (help copy check)', async () => {
+  it('carries one heading and one short sentence, with no eyebrow, guest paragraph, expiry line or helper copy', async () => {
     render(<AttendeeSignInPage />);
-    // The audience prop drives the help sentence rendered by the shared
-    // component; the attendee flavour drops the organizer wording.
-    await waitFor(() =>
-      expect(screen.getByText(/account already exists/i)).toBeInTheDocument(),
-    );
-    expect(screen.queryByText(/organi[sz]er list/i)).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('heading', { name: /^log in$/i })).toBeInTheDocument());
+    expect(screen.getByText('We’ll email a one-time link, no password.')).toBeInTheDocument();
+    expect(screen.queryByText(/attendee/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/guest registration/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/does not reveal/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/the link expires after 15 minutes and works once/i)).not.toBeInTheDocument();
   });
 
   it('renders the error immediately when ?error= is on the URL, without waiting on the session check (soft-loop fix)', () => {
@@ -122,5 +120,19 @@ describe('AttendeeSignInPage — door switch', () => {
     render(<AttendeeSignInPage />);
     await waitFor(() => expect(screen.getByRole('button', { name: /^next$/i })).toBeInTheDocument());
     expect(screen.getByRole('link', { name: /^sign up$/i })).toHaveAttribute('href', '/account/sign-up');
+  });
+});
+
+describe('AttendeeSignInPage — no self-links', () => {
+  it('shows the nav Log in pill as the current page, not a link, and links only to sign up beside the nav', async () => {
+    render(<AttendeeSignInPage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: /^next$/i })).toBeInTheDocument());
+    expect(screen.queryByRole('link', { name: /^log in$/i })).not.toBeInTheDocument();
+    const nav = screen.getByRole('navigation', { name: /primary/i });
+    const current = nav.querySelector('[aria-current="page"]');
+    expect(current?.tagName).toBe('SPAN');
+    expect(current).toHaveTextContent(/^log in$/i);
+    const main = screen.getByRole('main');
+    expect(Array.from(main.querySelectorAll('a')).map((a) => a.textContent)).toEqual(['Sign up']);
   });
 });

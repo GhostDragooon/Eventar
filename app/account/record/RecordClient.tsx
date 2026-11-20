@@ -203,10 +203,10 @@ function CreditChip({ hasCredit }: { hasCredit: boolean | null }) {
     return (
       <span
         role="status"
-        aria-label="Points: couldn't check right now"
+        aria-label="Points: couldn’t check right now"
         className="font-label-md text-label-md px-sm py-0 rounded-full uppercase inline-flex items-center gap-sm border bg-surface-container text-on-surface-variant border-outline-variant italic"
       >
-        Couldn&apos;t check
+        Couldn’t check
       </span>
     );
   }

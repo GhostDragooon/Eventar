@@ -40,8 +40,13 @@ export function readTheme(): Theme {
 export function applyTheme(theme: Theme): void {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
+  // Suppress every colour transition for the one frame the class swaps, so the
+  // theme flips at once instead of each surface fading on its own (pattern 7).
+  root.classList.add('theme-switching');
   root.classList.remove('light', 'dark');
   if (theme !== 'system') root.classList.add(theme);
+  void root.offsetHeight; // flush styles while transitions are off
+  requestAnimationFrame(() => root.classList.remove('theme-switching'));
 }
 
 export function writeTheme(theme: Theme): void {

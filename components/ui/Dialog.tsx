@@ -84,10 +84,10 @@ export function Dialog({
       panel && !matchMedia('(prefers-reduced-motion: reduce)').matches
         ? panel.animate(
             [
-              { opacity: 0, transform: 'translateY(8px) scale(0.98)' },
-              { opacity: 1, transform: 'translateY(0) scale(1)' },
+              { opacity: 0, transform: 'scale(0.97)' },
+              { opacity: 1, transform: 'scale(1)' },
             ],
-            { duration: 180, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+            { duration: 250, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' },
           )
         : null;
 
@@ -142,7 +142,7 @@ export function Dialog({
         aria-describedby={describedById}
         tabIndex={-1}
         className={cn(
-          'relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-auto rounded-[20px] border border-outline-variant bg-surface-container-lowest p-lg shadow-xl',
+          'relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-auto rounded-[20px] border border-outline-variant bg-popover p-lg shadow-xl',
           className,
         )}
       >

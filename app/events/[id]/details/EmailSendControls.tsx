@@ -81,8 +81,8 @@ export function EmailSendControls({
         title={confirmKind === 'reminder' ? 'Send reminders now?' : 'Send survey invites now?'}
         body={
           confirmKind === 'reminder'
-            ? `The reminder + personal check-in pass goes to ${confirmCount} registered attendee${confirmCount === 1 ? '' : 's'}. Sending can't be undone.`
-            : `The survey invite goes to ${confirmCount} checked-in attendee${confirmCount === 1 ? '' : 's'}. Sending can't be undone.`
+            ? `The reminder + personal check-in pass goes to ${confirmCount} registered attendee${confirmCount === 1 ? '' : 's'}. Sending can’t be undone.`
+            : `The survey invite goes to ${confirmCount} checked-in attendee${confirmCount === 1 ? '' : 's'}. Sending can’t be undone.`
         }
         confirmLabel={confirmKind === 'reminder' ? `Send to ${confirmCount}` : `Send to ${confirmCount}`}
         pending={pending}

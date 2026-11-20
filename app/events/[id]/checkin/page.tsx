@@ -161,8 +161,8 @@ export default async function StaffCheckinPage({
             // Same predicates as the Registrations page controls, so no role is sent there to do what it cannot.
             canEditRegistrations(staff.role) && canWriteEvent(staff, event)
               ? canEditRegistrationRoles(staff, event)
-                ? "To edit a person's details or roles, open Registrations."
-                : "To edit a person's details, open Registrations."
+                ? "To edit a person’s details or roles, open Registrations."
+                : "To edit a person’s details, open Registrations."
               : 'To see everyone registered, open Registrations.',
           ].join(' ')}
         </p>

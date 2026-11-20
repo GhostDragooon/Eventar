@@ -70,8 +70,8 @@ export function EventCard({ event, saved = false, onSaveChange, href, onOpen }: 
         <h3
           className={
             event.dateBlock
-              ? 'font-title-lg text-title-lg font-semibold text-on-surface'
-              : 'font-headline-sm text-headline-sm text-on-surface'
+              ? 'line-clamp-3 font-title-lg text-title-lg font-semibold text-on-surface'
+              : 'line-clamp-3 font-headline-sm text-headline-sm text-on-surface'
           }
         >
           {event.title}

@@ -32,7 +32,7 @@ describe('LandingHero — audience CTAs', () => {
     render(<LandingHero audience="organiser" onAudienceChange={vi.fn()} />);
     const start = screen.getByRole('link', { name: /^start an event$/i });
     expect(start).toHaveAttribute('href', '/login?next=/events/new');
-    const login = screen.getByRole('link', { name: /^organiser log in$/i });
+    const login = screen.getByRole('link', { name: /organisers? log in/i });
     expect(login).toHaveAttribute('href', '/login');
   });
 

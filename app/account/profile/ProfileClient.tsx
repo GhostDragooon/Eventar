@@ -179,7 +179,7 @@ export function ProfileClient({
             isSignedOutError(result.error)
               ? signedOutCopy(result.error)
               : result.error === 'already_declared'
-              ? "You've already added this society."
+              ? "You’ve already added this society."
               : result.error === 'rate_limited'
                 ? 'Too many attempts in a short window. Please wait a moment.'
                 : 'Select a society to add.',
@@ -247,9 +247,9 @@ export function ProfileClient({
             isSignedOutError(result.error)
               ? signedOutCopy(result.error)
               : result.error === 'already_declared'
-              ? "You've already declared this licence number at that body."
+              ? "You’ve already declared this licence number at that body."
               : result.error === 'body_inactive'
-                ? "That body isn't accepting new licences right now."
+                ? "That body isn’t accepting new licences right now."
                 : result.error === 'body_not_found'
                   // Unreachable via the picker (which lists only active
                   // bodies), so fold into the generic "refresh and retry"
@@ -378,7 +378,7 @@ export function ProfileClient({
         <span className="flex-1">
           {gatesReady ? (
             <>
-              Profile and licences are in place. CME/CPD points at events for
+              Profile and licences are in place. <abbr title="Continuing medical education">CME</abbr>/<abbr title="Continuing professional development">CPD</abbr> points at events for
               your declared bodies will release automatically after
               check-in, provided your email is confirmed and consents are
               accepted.
@@ -704,7 +704,7 @@ export function ProfileClient({
                     first time knows which number the form is asking for. */}
                 <span className="block mt-xs font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant">
                   The number your college or council uses for you — the same
-                  one you&apos;d use on a CME/CPD claim form.
+                  one you’d use on a CME/CPD claim form.
                 </span>
               </FieldGroup>
             </div>

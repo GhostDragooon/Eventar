@@ -354,15 +354,15 @@ export function agendaProblem(
     const times = bs !== null && be !== null ? `${formatMinutes12h(bs)} to ${formatMinutes12h(be)}` : null;
     const title = b.title.trim();
     const name = title
-      ? `"${title}"${times ? ` (${times})` : ''}`
+      ? `“${title}”${times ? ` (${times})` : ''}`
       : `The ${times ? `${times} ` : 'untitled '}${labelForKind(b.kind)} block`;
     if (e.start || e.end) return `${name} needs a start time and an end time.`;
     if (e.endBeforeStart) return `${name}: the end time must be after the start time.`;
     if (e.envelope) {
       const window = `${formatMinutes12h(eventStartMinutes!)} to ${formatMinutes12h(eventEndMinutes!)}`;
-      return `${name} must sit inside the event's time window, ${window}.`;
+      return `${name} must sit inside the event’s time window, ${window}.`;
     }
-    if (e.title) return `${name} needs a ${FILLER_KINDS.includes(b.kind) ? '"What" entry' : 'title'}.`;
+    if (e.title) return `${name} needs a ${FILLER_KINDS.includes(b.kind) ? '“What” entry' : 'title'}.`;
     return `${name} needs a title and a speaker for topic ${e.topicIndices[0]! + 1}.`;
   }
   return null;
@@ -412,15 +412,17 @@ function MoreKindsMenu({ onPick }: { onPick: (kind: BlockKind) => void }) {
         <div
           role="menu"
           aria-label="More event types"
-          className="absolute right-0 z-10 mt-xs w-56 max-h-72 overflow-y-auto bg-surface-container-lowest border border-outline-variant rounded-lg p-xs shadow-lg"
+          className="absolute right-0 z-30 mt-xs w-56 max-h-72 origin-top-right animate-overlay-in overflow-y-auto bg-popover border border-outline-variant rounded-[12px] p-xs shadow-lg"
         >
           {SECONDARY_KINDS.map((k) => (
             <button
+              // ui-primitive-allow: menu item inside the open "+ More" popover, not a standalone action
+              // (same convention as AccountMenu / RecordActionsMenu rows).
               key={k}
               type="button"
               role="menuitem"
               onClick={() => { onPick(k); setOpen(false); }}
-              className="w-full text-left px-sm py-xs rounded font-body-md text-body-md text-on-surface hover:bg-surface-container-high transition-colors"
+              className="w-full text-left px-sm py-sm rounded-lg font-body-md text-body-md text-on-surface hover:bg-surface-container-high transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
             >
               {labelForKind(k)}
             </button>
@@ -505,7 +507,7 @@ function TimeFields({
       {touched && errors.envelope && !errors.endBeforeStart && (
         <p className="font-body-md text-body-md text-error flex items-center gap-xs">
           <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>warning</span>
-          This block runs outside the event&apos;s start/end window.
+          This block runs outside the event’s start/end window.
         </p>
       )}
     </div>

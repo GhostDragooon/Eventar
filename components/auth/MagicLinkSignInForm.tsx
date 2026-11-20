@@ -20,14 +20,6 @@ type Props = {
    * its own default destination.
    */
   next?: string;
-  /**
-   * Which surface is rendering this form. Only difference today is the
-   * help-text sentence under the input — organizer references an allowlist,
-   * attendee cannot (self-serve sign-up), and an invitee is not on any list
-   * yet: accepting the invite is what puts them on one. Default preserves
-   * organizer copy so existing callers stay identical.
-   */
-  audience?: 'organizer' | 'attendee' | 'invitee';
 };
 
 export function MagicLinkSignInForm({
@@ -36,7 +28,6 @@ export function MagicLinkSignInForm({
   placeholder = 'you@company.com',
   submitLabel = 'Send magic link',
   next,
-  audience = 'organizer',
 }: Props) {
   const [pending, startTransition] = useTransition();
   // The error the page arrived with (an expired link, a failed role check) sits
@@ -88,23 +79,14 @@ export function MagicLinkSignInForm({
           placeholder={placeholder}
           required
           disabled={pending}
-          aria-describedby="magic-link-help"
           className="min-h-11 border-2 border-on-primary-container ring-4 ring-primary/8"
         />
       </label>
-      <p id="magic-link-help" className="font-body-md text-body-md text-on-surface-variant">
-        Eventar will send a one-time log-in link.{' '}
-        {audience === 'attendee'
-          ? 'The response does not reveal whether an account already exists.'
-          : audience === 'invitee'
-            ? 'Use the address you want for your organiser account.'
-            : 'The response does not reveal whether an address is on the organiser list.'}
-      </p>
       {/* text-on-primary!: tailwind-merge reads `text-label-md` (a font size) as
           a text colour and drops the Button's own text-on-primary, leaving dark
           text on the blue fill (3.82:1, and 1.96:1 in dark). Remove the `!` when
           cn() learns the type scale (G1 token sweep). */}
-      <Button type="submit" disabled={pending} aria-describedby="magic-link-help" className="min-h-11 w-full font-label-md text-label-md text-on-primary!">
+      <Button type="submit" disabled={pending} className="min-h-11 w-full font-label-md text-label-md text-on-primary!">
         <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))]" aria-hidden>mail</span>
         {pending ? 'Sending…' : submitLabel}
       </Button>

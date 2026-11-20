@@ -651,8 +651,8 @@ function ActionToolbar({ eventId, lifecycle, writable = true }: { eventId: strin
           <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>insights</span>Analytics
         </Link>
       ) : (
-        <span className={`${base} border-outline-variant text-on-surface-variant opacity-50 cursor-not-allowed`} title="Available after the event completes">
-          <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>insights</span>Analytics
+        <span className={`${base} border-outline-variant text-on-surface-variant opacity-50 cursor-not-allowed`}>
+          <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>insights</span>Analytics (after the event)
         </span>
       )}
     </div>

@@ -46,7 +46,7 @@ describe('AttendeeSignUpPage', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: /^sign up$/i })).toBeInTheDocument(),
     );
-    expect(screen.getByText(/send you a one-time link/i)).toBeInTheDocument();
+    expect(screen.getByText('Enter your email. We’ll send a one-time link, no password.')).toBeInTheDocument();
     expect(screen.queryByText(/sign in to your account/i)).not.toBeInTheDocument();
   });
 
@@ -130,23 +130,18 @@ describe('AttendeeSignUpPage — next', () => {
   });
 });
 
-describe('AttendeeSignUpPage: door labels its side', () => {
-  it('reads Attendee · Sign up above the heading, as the log-in doors read Attendee · Log in and Organiser · Log in', async () => {
+describe('AttendeeSignUpPage: short card', () => {
+  it('has no eyebrow, guest paragraph, expiry line or organiser cross-link inside the card', async () => {
     render(<AttendeeSignUpPage />);
     await waitFor(() => expect(screen.getByRole('button', { name: /^next$/i })).toBeInTheDocument());
-    expect(screen.getByText('Attendee')).toBeInTheDocument();
-    expect(screen.getByText(/· Sign up/)).toBeInTheDocument();
-  });
-});
-
-describe('AttendeeSignUpPage: organiser door', () => {
-  it('offers Organiser log in to /login under the attendee Log in link', async () => {
-    render(<AttendeeSignUpPage />);
-    await waitFor(() => expect(screen.getByRole('button', { name: /^next$/i })).toBeInTheDocument());
-    // One in the header (SiteShell, from sm up) and one in the page under "Already have an account?".
-    const links = screen.getAllByRole('link', { name: /^organiser log in$/i });
-    expect(links).toHaveLength(2);
-    for (const l of links) expect(l).toHaveAttribute('href', '/login');
-    expect(screen.getByRole('main').contains(links[links.length - 1])).toBe(true);
+    expect(screen.queryByText(/attendee/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/as a guest/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/expires after 15 minutes/i)).not.toBeInTheDocument();
+    const main = screen.getByRole('main');
+    expect(Array.from(main.querySelectorAll('a')).map((a) => a.textContent)).toEqual(['Log in']);
+    // The only link to /login is the nav's Organiser log in item.
+    const toLogin = screen.getAllByRole('link').filter((a) => a.getAttribute('href') === '/login');
+    expect(toLogin).toHaveLength(1);
+    expect(screen.getByRole('navigation', { name: /primary/i }).contains(toLogin[0])).toBe(true);
   });
 });

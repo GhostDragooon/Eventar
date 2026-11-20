@@ -9,7 +9,7 @@ import { getRequestOrigin } from '@/lib/origin';
 import { buildCsv } from '@/lib/csv';
 import { slugifyTitle } from '@/lib/slugify';
 
-const PUBLISH_ROLE_REFUSED = "Your role can't publish events. Ask an organiser admin to publish this draft.";
+const PUBLISH_ROLE_REFUSED = "Your role can’t publish events. Ask an organiser admin to publish this draft.";
 
 // `stale`: the event is no longer a current draft, so the page the organiser is looking at is out of date.
 type PublishResult = { ok: true } | { error: string; stale?: true };
@@ -38,7 +38,7 @@ export async function publishEvent(id: string): Promise<PublishResult> {
     }
     // 20261002010000: only an active draft can be published.
     if (error.code === '22023' && error.message.startsWith('publish_event:')) {
-      return { error: "This event can't be published because it is no longer a current draft. It may have been cancelled or deleted.", stale: true };
+      return { error: "This event can’t be published because it is no longer a current draft. It may have been cancelled or deleted.", stale: true };
     }
     throw error;
   }

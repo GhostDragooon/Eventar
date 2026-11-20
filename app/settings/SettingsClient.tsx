@@ -129,7 +129,7 @@ function ChangeEmailForm({ currentEmail }: { currentEmail: string }) {
         setNewEmail('');
         setStatus({
           kind: 'success',
-          message: `Confirmation sent to ${result.data.new_email}. Click the link there to complete the change — your email won't update until you do.`,
+          message: `Confirmation sent to ${result.data.new_email}. Click the link there to complete the change — your email won’t update until you do.`,
         });
       } else {
         setStatus({

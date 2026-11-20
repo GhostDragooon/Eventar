@@ -165,7 +165,7 @@ export default async function EventAnalyticsPage({
       <section
         aria-label="Outcome"
         className="mb-lg rounded-[20px] p-lg text-white"
-        style={{ background: 'radial-gradient(120% 140% at 0% 0%, #123420 0%, #0A0A0A 55%)' }}
+        style={{ background: 'radial-gradient(120% 140% at 0% 0% in oklch, #123420 0%, #0A0A0A 55%)' }}
       >
         <p className="text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-[0.18em] text-white/50 mb-md">Outcome</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-sm">
@@ -227,7 +227,7 @@ export default async function EventAnalyticsPage({
           icon="event_note"
           iconBg="fixed"
           title="Agenda (Q1)"
-          prompt={'"Which event format did you find most valuable?"'}
+          prompt={'“Which event format did you find most valuable?”'}
           distribution={q1}
           layout="stack"
           priorityPill="Priority Expansion"
@@ -240,7 +240,7 @@ export default async function EventAnalyticsPage({
           icon="insights"
           iconBg="tertiary-fixed"
           title="Value Drivers (Q3)"
-          prompt={'"What was the most valuable aspect of this event?"'}
+          prompt={'“What was the most valuable aspect of this event?”'}
           distribution={q3}
           layout="stack"
         />
@@ -249,7 +249,7 @@ export default async function EventAnalyticsPage({
           icon="chat"
           iconBg="primary"
           title="Requests (Q5)"
-          prompt={'"Select areas for future programmatic expansion:"'}
+          prompt={'“Select areas for future programmatic expansion:”'}
           distribution={q5}
           layout="stack"
           sliceBgClass="bg-primary/5"

@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { registerForEvent } from '@/app/(public)/events/[id]/actions';
 import type { EmailDelivery } from '@/app/(public)/events/[id]/schema';
 import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
+import { shake } from '@/lib/motion/shake';
 
 type Props = {
   eventId: string;
@@ -106,6 +107,9 @@ export default function RegisterCard({
     if (state.kind === 'error') errorRef.current?.focus();
   }, [state.kind]);
   useEffect(() => {
+    if (state.kind === 'error') shake(errorRef.current);
+  }, [state]);
+  useEffect(() => {
     if (resetCount > 0) nameInputRef.current?.focus();
   }, [resetCount]);
 
@@ -129,7 +133,7 @@ export default function RegisterCard({
       <Section>
         <span className="font-label-md text-label-md px-sm py-xs rounded-full uppercase inline-flex items-center gap-sm bg-success-container text-on-success-container border border-transparent self-start">
           <span className="material-symbols-outlined text-[calc(14px*var(--text-scale))]" data-fill="1" aria-hidden>check_circle</span>
-          {isStaff ? 'Guest registered' : <>You&apos;re registered</>}
+          {isStaff ? 'Guest registered' : <>You’re registered</>}
         </span>
         <h2
           ref={successHeadingRef}
@@ -156,7 +160,7 @@ export default function RegisterCard({
           <p className="font-body-md text-body-md text-on-surface m-0">
             {isStaff
               ? 'Closer to the event the guest receives their personal check-in pass by email.'
-              : <>Closer to the event we&apos;ll email your personal check-in pass.</>}
+              : <>Closer to the event we’ll email your personal check-in pass.</>}
           </p>
         </div>
         {/* Cancel fine print: only mention "reply to your confirmation email"
@@ -276,7 +280,7 @@ export default function RegisterCard({
         // A rejected Server Action (network down) used to reach the error
         // boundary and replace the whole page with the crash screen. Say what
         // happened and leave the form as it was (rule 12).
-        setState({ kind: 'error', message: "We couldn't complete the registration just now. Try again." });
+        setState({ kind: 'error', message: "We couldn’t complete the registration just now. Try again." });
       }
     });
   }
@@ -302,7 +306,7 @@ export default function RegisterCard({
             <Link href={signInHref} className="text-primary-ink hover:underline font-semibold">
               Log in or sign up
             </Link>{' '}
-            to release CME/CPD points for accredited events.
+            to release <abbr title="Continuing medical education">CME</abbr>/<abbr title="Continuing professional development">CPD</abbr> points for accredited events.
           </span>
         </p>
       )}
@@ -310,7 +314,7 @@ export default function RegisterCard({
           below, which describe an attendee account organisers don't have. */}
       {isStaff && (
         <p className="font-body-md text-body-md text-on-surface-variant m-0">
-          You&apos;re signed in as an organiser. This creates a guest registration.
+          You’re signed in as an organiser. This creates a guest registration.
         </p>
       )}
       {/* Signed-in attribution line: makes the prefill visible so a
@@ -369,7 +373,8 @@ export default function RegisterCard({
             onChange={(e) => setName(e.target.value)}
             required
             maxLength={100}
-            placeholder={isStaff ? "Guest's name" : 'Your name'}
+            placeholder={isStaff ? "Guest’s name" : 'Your name'}
+            className="min-h-11"
             // An organiser is typing someone else's details; do not let the
             // browser offer their own.
             autoComplete={isStaff ? 'off' : 'name'}
@@ -386,6 +391,7 @@ export default function RegisterCard({
             onChange={(e) => setEmail(e.target.value)}
             required
             placeholder={isStaff ? 'guest@example.com' : 'you@example.com'}
+            className="min-h-11"
             autoComplete={isStaff ? 'off' : 'email'}
             disabled={isSubmitting}
           />
@@ -408,7 +414,7 @@ export default function RegisterCard({
         <Button
           type="submit"
           disabled={isSubmitting || !name.trim() || !email.trim()}
-          className="w-full"
+          className="min-h-11 w-full"
         >
           {isSubmitting ? 'Registering…' : 'Register'}
         </Button>
@@ -448,10 +454,10 @@ function successDeliveryCopy(emailDelivery: EmailDelivery, email: string, isStaf
   if (emailDelivery === 'queued_dev') {
     return isStaff
       ? 'Registered. No confirmation email was sent.'
-      : "You're registered. We couldn't send email; show this screen to staff.";
+      : "You’re registered. We couldn’t send email; show this screen to staff.";
   }
   // failed
   return isStaff
     ? 'Registered, but the confirmation email did not send. Check the address and contact the guest another way.'
-    : "You're registered. We couldn't send email; show this screen to staff.";
+    : "You’re registered. We couldn’t send email; show this screen to staff.";
 }

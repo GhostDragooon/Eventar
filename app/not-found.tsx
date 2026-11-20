@@ -9,25 +9,25 @@ export const metadata = { title: 'Page not found' };
 // clear ways forward for both audiences (attendee → events, staff → sign in).
 export default function NotFound() {
   return (
-    <SiteShell active="home">
+    <SiteShell>
       <div className="max-w-[560px] mx-auto px-grid-margin py-xxl text-center">
         <p className="text-label-md font-semibold uppercase tracking-[0.18em] text-[color:var(--on-primary-container)] mb-sm">
           404
         </p>
         <h1 className="text-[calc(34px*var(--text-scale))] font-extrabold tracking-[-0.03em] text-on-surface mb-sm">
-          This page doesn&apos;t exist.
+          This page doesn’t exist.
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant mb-lg">
           The link may be old, or the event it pointed at was removed. If you followed a
           link from an email, double-check you opened the most recent one.
         </p>
         <div className="flex items-center justify-center gap-sm">
-          <Link href="/events" className={cn(buttonVariants({ variant: 'default' }), 'gap-xs px-lg')}>
+          <Link href="/" className={cn(buttonVariants({ variant: 'outline' }), 'min-h-11 px-lg')}>
+            Home
+          </Link>
+          <Link href="/events" className={cn(buttonVariants({ variant: 'default' }), 'min-h-11 gap-xs px-lg')}>
             Upcoming events
             <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>arrow_forward</span>
-          </Link>
-          <Link href="/" className={cn(buttonVariants({ variant: 'outline' }), 'px-lg')}>
-            Home
           </Link>
         </div>
       </div>

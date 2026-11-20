@@ -106,7 +106,7 @@ describe('invite page — signed in', () => {
     expect(screen.queryByRole('link', { name: /^log in to accept$/i })).not.toBeInTheDocument();
     fireEvent.click(await acceptButton());
 
-    expect(await screen.findByRole('heading', { name: /you're in/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /you’re in/i })).toBeInTheDocument();
     expect(screen.getByText('Acme Training')).toBeInTheDocument();
     expect(acceptInvite).toHaveBeenCalledTimes(1);
     expect(acceptInvite).toHaveBeenCalledWith('tok-123', { confirmed: false });
@@ -143,7 +143,7 @@ describe('invite page — signed in', () => {
     fireEvent.click(await acceptButton());
     // A dropped connection is not the admin's doing: no "ask your admin" here.
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent(/couldn't reach eventar just now/i);
+    expect(alert).toHaveTextContent(/couldn’t reach eventar just now/i);
     expect(alert).not.toHaveTextContent(/admin/i);
     expect(screen.getByRole('button', { name: /^accept invite$/i })).toBeEnabled();
   });
@@ -155,7 +155,7 @@ describe('invite page — signed in', () => {
     fireEvent.click(await acceptButton());
     expect(await screen.findByRole('button', { name: /joining/i })).toBeDisabled();
     finish({ orgName: 'Acme Training' });
-    expect(await screen.findByRole('heading', { name: /you're in/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /you’re in/i })).toBeInTheDocument();
   });
 });
 
@@ -177,7 +177,7 @@ describe('invite page — the email already has practitioner data (D3)', () => {
     await reachPrompt();
     expect(screen.getByText(/invitee@example\.com/)).toBeInTheDocument();
     expect(screen.getByText(/we recommend signing up for your organiser account with a different email/i)).toBeInTheDocument();
-    expect(screen.getByText(/those records stay saved, but you won't be able to open them/i)).toBeInTheDocument();
+    expect(screen.getByText(/those records stay saved, but you won’t be able to open them/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^use a different email$/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^accept with this email anyway$/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^accept invite$/i })).not.toBeInTheDocument();
@@ -196,7 +196,7 @@ describe('invite page — the email already has practitioner data (D3)', () => {
     acceptInvite.mockResolvedValueOnce({ orgName: 'Acme Training' });
     fireEvent.click(screen.getByRole('button', { name: /^accept with this email anyway$/i }));
 
-    expect(await screen.findByRole('heading', { name: /you're in/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /you’re in/i })).toBeInTheDocument();
     expect(acceptInvite).toHaveBeenLastCalledWith('tok-123', { confirmed: true });
     expect(signOut).not.toHaveBeenCalled();
   });
@@ -223,9 +223,9 @@ describe('invite page — the email already has practitioner data (D3)', () => {
 
   it('an error on the confirmed accept shows inline and keeps the choices', async () => {
     await reachPrompt();
-    acceptInvite.mockResolvedValueOnce({ error: "We couldn't accept this invite. Try again, or ask your admin for a new link." });
+    acceptInvite.mockResolvedValueOnce({ error: "We couldn’t accept this invite. Try again, or ask your admin for a new link." });
     fireEvent.click(screen.getByRole('button', { name: /^accept with this email anyway$/i }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(/couldn't accept this invite/i);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/couldn’t accept this invite/i);
     expect(screen.getByRole('button', { name: /^accept with this email anyway$/i })).toBeEnabled();
   });
 });
@@ -243,7 +243,7 @@ describe('invite page — an invite that cannot be accepted', () => {
     render(<InviteAcceptPage />);
     fireEvent.click(await acceptButton());
 
-    const heading = await screen.findByRole('heading', { name: /this invite can't be used/i });
+    const heading = await screen.findByRole('heading', { name: /this invite can’t be used/i });
     expect(screen.getByText(/ask your admin for a new one/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^accept invite$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /go to dashboard/i })).not.toBeInTheDocument();
@@ -251,11 +251,11 @@ describe('invite page — an invite that cannot be accepted', () => {
   });
 
   it('"already a member" says so and offers the dashboard', async () => {
-    acceptInvite.mockResolvedValue({ error: "You're already a member of this organisation.", final: true, alreadyMember: true });
+    acceptInvite.mockResolvedValue({ error: "You’re already a member of this organisation.", final: true, alreadyMember: true });
     render(<InviteAcceptPage />);
     fireEvent.click(await acceptButton());
 
-    expect(await screen.findByRole('heading', { name: /you're already on this team/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /you’re already on this team/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /go to dashboard/i }));
     expect(router.push).toHaveBeenCalledWith('/dashboard');
   });
@@ -266,10 +266,10 @@ describe('invite page — an invite that cannot be accepted', () => {
     fireEvent.click(await acceptButton());
     await promptHeading();
 
-    acceptInvite.mockResolvedValueOnce({ error: "You're already a member of this organisation.", final: true, alreadyMember: true });
+    acceptInvite.mockResolvedValueOnce({ error: "You’re already a member of this organisation.", final: true, alreadyMember: true });
     fireEvent.click(screen.getByRole('button', { name: /^accept with this email anyway$/i }));
 
-    expect(await screen.findByRole('heading', { name: /you're already on this team/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /you’re already on this team/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^use a different email$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^accept with this email anyway$/i })).not.toBeInTheDocument();
   });
@@ -287,7 +287,7 @@ describe('invite page — focus after a retryable error', () => {
     // does not, so do it by hand or the test would pass without the fix.
     acceptInvite.mockImplementation(async () => {
       (document.activeElement as HTMLElement | null)?.blur();
-      return { error: "We couldn't check your account just now. Try again." };
+      return { error: "We couldn’t check your account just now. Try again." };
     });
     render(<InviteAcceptPage />);
     const button = await acceptButton();
@@ -328,20 +328,20 @@ describe('invite page — a used link', () => {
     render(<InviteAcceptPage />);
     fireEvent.click(await acceptButton());
 
-    await screen.findByRole('heading', { name: /this invite can't be used/i });
+    await screen.findByRole('heading', { name: /this invite can’t be used/i });
     fireEvent.click(screen.getByRole('button', { name: /already joined\? go to your dashboard/i }));
     expect(router.push).toHaveBeenCalledWith('/dashboard');
   });
 
   it.each([
     ['expired', 'This invite link has expired. Ask your admin for a new one.'],
-    ['invalid', "This invite link isn't valid. Check that you copied all of it, or ask your admin for a new one."],
+    ['invalid', "This invite link isn’t valid. Check that you copied all of it, or ask your admin for a new one."],
   ])('does not offer the dashboard for an %s link (nobody who joined with it lands here)', async (_kind, message) => {
     acceptInvite.mockResolvedValue({ error: message, final: true });
     render(<InviteAcceptPage />);
     fireEvent.click(await acceptButton());
 
-    await screen.findByRole('heading', { name: /this invite can't be used/i });
+    await screen.findByRole('heading', { name: /this invite can’t be used/i });
     expect(screen.queryByRole('button', { name: /dashboard/i })).not.toBeInTheDocument();
   });
 });
@@ -367,21 +367,21 @@ describe('invite page — who, where the error sits, target size', () => {
   it('says which account is signed in before the person presses Accept', async () => {
     render(<InviteAcceptPage />);
     await acceptButton();
-    expect(screen.getByText(/you're signed in as/i)).toHaveTextContent('invitee@example.com');
+    expect(screen.getByText(/you’re signed in as/i)).toHaveTextContent('invitee@example.com');
   });
 
   it('says nothing about an account when signed out', async () => {
     signedOut();
     render(<InviteAcceptPage />);
     await screen.findByRole('link', { name: /^log in to accept$/i });
-    expect(screen.queryByText(/you're signed in as/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/you’re signed in as/i)).not.toBeInTheDocument();
   });
 
   it('names the account that joined on the success screen', async () => {
     acceptInvite.mockResolvedValue({ orgName: 'Acme Training' });
     render(<InviteAcceptPage />);
     fireEvent.click(await acceptButton());
-    expect(await screen.findByText(/you've joined/i)).toHaveTextContent("You've joined Acme Training as invitee@example.com.");
+    expect(await screen.findByText(/you’ve joined/i)).toHaveTextContent("You’ve joined Acme Training as invitee@example.com.");
   });
 
   it('keeps the success button at the 44 px target the other buttons use', async () => {
@@ -394,7 +394,7 @@ describe('invite page — who, where the error sits, target size', () => {
   // Focus lands on the error; Tab from there should reach the button to retry
   // rather than skip past it to the footer.
   it('puts the error before the Accept button in the tab order', async () => {
-    acceptInvite.mockResolvedValue({ error: "We couldn't check your account just now. Try again." });
+    acceptInvite.mockResolvedValue({ error: "We couldn’t check your account just now. Try again." });
     render(<InviteAcceptPage />);
     fireEvent.click(await acceptButton());
     const alert = await screen.findByRole('alert');

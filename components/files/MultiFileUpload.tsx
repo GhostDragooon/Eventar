@@ -77,7 +77,7 @@ export function MultiFileUpload({
             <li key={item.id} className="flex items-center gap-sm py-sm">
               <span className="material-symbols-outlined text-on-surface-variant" aria-hidden>description</span>
               <span className="min-w-0 flex-1">
-                <strong className="block truncate text-on-surface">{item.file.name}</strong>
+                <strong className="flex min-w-0 text-on-surface" title={item.file.name}><NameMiddle name={item.file.name} /></strong>
                 <small className="text-on-surface-variant">{formatBytes(item.file.size)}</small>
               </span>
               <Button type="button" variant="ghost" size="icon" className="size-11 text-error" aria-label={`Remove ${item.file.name}`} onClick={() => remove(item.id)}>
@@ -101,4 +101,17 @@ function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// Middle truncation: the base shrinks with an ellipsis, the extension stays whole.
+function NameMiddle({ name }: { name: string }) {
+  const dot = name.lastIndexOf('.');
+  const base = dot > 0 ? name.slice(0, dot) : name;
+  const ext = dot > 0 ? name.slice(dot) : '';
+  return (
+    <>
+      <span className="min-w-0 truncate">{base}</span>
+      {ext && <span className="shrink-0">{ext}</span>}
+    </>
+  );
 }

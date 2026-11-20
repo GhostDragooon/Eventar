@@ -32,8 +32,13 @@ export function SaveToggleButton({
         onClick={toggle}
         className={cn('gap-xs', saved && 'bg-success-container text-on-success-container hover:bg-success-container/90')}
       >
-        <span className={cn('material-symbols-outlined', saved && '[font-variation-settings:"FILL"_1]')} aria-hidden>
-          bookmark
+        <span className="icon-swap">
+          <span className="material-symbols-outlined" data-state={saved ? 'out' : 'in'} aria-hidden>
+            bookmark
+          </span>
+          <span className="material-symbols-outlined [font-variation-settings:'FILL'_1]" data-state={saved ? 'in' : 'out'} aria-hidden>
+            bookmark
+          </span>
         </span>
         {pending ? 'Saving…' : saved ? 'Saved' : 'Save'}
       </Button>

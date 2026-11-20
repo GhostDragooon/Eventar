@@ -107,7 +107,7 @@ describe('acceptInvite — no practitioner data', () => {
 
   // The reads rely on RLS (self-read) but must not depend on it alone: each is
   // pinned to the caller's own id as well.
-  it("scopes all three reads to the caller's own user id", async () => {
+  it("scopes all three reads to the caller’s own user id", async () => {
     await acceptInvite('tok-1', { confirmed: false });
     expect(reads.filters).toHaveLength(3);
     for (const table of TABLES) {
@@ -149,7 +149,7 @@ describe('acceptInvite — the email already has practitioner data (D3)', () => 
       error: { code: '57014', message: `canceling statement for ${USER.email}` },
     };
     const res = await acceptInvite('tok-1', { confirmed: false });
-    expect(res).toEqual({ error: "We couldn't check your account just now. Try again." });
+    expect(res).toEqual({ error: "We couldn’t check your account just now. Try again." });
     expect(rpc).not.toHaveBeenCalled();
     expect(consoleError).toHaveBeenCalledTimes(1);
     const logged = JSON.stringify(consoleError.mock.calls);
@@ -175,7 +175,7 @@ describe('acceptInvite — signed out', () => {
       error: Object.assign(new Error('fetch failed'), { name: 'AuthRetryableFetchError', status: 0 }),
     });
     const res = await acceptInvite('tok-1', { confirmed: false });
-    expect(res).toEqual({ error: "We couldn't verify your log-in just now. Try again." });
+    expect(res).toEqual({ error: "We couldn’t verify your log-in just now. Try again." });
     expect(res).not.toHaveProperty('needsSignIn');
     expect(rpc).not.toHaveBeenCalled();
   });
@@ -189,7 +189,7 @@ describe('acceptInvite — RPC errors', () => {
     ['accept_invite_token: this invite has expired', 'This invite link has expired. Ask your admin for a new one.'],
     [
       'accept_invite_token: invalid or expired invite link',
-      "This invite link isn't valid. Check that you copied all of it, or ask your admin for a new one.",
+      "This invite link isn’t valid. Check that you copied all of it, or ask your admin for a new one.",
     ],
   ])('maps "%s" to a plain-language, final message with a next step', async (message, expected) => {
     rpc.mockResolvedValue({ data: null, error: { code: 'P0001', message } });
@@ -221,7 +221,7 @@ describe('acceptInvite — RPC errors', () => {
       error: { code: 'P0001', message: 'accept_invite_token: you are already a member of this organisation' },
     });
     expect(await acceptInvite('tok-1', { confirmed: true })).toEqual({
-      error: "You're already a member of this organisation.",
+      error: "You’re already a member of this organisation.",
       final: true,
       alreadyMember: true,
     });
@@ -246,7 +246,7 @@ describe('acceptInvite — RPC errors', () => {
     });
     const res = await acceptInvite('secret-token-value', { confirmed: true });
     expect(res).toEqual({
-      error: "We couldn't accept this invite. Try again, or ask your admin for a new link.",
+      error: "We couldn’t accept this invite. Try again, or ask your admin for a new link.",
     });
     expect(JSON.stringify(res)).not.toMatch(/accept_invite_token|determine your email/i);
     expect(consoleError).toHaveBeenCalledTimes(1);

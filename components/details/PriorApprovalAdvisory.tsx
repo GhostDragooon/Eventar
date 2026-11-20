@@ -37,7 +37,7 @@ export function PriorApprovalAdvisory({ startTime, body }: Props) {
         <>
           Apply to {label} by{' '}
           <strong>{formatInTz(approval.deadline.toISOString(), 'Asia/Hong_Kong')} (HKT)</strong> to meet its
-          prior-approval requirement. This is advisory only &mdash; Eventar doesn&rsquo;t track applications, so
+          prior-approval requirement. This is advisory only &mdash; Eventar doesn’t track applications, so
           saving here is never blocked by it.
         </>
       )}

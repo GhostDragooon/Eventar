@@ -109,7 +109,7 @@ export function LandingHero({
             is unchanged, not part of this instruction. */}
         <div className="mb-[47px] flex flex-col items-center gap-[17px]">
           <span className="text-[calc(11px*var(--text-scale))] font-semibold uppercase tracking-[.08em] text-on-surface-variant">
-            I&rsquo;m a&hellip;
+            I’m a&hellip;
           </span>
           <div
             role="tablist"
@@ -118,7 +118,7 @@ export function LandingHero({
           >
             <span
               aria-hidden
-              className="aud-thumb absolute inset-y-0 left-0 z-0 w-1/2 bg-primary"
+              className="aud-thumb absolute inset-y-[3px] left-[3px] z-0 w-[calc(50%-3px)] rounded-full bg-primary"
               style={{ transform: aud === 'organiser' ? 'translateX(100%)' : 'none' }}
             />
             {(['practitioner', 'organiser'] as const).map((k) => (
@@ -167,7 +167,7 @@ export function LandingHero({
             {/* Variant D flips the artifact's default: the headline is SANS and
                 the emphasis is serif-italic in the link blue — not the other
                 way round. */}
-            <h1 className="mx-auto mt-[18px] max-w-[21ch] text-[calc(44px*var(--text-scale))] font-bold leading-[1.1] tracking-[-0.02em] text-on-surface lg:mx-0">
+            <h1 className="mx-auto mt-[18px] max-w-[21ch] text-hero font-bold text-on-surface lg:mx-0">
               {c.head[0]}
               <br />
               <em className="font-medium italic text-primary">{c.head[1]}</em>

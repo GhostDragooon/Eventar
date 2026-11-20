@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { signOutAndLeave } from '@/lib/signOut';
+import { useIsMobile } from '@/lib/useIsMobile';
+import { Sheet } from '@/components/ui/Sheet';
 
 // Signed-in Account disclosure menu — replaces the plain "Account" link on
 // SiteShell / PublicShell / LandingNav / LandingAuthPill (2026-09-21
@@ -22,7 +24,7 @@ import { signOutAndLeave } from '@/lib/signOut';
 // SiteShell) — §4.2's explicit "Account control stays shrink-0" mobile
 // requirement applies to every consumer, not just one shell.
 const TRIGGER_CLASS =
-  'shrink-0 whitespace-nowrap rounded-full bg-primary px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary transition-transform duration-150 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0';
+  'tap-44 shrink-0 whitespace-nowrap rounded-full bg-primary px-md py-[7px] text-[calc(12.5px*var(--text-scale))] font-semibold text-on-primary transition-[translate,scale] duration-150 ease-out hover:-translate-y-px active:scale-[.97] motion-reduce:transition-none motion-reduce:hover:translate-y-0';
 
 export function AccountMenu({
   complete,
@@ -39,9 +41,11 @@ export function AccountMenu({
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const mobile = useIsMobile();
 
   useEffect(() => {
-    if (!open) return;
+    // Below 768px the menu is a Sheet in a portal; Drawer owns dismissal there.
+    if (!open || mobile) return;
     function onDocClick(e: MouseEvent) {
       if (!signingOut && !rootRef.current?.contains(e.target as Node)) setOpen(false);
     }
@@ -54,7 +58,7 @@ export function AccountMenu({
       document.removeEventListener('mousedown', onDocClick);
       document.removeEventListener('keydown', onKey);
     };
-  }, [open, signingOut]);
+  }, [open, mobile, signingOut]);
 
   const items: { label: string; href: string }[] = complete
     ? [
@@ -65,11 +69,57 @@ export function AccountMenu({
       ]
     : [{ label: 'Account', href: '/account' }];
 
+  const menu = (
+    <>
+    <div role="menu" aria-label="Account menu">
+        {items.map((item) => (
+          <Link
+            // ui-primitive-allow: menu item inside an open AccountMenu
+            // popover, not a standalone action — same convention as
+            // RecordActionsMenu / WorkspaceSwitcher's listbox options.
+            key={item.href}
+            href={item.href}
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="block rounded-md px-sm py-sm text-body-md text-on-surface hover:bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            {item.label}
+          </Link>
+        ))}
+        <div className="my-xs h-px bg-outline-variant" role="separator" />
+        <button
+          // ui-primitive-allow: menu item inside an open AccountMenu
+          // popover, not a standalone action — same convention as the
+          // Link items above and RecordActionsMenu's menu-row buttons.
+          type="button"
+          role="menuitem"
+          disabled={signingOut}
+          // Stays open on failure so the error and the retry are in view (lib/signOut.ts).
+          onClick={async () => {
+            setSigningOut(true);
+            setSignOutError(null);
+            setSignOutError(await signOutAndLeave('/'));
+            setSigningOut(false);
+          }}
+          className="block w-full rounded-md px-sm py-sm text-left text-body-md text-on-surface hover:bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary"
+        >
+          {signingOut ? 'Signing out…' : 'Sign out'}
+        </button>
+    </div>
+      {/* Outside role="menu" (ARIA allows only items there). */}
+      {signOutError && (
+        <p role="alert" className="m-0 px-sm py-xs text-body-md text-error">
+          {signOutError}
+        </p>
+      )}
+    </>
+  );
+
   return (
     <div className="relative" ref={rootRef}>
       <button
         type="button"
-        aria-haspopup="menu"
+        aria-haspopup={mobile ? 'dialog' : 'menu'}
         aria-expanded={open}
         aria-current={active ? 'page' : undefined}
         onClick={() => {
@@ -80,50 +130,15 @@ export function AccountMenu({
       >
         Account
       </button>
-      {open && (
-        <div className="absolute right-0 z-30 mt-xs w-64 rounded-[12px] border border-outline-variant bg-surface-container-lowest p-xs shadow-lg">
-        <div role="menu" aria-label="Account menu">
-            {items.map((item) => (
-              <Link
-                // ui-primitive-allow: menu item inside an open AccountMenu
-                // popover, not a standalone action — same convention as
-                // RecordActionsMenu / WorkspaceSwitcher's listbox options.
-                key={item.href}
-                href={item.href}
-                role="menuitem"
-                onClick={() => setOpen(false)}
-                className="block rounded-lg px-sm py-sm text-body-md text-on-surface hover:bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                {item.label}
-              </Link>
-            ))}
-            <div className="my-xs h-px bg-outline-variant" role="separator" />
-            <button
-              // ui-primitive-allow: menu item inside an open AccountMenu
-              // popover, not a standalone action — same convention as the
-              // Link items above and RecordActionsMenu's menu-row buttons.
-              type="button"
-              role="menuitem"
-              disabled={signingOut}
-              // Stays open on failure so the error and the retry are in view (lib/signOut.ts).
-              onClick={async () => {
-                setSigningOut(true);
-                setSignOutError(null);
-                setSignOutError(await signOutAndLeave('/'));
-                setSigningOut(false);
-              }}
-              className="block w-full rounded-lg px-sm py-sm text-left text-body-md text-on-surface hover:bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              {signingOut ? 'Signing out…' : 'Sign out'}
-            </button>
+      {open && !mobile && (
+        <div className="absolute right-0 z-30 mt-xs w-64 origin-top-right animate-overlay-in rounded-[12px] border border-outline-variant bg-popover p-xs shadow-lg">
+          {menu}
         </div>
-          {/* Outside role="menu" (ARIA allows only items there). */}
-          {signOutError && (
-            <p role="alert" className="m-0 px-sm py-xs text-body-md text-error">
-              {signOutError}
-            </p>
-          )}
-        </div>
+      )}
+      {mobile && (
+        <Sheet open={open} onOpenChange={(next) => !signingOut && setOpen(next)} title="Account menu">
+          {menu}
+        </Sheet>
       )}
     </div>
   );

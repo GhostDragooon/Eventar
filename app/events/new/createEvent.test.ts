@@ -46,7 +46,7 @@ const event = {
   longitude: -122.2007,
 };
 
-const publishRefusal = /can't publish events\. Nothing was saved\. Save a draft, then ask an organiser admin to publish it/i;
+const publishRefusal = /can’t publish events\. Nothing was saved\. Save a draft, then ask an organiser admin to publish it/i;
 
 beforeEach(() => {
   mockRole = 'organiser_member';
@@ -125,7 +125,7 @@ describe('createEvent — partial success', () => {
 });
 
 const BODY = '11111111-2222-4333-8444-555555555555';
-const accreditationRefusal = /can't set accreditation\. Nothing was saved\. Remove the accreditation to continue, or ask an organiser admin/i;
+const accreditationRefusal = /can’t set accreditation\. Nothing was saved\. Remove the accreditation to continue, or ask an organiser admin/i;
 
 // Dev-lens 2026-10-02 (MAJOR): set_event_cpd_config accepts only organiser_admin and
 // eventar_staff, yet it runs AFTER the event exists. A member who chose an accrediting
@@ -279,7 +279,7 @@ describe('createEvent: agenda saved in start-time order', () => {
 
   it('names a refused block by its title, not by its position in the start-sorted list', async () => {
     const res = await createEvent({ event, blocks: [block('Fine', '09:00', '10:00'), block('Late talk', '11:00', '10:30')], status: 'draft' });
-    expect(res).toEqual({ error: 'Agenda block "Late talk" (end_time): Block end must be after start' });
+    expect(res).toEqual({ error: 'Agenda block “Late talk” (end_time): Block end must be after start' });
     expect(rpc).not.toHaveBeenCalled();
   });
 

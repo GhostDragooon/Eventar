@@ -11,22 +11,22 @@
 export type AuthAudience = 'organizer' | 'attendee';
 
 // Wrong-door line (Ivan 2026-11-01): the same words for every reason an organiser log-in cannot proceed, so it never
-// says whether the email is on a staff list, and no password language (the door is magic-link only). The door page
-// carries the Attendee log in and Sign up links next to it.
+// says whether the email is on a staff list, and no password language (the door is magic-link only). The nav's Log in
+// pill is the attendee door; /login adds a Sign up link under the form when this message shows.
 const ORGANISER_WRONG_DOOR =
-  "We couldn't log you in as an organiser. If you attend events, use Attendee log in or Sign up instead.";
+  "We couldn’t log you in as an organiser. If you attend events, use Log in at the top of the page, or Sign up instead.";
 
 const AUTH_ERROR_MESSAGES_ORGANIZER: Readonly<Record<string, string>> = {
   missing_code: 'This log-in link has expired or was already used. Request a new one below.',
   exchange_failed:
-    "This log-in link couldn't be completed. It may have expired, or been opened in a different browser or app from the one you asked for it in. Request a new link below and open it in the same browser.",
+    "This log-in link couldn’t be completed. It may have expired, or been opened in a different browser or app from the one you asked for it in. Request a new link below and open it in the same browser.",
   not_authorized: ORGANISER_WRONG_DOOR,
   unavailable:
     'We could not check your organiser access just now. This is on our side — please try again in a moment.',
   // `staff` allows one email in two organisations; the single-row read then fails (PGRST116) and proxy.ts
   // sends the person here. Not a transient outage, so no "try again". Organiser door only (CX-07).
   multiple_organisations:
-    "Your account belongs to more than one organisation, which isn't supported yet. Ask Eventar support.",
+    "Your account belongs to more than one organisation, which isn’t supported yet. Ask Eventar support.",
   // proxy.ts keeps the session of a signed-in non-organiser and sends them to
   // /login?error=not_organiser. With a session /login shows its practitioner
   // panel instead; this line is what a visitor with no session sees.
@@ -34,13 +34,13 @@ const AUTH_ERROR_MESSAGES_ORGANIZER: Readonly<Record<string, string>> = {
   // proxy.ts sends any signed-in session whose address is not confirmed here, before it looks at the staff table,
   // so the line is the same for everyone and says nothing about staff membership.
   email_unconfirmed:
-    "Your email address isn't confirmed yet. Open the confirmation email we sent you, or request a new log-in link below.",
+    "Your email address isn’t confirmed yet. Open the confirmation email we sent you, or request a new log-in link below.",
 };
 
 const AUTH_ERROR_MESSAGES_ATTENDEE: Readonly<Record<string, string>> = {
   missing_code: 'This log-in link has expired or was already used. Request a new one below.',
   exchange_failed:
-    "This log-in link couldn't be completed. It may have expired, or been opened in a different browser or app from the one you asked for it in. Request a new link below and open it in the same browser.",
+    "This log-in link couldn’t be completed. It may have expired, or been opened in a different browser or app from the one you asked for it in. Request a new link below and open it in the same browser.",
   not_authorized: 'This email is not recognised. Sign up first by registering for an event.',
   unavailable:
     'We could not verify your account just now. This is on our side — please try again in a moment.',

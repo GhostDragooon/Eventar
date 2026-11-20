@@ -33,7 +33,7 @@ describe('blockZodErrors', () => {
   it('names the block by its title, never by its position in the sorted list', () => {
     const blocks = [block, { ...block, title: 'Late talk', end_time: '2026-06-15T08:00:00.000Z' }];
     const msg = blockZodErrors(issuesOf(blocks), blocks);
-    expect(msg).toBe('Agenda block "Late talk" (end_time): Block end must be after start');
+    expect(msg).toBe('Agenda block “Late talk” (end_time): Block end must be after start');
     expect(msg).not.toMatch(/block 1/i);
   });
 
@@ -44,6 +44,6 @@ describe('blockZodErrors', () => {
 
   it('says a topic needs a speaker, not a zod default', () => {
     const blocks = [{ ...block, topics: [{ title: 'T', speaker_name: '' }] }];
-    expect(blockZodErrors(issuesOf(blocks), blocks)).toBe('Agenda block "Intro" (topics.0.speaker_name): Every topic needs a speaker name.');
+    expect(blockZodErrors(issuesOf(blocks), blocks)).toBe('Agenda block “Intro” (topics.0.speaker_name): Every topic needs a speaker name.');
   });
 });

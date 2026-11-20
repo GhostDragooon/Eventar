@@ -98,7 +98,7 @@ export async function selfCheckIn(
       return { ok: true, eventId: row.event_id, credit };
     }
     case 'already':
-      return { error: "You're already checked in." };
+      return { error: "You’re already checked in." };
     case 'rate_limited':
       return { error: 'Too many attempts. Please try again in a moment.' };
     // The lifecycle refusals (DEFERRED 57). Each gets its own copy because
@@ -107,18 +107,18 @@ export async function selfCheckIn(
     // default told an attendee their registration was invalid when it was
     // perfectly valid and merely early.
     case 'not_open_yet':
-      return { error: "Check-in isn't open yet. It opens an hour before the event starts." };
+      return { error: "Check-in isn’t open yet. It opens an hour before the event starts." };
     case 'closed':
       // Distinct from not_open_yet on purpose: telling someone who arrived
       // late to "wait" sends them to a moment that has already passed, and
       // nothing would ever correct them.
       return { error: 'Check-in for this event has closed. Please see a member of staff.' };
     case 'self_serve_off':
-      return { error: "Self check-in isn't enabled for this event — please see reception." };
+      return { error: "Self check-in isn’t enabled for this event — please see reception." };
     case 'cancelled':
       return { error: 'This registration was cancelled.' };
     case 'unavailable':
-      return { error: "This event isn't accepting check-ins." };
+      return { error: "This event isn’t accepting check-ins." };
     case 'no_matching_occurrence':
       // Multi-occurrence events only: no session/day matches this check-in
       // time. Distinct from the generic default — the code IS valid.

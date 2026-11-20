@@ -62,10 +62,10 @@ const cpdSchema = z
   .optional();
 
 const PUBLISH_REFUSED =
-  "Your role can't publish events. Nothing was saved. Save a draft, then ask an organiser admin to publish it.";
+  "Your role can’t publish events. Nothing was saved. Save a draft, then ask an organiser admin to publish it.";
 
 const ACCREDITATION_REFUSED =
-  "Your role can't set accreditation. Nothing was saved. Remove the accreditation to continue, or ask an organiser admin to add it after you save.";
+  "Your role can’t set accreditation. Nothing was saved. Remove the accreditation to continue, or ask an organiser admin to add it after you save.";
 const CPD_HOURS_INVALID = 'CPD hours must be more than 0 and at most 24.';
 const CPD_PAIR_INVALID = 'Choose the accrediting body and enter its CPD hours together, or leave both empty.';
 
@@ -123,7 +123,7 @@ export async function createEvent(input: {
   // Envelope-fit validation
   const outOfEnvelope = blockParse.data.find(b => !blockFitsEnvelope(b, eventParse.data));
   if (outOfEnvelope) {
-    return { error: `Block "${outOfEnvelope.title}" runs outside the event's start/end window` };
+    return { error: `Block “${outOfEnvelope.title}” runs outside the event’s start/end window` };
   }
 
   const timezone = tzFromCoords(eventParse.data.latitude, eventParse.data.longitude);

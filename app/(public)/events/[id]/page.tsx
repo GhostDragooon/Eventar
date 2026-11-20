@@ -282,7 +282,7 @@ export default async function PublicEventPage({
         {event.description && (
           <div className="flex flex-col gap-0">
             {splitSentences(event.description).map((s, i) => (
-              <p key={i} className="font-body-md text-body-md text-on-surface m-0">
+              <p key={i} className="prose-hyphen font-body-md text-body-md text-on-surface m-0">
                 {s}
               </p>
             ))}

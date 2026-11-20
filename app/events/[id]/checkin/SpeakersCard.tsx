@@ -106,7 +106,7 @@ export function SpeakersCard({
 
       {speakerNames.length === 0 ? (
         <p className="font-body-md text-body-md text-on-surface-variant py-sm">
-          No speakers are listed on this event&apos;s agenda.
+          No speakers are listed on this event’s agenda.
         </p>
       ) : (
         <ul className="divide-y divide-surface-container-highest">

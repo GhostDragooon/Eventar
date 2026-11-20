@@ -297,7 +297,7 @@ export async function registerForEvent(input: unknown): Promise<RegisterResult> 
 
   const sendResult = await sendEmail({
     to: email,
-    subject: `You're registered: ${event.title}`,
+    subject: `You’re registered: ${event.title}`,
     html,
   });
 

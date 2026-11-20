@@ -166,8 +166,8 @@ describe('updateRegistrationClose', () => {
 describe('updateRegistrationClose — Q51 event-writer rule', () => {
   it.each([
     ['organiser_member', 's-2', 'Only the organiser who created this event, or an organiser admin, can change it.'],
-    ['body_admin', 's-1', "Your role can't change events. Ask an organiser admin."],
-    ['auditor', 's-1', "Your role can't change events. Ask an organiser admin."],
+    ['body_admin', 's-1', "Your role can’t change events. Ask an organiser admin."],
+    ['auditor', 's-1', "Your role can’t change events. Ask an organiser admin."],
   ])('%s (%s) is refused before any write', async (role, id, message) => {
     requireStaffMock.mockResolvedValueOnce({ id, email: 'a@b.com', role, organisation_id: 'org-1' });
     const result = await updateRegistrationClose(eventId, null);

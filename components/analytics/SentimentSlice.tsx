@@ -35,7 +35,7 @@ export function SentimentSlice({
       icon="favorite"
       iconBg="primary-container"
       title="Sentiment (Q4)"
-      prompt={'"Did this event meet your expectations?"'}
+      prompt={'“Did this event meet your expectations?”'}
     >
       <div className="flex items-center gap-md flex-shrink-0">
         <span className="text-display font-bold text-primary-ink leading-none">
@@ -50,7 +50,7 @@ export function SentimentSlice({
       {happyRate == null ? (
         <div className="flex-grow flex items-center">
           <p className="text-body-md text-on-surface-variant italic">
-            No sentiment data yet — Q4 hasn&apos;t been answered.
+            No sentiment data yet — Q4 hasn’t been answered.
           </p>
         </div>
       ) : (

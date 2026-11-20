@@ -5,6 +5,7 @@ import { extendTailwindMerge } from "tailwind-merge"
 // `text-label-md` as a text COLOUR and dropped a real colour class next to it (or the reverse). Registering
 // the names as sizes keeps both. Keep this list in step with the `--text-<name>` tokens there.
 const TYPE_SCALE = [
+  "hero",
   "display",
   "headline-lg",
   "headline-md",

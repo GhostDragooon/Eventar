@@ -37,7 +37,7 @@ export function formatSendResult(r: EmailSendCounts): string {
   // A give-up is NOT a failure the operator can wait out: the scheduler will
   // never try again. It has to name the action, because the consequence of
   // doing nothing is a practitioner arriving without a pass.
-  if (r.gaveUp) parts.push(`${r.gaveUp} couldn't be emailed — check them in on the Check-in page`);
+  if (r.gaveUp) parts.push(`${r.gaveUp} couldn’t be emailed — check them in on the Check-in page`);
   return parts.length === 0 ? 'No eligible recipients.' : parts.join(' · ');
 }
 

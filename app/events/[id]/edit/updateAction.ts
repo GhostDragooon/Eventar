@@ -57,12 +57,12 @@ function rpcErrorMessage(message: string): string {
     return 'The agenda changed in another tab or window, so your changes were not saved. Reload this page and try again.';
   }
   if (message.startsWith(SURVEY_ANSWERS_PREFIX)) {
-    return `The block "${message.slice(SURVEY_ANSWERS_PREFIX.length)}" has survey answers, so it cannot be removed. Nothing was saved.`;
+    return `The block “${message.slice(SURVEY_ANSWERS_PREFIX.length)}” has survey answers, so it cannot be removed. Nothing was saved.`;
   }
   // The database rule behind blockFitsEnvelope (migration 20261114120000): reached only when the pre-check was
   // bypassed, e.g. the event's times changed in another tab. The raw message names a block uuid, not its title.
   if (message.startsWith('agenda_block_outside_event_window:')) {
-    return 'A block runs outside the event\'s start/end window, so your changes were not saved. Check the agenda times and save again.';
+    return 'A block runs outside the event’s start/end window, so your changes were not saved. Check the agenda times and save again.';
   }
   return message;
 }
@@ -148,7 +148,7 @@ export async function updateEvent(
   // Envelope-fit validation, same rule as createEvent.
   const outOfEnvelope = blockParse.data.find(b => !blockFitsEnvelope(b, eventParse.data));
   if (outOfEnvelope) {
-    return { error: `Block "${outOfEnvelope.title}" runs outside the event's start/end window` };
+    return { error: `Block “${outOfEnvelope.title}” runs outside the event’s start/end window` };
   }
 
   const timezone = tzFromCoords(eventParse.data.latitude, eventParse.data.longitude);

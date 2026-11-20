@@ -212,8 +212,8 @@ describe('sendReminderForEvent — authorization', () => {
   // Q51 (dev review M3): sends reach every registrant through the admin client, so the rule is checked here.
   it.each([
     ['organiser_member', 'someone-else', 'Only the organiser who created this event, or an organiser admin, can change it.'],
-    ['body_admin', ownerId, "Your role can't change events. Ask an organiser admin."],
-    ['auditor', ownerId, "Your role can't change events. Ask an organiser admin."],
+    ['body_admin', ownerId, "Your role can’t change events. Ask an organiser admin."],
+    ['auditor', ownerId, "Your role can’t change events. Ask an organiser admin."],
   ] as const)('%s (%s) in the organisation sends nothing', async (role, id, message) => {
     mockStaff = { id, role, email: 'x@x.com', full_name: null, organisation_id: orgId };
     const result = await sendReminderForEvent(eventId);

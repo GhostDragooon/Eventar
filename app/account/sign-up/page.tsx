@@ -31,7 +31,7 @@ export default function AttendeeSignUpPage() {
 
 function AttendeeSignUpShell({ children }: { children?: React.ReactNode } = {}) {
   return (
-    <SiteShell active="signin">
+    <SiteShell>
       <div className="mx-auto w-full max-w-md px-grid-margin py-xl">
         <div className="flex flex-col gap-lg bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm">
           {children}
@@ -88,40 +88,24 @@ function AttendeeSignUpForm() {
 
   return (
     <AttendeeSignUpShell>
-      <p className="text-label-md font-semibold uppercase tracking-[0.18em] m-0">
-        <span className="text-[color:var(--on-primary-container)]">Attendee</span>
-        <span className="text-on-surface-variant"> · Sign up</span>
-      </p>
       <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">
         Sign up
       </h1>
       <p className="font-body-md text-body-md text-on-surface-variant m-0">
-        Enter your email and we&apos;ll send you a one-time link. No password
-        to set — the same link works whether this is your first time or your
-        hundredth.
+        Enter your email. We’ll send a one-time link, no password.
       </p>
       {next === '/account/claim' && (
         <p className="font-body-md text-body-md text-on-surface m-0">
           Use the same email you just registered with, so that registration can be added to your Registrations.
         </p>
       )}
-      <p className="font-body-md text-body-md text-on-surface-variant m-0">
-        You can still register for events as a guest without an account —
-        creating one is for linking past registrations, editing your
-        profile, and releasing held CME/CPD points.
-      </p>
       <MagicLinkSignInForm
         submitMagicLink={sendAttendeeMagicLink}
         initialError={urlErr ?? endedErr}
         placeholder="you@example.com"
         submitLabel="Next"
         next={emailedNext}
-        audience="attendee"
       />
-
-      <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant text-center m-0">
-        The link expires after 15 minutes and works once.
-      </p>
 
       <p className="font-body-md text-body-md text-on-surface-variant text-center m-0">
         Already have an account?{' '}
@@ -130,13 +114,6 @@ function AttendeeSignUpForm() {
           className="text-[color:var(--on-primary-container)] hover:underline"
         >
           Log in
-        </Link>
-      </p>
-
-      <p className="font-body-md text-body-md text-on-surface-variant text-center m-0">
-        Running events?{' '}
-        <Link href="/login" className="text-[color:var(--on-primary-container)] hover:underline">
-          Organiser log in
         </Link>
       </p>
     </AttendeeSignUpShell>

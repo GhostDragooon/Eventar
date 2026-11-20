@@ -40,7 +40,7 @@ describe('PublicShell — state-aware right-side CTA (SiteShell parity)', () => 
     );
     expect(screen.getByRole('link', { name: /^log in$/i })).not.toHaveAttribute('href', '/login');
     const toLogin = screen.getAllByRole('link').filter((a) => a.getAttribute('href') === '/login');
-    expect(toLogin.map((a) => a.textContent)).toEqual(['Organiser log in']);
+    expect(toLogin.map((a) => a.textContent)).toEqual(['Organisers log inOrganiser log in']);
   });
 
   it('defaults to signed-out when `signedIn` prop is omitted', () => {
@@ -97,10 +97,10 @@ describe('PublicShell — state-aware right-side CTA (SiteShell parity)', () => 
 describe('PublicShell: organiser door link', () => {
   it('shows "Organiser log in" to /login for a signed-out visitor, not for a signed-in one', () => {
     const { unmount } = render(<PublicShell>content</PublicShell>);
-    expect(screen.getByRole('link', { name: /^organiser log in$/i })).toHaveAttribute('href', '/login');
+    expect(screen.getByRole('link', { name: /organisers? log in/i })).toHaveAttribute('href', '/login');
     unmount();
     render(<PublicShell signedIn accountComplete>content</PublicShell>);
-    expect(screen.queryByRole('link', { name: /^organiser log in$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /organisers? log in/i })).not.toBeInTheDocument();
   });
 });
 

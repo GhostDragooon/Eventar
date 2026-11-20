@@ -93,8 +93,8 @@ export default function DateTimeSection({ value, onChange, venueTz }: Props) {
           <div className="flex items-center gap-sm">
             <div className="flex-1 h-1.5 bg-surface-container-highest rounded-full overflow-hidden" aria-hidden>
               <div
-                className="h-full bg-primary rounded-full transition-all duration-300"
-                style={{ width: `${barPct}%` }}
+                className="h-full w-full origin-left bg-primary rounded-full transition-transform duration-300 motion-reduce:transition-none"
+                style={{ transform: `scaleX(${barPct / 100})` }}
               />
             </div>
             <span className="font-label-md text-label-md text-on-surface-variant whitespace-nowrap">
@@ -112,7 +112,7 @@ export default function DateTimeSection({ value, onChange, venueTz }: Props) {
 
         <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant">
           Times are in your local timezone. The event page will display them in
-          the venue&apos;s local time.
+          the venue’s local time.
         </p>
         <VenueTimeLine value={value} venueTz={venueTz} />
       </div>

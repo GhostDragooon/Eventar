@@ -19,7 +19,7 @@ describe('resolveAuthError', () => {
     // one" loops forever (user-lens round 2, M2).
     expect(resolveAuthError('exchange_failed')).toMatch(/different browser or app/i);
     expect(resolveAuthError('exchange_failed')).toMatch(/same browser/i);
-    expect(resolveAuthError('not_authorized')).toMatch(/couldn't log you in as an organiser/i);
+    expect(resolveAuthError('not_authorized')).toMatch(/couldn’t log you in as an organiser/i);
     expect(resolveAuthError('unavailable')).toMatch(/could not check your organiser access/i);
   });
 
@@ -33,7 +33,7 @@ describe('resolveAuthError', () => {
   // Security audit H1: an unconfirmed session. Neutral for everyone, so it must not hint at staff membership.
   it('resolves email_unconfirmed to a neutral line that never mentions staff, organisers or a password', () => {
     const line = resolveAuthError('email_unconfirmed')!;
-    expect(line).toMatch(/isn't confirmed yet/i);
+    expect(line).toMatch(/isn’t confirmed yet/i);
     expect(line).not.toMatch(/password|staff|list|team|admin|organi[sz]er/i);
   });
 
@@ -42,7 +42,7 @@ describe('resolveAuthError', () => {
     for (const code of ['not_authorized', 'not_organiser']) {
       const line = resolveAuthError(code)!;
       expect(line).not.toMatch(/password|staff|list|team|admin|not on/i);
-      expect(line).toMatch(/attendee log in/i);
+      expect(line).toMatch(/log in at the top/i);
       expect(line).toMatch(/sign up/i);
     }
   });
@@ -70,7 +70,7 @@ describe('resolveAuthError', () => {
 describe('multiple_organisations', () => {
   it('says why, in organiser-door copy, and does not call it a transient outage', () => {
     const msg = resolveAuthError('multiple_organisations');
-    expect(msg).toBe("Your account belongs to more than one organisation, which isn't supported yet. Ask Eventar support.");
+    expect(msg).toBe("Your account belongs to more than one organisation, which isn’t supported yet. Ask Eventar support.");
     expect(msg).not.toMatch(/try again|on our side|just now/i);
     expect(msg).not.toContain('\u2014');
   });

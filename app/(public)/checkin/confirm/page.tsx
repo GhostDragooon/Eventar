@@ -91,7 +91,7 @@ export default async function SelfCheckinPage({
     return (
       <Empty
         title="No check-in code"
-        body="Open this page from your registration link or by scanning your personal QR code. If you don't have one, ask the event organiser for help."
+        body="Open this page from your registration link or by scanning your personal QR code. If you don’t have one, ask the event organiser for help."
         signedIn={signedIn}
         isStaff={isStaff}
         accountComplete={accountComplete}
@@ -160,7 +160,7 @@ export default async function SelfCheckinPage({
     return (
       <Empty
         title="Something went wrong"
-        body="We couldn't look up your pass just now. Your registration is unaffected — please try again in a moment, or show this page to a member of staff."
+        body="We couldn’t look up your pass just now. Your registration is unaffected — please try again in a moment, or show this page to a member of staff."
         signedIn={signedIn}
         isStaff={isStaff}
         accountComplete={accountComplete}
@@ -201,8 +201,8 @@ export default async function SelfCheckinPage({
   if (event.status !== 'published') {
     return (
       <Empty
-        title="This event isn't open yet"
-        body="Your registration is valid — the organiser hasn't published this event yet. Your pass will appear here once they do."
+        title="This event isn’t open yet"
+        body="Your registration is valid — the organiser hasn’t published this event yet. Your pass will appear here once they do."
         signedIn={signedIn}
         isStaff={isStaff}
         accountComplete={accountComplete}
@@ -219,7 +219,7 @@ export default async function SelfCheckinPage({
     return (
       <Empty
         title="This registration was cancelled"
-        body="If you think that's wrong, please speak to the event organiser — they can re-register you."
+        body="If you think that’s wrong, please speak to the event organiser — they can re-register you."
         signedIn={signedIn}
         isStaff={isStaff}
         accountComplete={accountComplete}
@@ -427,7 +427,7 @@ function PassView({
               {code}
             </code>
             <p className="font-body-md text-[calc(12px*var(--text-scale))] text-on-surface-variant mt-xs m-0">
-              If the QR won&apos;t scan, give reception this code instead.
+              If the QR won’t scan, give reception this code instead.
             </p>
           </div>
         </div>
@@ -507,7 +507,7 @@ function CheckedInView({
         >
           <span className="material-symbols-outlined text-[calc(40px*var(--text-scale))]">check</span>
         </span>
-        <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">You&apos;re checked in.</h1>
+        <h1 className="font-headline-lg text-headline-lg text-on-surface m-0">You’re checked in.</h1>
         {(checkInAt || via) && (
           <span className="inline-flex items-center gap-xs px-md py-xs rounded-full bg-surface-container-high font-label-md text-label-md text-on-surface-variant normal-case tracking-normal">
             {checkInAt ? `at ${formatInTz(checkInAt, event.timezone)}` : ''}
@@ -516,7 +516,7 @@ function CheckedInView({
           </span>
         )}
         <p className="font-body-md text-body-md text-on-surface-variant m-0">
-          Enjoy the sessions — we&apos;ll email a short survey after it wraps.
+          Enjoy the sessions — we’ll email a short survey after it wraps.
         </p>
       </div>
 
@@ -530,7 +530,7 @@ function CheckedInView({
           className="font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm flex items-start gap-sm m-0"
         >
           <span className="material-symbols-outlined text-[calc(18px*var(--text-scale))] mt-[2px]" aria-hidden data-fill="1">check_circle</span>
-          <span className="flex-1">CME/CPD points recorded.</span>
+          <span className="flex-1"><abbr title="Continuing medical education">CME</abbr>/<abbr title="Continuing professional development">CPD</abbr> points recorded.</span>
         </p>
       )}
       {creditStatus === 'pending' && (
@@ -575,7 +575,7 @@ function CheckedInView({
                 reception is the right escalation. */}
             {signedIn ? (
               <>
-                We couldn&apos;t record your CME/CPD points for this event.
+                We couldn’t record your CME/CPD points for this event.
                 Your profile or licence may be incomplete —{' '}
                 <Link
                   href="/account/profile"
@@ -587,7 +587,7 @@ function CheckedInView({
               </>
             ) : (
               <>
-                We couldn&apos;t record your CME/CPD points for this event.
+                We couldn’t record your CME/CPD points for this event.
                 Please see reception before you leave.
               </>
             )}

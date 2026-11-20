@@ -112,11 +112,11 @@ describe('selfCheckIn — result code to attendee copy', () => {
   // Before DEFERRED 57 these all fell through to "This registration is no
   // longer valid", which is actively false for an attendee who is simply early.
   it.each([
-    ['not_open_yet', /isn't open yet/i],
+    ['not_open_yet', /isn’t open yet/i],
     ['closed', /has closed/i],
     ['self_serve_off', /see reception/i],
     ['cancelled', /cancelled/i],
-    ['unavailable', /isn't accepting check-ins/i],
+    ['unavailable', /isn’t accepting check-ins/i],
     ['already', /already checked in/i],
     ['rate_limited', /too many attempts/i],
     ['no_matching_occurrence', /no matching session/i],

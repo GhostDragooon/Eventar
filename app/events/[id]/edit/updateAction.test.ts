@@ -128,7 +128,7 @@ describe('updateEvent', () => {
     expect(rpcCalls).toHaveLength(0);
   });
 
-  it("refuses another organisation's event before saying anything about its status", async () => {
+  it("refuses another organisation’s event before saying anything about its status", async () => {
     mockEvent = { organisation_id: 'org-2', status: 'published', deleted_at: null, created_by: 's-1' };
     const result = await updateEvent(eventId, { event: validEvent, blocks: [validBlock] });
     expect(result).toEqual({ error: 'You do not have access to this event.' });
@@ -138,7 +138,7 @@ describe('updateEvent', () => {
   // The action lets the operator through; the live RPC refuses an eventar_staff caller from another organisation
   // with a clean 42501 (proved in tests/rls/event_agenda_integrity.rls.test.ts). This test pins the action's own
   // gate only: the RPC is mocked.
-  it("lets the platform operator past the action's own gate on another organisation's draft", async () => {
+  it("lets the platform operator past the action’s own gate on another organisation’s draft", async () => {
     mockEvent = { organisation_id: 'org-2', status: 'draft', deleted_at: null, created_by: 's-1' };
     requireStaffMock.mockResolvedValueOnce({ id: 's-9', email: 'op@x.com', role: 'eventar_staff', organisation_id: 'org-other' });
     const result = await updateEvent(eventId, { event: validEvent, blocks: [validBlock] });
@@ -392,7 +392,7 @@ describe('updateEvent', () => {
         event: validEvent,
         blocks: [validBlock, { ...validBlock, title: 'Late talk', start_time: '2026-06-15T11:00:00.000Z', end_time: '2026-06-15T10:30:00.000Z' }],
       });
-      expect((result as { error: string }).error).toBe('Agenda block "Late talk" (end_time): Block end must be after start');
+      expect((result as { error: string }).error).toBe('Agenda block “Late talk” (end_time): Block end must be after start');
       expect(rpcCalls).toHaveLength(0);
     });
 
@@ -419,7 +419,7 @@ describe('updateEvent', () => {
       };
       const result = await updateEvent(eventId, { event: validEvent, blocks: [blockA] });
       expect(result).toEqual({
-        error: 'A block runs outside the event\'s start/end window, so your changes were not saved. Check the agenda times and save again.',
+        error: 'A block runs outside the event’s start/end window, so your changes were not saved. Check the agenda times and save again.',
       });
     });
 
@@ -442,7 +442,7 @@ describe('updateEvent', () => {
       mockRpcResult = { data: null, error: { message: 'block_has_survey_answers: Opening keynote' } };
       const result = await updateEvent(eventId, { event: validEvent, blocks: [] });
       expect(result).toEqual({
-        error: 'The block "Opening keynote" has survey answers, so it cannot be removed. Nothing was saved.',
+        error: 'The block “Opening keynote” has survey answers, so it cannot be removed. Nothing was saved.',
       });
       expect(revalidatePathMock).not.toHaveBeenCalled();
     });
@@ -462,8 +462,8 @@ describe('updateEvent', () => {
 describe('updateEvent — Q51 event-writer rule', () => {
   it.each([
     ['organiser_member', 's-2', 'Only the organiser who created this event, or an organiser admin, can change it.'],
-    ['body_admin', 's-1', "Your role can't change events. Ask an organiser admin."],
-    ['auditor', 's-1', "Your role can't change events. Ask an organiser admin."],
+    ['body_admin', 's-1', "Your role can’t change events. Ask an organiser admin."],
+    ['auditor', 's-1', "Your role can’t change events. Ask an organiser admin."],
   ])('%s (%s) is refused before the RPC', async (role, id, message) => {
     requireStaffMock.mockResolvedValueOnce({ id, email: 'a@b.com', role, organisation_id: 'org-1' });
     const result = await updateEvent(eventId, { event: validEvent, blocks: [validBlock] });

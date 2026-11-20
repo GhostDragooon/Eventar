@@ -72,7 +72,7 @@ export default function GlobalError({
       };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-background text-on-surface px-grid-margin text-center">
+    <main className="flex min-h-dvh flex-col items-center justify-center bg-background text-on-surface px-grid-margin text-center">
       <p className="text-label-md font-semibold uppercase tracking-[0.18em] text-[color:var(--error)] mb-sm">
         Something broke
       </p>
@@ -86,6 +86,12 @@ export default function GlobalError({
         </p>
       )}
       <div className="flex items-center gap-sm">
+        <Link
+          href={copy.exit.href}
+          className="inline-flex min-h-11 items-center gap-xs border border-outline-variant text-on-surface font-label-md text-label-md rounded-full py-sm px-lg hover:bg-surface-container-high transition-colors"
+        >
+          {copy.exit.label}
+        </Link>
         {/* text-on-primary!: tailwind-merge reads `text-label-md` (a font size) as
             a text colour and drops the Button's own `text-on-primary`; the `!`
             keeps both. Same workaround as MagicLinkSignInForm. */}
@@ -104,12 +110,6 @@ export default function GlobalError({
           <span className="material-symbols-outlined text-[calc(16px*var(--text-scale))]" aria-hidden>refresh</span>
           Try again
         </Button>
-        <Link
-          href={copy.exit.href}
-          className="inline-flex min-h-11 items-center gap-xs border border-outline-variant text-on-surface font-label-md text-label-md rounded-full py-sm px-lg hover:bg-surface-container-high transition-colors"
-        >
-          {copy.exit.label}
-        </Link>
       </div>
     </main>
   );

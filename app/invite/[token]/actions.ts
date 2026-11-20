@@ -28,14 +28,14 @@ type InviteFailure = {
 const RPC_FAILURES: Array<[phrase: string, failure: InviteFailure]> = [
   [
     'invalid or expired',
-    { error: "This invite link isn't valid. Check that you copied all of it, or ask your admin for a new one.", final: true },
+    { error: "This invite link isn’t valid. Check that you copied all of it, or ask your admin for a new one.", final: true },
   ],
   [
     'already been used',
     { error: 'This invite link has already been used. Ask your admin for a new one.', final: true, used: true },
   ],
   ['has expired', { error: 'This invite link has expired. Ask your admin for a new one.', final: true }],
-  ['already a member', { error: "You're already a member of this organisation.", final: true, alreadyMember: true }],
+  ['already a member', { error: "You’re already a member of this organisation.", final: true, alreadyMember: true }],
 ];
 
 function inviteRpcFailure(message: string): InviteFailure | null {
@@ -63,7 +63,7 @@ export async function acceptInvite(
         status: userErr.status,
         code: userErr.code,
       });
-      return { error: "We couldn't verify your log-in just now. Try again." };
+      return { error: "We couldn’t verify your log-in just now. Try again." };
     }
     return { error: 'You must be logged in to accept an invite.', needsSignIn: true };
   }
@@ -85,7 +85,7 @@ export async function acceptInvite(
     const failed = reads.find((r) => r.error);
     if (failed?.error) {
       console.error('[acceptInvite] practitioner-data check failed', { code: failed.error.code });
-      return { error: "We couldn't check your account just now. Try again." };
+      return { error: "We couldn’t check your account just now. Try again." };
     }
     if (reads.some((r) => (r.count ?? 0) > 0)) {
       return { needsConfirm: true, email: user.email ?? null };
@@ -99,7 +99,7 @@ export async function acceptInvite(
     // Anything else is database wording the invitee cannot act on (and the
     // message can carry row detail). Say so plainly; keep only the code for us.
     console.error('[acceptInvite] accept_invite_token failed', { code: error.code });
-    return { error: "We couldn't accept this invite. Try again, or ask your admin for a new link." };
+    return { error: "We couldn’t accept this invite. Try again, or ask your admin for a new link." };
   }
 
   return { orgName: data as string };

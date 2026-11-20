@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Sheet } from '@/components/ui/Sheet';
+import { useIsMobile } from '@/lib/useIsMobile';
 
 export type RecordAction = {
   id: string;
@@ -20,23 +22,10 @@ export function RecordActionsMenu({
   onAction: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const mobile = useIsMobile();
 
-  return (
-    <div className="relative">
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="size-11"
-        aria-label="Record actions"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen(!open)}
-      >
-        <span className="material-symbols-outlined" aria-hidden>more_vert</span>
-      </Button>
-      {open && (
-        <div role="menu" className="absolute right-0 z-30 mt-xs w-72 rounded-[12px] border border-outline-variant bg-surface-container-lowest p-xs shadow-lg">
+  const menu = (
+    <div role="menu">
           {actions.map((action) => (
             <button
               // ui-primitive-allow: menu item inside an open RecordActionsMenu
@@ -50,7 +39,7 @@ export function RecordActionsMenu({
                 onAction(action.id);
                 setOpen(false);
               }}
-              className={`flex min-h-14 w-full items-start gap-sm rounded-lg p-sm text-left hover:bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 ${
+              className={`flex min-h-14 w-full items-start gap-sm rounded-md p-sm text-left hover:bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 ${
                 action.destructive ? 'text-error' : 'text-on-surface'
               }`}
             >
@@ -63,7 +52,32 @@ export function RecordActionsMenu({
               </span>
             </button>
           ))}
+    </div>
+  );
+
+  return (
+    <div className="relative">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="size-11"
+        aria-label="Record actions"
+        aria-haspopup={mobile ? 'dialog' : 'menu'}
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+      >
+        <span className="material-symbols-outlined" aria-hidden>more_vert</span>
+      </Button>
+      {open && !mobile && (
+        <div className="absolute right-0 z-30 mt-xs w-72 origin-top-right animate-overlay-in rounded-[12px] border border-outline-variant bg-popover p-xs shadow-lg">
+          {menu}
         </div>
+      )}
+      {mobile && (
+        <Sheet open={open} onOpenChange={setOpen} title="Record actions">
+          {menu}
+        </Sheet>
       )}
     </div>
   );

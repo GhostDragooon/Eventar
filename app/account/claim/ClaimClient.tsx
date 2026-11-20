@@ -70,7 +70,7 @@ export function ClaimClient({
             </h2>
             <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
               Registrations you made as a guest move to this account, so held
-              CME/CPD points can release.
+              <abbr title="Continuing medical education">CME</abbr>/<abbr title="Continuing professional development">CPD</abbr> points can release.
             </p>
           </div>
         </div>

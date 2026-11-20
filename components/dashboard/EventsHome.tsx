@@ -10,6 +10,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { useScrollFade } from '@/lib/useScrollFade';
 import { StatusChip } from './StatusChip';
 import type { ProgrammeEvent } from './programmeEvent';
 import type { TabKey } from './eventTabs';
@@ -77,6 +78,8 @@ export type EventsHomeProps = {
 const UNDO_SECONDS = 7;
 
 export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeProps) {
+  const filterRowRef = useRef<HTMLDivElement>(null);
+  useScrollFade(filterRowRef);
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortKey>('soonest');
   const [chosenTab, setChosenTab] = useState<TabKey>(initialTab);
@@ -266,8 +269,8 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
       setConfirm({
         kind, ids, tone: 'danger', blocked: true,
         confirmLabel: kind === 'archive' ? `Delete ${n} event${n === 1 ? '' : 's'}` : `Cancel ${n} event${n === 1 ? '' : 's'}`,
-        title: kind === 'archive' ? (n === 1 ? `Delete "${titleOf(ids[0])}"?` : `Delete ${n} events?`) : (n === 1 ? `Cancel "${titleOf(ids[0])}"?` : `Cancel ${n} events?`),
-        body: `You can't ${verb} ${notMine.join(', ')}. ${NOT_EVENT_WRITER} Unselect ${notMine.length === 1 ? 'it' : 'them'}, or ask an organiser admin.`,
+        title: kind === 'archive' ? (n === 1 ? `Delete “${titleOf(ids[0])}”?` : `Delete ${n} events?`) : (n === 1 ? `Cancel “${titleOf(ids[0])}”?` : `Cancel ${n} events?`),
+        body: `You can’t ${verb} ${notMine.join(', ')}. ${NOT_EVENT_WRITER} Unselect ${notMine.length === 1 ? 'it' : 'them'}, or ask an organiser admin.`,
       });
       return;
     }
@@ -275,12 +278,12 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
       kind === 'archive'
         ? {
             kind, ids, tone: 'danger', confirmLabel: `Delete ${n} event${n === 1 ? '' : 's'}`,
-            title: n === 1 ? `Delete "${titleOf(ids[0])}"?` : `Delete ${n} events?`,
+            title: n === 1 ? `Delete “${titleOf(ids[0])}”?` : `Delete ${n} events?`,
             body: 'They move to the Deleted bucket and can be restored at any time.',
           }
         : {
             kind, ids, tone: 'danger', confirmLabel: `Cancel ${n} event${n === 1 ? '' : 's'}`,
-            title: n === 1 ? `Cancel "${titleOf(ids[0])}"?` : `Cancel ${n} events?`,
+            title: n === 1 ? `Cancel “${titleOf(ids[0])}”?` : `Cancel ${n} events?`,
             body: 'Registrants keep their records and nobody is emailed. The events move to the Cancelled tab.',
           },
     );
@@ -319,7 +322,7 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
         </Link>
       </header>
 
-      <div role="group" aria-label="Filter events by state" className="-mx-grid-margin mb-md flex items-center gap-lg overflow-x-auto border-b border-outline-variant px-grid-margin">
+      <div ref={filterRowRef} role="group" aria-label="Filter events by state" className="scroll-fade -mx-grid-margin mb-md flex items-center gap-lg overflow-x-auto border-b border-outline-variant px-grid-margin">
         {TABS.map((t) => {
           const on = tab === t.key;
           const n = counts[t.key];
@@ -497,7 +500,7 @@ function EventRow({ e, nowMs, selected, onToggle, onRestore, inBin, pending }: {
         <div className="flex min-w-0 flex-col rounded-[12px] bg-surface-container p-xs">
           <div className="flex min-w-0 flex-wrap items-center gap-x-sm">
             <span className="flex h-11 items-center"><StatusChip lifecycle={e.lifecycle} deleted={e.deleted} /></span>
-            <Link href={`/events/${e.id}/details`} className="font-title-lg text-title-lg font-semibold text-on-surface transition-colors hover:text-[color:var(--on-primary-container)]">{e.title}</Link>
+            <Link href={`/events/${e.id}/details`} className="line-clamp-3 font-title-lg text-title-lg font-semibold text-on-surface transition-colors hover:text-[color:var(--on-primary-container)]">{e.title}</Link>
           </div>
           <div className="-mt-xs pb-xs">
             <div className="mt-xs flex flex-wrap items-center gap-x-md gap-y-xs text-[calc(12.5px*var(--text-scale))] text-on-surface-variant">

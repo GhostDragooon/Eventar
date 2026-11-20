@@ -146,7 +146,7 @@ export function blockZodErrors(issues: z.ZodIssue[], blocks: unknown[]): string 
   return issues
     .map((i) => {
       const at = typeof i.path[0] === 'number' ? (blocks[i.path[0]] as { title?: unknown } | undefined)?.title : undefined;
-      const name = typeof at === 'string' && at.trim() ? `Agenda block "${at.trim()}"` : 'An agenda block';
+      const name = typeof at === 'string' && at.trim() ? `Agenda block “${at.trim()}”` : 'An agenda block';
       const field = i.path.slice(1).join('.');
       return `${name}${field ? ` (${field})` : ''}: ${i.message}`;
     })

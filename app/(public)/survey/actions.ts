@@ -48,7 +48,7 @@ export async function submitSurvey(
     // Log only code + message: PG/PostgREST `details` can echo row data (PII), Rule 10.
     const e = lookupErr as { code?: string; message?: string };
     console.error('[submitSurvey] registration lookup failed', { code: e.code, message: e.message });
-    return { error: "We couldn't save your feedback. Please check your connection and try again." };
+    return { error: "We couldn’t save your feedback. Please check your connection and try again." };
   }
   if (!reg || !reg.events) return { error: 'This code is not recognised.' };
   const event = Array.isArray(reg.events) ? reg.events[0] : reg.events;
@@ -72,7 +72,7 @@ export async function submitSurvey(
       // Log only code + message (Rule 10) — PG error `details` can echo row data.
       const e = blockErr as { code?: string; message?: string };
       console.error('[submitSurvey] block lookup failed', { code: e.code, message: e.message });
-      return { error: "We couldn't save your feedback. Please check your connection and try again." };
+      return { error: "We couldn’t save your feedback. Please check your connection and try again." };
     }
     if (!block || block.event_id !== event.id || !isSessionBlockKind(block.kind)) {
       return { error: 'That session is not part of this event. Please review and resubmit.' };
@@ -94,12 +94,12 @@ export async function submitSurvey(
   if (insertErr) {
     // 23505 = unique_violation on registration_id → already submitted.
     if ((insertErr as { code?: string }).code === '23505') {
-      return { error: "You've already submitted this survey." };
+      return { error: "You’ve already submitted this survey." };
     }
     // Log only code + message (Rule 10) — PG error `details` can echo row data.
     const e = insertErr as { code?: string; message?: string };
     console.error('[submitSurvey] insert failed', { code: e.code, message: e.message });
-    return { error: "We couldn't save your feedback. Please check your connection and try again." };
+    return { error: "We couldn’t save your feedback. Please check your connection and try again." };
   }
 
   revalidatePath('/survey');

@@ -137,7 +137,7 @@ export default async function EventPosterPage({
           className="pointer-events-none absolute inset-0 -z-10 opacity-60 print:opacity-25"
           style={{
             backgroundImage:
-              'radial-gradient(circle at center, var(--po-dot) 1px, transparent 1px)',
+              'radial-gradient(circle at center in oklch, var(--po-dot) 1px, transparent 1px)',
             backgroundSize: '16px 16px',
           }}
         />

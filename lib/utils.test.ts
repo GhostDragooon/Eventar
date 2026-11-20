@@ -16,7 +16,7 @@ describe('cn type-scale tokens', () => {
   });
 
   it('keeps both for every token in the scale', () => {
-    for (const t of ['display', 'headline-lg', 'headline-md', 'headline-sm', 'title-lg', 'body-lg', 'body-md', 'body-sm', 'label-md', 'label-sm']) {
+    for (const t of ['hero', 'display', 'headline-lg', 'headline-md', 'headline-sm', 'title-lg', 'body-lg', 'body-md', 'body-sm', 'label-md', 'label-sm']) {
       expect(cn(`text-${t}`, 'text-primary-ink')).toBe(`text-${t} text-primary-ink`);
     }
   });

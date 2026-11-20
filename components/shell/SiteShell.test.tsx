@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { SiteShell } from './SiteShell';
 
 afterEach(cleanup);
@@ -8,7 +8,7 @@ afterEach(cleanup);
 describe('SiteShell — state-aware right-side CTA', () => {
   it('signed-out renders a "Log in" pill pointing at the attendee door', () => {
     render(
-      <SiteShell active="home">
+      <SiteShell>
         <div>content</div>
       </SiteShell>,
     );
@@ -36,13 +36,13 @@ describe('SiteShell — state-aware right-side CTA', () => {
     // the plain CTA is the attendee door. The organiser door is a separate link that says so. This still guards a
     // "one Log in for everyone" regression that would put a signed-out attendee on the wrong door.
     render(
-      <SiteShell active="home">
+      <SiteShell>
         <div>content</div>
       </SiteShell>,
     );
     expect(screen.getByRole('link', { name: /^log in$/i })).not.toHaveAttribute('href', '/login');
     const toLogin = screen.getAllByRole('link').filter((a) => a.getAttribute('href') === '/login');
-    expect(toLogin.map((a) => a.textContent)).toEqual(['Organiser log in']);
+    expect(toLogin.map((a) => a.textContent)).toEqual(['Organisers log inOrganiser log in']);
   });
 
   it('signed-in Account menu trigger marks itself active via aria-current when active="account"', () => {
@@ -57,7 +57,7 @@ describe('SiteShell — state-aware right-side CTA', () => {
 
   it('defaults to signed-out when `signedIn` prop is omitted (safe default for client-component callers)', () => {
     render(
-      <SiteShell active="home">
+      <SiteShell>
         <div>content</div>
       </SiteShell>,
     );
@@ -99,18 +99,18 @@ describe('SiteShell — state-aware right-side CTA', () => {
 describe('SiteShell: organiser door link', () => {
   it('shows "Organiser log in" to /login for a signed-out visitor', () => {
     render(<SiteShell active="events">content</SiteShell>);
-    expect(screen.getByRole('link', { name: /^organiser log in$/i })).toHaveAttribute('href', '/login');
+    expect(screen.getByRole('link', { name: /organisers? log in/i })).toHaveAttribute('href', '/login');
   });
 
   it('does not show it to a signed-in attendee', () => {
     render(<SiteShell active="events" signedIn accountComplete>content</SiteShell>);
-    expect(screen.queryByRole('link', { name: /^organiser log in$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /organisers? log in/i })).not.toBeInTheDocument();
   });
 
   it('loginHref redirects the Log in pill and drops the separate organiser link (the pill is that door)', () => {
     render(<SiteShell loginHref="/login?next=%2Finvite%2Fabc">content</SiteShell>);
     expect(screen.getByRole('link', { name: /^log in$/i })).toHaveAttribute('href', '/login?next=%2Finvite%2Fabc');
-    expect(screen.queryByRole('link', { name: /^organiser log in$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /organisers? log in/i })).not.toBeInTheDocument();
   });
 });
 
@@ -125,5 +125,28 @@ describe('SiteShell: brand link', () => {
     second.unmount();
     render(<SiteShell signedIn isStaff>content</SiteShell>);
     expect(brand()).toHaveAttribute('href', '/');
+  });
+});
+
+describe('SiteShell: nav items', () => {
+  it('has no "Home" link; the brand mark is home', () => {
+    render(<SiteShell>content</SiteShell>);
+    expect(screen.queryByRole('link', { name: /^home$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Eventar home' })).toHaveAttribute('href', '/');
+  });
+
+  it.each([
+    ['events', 'Upcoming events'],
+    ['organiser', 'Organiser log in'],
+    ['signin', 'Log in'],
+  ] as const)('the %s item that points at this page is a non-link with aria-current', (active, label) => {
+    render(<SiteShell active={active}>content</SiteShell>);
+    const nav = screen.getByRole('navigation', { name: /primary/i });
+    const current = nav.querySelector('[aria-current="page"]');
+    expect(current?.tagName).toBe('SPAN');
+    expect(current?.textContent).toContain(label);
+    // The footer repeats some labels; only the primary nav must not link to its own page.
+    expect(within(nav).queryByRole('link', { name: new RegExp(label === 'Log in' ? '^log in$' : label, 'i') })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Eventar home' })).toBeInTheDocument();
   });
 });

@@ -81,7 +81,7 @@ export default function SurveyInviteEmail({
             {greeting}
           </Text>
           <Text style={{ color: COLOR_MUTED, fontSize: '15px', lineHeight: 1.55, margin: '0 0 24px' }}>
-            We&apos;d love your quick take on how it went — it shapes the next one.
+            We’d love your quick take on how it went — it shapes the next one.
           </Text>
 
           {/* Event card — shared style, brief */}

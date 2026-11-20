@@ -12,6 +12,7 @@ import { Scoreboard } from './Scoreboard';
 import { ScanAndManual } from './ScanAndManual';
 import { SpeakersCard, type SpeakerCheckinRow } from './SpeakersCard';
 import { Button } from '@/components/ui/button';
+import { shake } from '@/lib/motion/shake';
 
 type RosterRow = {
   id: string;
@@ -38,7 +39,7 @@ async function sessionEnded(): Promise<boolean> {
 }
 const doorSignIn = (eventId: string) =>
   `/login?next=${encodeURIComponent(`/events/${eventId}/checkin`)}`;
-const isSignedOutMessage = (m: string) => m.startsWith("You've been signed out");
+const isSignedOutMessage = (m: string) => m.startsWith("You’ve been signed out");
 
 // What each eligibility value means AT THE DOOR. Only the exceptions appear —
 // 'eligible' and 'not_cpd' render nothing, because a marker on every row of a
@@ -110,6 +111,7 @@ export default function RosterClient({
   const [scannerOpen, setScannerOpen] = useState(false);
   const [walkInOpen, setWalkInOpen] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
+  const toastRef = useRef<HTMLDivElement>(null);
   // Server time minus this browser's clock, fixed at mount: nowMs below is the server's clock moving forward.
   const [clockOffsetMs] = useState<number>(() => serverNowMs - Date.now());
   const [nowMs, setNowMs] = useState<number>(serverNowMs);
@@ -164,6 +166,7 @@ export default function RosterClient({
 
   useEffect(() => {
     if (!toast) return;
+    if (toast.kind === 'err') shake(toastRef.current);
     // Errors stay up long enough to read while serving a queue.
     const t = setTimeout(() => setToast(null), toast.kind === 'err' ? 8000 : 3000);
     return () => clearTimeout(t);
@@ -200,8 +203,8 @@ export default function RosterClient({
       // end. A retry is safe: a repeat comes back as "already attended".
       const ended = await sessionEnded();
       const message = ended
-        ? "You've been signed out. This check-in was not saved."
-        : "Could not confirm this check-in. Try the code again; a repeat won't check them in twice.";
+        ? "You’ve been signed out. This check-in was not saved."
+        : "Could not confirm this check-in. Try the code again; a repeat won’t check them in twice.";
       setToast({ kind: 'err', message, signInHref: ended ? doorSignIn(eventId) : undefined });
       return { error: message };
     }
@@ -281,7 +284,7 @@ export default function RosterClient({
 
       {eligibilityUnavailable && canCheckIn && (
         <p className="mb-md rounded-lg bg-warning-container px-md py-sm font-body-md text-body-md text-on-warning-container">
-          CPD eligibility couldn&rsquo;t be checked just now, so this roster isn&rsquo;t showing which attendees will
+          <abbr title="Continuing professional development">CPD</abbr> eligibility couldn’t be checked just now, so this roster isn’t showing which attendees will
           earn a credit. Check-in still works normally and credits post as usual &mdash; only the warnings are missing.
         </p>
       )}
@@ -338,6 +341,7 @@ export default function RosterClient({
 
       {toast && (
         <div
+          ref={toastRef}
           role="status"
           className={
             'fixed bottom-4 left-1/2 -translate-x-1/2 rounded-lg px-md py-sm font-body-md text-body-md shadow-lg z-50 ' +
@@ -446,7 +450,6 @@ function RosterRowItem({
           variant="outline"
           onClick={onMark}
           disabled={isCancelled || checkInClosed != null}
-          title={isCancelled ? ELIGIBILITY_NOTE.cancelled : (checkInClosed ?? undefined)}
           aria-describedby={checkInClosed && !isCancelled ? 'checkin-closed-note' : undefined}
           className="justify-self-start min-h-11 px-md py-sm font-label-md text-label-md text-primary-ink"
         >
@@ -496,7 +499,7 @@ function WalkInDialog({
       // The insert may have landed before the response was lost, so never
       // claim "nothing was saved"; a retry of a saved walk-in says so.
       const ended = await sessionEnded();
-      setError(ended ? "You've been signed out. This walk-in was not saved." : 'Could not confirm this walk-in. Check the roster before trying again.');
+      setError(ended ? "You’ve been signed out. This walk-in was not saved." : 'Could not confirm this walk-in. Check the roster before trying again.');
       setSignInHref(ended ? doorSignIn(eventId) : null);
       return;
     } finally {

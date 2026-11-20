@@ -54,7 +54,7 @@ export default function ConfirmButton({
         // kept, not lost, by moving onto the primitive.
         className="h-12 w-full px-md py-md font-label-md text-body-md font-bold active:scale-[0.99]"
       >
-        {state.kind === 'loading' ? 'Checking in…' : "Confirm I'm here"}
+        {state.kind === 'loading' ? 'Checking in…' : "Confirm I’m here"}
       </Button>
       {state.kind === 'error' && (
         <p

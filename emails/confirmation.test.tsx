@@ -22,14 +22,14 @@ describe('renderConfirmationEmail', () => {
 
   it('greets with "You\'re in, {name}." + venue', async () => {
     const html = await renderConfirmationEmail(sampleProps);
-    expect(html).toMatch(/You(?:&#x27;|&apos;|')re in, (?:<!-- -->)?Alice(?:<!-- -->)?\./);
+    expect(html).toMatch(/You(?:&#x27;|&apos;|'|’)re in, (?:<!-- -->)?Alice(?:<!-- -->)?\./);
     expect(html).toContain('Conference Room A, 12/F HQ');
   });
 
   it('drops the name cleanly when firstName is empty', async () => {
     const html = await renderConfirmationEmail({ ...sampleProps, firstName: '' });
-    expect(html).toMatch(/You(?:&#x27;|&apos;|')re in\./);
-    expect(html).not.toMatch(/You(?:&#x27;|&apos;|')re in,\s*\./);
+    expect(html).toMatch(/You(?:&#x27;|&apos;|'|’)re in\./);
+    expect(html).not.toMatch(/You(?:&#x27;|&apos;|'|’)re in,\s*\./);
   });
 
   it('renders the three add-to-calendar links', async () => {
@@ -46,7 +46,7 @@ describe('renderConfirmationEmail', () => {
     expect(html).not.toMatch(/registration code/i);
     expect(html).not.toContain('cid:');
     // What's-next sets the expectation instead.
-    expect(html).toMatch(/What(?:&#x27;|&apos;|')s next/);
+    expect(html).toMatch(/What(?:&#x27;|&apos;|'|’)s next/);
     expect(html).toContain('60 minutes before');
   });
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { BrandMark } from './BrandMark';
@@ -8,6 +8,7 @@ import { SiteFooter } from './SiteFooter';
 import { firstName } from '@/lib/name';
 import { ROLE_LABELS } from '@/lib/roleLabels';
 import { signOutAndLeave } from '@/lib/signOut';
+import { useScrollFade } from '@/lib/useScrollFade';
 
 // Organiser shell — rebuilt 2026-08-09 to `docs/plans/2026-07-12-organiser-ia-spec.md`.
 //
@@ -96,7 +97,7 @@ export function NavRow({
       </span>
       {/* No `truncate`: at 248px every label fits, and truncating clipped
           "Communications" to "Communicati…" once the Soon chip took its space. */}
-      <span className="flex-1 whitespace-nowrap text-left">{label}</span>
+      <span className="reserve-bold flex-1 whitespace-nowrap text-left" data-text={label}>{label}</span>
       {count !== undefined && (
         <span className="rounded-full bg-surface-container-high px-sm py-[1px] text-[calc(11px*var(--text-scale))] font-semibold text-on-surface-variant">
           {count}
@@ -144,6 +145,8 @@ export function NavRow({
 export function StaffShell(props: StaffShellProps) {
   const { staff, children, backHref, backLabel, navItems = NAV, activeHref } = props;
   const pathname = usePathname() ?? '';
+  const navRef = useRef<HTMLElement>(null);
+  useScrollFade(navRef);
   // The one sign-out (lib/signOut.ts): leaves for /login only after the server revoke worked, else says so.
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
@@ -155,7 +158,7 @@ export function StaffShell(props: StaffShellProps) {
   };
 
   return (
-    <div className="app-atmo flex min-h-screen w-full flex-col text-on-surface">
+    <div className="app-atmo flex min-h-dvh w-full flex-col text-on-surface">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-md focus:top-md focus:z-50 focus:rounded-full focus:bg-primary focus:px-md focus:py-sm focus:text-[calc(13px*var(--text-scale))] focus:font-semibold focus:text-on-primary"
@@ -169,7 +172,7 @@ export function StaffShell(props: StaffShellProps) {
             position; a horizontal strip below md, which is what the pre-2026-08-08
             shell did too (the spec's real mobile answer is a bottom nav with
             Scan as the centre action — that is its own piece of work). */}
-        <aside className="shrink-0 bg-sidebar md:sticky md:top-0 md:h-screen md:w-[248px] md:self-start">
+        <aside className="shrink-0 bg-sidebar md:sticky md:top-0 md:h-dvh md:w-[248px] md:self-start">
           <div className="flex h-full flex-col gap-md p-md">
             {/* Brand mark. Reinstated 2026-08-09 per the mockup. Staff shell
                 points at /dashboard (BrandMark's own docblock already specified
@@ -190,7 +193,8 @@ export function StaffShell(props: StaffShellProps) {
 
             <nav
               aria-label="Primary"
-              className="flex gap-xs overflow-x-auto md:flex-1 md:flex-col md:overflow-x-visible md:overflow-y-auto"
+              ref={navRef}
+              className="scroll-fade md:[mask-image:none] md:[-webkit-mask-image:none] flex gap-xs overflow-x-auto md:flex-1 md:flex-col md:overflow-x-visible md:overflow-y-auto"
             >
               {navItems.map((item) => (
                 <NavRow

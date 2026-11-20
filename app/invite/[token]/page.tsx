@@ -92,7 +92,7 @@ export default function InviteAcceptPage() {
       else setView({ kind: 'success', orgName: res.orgName });
     } catch {
       // A rejected Server Action (network down) must not leave a dead button.
-      setError({ error: "We couldn't reach Eventar just now. Check your connection and try again." });
+      setError({ error: "We couldn’t reach Eventar just now. Check your connection and try again." });
     } finally {
       setPending(false);
     }
@@ -143,7 +143,7 @@ export default function InviteAcceptPage() {
           {error.alreadyMember ? 'group' : 'link_off'}
         </span>
         <h1 ref={headingRef} tabIndex={-1} className="font-headline-md text-headline-md text-on-surface mb-sm text-balance outline-none">
-          {error.alreadyMember ? "You're already on this team" : "This invite can't be used"}
+          {error.alreadyMember ? "You’re already on this team" : "This invite can’t be used"}
         </h1>
         <p className={cn('font-body-lg text-body-lg text-on-surface-variant', (error.alreadyMember || error.used) && 'mb-lg')}>
           {error.error}
@@ -168,9 +168,9 @@ export default function InviteAcceptPage() {
     return (
       <InviteFrame token={token}>
         <span className="material-symbols-outlined text-[48px] text-success mb-md" aria-hidden>check_circle</span>
-        <h1 ref={headingRef} tabIndex={-1} className="font-headline-md text-headline-md text-on-surface mb-sm text-balance outline-none">You&apos;re in!</h1>
+        <h1 ref={headingRef} tabIndex={-1} className="font-headline-md text-headline-md text-on-surface mb-sm text-balance outline-none">You’re in!</h1>
         <p className="font-body-lg text-body-lg text-on-surface-variant mb-lg [overflow-wrap:anywhere]">
-          You&apos;ve joined <strong>{view.orgName}</strong>
+          You’ve joined <strong>{view.orgName}</strong>
           {email ? ` as ${email}` : ''}.
         </p>
         <Button onClick={() => router.push('/dashboard')} className="min-h-11 w-full">
@@ -196,8 +196,8 @@ export default function InviteAcceptPage() {
             has practitioner records on Eventar (profile, licences or event registrations).
           </p>
           <p>
-            If you accept with this email, those records stay saved, but you won&apos;t be able to open them while
-            it&apos;s an organiser account. We recommend signing up for your organiser account with a different email.
+            If you accept with this email, those records stay saved, but you won’t be able to open them while
+            it’s an organiser account. We recommend signing up for your organiser account with a different email.
           </p>
         </div>
         {errorBlock}
@@ -218,10 +218,10 @@ export default function InviteAcceptPage() {
       <span className="material-symbols-outlined text-[48px] text-primary mb-md" aria-hidden>group_add</span>
       <h1 className="font-headline-md text-headline-md text-on-surface mb-sm text-balance">Join your team</h1>
       <p className="font-body-lg text-body-lg text-on-surface-variant mb-lg">
-        You&apos;ve been invited to join an organisation on Eventar. Click below to accept.
+        You’ve been invited to join an organisation on Eventar. Click below to accept.
         {signedIn === true && email && (
           <span className="mt-sm block [overflow-wrap:anywhere]">
-            You&apos;re signed in as <strong>{email}</strong>.
+            You’re signed in as <strong>{email}</strong>.
           </span>
         )}
       </p>

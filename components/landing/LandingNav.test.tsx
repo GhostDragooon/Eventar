@@ -68,19 +68,12 @@ describe('LandingNav — state-aware attendee-first CTA (shell parity)', () => {
     expect(screen.getByRole('link', { name: /^log in$/i })).toHaveAttribute('href', '/account/sign-in');
   });
 
-  it('"Start an Event" pill routes through /login?next=/events/new (never direct-to-/events/new)', () => {
-    // 2026-09-24: retargeted from /events/new to /login?next=/events/new so a
-    // signed-in practitioner clicking the organiser CTA doesn't get their
-    // session silently destroyed by proxy.ts's staff-row check. The signed-out
-    // flow is unchanged (both routes ultimately land on /login).
-    for (const signedIn of [false, true]) {
-      cleanup();
-      render(<LandingNav signedIn={signedIn} />);
-      const start = screen.getByRole('link', { name: /start an event/i });
-      expect(start).toHaveAttribute('href', '/login?next=/events/new');
-      // Regression guard: never direct-to-/events/new — that path silently
-      // destroys a non-staff session before bouncing to /login.
-      expect(start.getAttribute('href')).not.toBe('/events/new');
+  it('renders the shared nav: Upcoming events and Organiser log in, no landing anchors, no Start an Event, no Home', () => {
+    render(<LandingNav signedIn={false} />);
+    expect(screen.getByRole('link', { name: /upcoming events/i })).toHaveAttribute('href', '/events');
+    expect(screen.getByRole('link', { name: /organisers? log in/i })).toHaveAttribute('href', '/login');
+    for (const gone of [/how it works/i, /^platform$/i, /^for organisers$/i, /start an event/i, /^home$/i]) {
+      expect(screen.queryByRole('link', { name: gone })).not.toBeInTheDocument();
     }
   });
 });

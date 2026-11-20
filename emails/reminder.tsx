@@ -184,7 +184,7 @@ export default function ReminderEmail({
               {checkinCode}
             </Text>
             <Text style={{ color: COLOR_MUTED, fontSize: '13px', lineHeight: 1.5, textAlign: 'center', margin: 0 }}>
-              If the QR won&apos;t scan, give reception this code instead.
+              If the QR won’t scan, give reception this code instead.
             </Text>
           </Section>
 
