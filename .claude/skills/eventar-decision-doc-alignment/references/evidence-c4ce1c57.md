@@ -1,0 +1,1 @@
+**Status: DECIDED (Ivan, 2026-11-06), kernel K2 change.** Ivan: "Start Decide 0", on the recommendation in repo `docs/plans/2026-11-05-db-cleanup-dependency-map.md` §0 item 0. Built and applied **locally only** (`20261106100000_pin_chain_hash_session_settings.sql`). **Not applied to Seoul**: that needs Ivan's separate go for a hosted push.

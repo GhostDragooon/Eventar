@@ -1,0 +1,1 @@
+Thinking: "Four files share the same cause, and event_soft_delete_privacy passes only by accident since its caller no longer resolves as staff. I'm adding `sub` to all four so each one tests what it claims." Code comment added: "`sub` is required: app_private.auth_email() only honours a claim that matches a confirmed auth.users row."

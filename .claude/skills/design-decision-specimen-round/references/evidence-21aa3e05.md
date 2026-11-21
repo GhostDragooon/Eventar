@@ -1,0 +1,1 @@
+Ivan: "whats the QR code for, did you check. what that does.  no need, \"Enter your name and email to register\"". Assistant: "Reverted the \"Enter your name and email\" line. `git diff` on `RegisterCard.tsx` is now empty."

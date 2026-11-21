@@ -1,0 +1,1 @@
+Bash: python3 edit to "Frontend Design Standard.md" adding "## Update 2026-11-20 — S2 ink and border retune" with the light and dark hex changes; the same run's contrast check printed "warn 7.68 succ 7.00 err 7.77 primary-on-container 7.81 on-white 8.80".

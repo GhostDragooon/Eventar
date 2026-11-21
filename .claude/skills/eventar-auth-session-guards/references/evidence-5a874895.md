@@ -1,0 +1,1 @@
+eventar-link-key-edit-guard [project]: Use when editing a value a claim or link function matches. | eventar-staff-email-multi-org [project]: Use when staff email matches two orgs or PGRST116 appears. | eventar-auth-session-guards [project]: Use when changing a write gate, sign-out, or rate limit.

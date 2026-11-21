@@ -1,0 +1,1 @@
+"Stopping my :3100 dev server (shares `.next` with `next build`), then running the full chain in the background with local-stack env."

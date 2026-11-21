@@ -1,0 +1,1 @@
+ERROR:  column u.email does not exist. LINE 1: select u.email, (select count(*) from practitioner_licences l where l.user_id=u.id) ... HINT:  Perhaps you meant to reference the column "a.email".

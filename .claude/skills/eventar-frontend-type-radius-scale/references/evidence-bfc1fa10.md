@@ -1,0 +1,1 @@
+The subagent hand-back: "The message is \"text-hero is not registered in lib/utils.ts\", so `app/globals.css` now defines a `--text-hero` token that `lib/utils.ts` does not register." Followed by the main agent's Edit: python replace adding "hero" to TYPE_SCALE and to the test list, then `Test Files  5 passed (5)`.

@@ -1,0 +1,1 @@
+vitest-spy-isolation [global]: Use when a vitest spy leaks, a vi.mock factory fails with "Cannot access ... before initialization", or a mock fakes a vendor error.

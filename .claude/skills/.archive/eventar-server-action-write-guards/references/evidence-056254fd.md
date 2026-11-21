@@ -1,0 +1,1 @@
+eventar-server-action-write-guards [project]: Use when a Server Action write needs a role gate or 500s.

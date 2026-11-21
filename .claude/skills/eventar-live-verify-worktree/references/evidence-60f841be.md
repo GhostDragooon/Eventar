@@ -1,0 +1,1 @@
+The final reply: "The magic link and its token were printed in this chat. It is single-use and the user is gone." Also: "The magic-link scratch file is deleted."

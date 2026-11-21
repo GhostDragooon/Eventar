@@ -1,0 +1,1 @@
+Baselines were wiped from the pane's storage by the review agent, so I'll check the desktop nav against the known earlier measurements

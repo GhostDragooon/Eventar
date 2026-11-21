@@ -1,0 +1,1 @@
+user: "you sure that everything is mapped out and that what you're doing will not be catastrophic to the function or integrity of the platform?" assistant: "**No. The inventory is not complete, and nothing I've done can hurt the platform.**" user: "map first and be thorough please"

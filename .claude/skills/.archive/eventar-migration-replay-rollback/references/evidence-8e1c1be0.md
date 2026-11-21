@@ -1,0 +1,3 @@
+{"name":"Bash","input":{"command":"supabase db push --linked > /private/tmp/claude-501/-Users-ivan-Eventar/52ab18a1-7c2f-4dfb-ae35-796ac119ff15/scratchpad/push.out 2>&1 <<< \"y\"; echo \"exit=$?\"; grep -v -i -E \"password|postgres://|new version|recommend|inbucket\" .../push.out | head -15","description":"Apply the one pending migration to Seoul"}}
+tool_result: "exit=0\nConnecting to remote database...\nDo you want to push these migrations to the remote database?\n • 20261106100000_pin_chain_hash_session_settings.sql\n\n [Y/n] y\nApplying migration 20261106100000_pin_chain_hash_session_settings.sql...\nFinished supabase db push."
+prior dry-run tool_result: "Would push these migrations:\n • 20261106100000_pin_chain_hash_session_settings.sql\n...pending count:\n1"

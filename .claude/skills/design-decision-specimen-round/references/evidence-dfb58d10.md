@@ -1,0 +1,1 @@
+user: "what the diff in 4 cant see it, also render all this in artifact so i can interact, not screenshots. reflect that in your system prompt too."

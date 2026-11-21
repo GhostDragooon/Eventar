@@ -1,0 +1,1 @@
+Attachment "/Users/ivan/Eventar/.playwright-mcp/after-404.png" does not exist. Current working directory: /Users/ivan/Eventar.

@@ -1,0 +1,1 @@
+Bash: git diff HEAD -U0 -- app/globals.css ... "-  --on-primary-container: #1c3c94;\n+  --on-primary-container: #23449d;" ... Update text written to the vault: "Light-theme status-pill ratios recomputed above (warning 7.68, success 7.00, error 7.77); dark pairs not recomputed here."

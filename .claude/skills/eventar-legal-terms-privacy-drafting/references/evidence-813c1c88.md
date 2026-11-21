@@ -1,0 +1,1 @@
+Doc fact corrected: sign-in is an emailed magic link (`signInWithOtp` + `/auth/callback`); there is no password or MFA path, contrary to CLAUDE.md hard rule 1's wording. Not committed.

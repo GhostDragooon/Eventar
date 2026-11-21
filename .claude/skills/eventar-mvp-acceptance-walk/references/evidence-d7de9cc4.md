@@ -1,0 +1,1 @@
+Race (last seat filled by SQL behind an open form, then Register clicked): inline red "This event is at capacity."; 0 rows written, count 1.

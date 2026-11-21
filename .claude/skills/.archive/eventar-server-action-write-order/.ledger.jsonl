@@ -1,0 +1,1 @@
+{"action": "create", "reason": "Server actions that write through an RPC kept failing in the same way: a check after the committed write threw, and the page never revalidated. The class (write, then reply handling in an Eventar Server Action) has no skill yet, so this one is born broad to take the next instance.", "evidence": "references/evidence-6d35436e.md"}

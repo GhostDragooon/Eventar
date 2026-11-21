@@ -1,0 +1,1 @@
+eventar-add-dependency [project]: Use when running pnpm add or adding a package in Eventar.

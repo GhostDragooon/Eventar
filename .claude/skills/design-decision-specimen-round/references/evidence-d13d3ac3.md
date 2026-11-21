@@ -1,0 +1,2 @@
+{"type":"tool_use","name":"Edit","input":{"file_path":"/Users/ivan/Eventar/app/globals.css","old_string":".reserve-bold { display: inline-grid; } /* grid: the bold ghost shares the text's cell, so no extra line shifts the baseline */","new_string":".reserve-bold { display: inline-block; vertical-align: top; } /* top: the 0-height ::after line otherwise lifts the text above sibling labels */"}}
+{"type":"tool_use","name":"SendUserFile","input":{"caption":"Header at 375px after the second fix. Events, Organisers and Log in share one centre line (35.5px).","display":"render"}}

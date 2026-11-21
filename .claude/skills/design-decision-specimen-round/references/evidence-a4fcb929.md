@@ -1,0 +1,1 @@
+Still pending your approval: Batch 3 rows 3–6, Batches 4–5, and the sign-out UX decision. Next I'd show Batch 3 rows 3–6 as an interactive artifact.

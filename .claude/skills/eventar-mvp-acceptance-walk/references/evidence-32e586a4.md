@@ -1,0 +1,1 @@
+First organiser dispatch: "Real magic link: request it at /login, then read it from the mail catcher on http://127.0.0.1:54324 (Inbucket: GET /api/v1/mailbox/ux-admin lists messages...)". Lead's resume: "sign in again as ux-admin (Mailpit on :54324: /api/v1/messages and /api/v1/message/<id>)."

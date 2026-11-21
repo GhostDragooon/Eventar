@@ -1,0 +1,1 @@
+| `ux-member` 4, publish | PASS [X] | confirm dialog names what goes public and the check-in time; after confirm: "Published. Your registration page is live." + "What to do next"; DB `status=published`. The member is the creator, so this does not test Decide 2 (non-creator member) |

@@ -1,0 +1,1 @@
+{"type":"tool_result","content":[{"type":"text","text":"Error: No preview is open. Use `preview_start` or `navigate` with {\"url\": \"https://…\"} to open a browser tab at a URL"}],"is_error":true}

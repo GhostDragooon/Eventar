@@ -1,0 +1,1 @@
+Agents burn calls on tooling. For the window-critical steps 6–8 I'll drive the browser myself with batches. Signing in as `ux-admin`.

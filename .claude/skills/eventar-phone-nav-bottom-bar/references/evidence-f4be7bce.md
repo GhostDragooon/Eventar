@@ -1,0 +1,2 @@
+user: dont waste time on mobile, the logic ought to be opposite logo stay up top but no top nav bar but a bottom one, thats more compact.
+assistant: The phone nav is now a bottom bar, and the logo stays on top with no bar. ... The glass pill is fixed to the bottom, 10px up plus the iPhone safe area, with Events, Organisers and Log in spread evenly. Pages get extra bottom padding so the footer isn't hidden under the bar.

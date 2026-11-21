@@ -1,0 +1,1 @@
+wrap_up recap: "The r4 walk on 1a7d2bf found no BLOCKER and no new MAJOR; every gate is green except 4 old primitives hits." Summary table row: "| `check:ui-primitives` | FAIL, 4 old hits, same lines as r3 and r2".

@@ -1,0 +1,4 @@
+- **Silent CSS bugs:** 21 uses of undefined `text-title-md` / `title-sm` / `label-lg`, 5 `rounded-xxl` cards, `py-2xl` / `gap-2xl`. All output no CSS.
+- **Type:** 4 sizes dominate (14, 12, 20, 39px). About 191 hand-written `calc()` text sizes sit outside the tokens. Page `<h1>` has 5 styles.
+- **Radius:** real card radius is 20px (58 uses) with no token. `ConfirmDialog` uses 16px, `Dialog` 20px.
+- **Authority gap:** Frontend Design Standard sets no type, spacing or radius scale. `Design Language.md` scale disagrees with the `globals.css` tokens. That needs your ruling.

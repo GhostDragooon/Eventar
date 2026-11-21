@@ -1,0 +1,1 @@
+time-dependent-test-fixed-clock [global]: Use when a test breaks after an hour, asserts clock text, or hard-codes a future date a deadline check reads.

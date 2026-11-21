@@ -1,0 +1,5 @@
+assistant: grep -n -E "local only|locally only|Not applied to Seoul|not on Seoul|Seoul awaits|Seoul needs Ivan" docs/architecture/BLOCK-ARCHITECTURE.md docs/plans/2026-11-05-db-cleanup-dependency-map.md "$V/02 — Decisions Log.md" "$V/00 — Index.md"
+tool_result: "/Users/ivan/Desktop/Eventar/02 — Decisions Log.md:1228:**Status: DECIDED (Ivan, 2026-11-06), kernel K2 change.** ...
+docs/plans/2026-11-05-db-cleanup-dependency-map.md:8:0. **DECIDED 2026-11-06 (Q49, Ivan: \"Start Decide 0\"). Built locally as `20261106100000_pin_chain_hash_session_settings.sql`; not on Seoul until Ivan gives a hosted-push go.**
+/Users/ivan/Desktop/Eventar/00 — Index.md:18:> Kernel K2: ... Applied locally only; Seoul needs Ivan's go.
+docs/architecture/BLOCK-ARCHITECTURE.md:35:... `20261106100000`, local only; Seoul awaits Ivan's go.)"

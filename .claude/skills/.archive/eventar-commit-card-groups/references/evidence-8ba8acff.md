@@ -1,0 +1,1 @@
+Bash: `git diff --stat -- . ':(exclude).claude/skills' | tail -n 100` (the stat was then used to plan the card groups). Assistant, final report: "Curator skill ledgers, 62 files (this included archiving two skills I'd missed in the earlier file count)".

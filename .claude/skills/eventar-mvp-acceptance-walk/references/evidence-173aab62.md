@@ -1,0 +1,1 @@
+Wrong turns | PARTIAL [X] | Whitespace-only name: Register greyed with no reason, 0 rows. NOT RUN: invalid email, duplicate registration, empty guest name.

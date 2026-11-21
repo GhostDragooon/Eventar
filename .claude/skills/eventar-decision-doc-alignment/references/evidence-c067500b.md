@@ -1,0 +1,4 @@
+docs/plans/handoff_20261105-mvp-execution-15.md:33:1. **Hosted Supabase Auth dashboard:** confirm "Confirm email" is ON and password signup is closed (security audit Decision 1; decides whether H1 is live on Seoul). Claude cannot see hosted Auth settings and m
+docs/plans/security-audit-20261104.md:130:1. Hosted Auth: is "Confirm email" ON and password signup closed? (Dashboard → Auth.) Decides whether H1 is live.
+Ivan reply: yup
+new: 1. ~~Hosted Auth "Confirm email"~~ **ON on Seoul** (Ivan, dashboard check, 2026-11-05). A signup with a provisioned staff email now needs that mailbox to confirm, so the H1 signup scenario is not live on Seoul. The password-signup half of the question was not answered.

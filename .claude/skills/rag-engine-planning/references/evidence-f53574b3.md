@@ -1,0 +1,1 @@
+"show me what needs to be decided here, also be sure the plan is detail enough the other agent is not require to perform the extra reasoning down the road." Ruling E4: "**Foundation now.** Stages 1 and 2 may start now, in parallel with Stage 8, on public HKCP and MCHK documents. Stage 3 onward waits for Ivan's go."

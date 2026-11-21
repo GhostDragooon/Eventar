@@ -1,0 +1,1 @@
+Inventory back: 14 staff write paths, 7 surprises (worst: hero-image bucket lets any staff overwrite any org's images; `create_event_with_blocks`/`update_event_with_blocks` have no role list at all). 

@@ -1,0 +1,1 @@
+42:- Vercel deployment region (once Phase 8 lands) — Privacy §8 ... These docs are not yet served by the app. When they are published (`/legal/terms`, `/legal/privacy`, `/legal/notice` or similar), update the app footer + the Phase 7 email templates to link to them.

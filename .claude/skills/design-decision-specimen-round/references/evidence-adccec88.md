@@ -1,0 +1,1 @@
+Proof frames: I could only take after frames, since the edits were already in when I rendered. I sent `/events` and the 404 page. The before states are in the artifact.

@@ -1,0 +1,2 @@
+The dev-only "Review mode" banner sits exactly where the new bottom bar is, so I'm hiding it with injected CSS for the frames (pane only, no code change).
+Caption: The dev-only Review-mode banner is hidden in the phone frames with injected CSS because it covers the bar; the round "N" is the Next dev badge.

@@ -1,0 +1,1 @@
+{"type":"user","message":{"role":"user","content":[{"type":"text","text":"[javascript_tool:javascript_exec] {\n  \"caches\": [],\n  \"cookieNames\": [],\n  \"idb\": [],\n  \"ls\": [],\n  \"ss\": [],\n  \"url\": \"/\"\n}"}]}} — preceded by javascript_exec text "({url: location.pathname, cookieNames: document.cookie.split('; ')...})"

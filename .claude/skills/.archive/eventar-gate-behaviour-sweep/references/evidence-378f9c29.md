@@ -1,0 +1,1 @@
+The redirect gate and the account menu both read `isAccountComplete().complete`, and that included "has a licence". So enabling Done alone would have bounced the user straight back into the wizard. I fixed it at the root in `lib/accountCompleteness.ts`.

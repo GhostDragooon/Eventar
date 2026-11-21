@@ -1,0 +1,1 @@
+git-push-approval-pinned-sha [project]: Use when git push is asked after a rebase moved the tip.

@@ -1,0 +1,1 @@
+The phone nav is now a bottom bar, and the logo stays on top with no bar. ... the cut-off "Organisers" link no longer applies, since the bar has room.

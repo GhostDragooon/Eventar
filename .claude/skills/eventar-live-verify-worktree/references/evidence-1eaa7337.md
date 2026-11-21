@@ -1,0 +1,1 @@
+Tool result: "\"{\\\"n\\\":3,\\\"s\\\":[[28,\\\"0px\\\"],[105,\\\"0px\\\"],[913,\\\"0px\\\"]],\\\"vis\\\":\\\"visible\\\"..." (javascript_exec sampler read after the Continue click). The final reply: "my frame sampler only got 3 samples in 900ms because the pane throttles animation frames. The mid-slide screenshot is the only evidence."

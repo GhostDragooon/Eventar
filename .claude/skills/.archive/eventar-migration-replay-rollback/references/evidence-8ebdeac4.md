@@ -1,0 +1,1 @@
+"The new case fails on the current DB, so M1 is confirmed by my own run. The M4 rewrite passes. Now the fix: drop `stable` in the migration, and apply the same function replace to the local DB." and "Now volatile (`s` → `v`), still SECURITY DEFINER with the pinned `search_path`, and `authenticated` still has no EXECUTE."

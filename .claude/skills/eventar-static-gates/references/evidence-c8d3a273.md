@@ -1,0 +1,1 @@
+Tool result: "Background command \"Run full gate chain in background\" completed (exit code 0)" followed by a grep of gate2.out showing only "== tsc\nexit 0\n== eslint". Assistant then noted: "Gate chain is still running (the notification was only the wrapper shell)."

@@ -1,0 +1,1 @@
+the login and sign up page have way too many text/ instruction. also please make sure no site path is circular.

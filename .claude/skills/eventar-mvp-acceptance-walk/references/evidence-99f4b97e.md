@@ -1,0 +1,1 @@
+**No Terms or Privacy pages exist.** The wizard asks users to accept documents they cannot open. Either publish reviewed pages or reword the sentence.

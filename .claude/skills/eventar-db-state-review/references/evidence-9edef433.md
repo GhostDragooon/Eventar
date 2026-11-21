@@ -1,0 +1,1 @@
+P: exact vs est row counts differ in 10 tables. Example: degrees 11 vs 0, invite_tokens 15 vs 1, positions 12 vs 0, professions 13 vs 1, organisers 0 vs 1, additional_appointments 0 vs 2. — subagent hand-back. Deviation: $S/q.sh did not exist. I used a stand-in, dbreview/A-q.sh (127.0.0.1:54322 only, PGOPTIONS default_transaction_read_only=on, checked 'on').

@@ -1,0 +1,14 @@
+{
+  "run_id": "b81f6d23-edf7-41b5-88a3-7d4bcc614cb1-52",
+  "verdicts": [
+    {
+      "action": "patch",
+      "name": "graphify",
+      "ok": false,
+      "findings": [
+        "self_produced"
+      ],
+      "notes": []
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+Permission for this action was denied by the Claude Code auto mode classifier. ... The classifier blocked stopping the :3100 dev server, which I did not start. I'll leave it running, run `test:rls` first (no conflict with the server), and try the build after.

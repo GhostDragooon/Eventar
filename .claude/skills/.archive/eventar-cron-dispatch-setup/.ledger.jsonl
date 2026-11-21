@@ -1,0 +1,1 @@
+{"action": "create", "reason": "The cron-dispatch GitHub workflow failed on every run because CRON_SECRET and SITE_URL were unset in both GitHub and Vercel. Fixing it needs the same secret in three places, a redeploy, and Ivan's explicit go, because the workflow then mass-sends reminder emails. No existing skill covers this.", "evidence": "references/evidence-c30e9510.md"}

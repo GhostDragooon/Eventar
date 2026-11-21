@@ -1,0 +1,1 @@
+react-url-state-initializer-stale [global]: Use when useState copies a URL search param; it goes stale.

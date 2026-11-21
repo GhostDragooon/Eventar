@@ -1,0 +1,1 @@
+"Stopping my :3100 dev server (shares `.next` with `next build`), then running the full chain in the background with local-stack env." ... Bash: "cd /Users/ivan/Eventar && lsof -ti :3100 | xargs kill 2>/dev/null; pkill -f \"dev-local.sh\" 2>/dev/null; sleep 2; lsof -nP -iTCP -sTCP:LISTEN | grep -E ':(3000|3100|3200) ' || echo \"ports free\""

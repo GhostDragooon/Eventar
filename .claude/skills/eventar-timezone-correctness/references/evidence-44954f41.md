@@ -1,0 +1,1 @@
+MINOR: registrants CSV header labels UTC as Asia/Hong_Kong (Start 04:26+00:00 "(Asia/Hong_Kong)", real HKT 12:26).

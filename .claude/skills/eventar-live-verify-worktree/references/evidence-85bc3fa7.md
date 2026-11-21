@@ -1,0 +1,1 @@
+"The pane uses overlay scrollbars, so I could not reproduce the bar itself." Later: `{"cw":250,"ow":262,...}` with the simulated scrollbar, then "The 0 was a hidden-pane artifact. With the pane fronted: width is 250 in both states, so the bar no longer takes 12px."

@@ -1,0 +1,1 @@
+Full Vitest is NOT CLEAN: no full run exited 0, from two load-dependent flakes in files that pass alone. Nothing pushed or on Seoul. — Run 1: 294 files and all 2,833 tests passed, but exit 1. Three unhandled errors (`window is not defined`) came from a `toast.tsx` timer firing after teardown in `EventsHome.test.tsx`.

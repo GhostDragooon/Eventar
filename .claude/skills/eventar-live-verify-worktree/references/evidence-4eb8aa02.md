@@ -1,0 +1,1 @@
+javascript_tool failed: The tab is loading a new page, so nothing was done on the page. Wait for the load to finish, then try again. ... Tab Context: tabId seed: "UX03B create draft admin · Eventar" ... result: {"anims": null}. Assistant: "The register-form shake didn't show in my one-shot check, because the browser's required-field validation blocked the submit."

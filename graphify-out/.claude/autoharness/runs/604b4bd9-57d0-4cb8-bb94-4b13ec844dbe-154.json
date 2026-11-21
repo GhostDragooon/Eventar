@@ -1,0 +1,21 @@
+{
+  "run_id": "604b4bd9-57d0-4cb8-bb94-4b13ec844dbe-154",
+  "verdicts": [
+    {
+      "action": "patch",
+      "name": "graphify",
+      "ok": false,
+      "findings": [
+        "self_produced"
+      ],
+      "notes": []
+    },
+    {
+      "action": "patch",
+      "name": "subagent-dispatch",
+      "ok": true,
+      "findings": [],
+      "notes": []
+    }
+  ]
+}

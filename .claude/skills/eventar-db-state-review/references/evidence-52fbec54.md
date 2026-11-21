@@ -1,0 +1,2 @@
+The first attempt returned: "ERROR:  require_active_staff: caller is not active staff in {organiser_admin,organiser_member,eventar_staff}
+CONTEXT:  PL/pgSQL function app_private.require_active_staff(text[]) line 14 at RAISE". The `\g` attempt returned: "ERROR:  syntax error at or near \"\\\"". The working run returned: "eligibility | count \n-------------+-------\n not_cpd     |     5" after "set local role service_role" and a file-based script with "begin;" and "rollback;".

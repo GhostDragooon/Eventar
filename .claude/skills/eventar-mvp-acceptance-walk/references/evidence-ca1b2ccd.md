@@ -1,0 +1,1 @@
+"That CSV is the funnel summary (`Section,Item,Count,Percent`), not the registrants list. The S7 check on a real export of the `=HYPERLINK(...)` registrant is NOT RUN." — organiser lens hand-back. "**F3 (`walk-window.sh`):** the helper breaks on events with agenda blocks because of my S5 trigger, I'm checking where it lives."

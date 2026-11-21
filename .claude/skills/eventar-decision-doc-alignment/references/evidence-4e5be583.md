@@ -1,0 +1,1 @@
+Grep of the vault Decisions Log: "1065:## Q41: Core-UX design round — direction C for both portals ... (2026-10-01)" and "1278:## Q52: A staff identity needs a confirmed account; MVP-close integrity rules (2026-11-14)". Draft text: "Q-number is best-effort against Q40 ... bump to Q42 if Q41 is already taken."

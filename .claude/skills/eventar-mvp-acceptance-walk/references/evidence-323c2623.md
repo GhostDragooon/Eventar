@@ -1,0 +1,1 @@
+"You've hit your 5-hour limit · resets 6:40am (Asia/Hong_Kong)" appears on two assistant turns while the persona walks ran on tab-2 via browser_batch.

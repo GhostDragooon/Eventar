@@ -1,0 +1,1 @@
+eventar-commit-card-groups [project]: Use when committing MVP card files by pathspec.

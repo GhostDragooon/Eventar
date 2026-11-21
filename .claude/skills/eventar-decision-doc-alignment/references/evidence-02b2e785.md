@@ -1,0 +1,1 @@
+I did not log this pick in `docs/plans/mvp/PICKS.md`. The existing line there still says the sheet was "NOT built" because of focus. Its reason is now "kept popover by your pick, 2026-11-21". I have not changed it.

@@ -1,0 +1,3 @@
+carried (nodes, edges, hyperedges) = (166, 337, 3); merged 875 nodes (expect 875), 1537 edges (old 1505); Decisions Log nodes 171 (expect 171)
+
+**Vault graph** (2026-11-15): 875 nodes, 1,537 edges, 54 communities, health OK. The Decisions Log was not extracted whole: I carried its 166 nodes, 337 edges and 3 hyperedges over verbatim and added the Q52 nodes. The vault note was extracted in-session. `.obsidian/workspace.json` (Obsidian UI state) was marked seen without extraction. The vault is not a git repo, so its report has no Graph Freshness section.

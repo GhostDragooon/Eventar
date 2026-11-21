@@ -1,0 +1,3 @@
+**RLS test flake risk (minor):** `audit_delta` counts the whole `audit_events` table. A peer session writing an audit row mid-probe could break it. Scope the count to the event types. I read the test but did not run it.
+
+Fix applied: sub(p,"(select count(*) from public.audit_events) - audit_before","(select count(*) from public.audit_events where event_type in ('event_cancelled', 'event_soft_deleted', 'event_restored')) - audit_before")

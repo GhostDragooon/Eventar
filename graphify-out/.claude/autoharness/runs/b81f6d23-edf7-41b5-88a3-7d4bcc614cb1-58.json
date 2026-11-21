@@ -1,0 +1,8 @@
+{
+  "run_id": "b81f6d23-edf7-41b5-88a3-7d4bcc614cb1-58",
+  "spawn_error": {
+    "argv0": "claude",
+    "returncode": 1,
+    "stderr_tail": "Permission allow rule (../.claude/settings.local.json): Bash(grep -oEi '#[0-9a-f]{3,8}|rgba?\\\\\\([^\\)]*\\\\\\)' app/globals.css) has a wildcard before the rest of the command, so it also matches any options inserted at that position and approves them without a prompt. Replace that * with the exact value you mean, or only use * after the subcommand."
+  }
+}

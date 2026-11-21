@@ -1,0 +1,1 @@
+| A2 sign-up, wizard, consent | PASS [X] (S1 holds); "land on Registrations" NOT RUN | ... I came via an event page, so "Done" landed on the event page, not Registrations.

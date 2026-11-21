@@ -1,0 +1,1 @@
+Confirmed by execution: one `speaker_checkins` row ("Speaker A") was written 31 days before the event, silently. Tracing the write path.

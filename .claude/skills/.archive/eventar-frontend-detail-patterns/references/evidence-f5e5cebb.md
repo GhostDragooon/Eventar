@@ -1,0 +1,3 @@
+{"tool":"mcp__Claude_Browser__javascript_tool result","output":"{\n  \"cls\": \"scroll-fade relative flex items-center justify-center gap-[40px] overflow-x-auto border-b border-outline-variant mb-lg\",\n  \"cw\": 327,\n  \"scrollLeft\": 0,\n  \"sw\": 362,\n  \"tabs\": [[\"All\", -11, 18], [\"Medicine & dentistry\", 46, 138], [\"Allied health\", 224, 84], [\"Other\", 348, 38]]\n}"}
+{"after_fix":"{\"jc\": \"safe center\", \"fade\": \"0/1\", \"tabs\": [[\"All\", 24], [\"Medicine & dentistry\", 82], [\"Allied health\", 260], [\"Other\", 383]]}"}
+{"edit":"className=\"scroll-fade relative flex items-center justify-center-safe gap-[40px]"}

@@ -1,0 +1,1 @@
+Context: docs/plans/2026-11-19-coherence-and-ui-guides-plan.md "Typography pass" rulings (ruling 1 curly quotes; ruling 2 amended by Ivan 2026-11-20: acronyms get `<abbr>` only, NO small-caps styling)

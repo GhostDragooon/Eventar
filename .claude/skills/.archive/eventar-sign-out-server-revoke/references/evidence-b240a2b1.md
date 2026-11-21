@@ -1,0 +1,1 @@
+eventar-sign-out-server-revoke [project]: Use when changing Eventar sign-out or signOut redirects.

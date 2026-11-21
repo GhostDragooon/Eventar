@@ -1,0 +1,4 @@
+{"type":"last-prompt","lastPrompt":"this spacing, and the top nav bar the text is one up and one down","leafUuid":"be539899-9636-4da7-a372-f46891fc4ed6","sessionId":"d9f41194-60cf-4361-b742-94d73535a12a"}
+Edit app/globals.css: ".reserve-bold { display: inline-block; vertical-align: top; } /* top: the 0-height ::after line otherwise lifts the text above sibling labels */"
+SendUserFile caption: "Header at 375px after the second fix. Events, Organisers and Log in share one centre line (35.5px)."
+- Please reload and check in the browser you took the screenshot from. I can only measure the pane's browser.

@@ -1,0 +1,1 @@
+Finishing the practitioner wizard myself: body chosen (dropdown via a React-safe setter, the one synthetic input), now typing the licence number for real.

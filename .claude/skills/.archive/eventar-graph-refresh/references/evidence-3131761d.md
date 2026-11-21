@@ -1,0 +1,1 @@
+Handoff text written in the episode: "A plain `graphify update .` was tried first and rejected: it dropped INFERRED edges from 873 to 87. Changed docs have no semantic pass and are not in the manifest." And PROJECT_STATE edit: "Do not run bare `graphify update .`: it collapses INFERRED edges."

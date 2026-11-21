@@ -1,0 +1,1 @@
+eventar-gate-behaviour-sweep [project]: Use when changing an Eventar gate's window, status or role, or flipping a dev email stub or RESEND_API_KEY send switch.

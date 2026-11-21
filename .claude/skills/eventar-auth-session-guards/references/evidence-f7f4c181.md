@@ -1,0 +1,1 @@
+**Consequences:** Every test that fakes an authenticated JWT must carry `sub` and a confirmed `auth.users` row (a fixture sweep was part of the card). A user who changes email is treated as signed out until the token refreshes (fails closed). GoTrue already refuses sign-in for an unconfirmed email, so the DB check is a second layer.

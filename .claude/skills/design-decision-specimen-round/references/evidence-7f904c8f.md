@@ -1,0 +1,1 @@
+The "before" frame is a simulation: I injected the old clamp into the page. The first hero fix did not take, because the Tailwind theme copies the token value into the utility. The steps now live in `--text-hero-step` and `--text-headline-lg-step`, and I checked the computed sizes after that change.

@@ -1,0 +1,1 @@
+frontend-consistency-sweep [project]: Use when sweeping UI consistency for dialog, menu or toast. | design-decision-specimen-round [project]: Use when any frontend change, UI option or motion effect needs Ivan to see a render before product code is edited.

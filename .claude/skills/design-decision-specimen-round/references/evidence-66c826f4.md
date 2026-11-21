@@ -1,0 +1,1 @@
+In the old specimen the headline "before" used the live class, which is now fluid, so before and after matched. The new page uses the fixed old sizes (hero 44px, headline-lg 39px) as "before". I loaded the page in the Browser pane but have not clicked through the controls or checked the readouts.

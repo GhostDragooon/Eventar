@@ -1,0 +1,1 @@
+I claimed in the summary that the dev and user reviews ran as separate agents. I'm checking the session transcript for the agent dispatches rather than trusting my compressed notes. — The git status at session start was truncated, so "one more skill folder" claims a count I haven't verified. Softening it.

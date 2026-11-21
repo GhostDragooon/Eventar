@@ -1,0 +1,1 @@
+**m1:** the speaker window isn't enforced in the DB. The `speaker_checkins` policies don't check the clock, so a direct database write bypasses it. Add a trigger, or accept it? The impact is low because a speaker tick mints no credit.

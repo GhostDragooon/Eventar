@@ -1,0 +1,1 @@
+"rep('--text-headline-lg: calc(39px * var(--text-scale));','--text-headline-lg: calc(clamp(28px, 23.6px + 1.17vw, 39px) * var(--text-scale)); /* fluid: 28px at 375, 39px from ~1320 (T2) */',1)" and "--text-hero: calc(clamp(32px, 25.6px + 1.7vw, 48px) * var(--text-scale)); /* landing h1, fluid (T2) */"

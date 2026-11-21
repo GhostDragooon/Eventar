@@ -1,0 +1,1 @@
+git worktree add -q --detach $W 0ed292c && ln -s /Users/ivan/Eventar/node_modules $W/node_modules && (cd $W && pnpm exec tsc --noEmit; echo "tsc at 0ed292c exit $?"; pnpm exec vitest run lib/auth.test.ts proxy.test.ts components/auth app/login 2>&1 | grep -E "Tests |Test Files"); git worktree remove --force $W

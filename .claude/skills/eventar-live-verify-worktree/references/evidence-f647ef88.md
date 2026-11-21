@@ -1,0 +1,1 @@
+Assistant final message: "Not checked: I haven't measured the header at 375px or 640px, because the :3100 server isn't running. The old header clipped at 640px. A wider header could clip again. Measure at both widths before you commit." Preceded by an unlazy-free edit to components/shell/SiteNav.tsx and a 418-test run.

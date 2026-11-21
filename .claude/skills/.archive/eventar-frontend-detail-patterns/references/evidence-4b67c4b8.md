@@ -1,0 +1,1 @@
+"**Cause:** the Events and Organisers group is `overflow-x-auto`, which also makes its y-axis scroll. Your browser draws a classic scrollbar there. **Fix:** that group is now `overflow-y-hidden` with the scrollbar hidden. Horizontal scrolling and the edge fade still work."

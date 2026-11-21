@@ -1,0 +1,1 @@
+mcp__ccd_session_mgmt__list_events transcript of "Event accreditation product review": "The docs still say \"Seoul untouched\", so I'm updating that wording." and "They are the B2 row in `BLOCK-ARCHITECTURE.md`, the 2026-11-05 entry in `PROJECT_STATE.md`, and the strategy doc's §4 table and §7a."

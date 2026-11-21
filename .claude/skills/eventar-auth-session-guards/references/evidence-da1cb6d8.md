@@ -1,0 +1,1 @@
+Sign-out fix: `login` and `invite` call `signOut()` inline rather than `signOutAndLeave`. A swap would change the UX, because login stays on the page and shows a "signed out here" message, and invite carries a `?next=` that the helper's type does not allow. I did not apply it.

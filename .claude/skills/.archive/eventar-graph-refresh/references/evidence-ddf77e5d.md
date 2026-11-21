@@ -1,0 +1,1 @@
+Chunk 3 is complete, valid JSON: 72 nodes across both files and 3 hyperedges, written before the agent's final reply failed. Running the verification script now. — It merges against the pre-update backup (`.graphify_old.json`) rather than the half-merged `graph.json`, so the result doesn't depend on any earlier step.

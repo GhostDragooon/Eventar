@@ -1,0 +1,1 @@
+vm - fullscreen sections (pasted rule: "text - rem / layouts - % / vm - fullscreen sections / px - borders"). Assistant: "vw only on fullscreen sections: not met. `--text-hero` and `--text-headline-lg` in `app/globals.css:164,172` put `vw` inside text (`1.6rem + 1.7vw`). Your rule reserves vw for fullscreen sections, so this is a deviation."

@@ -1,0 +1,1 @@
+"edges crossing the boundary: 33" (tool result, graph boundary count for docs/db/SCHEMA_SUMMARY.md, docs/DEFERRED.md, docs/plans/PROJECT_STATE.md). Agent prompt rule: "1. ID STABILITY: for any entity that already exists there, reuse its exact `id`. Other documents link to these ids; a changed id orphans their edges."

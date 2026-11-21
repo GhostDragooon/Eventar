@@ -1,0 +1,1 @@
+"Both fail first. Now the code: map the window error, and move the `revalidatePath` calls above the shape check, since the RPC has already committed by then."

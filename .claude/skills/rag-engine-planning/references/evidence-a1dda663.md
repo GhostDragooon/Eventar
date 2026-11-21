@@ -1,0 +1,3 @@
+On 2026-11-16 the whole file was applied to the local stack inside a rolled-back transaction and smoke-tested (15 tables, row-level security on all 15, `42501` on direct writes to the seven audited tables, all five functions exercised, database clean afterwards). You copy it. You do not design, add, drop, rename or retype anything.
+
+I applied it to the local database inside a transaction, ran a smoke test, then rolled back.

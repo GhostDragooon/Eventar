@@ -1,0 +1,1 @@
+"FAIL  tests/rls/registrations_link_immutability.rls.test.ts > registrations link-columns immutability > authenticated UPDATE that changes source is blocked by the trigge" / "error: deadlock detected" / "Tests  1 failed | 2832 passed (2833)" / "Tests  57 passed (57)"

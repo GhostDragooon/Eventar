@@ -1,0 +1,1 @@
+regression-test-must-fail-first [global]: Use when adding a regression test for a bug, sort change, or error/failure-path UI (an alert or error message shown after a failed call).

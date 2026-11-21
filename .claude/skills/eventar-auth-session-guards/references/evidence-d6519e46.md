@@ -1,0 +1,1 @@
+Rulings: refuse mixed batches whole; hero images follow the same rule (admin any org event, member own), org/event-scoped now.

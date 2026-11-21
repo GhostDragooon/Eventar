@@ -1,0 +1,1 @@
+Gate note in the summary written this episode: "Gate note: my first `test:rls` run read `.env.local` (Seoul). The URL guard in `tests/helpers/clients.ts` refused all 52 files, so nothing reached Seoul. Two reruns then failed on an empty env export (BSD `sed`). The third run used the local env and passed."

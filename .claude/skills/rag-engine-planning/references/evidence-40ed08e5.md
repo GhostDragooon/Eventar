@@ -1,0 +1,1 @@
+"- D3: REVERSED by R2 ruling E1 (same day). ~~Hosted reranker, public regulator documents only.~~ The recommendation was made without reading ADR-0003 §5, which requires local models. The reranker is local." Ruling E1 in the execution plan: "**Local only.** Embedding and reranker are open-weight models run inside our own worker and API. No vendor entry. D3 reversed."

@@ -1,0 +1,3 @@
+"recap":"The motion specimen is live at :3100/dev-preview-uiport/motion with 9 rows covering all 10 patterns. Animation values read back correctly and tsc and eslint are clean. No product file is edited yet. The skill review (emilkowalski-motion, then review-animations) hasn't run, and the sheet's slow-drag spring-back and reduced-motion are untested.","ask":"Which rows do you approve to build system-wide?"
+
+Final answer: "The motion specimen is up at `http://localhost:3100/dev-preview-uiport/motion` and is open in the Browser pane. It is a specimen, not the live app. No product file is edited.  Each of the 9 rows shows before and after side by side. "REAL" frames use the current product component, "COPY" frames carry the proposed motion."

@@ -1,0 +1,2 @@
+Header, brand and footer links now have a 44px hit area through a new `.tap-44` helper in `app/globals.css`. It is applied in `SiteNav`, `BrandMark` and `SiteFooter`. The look is unchanged because it is an invisible overlay.
+The register inputs and button are 44px (`min-h-11` in `components/RegisterCard.tsx`, matching the staff button).

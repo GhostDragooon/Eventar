@@ -1,0 +1,1 @@
+eventar-commit-card-groups [project]: Use when committing MVP card files by pathspec. | parallel-session-card-claim [project]: Use when starting a card or messaging a linked session. | git-push-approval-pinned-sha [project]: Use when git push is asked after a rebase moved the tip.

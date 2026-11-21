@@ -1,0 +1,1 @@
+Read-scope tests are vacuous for the role guard. Tests: tests/rls/rag_read_scope.rls.test.ts:108-112,149-155 (same shape in services/rag_api/tests/test_two_org_isolation.py:42). The organiser_admin, organiser_member and auditor fixtures all sit in orgZ, which owns no body. Removing `s.role='body_admin'` (migration 160000 line 20) keeps the suite green.

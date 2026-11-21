@@ -1,0 +1,1 @@
+PostgreSQL rejects a data-modifying CTE nested in a subquery. Restructuring the fixture insert.
