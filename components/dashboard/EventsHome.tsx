@@ -73,11 +73,13 @@ export type EventsHomeProps = {
   nowMs: number;
   /** The tab a link asked for (?tab=). Read once on load; clicking a tab then keeps the address in step. */
   initialTab?: TabKey;
+  /** False for the read-only roles (body_admin, auditor): New event is shown disabled with the reason, and bulk refusals name the role. */
+  canCreate?: boolean;
 };
 
 const UNDO_SECONDS = 7;
 
-export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeProps) {
+export function EventsHome({ events, nowMs, initialTab = 'active', canCreate = true }: EventsHomeProps) {
   const filterRowRef = useRef<HTMLDivElement>(null);
   useScrollFade(filterRowRef);
   const [query, setQuery] = useState('');
@@ -270,7 +272,10 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
         kind, ids, tone: 'danger', blocked: true,
         confirmLabel: kind === 'archive' ? `Delete ${n} event${n === 1 ? '' : 's'}` : `Cancel ${n} event${n === 1 ? '' : 's'}`,
         title: kind === 'archive' ? (n === 1 ? `Delete “${titleOf(ids[0])}”?` : `Delete ${n} events?`) : (n === 1 ? `Cancel “${titleOf(ids[0])}”?` : `Cancel ${n} events?`),
-        body: `You can’t ${verb} ${notMine.join(', ')}. ${NOT_EVENT_WRITER} Unselect ${notMine.length === 1 ? 'it' : 'them'}, or ask an organiser admin.`,
+        // A read-only role can change no event, so no selection would ever work: say the role, not the owner.
+        body: canCreate
+          ? `You can’t ${verb} ${notMine.join(', ')}. ${NOT_EVENT_WRITER} Unselect ${notMine.length === 1 ? 'it' : 'them'}, or ask an organiser admin.`
+          : `Your role can’t ${verb} events. Ask an organiser admin.`,
       });
       return;
     }
@@ -317,9 +322,20 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
             {counts.active} active event{counts.active === 1 ? '' : 's'}. Finished events are in <Link href="/analytics" className="underline underline-offset-2 hover:text-on-surface">History</Link>.
           </p>
         </div>
-        <Link href="/events/new" className={cn(buttonVariants(), 'h-11 gap-xs px-lg font-label-md text-label-md')}>
-          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))]" aria-hidden>add</span>New event
-        </Link>
+        {canCreate ? (
+          <Link href="/events/new" className={cn(buttonVariants(), 'h-11 gap-xs px-lg font-label-md text-label-md')}>
+            <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))]" aria-hidden>add</span>New event
+          </Link>
+        ) : (
+          <div className="flex flex-col items-start gap-xs sm:ml-auto sm:items-end">
+            <Button disabled aria-describedby="new-event-why" className="h-11 gap-xs px-lg font-label-md text-label-md">
+              <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))]" aria-hidden>add</span>New event
+            </Button>
+            <p id="new-event-why" className="m-0 max-w-[20rem] text-[calc(0.8125rem*var(--text-scale))] text-on-surface-variant sm:text-right">
+              Your role can’t create events. Ask an organiser admin or member.
+            </p>
+          </div>
+        )}
       </header>
 
       <div ref={filterRowRef} role="group" aria-label="Filter events by state" className="scroll-fade -mx-grid-margin mb-md flex items-center gap-lg overflow-x-auto border-b border-outline-variant px-grid-margin">
@@ -411,7 +427,7 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
                       ? 'No cancelled events.'
                       : 'No active events. Finished events are in History.'}
           </p>
-          {events.length === 0 && (
+          {events.length === 0 && canCreate && (
             <Link href="/events/new" className={cn(buttonVariants(), 'mt-md h-11 gap-sm px-lg font-label-md text-label-md')}>
               <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))]" aria-hidden>add</span>Create your first event
             </Link>

@@ -483,6 +483,7 @@ export default async function EventDetailsPage({
         maxAttendees={event.max_attendees}
         registrationCloseAt={event.registration_close_at}
         closeReadOnly={!writable}
+        canEdit={writable}
         registeredAt={regs.map((r) => r.registered_at)}
         nowMs={nowMs}
         lifecycle={lifecycle}

@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { requireStaff, NotAuthorizedError } from '@/lib/auth';
+import { requireStaff, NotAuthorizedError, canCreateEvents } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { StaffShell } from '@/components/shell/StaffShell';
@@ -120,7 +120,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     <StaffShell staff={{ email: staff.email, role: staff.role, full_name: staff.full_name }}>
       <DevEmailStubBanner />
       {attention.length > 0 && <div className="mb-lg"><NeedsAttention items={attention} limit={3} /></div>}
-      <EventsHome events={decorated} nowMs={nowMs} initialTab={initialTab} />
+      <EventsHome events={decorated} nowMs={nowMs} initialTab={initialTab} canCreate={canCreateEvents(staff.role)} />
     </StaffShell>
   );
 }

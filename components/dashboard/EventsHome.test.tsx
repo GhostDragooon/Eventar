@@ -54,7 +54,7 @@ function event(overrides: Partial<ProgrammeEvent>): ProgrammeEvent {
   };
 }
 
-function renderManage(events: ProgrammeEvent[], extra: { initialTab?: 'active' | 'drafts' | 'cancelled' | 'deleted' } = {}) {
+function renderManage(events: ProgrammeEvent[], extra: { initialTab?: 'active' | 'drafts' | 'cancelled' | 'deleted'; canCreate?: boolean } = {}) {
   return render(
     <ToastProvider>
       <EventsHome events={events} nowMs={NOW} {...extra} />
@@ -554,6 +554,31 @@ describe('EventsHome', () => {
       expect(screen.queryByText('Undone. Nothing was cancelled.')).toBeNull();
       tick(3);
       expect(cancelMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('read-only role (body_admin, auditor)', () => {
+    it('New event is a disabled control with the reason beside it, not a link to a refusal page', () => {
+      renderManage([event({ id: 'e-1' })], { canCreate: false });
+      expect(screen.queryByRole('link', { name: /new event/i })).toBeNull();
+      const btn = screen.getByRole('button', { name: /new event/i });
+      expect(btn).toBeDisabled();
+      expect(screen.getByText('Your role can’t create events. Ask an organiser admin or member.')).toBeInTheDocument();
+    });
+
+    it('a member still gets the New event link', () => {
+      renderManage([event({ id: 'e-1' })]);
+      expect(screen.getByRole('link', { name: /new event/i })).toHaveAttribute('href', '/events/new');
+    });
+
+    it('Delete is refused with the role reason, not the ownership sentence', () => {
+      renderManage([event({ id: 'a1', title: 'Alpha', writable: false })], { canCreate: false });
+      fireEvent.click(screen.getByLabelText('Select Alpha'));
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toHaveTextContent('Your role can’t delete events. Ask an organiser admin.');
+      expect(dialog).not.toHaveTextContent('Only the organiser who created this event');
+      expect(within(dialog).getByRole('button', { name: 'Delete 1 event' })).toBeDisabled();
     });
   });
 });

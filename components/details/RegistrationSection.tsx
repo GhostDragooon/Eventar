@@ -21,6 +21,8 @@ type Props = {
   actionSlot?: React.ReactNode;
   /** Q51: this account may look but not change the close date. */
   closeReadOnly?: boolean;
+  /** Q51: false hides the Edit event link on a draft; the read-only edit page is not somewhere to send them (Ivan 2026-11-21). */
+  canEdit?: boolean;
 };
 
 // Section 01 — Registration. Full card while the window is open (draft /
@@ -32,6 +34,7 @@ export function RegistrationSection({
   maxAttendees,
   registrationCloseAt,
   closeReadOnly = false,
+  canEdit = true,
   registeredAt,
   nowMs,
   lifecycle,
@@ -53,9 +56,11 @@ export function RegistrationSection({
     return (
       <SectionShell index="01" title="Registration" meta="not open yet">
         <p className="font-body-md text-body-md text-on-surface-variant">Publish this event to open registration.</p>
-        <Link href={`/events/${eventId}/edit`} className={cn(buttonVariants({ variant: 'outline' }), 'mt-sm min-h-11 px-md')}>
-          Edit event
-        </Link>
+        {canEdit && (
+          <Link href={`/events/${eventId}/edit`} className={cn(buttonVariants({ variant: 'outline' }), 'mt-sm min-h-11 px-md')}>
+            Edit event
+          </Link>
+        )}
       </SectionShell>
     );
   }

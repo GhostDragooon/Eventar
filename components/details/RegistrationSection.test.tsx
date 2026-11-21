@@ -9,7 +9,7 @@ vi.mock('./RegistrationCloseEditor', () => ({
 }));
 
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, render } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import { RegistrationSection } from './RegistrationSection';
 
 // Vitest doesn't auto-import RTL's cleanup (project config has `globals` off);
@@ -101,5 +101,12 @@ describe('RegistrationSection — one-line stub after the door opens', () => {
     expect(getByText('01')).toBeInTheDocument();
     expect(getByText(/open/)).toBeInTheDocument();
     expect(getByText('Last sign-up')).toBeInTheDocument();
+  });
+
+  it('hides the Edit event link on a draft when this account may not change the event', () => {
+    const { rerender } = render(<RegistrationSection {...baseProps} lifecycle="drafted" />);
+    expect(screen.getByRole('link', { name: 'Edit event' })).toBeInTheDocument();
+    rerender(<RegistrationSection {...baseProps} lifecycle="drafted" canEdit={false} />);
+    expect(screen.queryByRole('link', { name: 'Edit event' })).toBeNull();
   });
 });
