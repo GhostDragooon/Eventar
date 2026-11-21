@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Sheet } from '@/components/ui/Sheet';
 import { useIsMobile } from '@/lib/useIsMobile';
+import { Tip } from '@/components/ui/tooltip';
 
 /**
  * DISPUTED SHAPE — flagged for Ivan, not silently resolved.
@@ -63,16 +64,18 @@ export function SplitActionButton({
         {primaryLabel}
       </button>
       {/* ui-primitive-allow: joined split-button shape, see file header */}
-      <button
-        type="button"
-        aria-label="More actions"
-        aria-haspopup={mobile ? 'dialog' : 'menu'}
-        aria-expanded={open}
-        onClick={() => setOpen(!open)}
-        className="grid min-h-11 min-w-11 place-items-center rounded-r-lg border-l border-on-primary bg-primary text-on-primary focus:z-10 focus:outline-none focus:ring-2 focus:ring-primary"
-      >
-        <span className="material-symbols-outlined" aria-hidden>expand_more</span>
-      </button>
+      <Tip label="More actions">
+        <button
+          type="button"
+          aria-label="More actions"
+          aria-haspopup={mobile ? 'dialog' : 'menu'}
+          aria-expanded={open}
+          onClick={() => setOpen(!open)}
+          className="grid min-h-11 min-w-11 place-items-center rounded-r-lg border-l border-on-primary bg-primary text-on-primary focus:z-10 focus:outline-none focus:ring-2 focus:ring-primary"
+        >
+          <span className="material-symbols-outlined" aria-hidden>expand_more</span>
+        </button>
+      </Tip>
       {open && !mobile && (
         <div className="absolute right-0 top-full z-30 mt-xs min-w-52 origin-top-right animate-overlay-in rounded-control border border-outline-variant bg-popover p-xs shadow-lg">
           {menu}

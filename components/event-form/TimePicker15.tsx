@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { Sheet } from '@/components/ui/Sheet';
+import { useIsMobile } from '@/lib/useIsMobile';
 
 /**
  * 15-minute increment time picker.
@@ -40,10 +42,11 @@ export function TimePicker15({
   const [highlight, setHighlight] = useState<number>(value ?? 9 * 60);
   const rootRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const mobile = useIsMobile();
 
-  // Close on outside click + Escape.
+  // Close on outside click + Escape. Below the md breakpoint the list is a Sheet in a portal and Drawer owns dismissal.
   useEffect(() => {
-    if (!open) return;
+    if (!open || mobile) return;
     function onDocClick(e: MouseEvent) {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     }
@@ -56,7 +59,7 @@ export function TimePicker15({
       document.removeEventListener('mousedown', onDocClick);
       document.removeEventListener('keydown', onKey);
     };
-  }, [open]);
+  }, [open, mobile]);
 
   // On open, center the current slot WITHIN the list only — scrolling the
   // inner <ul>'s scrollTop directly (not scrollIntoView, which would also
@@ -103,12 +106,47 @@ export function TimePicker15({
     }
   }
 
+  const list = (
+    <ul
+          ref={listRef}
+          role="listbox"
+          tabIndex={0}
+          onKeyDown={onListKey}
+          className={`relative overflow-y-auto py-sm focus:outline-none ${mobile ? 'max-h-[60dvh]' : 'max-h-[15rem]'}`}
+        >
+          {Array.from({ length: 96 }, (_, i) => i * 15).map(min => {
+            const isSelected = value === min;
+            const isHighlight = highlight === min;
+            return (
+              <li
+                key={min}
+                data-idx={min / 15}
+                role="option"
+                aria-selected={isSelected}
+                onClick={() => commit(min)}
+                onMouseEnter={() => setHighlight(min)}
+                className={
+                  'mx-sm my-[0.125rem] rounded-full px-md py-sm cursor-pointer transition-colors text-center font-body-lg text-body-lg ' +
+                  (isSelected
+                    ? 'bg-primary text-on-primary font-bold'
+                    : isHighlight
+                    ? 'bg-surface-container-high text-on-surface'
+                    : 'text-on-surface')
+                }
+              >
+                {formatMinutes12h(min)}
+              </li>
+            );
+          })}
+        </ul>
+  );
+
   return (
     <div ref={rootRef} className="relative">
       <button
         type="button"
         disabled={disabled}
-        aria-haspopup="listbox"
+        aria-haspopup={mobile ? 'dialog' : 'listbox'}
         aria-expanded={open}
         aria-label={ariaLabel}
         data-invalid={invalid || undefined}
@@ -131,43 +169,15 @@ export function TimePicker15({
         </span>
       </button>
 
-      {open && (
-        <div
-          className="mt-xs bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden"
-        >
-          <ul
-            ref={listRef}
-            role="listbox"
-            tabIndex={0}
-            onKeyDown={onListKey}
-            className="relative max-h-[15rem] overflow-y-auto py-sm focus:outline-none"
-          >
-            {Array.from({ length: 96 }, (_, i) => i * 15).map(min => {
-              const isSelected = value === min;
-              const isHighlight = highlight === min;
-              return (
-                <li
-                  key={min}
-                  data-idx={min / 15}
-                  role="option"
-                  aria-selected={isSelected}
-                  onClick={() => commit(min)}
-                  onMouseEnter={() => setHighlight(min)}
-                  className={
-                    'mx-sm my-[0.125rem] rounded-full px-md py-sm cursor-pointer transition-colors text-center font-body-lg text-body-lg ' +
-                    (isSelected
-                      ? 'bg-primary text-on-primary font-bold'
-                      : isHighlight
-                      ? 'bg-surface-container-high text-on-surface'
-                      : 'text-on-surface')
-                  }
-                >
-                  {formatMinutes12h(min)}
-                </li>
-              );
-            })}
-          </ul>
+      {open && !mobile && (
+        <div className="mt-xs bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden">
+          {list}
         </div>
+      )}
+      {mobile && (
+        <Sheet open={open} onOpenChange={setOpen} title={ariaLabel ?? 'Select time'}>
+          {list}
+        </Sheet>
       )}
     </div>
   );

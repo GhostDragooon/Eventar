@@ -1,5 +1,6 @@
 import type { Distribution } from '@/lib/analytics/countBySlug';
 import { Slice } from './Slice';
+import { Tip } from '@/components/ui/tooltip';
 
 /**
  * E.5 Q2 "Most valuable session" distribution. Labels are long
@@ -41,7 +42,7 @@ export function SessionDistributionSlice({
                     isWinner ? 'text-[color:var(--on-primary-container)]' : 'text-on-surface-variant'
                   }`}
                 >
-                  <span className="truncate" title={d.label}>{d.label}</span>
+                  <Tip label={d.label}><span className="truncate">{d.label}</span></Tip>
                   <span className="flex-shrink-0">{d.pct}%</span>
                 </div>
                 <div

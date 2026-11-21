@@ -1,5 +1,6 @@
 import type { Distribution } from '@/lib/analytics/countBySlug';
 import { Slice } from './Slice';
+import { Tip } from '@/components/ui/tooltip';
 
 type Q4Slug = 'exceeded' | 'met' | 'partially' | 'not_met';
 
@@ -78,12 +79,12 @@ export function SentimentSlice({
               const pct = findPct(slug);
               if (pct === 0) return null;
               return (
-                <div
-                  key={slug}
-                  className="h-full bg-[color:var(--success)]"
-                  style={{ width: `${pct}%`, opacity: SLUG_OPACITY[slug] }}
-                  title={`${SLUG_LABEL[slug]} ${pct}%`}
-                />
+                <Tip key={slug} label={`${SLUG_LABEL[slug]} ${pct}%`}>
+                  <div
+                    className="h-full bg-[color:var(--success)]"
+                    style={{ width: `${pct}%`, opacity: SLUG_OPACITY[slug] }}
+                  />
+                </Tip>
               );
             })}
           </div>

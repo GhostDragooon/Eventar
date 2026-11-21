@@ -9,6 +9,7 @@ import { firstName } from '@/lib/name';
 import { ROLE_LABELS } from '@/lib/roleLabels';
 import { signOutAndLeave } from '@/lib/signOut';
 import { useScrollFade } from '@/lib/useScrollFade';
+import { Tip } from '@/components/ui/tooltip';
 
 // Organiser shell — rebuilt 2026-08-09 to `docs/plans/2026-07-12-organiser-ia-spec.md`.
 //
@@ -111,12 +112,12 @@ export function NavRow({
 
   if (!href) {
     return (
+      <Tip label={`${label} — surface not built yet`}>
       <span
         // Not a <button>: it is not actionable, and a disabled button is still
         // a tab stop in some AT. `aria-disabled` + the visible "Soon" chip say
         // the same thing to sighted and non-sighted users.
         aria-disabled="true"
-        title={`${label} — surface not built yet`}
         className={`${base} cursor-default text-on-surface-variant/45`}
       >
         {inner}
@@ -124,6 +125,7 @@ export function NavRow({
           Soon
         </span>
       </span>
+      </Tip>
     );
   }
 
@@ -250,12 +252,11 @@ export function StaffShell(props: StaffShellProps) {
                 <div className="truncate text-[calc(0.8125rem*var(--text-scale))] font-semibold leading-tight text-on-surface">
                   {firstName(staff.full_name) || staff.email.split('@')[0]}
                 </div>
-                <div
-                  className="max-w-[10rem] truncate text-[calc(0.71875rem*var(--text-scale))] text-on-surface-variant"
-                  title={staff.email}
-                >
-                  {staff.email}
-                </div>
+                <Tip label={staff.email}>
+                  <div className="max-w-[10rem] truncate text-[calc(0.71875rem*var(--text-scale))] text-on-surface-variant">
+                    {staff.email}
+                  </div>
+                </Tip>
                 <div className="text-[calc(0.71875rem*var(--text-scale))] text-on-surface-variant">{ROLE_LABELS[staff.role]}</div>
               </div>
             </div>

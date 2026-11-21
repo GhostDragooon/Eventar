@@ -7,6 +7,7 @@ import { THEME_STORAGE_KEY } from "@/lib/theme";
 import { TEXT_SIZE_STORAGE_KEY } from "@/lib/textSize";
 import { ToastProvider } from "@/components/ui/toast";
 import { ReviewBanner } from "@/components/dev/ReviewBanner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 // FOUC prevention: runs synchronously before paint, applies the user's saved
 // theme + text-size classes on <html>. Without this, the page would render
@@ -133,7 +134,9 @@ export default function RootLayout({
         </Script>
       </head>
       <body className="min-h-full flex flex-col font-body-md" suppressHydrationWarning>
-        <ToastProvider>{children}</ToastProvider>
+        <TooltipProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </TooltipProvider>
         {/* Renders nothing unless the local review bypass is engaged. */}
         <ReviewBanner />
       </body>

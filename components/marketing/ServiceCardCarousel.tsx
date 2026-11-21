@@ -9,6 +9,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Tip } from '@/components/ui/tooltip';
 
 export type ServiceCard = { id: string; icon: string; title: string; description: string; action: { label: string; href: string } };
 
@@ -26,9 +27,9 @@ export function ServiceCardCarousel({ cards }: { cards: readonly ServiceCard[] }
         <Link href={card.action.href} className={cn(buttonVariants({ variant: 'default' }), 'mt-lg px-lg')}>{card.action.label}</Link>
       </article>
       <div className="flex items-center justify-center gap-md">
-        <Button type="button" variant="outline" size="icon" className="size-11" disabled={index === 0} onClick={() => setIndex(index - 1)} aria-label="Previous service">←</Button>
+        <Tip label="Previous service"><Button type="button" variant="outline" size="icon" className="size-11" disabled={index === 0} onClick={() => setIndex(index - 1)} aria-label="Previous service">←</Button></Tip>
         <span aria-live="polite" className="text-on-surface-variant">{index + 1} of {cards.length}</span>
-        <Button type="button" variant="outline" size="icon" className="size-11" disabled={index === cards.length - 1} onClick={() => setIndex(index + 1)} aria-label="Next service">→</Button>
+        <Tip label="Next service"><Button type="button" variant="outline" size="icon" className="size-11" disabled={index === cards.length - 1} onClick={() => setIndex(index + 1)} aria-label="Next service">→</Button></Tip>
       </div>
     </section>
   );

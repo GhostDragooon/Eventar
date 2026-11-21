@@ -13,6 +13,7 @@
 
 import { useId, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Tip } from '@/components/ui/tooltip';
 
 export type SelectedFile = { id: string; file: File };
 
@@ -77,12 +78,14 @@ export function MultiFileUpload({
             <li key={item.id} className="flex items-center gap-sm py-sm">
               <span className="material-symbols-outlined text-on-surface-variant" aria-hidden>description</span>
               <span className="min-w-0 flex-1">
-                <strong className="flex min-w-0 text-on-surface" title={item.file.name}><NameMiddle name={item.file.name} /></strong>
+                <Tip label={item.file.name}><strong className="flex min-w-0 text-on-surface"><NameMiddle name={item.file.name} /></strong></Tip>
                 <small className="text-on-surface-variant">{formatBytes(item.file.size)}</small>
               </span>
-              <Button type="button" variant="ghost" size="icon" className="size-11 text-error" aria-label={`Remove ${item.file.name}`} onClick={() => remove(item.id)}>
-                <span className="material-symbols-outlined" aria-hidden>close</span>
-              </Button>
+              <Tip label="Remove file">
+                <Button type="button" variant="ghost" size="icon" className="size-11 text-error" aria-label={`Remove ${item.file.name}`} onClick={() => remove(item.id)}>
+                  <span className="material-symbols-outlined" aria-hidden>close</span>
+                </Button>
+              </Tip>
             </li>
           ))}
         </ul>

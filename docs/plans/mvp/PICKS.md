@@ -28,3 +28,5 @@ Door copy (words): a (Log in + Sign up, sentence case; hero "Get started" become
 Door copy (button): a (Next on both doors and the sign-up door, with a line saying a link is emailed), 2026-11-01
 Door copy follow-up (invite header pill): a (the pill on /invite/* goes to /login?next=/invite/<token>, same door as "Log in to accept"; the separate Organiser link is hidden there), 2026-11-01 (Ivan: "Apply both")
 Door copy follow-up (organiser door visible): a ("Organiser log in" link in the public header for signed-out visitors from sm up, and under "Already have an account? Log in" on the sign-up door). Amends the Q32 "staff door unlinked from public chrome" tests per Doctrine 2026-10-30 section 1; the plain Log in CTA still points only at the attendee door, 2026-11-01 (Ivan: "Apply both")
+Motion M2 tooltips: icon-only buttons, avatars, truncated text and chart segments, inert Soon rows (all four sets), 2026-11-21 (Ivan)
+Motion M2 sheets: TimePicker15 built; VenueSearchBox NOT built (a modal Drawer would take focus from the search input and stop typing), 2026-11-21 (Ivan picked both; flagged)

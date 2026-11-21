@@ -9,6 +9,7 @@
 
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Tip } from '@/components/ui/tooltip';
 
 export type EvidenceFile = {
   id: string;
@@ -31,10 +32,12 @@ export function EvidenceFileList({
         <li key={file.id} className="flex flex-wrap items-center gap-sm p-md">
           <span className="material-symbols-outlined text-on-surface-variant" aria-hidden>folder_open</span>
           <span className="min-w-0 flex-1">
-            <strong className="flex min-w-0 text-on-surface" title={file.name}>
-              <span className="min-w-0 truncate">{base(file.name)}</span>
-              <span className="shrink-0">{ext(file.name)}</span>
-            </strong>
+            <Tip label={file.name}>
+              <strong className="flex min-w-0 text-on-surface">
+                <span className="min-w-0 truncate">{base(file.name)}</span>
+                <span className="shrink-0">{ext(file.name)}</span>
+              </strong>
+            </Tip>
             <small className="text-on-surface-variant">{file.sizeLabel} · {file.status}</small>
           </span>
           {file.downloadHref && file.status === 'available' && (

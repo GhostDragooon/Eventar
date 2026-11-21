@@ -12,6 +12,7 @@
 import { useId, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Tip } from '@/components/ui/tooltip';
 
 export type SignupResult = { ok: true } | { error: string };
 
@@ -48,9 +49,11 @@ export function NotificationSignupButton({ onSubscribe }: { onSubscribe: (email:
       <label htmlFor={emailId} className="sr-only">Email address</label>
       <Input id={emailId} type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email address" className="min-h-11 min-w-52 flex-1" />
       <Button type="button" disabled={pending} onClick={submit}>{pending ? 'Submitting…' : 'Subscribe'}</Button>
-      <Button type="button" variant="ghost" size="icon" className="size-11" aria-label="Close signup" onClick={() => setExpanded(false)}>
-        <span className="material-symbols-outlined" aria-hidden>close</span>
-      </Button>
+      <Tip label="Close signup">
+        <Button type="button" variant="ghost" size="icon" className="size-11" aria-label="Close signup" onClick={() => setExpanded(false)}>
+          <span className="material-symbols-outlined" aria-hidden>close</span>
+        </Button>
+      </Tip>
       {status && <p role={status === 'Subscribed.' ? 'status' : 'alert'} className={status === 'Subscribed.' ? 'w-full text-success' : 'w-full text-error'}>{status}</p>}
     </div>
   );
