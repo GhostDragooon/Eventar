@@ -34,13 +34,13 @@ type Props = {
 export function EventCard({ event, saved = false, onSaveChange, href, onOpen }: Props) {
   const media = event.dateBlock ? (
     <div
-      className="flex w-[64px] shrink-0 flex-col items-center justify-center rounded-[12px] border border-outline-variant bg-surface-container-low py-sm"
+      className="flex w-[4rem] shrink-0 flex-col items-center justify-center rounded-control border border-outline-variant bg-surface-container-low py-sm"
       aria-hidden
     >
       <span className="text-[calc(1.375rem*var(--text-scale))] font-extrabold leading-none tabular-nums text-on-surface">
         {event.dateBlock.day}
       </span>
-      <span className="mt-[2px] text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-wider text-on-surface-variant">
+      <span className="mt-[0.125rem] text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-wider text-on-surface-variant">
         {event.dateBlock.month}
       </span>
     </div>
@@ -50,8 +50,8 @@ export function EventCard({ event, saved = false, onSaveChange, href, onOpen }: 
     <article
       className={
         event.dateBlock
-          ? 'flex items-stretch gap-md rounded-[16px] border border-outline-variant bg-surface-container-lowest p-md'
-          : 'flex flex-col overflow-hidden rounded-[20px] border border-outline-variant bg-surface-container-lowest'
+          ? 'flex items-stretch gap-md rounded-[1rem] border border-outline-variant bg-surface-container-lowest p-md'
+          : 'flex flex-col overflow-hidden rounded-card border border-outline-variant bg-surface-container-lowest'
       }
     >
       {media}
@@ -129,14 +129,14 @@ export function EventCard({ event, saved = false, onSaveChange, href, onOpen }: 
             )}
             {event.status && (
               <span
-                className={`inline-flex items-center gap-xs rounded-full px-sm py-[3px] text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-wide ${
+                className={`inline-flex items-center gap-xs rounded-full px-sm py-[0.1875rem] text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-wide ${
                   event.status.tone === 'success'
                     ? 'bg-success-container text-on-success-container'
                     : 'bg-surface-container-high text-on-surface-variant'
                 }`}
               >
                 {event.status.tone === 'success' && (
-                  <span className="h-[6px] w-[6px] rounded-full bg-[color:var(--success)]" aria-hidden />
+                  <span className="h-[0.375rem] w-[0.375rem] rounded-full bg-[color:var(--success)]" aria-hidden />
                 )}
                 {event.status.label}
               </span>

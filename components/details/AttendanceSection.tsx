@@ -78,7 +78,7 @@ export function AttendanceSection({
         </div>
 
         {/* Arrivals histogram */}
-        <div className="bg-surface-container-low border border-outline-variant rounded-[14px] p-md">
+        <div className="bg-surface-container-low border border-outline-variant rounded-xl p-md">
           <div className="flex items-baseline justify-between mb-sm">
             <p className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
               Arrivals per {hist.bucketMinutes} min
@@ -91,11 +91,11 @@ export function AttendanceSection({
             <p className="font-body-md text-body-md text-on-surface-variant py-lg text-center">No arrivals yet.</p>
           ) : (
             <>
-              <div className="flex items-end gap-[2px] h-[88px]" aria-hidden>
+              <div className="flex items-end gap-[0.125rem] h-[5.5rem]" aria-hidden>
                 {hist.buckets.map((n, i) => (
                   <span
                     key={i}
-                    className="flex-1 rounded-t-[2px] bg-[color:var(--success)] min-w-[2px]"
+                    className="flex-1 rounded-t-[0.125rem] bg-[color:var(--success)] min-w-[0.125rem]"
                     style={{ height: n === 0 ? '2px' : `${Math.max(8, Math.round((n / hist.peakCount) * 100))}%`, opacity: n === 0 ? 0.25 : 1 }}
                   />
                 ))}
@@ -131,7 +131,7 @@ export function AttendanceSection({
 
 function SplitRow({ n, of, unit, label, strong }: { n: number; of?: number; unit: string; label: string; strong?: boolean }) {
   return (
-    <div className="flex items-baseline gap-sm border border-outline-variant rounded-[12px] px-md py-sm">
+    <div className="flex items-baseline gap-sm border border-outline-variant rounded-control px-md py-sm">
       <span className={`font-extrabold tabular-nums tracking-[-0.02em] ${strong ? 'text-[calc(1.625rem*var(--text-scale))] text-[color:var(--success)]' : 'text-[calc(1.25rem*var(--text-scale))] text-on-surface'}`} style={{ lineHeight: 1 }}>
         {n}
       </span>

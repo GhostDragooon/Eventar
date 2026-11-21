@@ -227,7 +227,7 @@ function SettingsSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm">
+    <section className="bg-surface-container-lowest border border-outline-variant rounded-card p-lg shadow-sm">
       <div className="flex items-center gap-md mb-md">
         <div
           aria-hidden
@@ -279,7 +279,7 @@ function RadioCardGroup<V extends string>({
               className="sr-only"
             />
             <span
-              className={`material-symbols-outlined text-[calc(1.5rem*var(--text-scale))] mt-[2px] shrink-0 ${
+              className={`material-symbols-outlined text-[calc(1.5rem*var(--text-scale))] mt-[0.125rem] shrink-0 ${
                 isSelected ? 'text-primary-ink' : 'text-on-surface-variant'
               }`}
               aria-hidden
@@ -296,7 +296,7 @@ function RadioCardGroup<V extends string>({
               </p>
             </div>
             <span
-              className={`material-symbols-outlined text-[calc(1.25rem*var(--text-scale))] mt-[2px] shrink-0 ${
+              className={`material-symbols-outlined text-[calc(1.25rem*var(--text-scale))] mt-[0.125rem] shrink-0 ${
                 isSelected ? 'text-primary-ink' : 'text-outline'
               }`}
               aria-hidden

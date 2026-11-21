@@ -24,7 +24,7 @@ export function UserManagementTable({
   );
 
   return (
-    <section className="overflow-hidden rounded-[20px] border border-outline-variant bg-surface-container-lowest">
+    <section className="overflow-hidden rounded-card border border-outline-variant bg-surface-container-lowest">
       <header className="flex flex-col gap-md border-b border-outline-variant p-md sm:flex-row sm:items-center sm:justify-between">
         <label className="relative">
           <span className="sr-only">Search users</span>

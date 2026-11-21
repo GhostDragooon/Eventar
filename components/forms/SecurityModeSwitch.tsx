@@ -22,8 +22,8 @@ export function SecurityModeSwitch({
             key={mode}
             className={
               value === mode
-                ? 'flex cursor-pointer gap-sm rounded-[12px] border border-primary bg-primary-container p-md text-on-primary-container'
-                : 'flex cursor-pointer gap-sm rounded-[12px] border border-outline-variant bg-surface-container-lowest p-md text-on-surface'
+                ? 'flex cursor-pointer gap-sm rounded-control border border-primary bg-primary-container p-md text-on-primary-container'
+                : 'flex cursor-pointer gap-sm rounded-control border border-outline-variant bg-surface-container-lowest p-md text-on-surface'
             }
           >
             <input

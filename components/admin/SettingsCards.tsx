@@ -24,8 +24,8 @@ export function SettingsCards({
               key={option.id}
               className={
                 active
-                  ? 'flex cursor-pointer gap-md rounded-[20px] border border-primary bg-primary-container p-md text-on-primary-container'
-                  : 'flex cursor-pointer gap-md rounded-[20px] border border-outline-variant bg-surface-container-lowest p-md text-on-surface'
+                  ? 'flex cursor-pointer gap-md rounded-card border border-primary bg-primary-container p-md text-on-primary-container'
+                  : 'flex cursor-pointer gap-md rounded-card border border-outline-variant bg-surface-container-lowest p-md text-on-surface'
               }
             >
               <input

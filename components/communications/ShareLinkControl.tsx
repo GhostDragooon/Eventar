@@ -22,7 +22,7 @@ export function ShareLinkControl({
   }
 
   return (
-    <section className="rounded-[12px] border border-outline-variant bg-surface-container-lowest">
+    <section className="rounded-control border border-outline-variant bg-surface-container-lowest">
       <button
         // ui-primitive-allow: disclosure trigger, not action-button chrome — same convention as DisclosureDeleteAction
         type="button"

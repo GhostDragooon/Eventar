@@ -40,7 +40,7 @@ export function BarDistributionSlice({
     // accent @ 45%. Replaces the older primary-container fallback so the
     // distribution-bars share a single accent ramp across Q1/Q3/Q5/Q2.
     return (
-      <div key={d.slug} className="space-y-[3px]">
+      <div key={d.slug} className="space-y-[0.1875rem]">
         <div className={`flex justify-between text-[calc(0.75rem*var(--text-scale))] font-semibold tabular-nums ${isWinner ? strongText : 'text-on-surface-variant'}`}>
           <span className="truncate pr-sm">{d.label}</span>
           <span>{d.pct}%</span>

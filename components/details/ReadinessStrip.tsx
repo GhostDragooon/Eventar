@@ -47,21 +47,21 @@ export function ReadinessStrip({ cells }: { cells: ReadinessCell[] }) {
   return (
     <section
       aria-label="Event readiness"
-      className="mb-lg grid gap-px overflow-hidden rounded-[14px] border border-outline-variant bg-[color:var(--outline-variant)] sm:grid-cols-2 lg:grid-cols-5"
+      className="mb-lg grid gap-px overflow-hidden rounded-xl border border-outline-variant bg-[color:var(--outline-variant)] sm:grid-cols-2 lg:grid-cols-5"
     >
       {/* gap-px over a tinted parent draws the hairline dividers without a
           border on every child (which double-draws at the seams). */}
       {cells.map((c) => (
         <div key={c.label} className="bg-surface-container-lowest px-md py-sm">
           <p className="flex items-center gap-xs text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-[.07em] text-on-surface-variant">
-            <span className={`h-[6px] w-[6px] shrink-0 rounded-full ${DOT[c.state]}`} aria-hidden />
+            <span className={`h-[0.375rem] w-[0.375rem] shrink-0 rounded-full ${DOT[c.state]}`} aria-hidden />
             {c.label}
           </p>
-          <p className="mt-[3px] text-[calc(1.0625rem*var(--text-scale))] font-semibold tabular-nums leading-tight text-on-surface">
+          <p className="mt-[0.1875rem] text-[calc(1.0625rem*var(--text-scale))] font-semibold tabular-nums leading-tight text-on-surface">
             {c.value}
           </p>
           {c.note && (
-            <p className={`mt-[1px] text-[calc(0.71875rem*var(--text-scale))] ${NOTE[c.state]}`}>{c.note}</p>
+            <p className={`mt-[0.0625rem] text-[calc(0.71875rem*var(--text-scale))] ${NOTE[c.state]}`}>{c.note}</p>
           )}
         </div>
       ))}

@@ -88,7 +88,7 @@ export default async function PublicEventsPage() {
     });
 
   const body = (
-    <div className="max-w-[860px] mx-auto px-grid-margin py-xl">
+    <div className="max-w-[53.75rem] mx-auto px-grid-margin py-xl">
       <header className="text-center mb-lg">
         <p className="text-label-md font-semibold uppercase tracking-[0.18em] text-[color:var(--on-primary-container)] mb-xs">Events</p>
         <h1 className="text-[calc(2.125rem*var(--text-scale))] font-extrabold tracking-[-0.03em] text-on-surface mb-xs">Upcoming events</h1>

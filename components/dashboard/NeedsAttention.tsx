@@ -52,7 +52,7 @@ function AttentionRow({ it }: { it: AttentionItem }) {
         className="nav-item flex items-start gap-md px-lg py-md hover:bg-surface-container-high"
       >
         <span
-          className={`mt-[2px] grid h-[26px] w-[26px] shrink-0 place-items-center rounded-lg ${TONE[it.tone].chip}`}
+          className={`mt-[0.125rem] grid h-[1.625rem] w-[1.625rem] shrink-0 place-items-center rounded-lg ${TONE[it.tone].chip}`}
           aria-hidden
         >
           <span className="material-symbols-outlined text-[calc(1rem*var(--text-scale))]">
@@ -64,7 +64,7 @@ function AttentionRow({ it }: { it: AttentionItem }) {
           <span className="block text-[calc(0.84375rem*var(--text-scale))] font-semibold leading-snug text-on-surface">
             {it.title}
           </span>
-          <span className="mt-[2px] block text-[calc(0.78125rem*var(--text-scale))] leading-snug text-on-surface-variant">
+          <span className="mt-[0.125rem] block text-[calc(0.78125rem*var(--text-scale))] leading-snug text-on-surface-variant">
             {it.detail}
           </span>
         </span>
@@ -80,7 +80,7 @@ function AttentionRow({ it }: { it: AttentionItem }) {
           )}
         </span>
 
-        <span className="material-symbols-outlined mt-[2px] shrink-0 text-[calc(1.125rem*var(--text-scale))] text-on-surface-variant" aria-hidden>
+        <span className="material-symbols-outlined mt-[0.125rem] shrink-0 text-[calc(1.125rem*var(--text-scale))] text-on-surface-variant" aria-hidden>
           chevron_right
         </span>
       </Link>
@@ -97,7 +97,7 @@ export function NeedsAttention({ items, limit }: { items: AttentionItem[]; limit
   return (
     <section
       aria-labelledby="needs-attention-heading"
-      className="rounded-[14px] border border-outline-variant bg-surface-container-lowest"
+      className="rounded-xl border border-outline-variant bg-surface-container-lowest"
     >
       <header className="flex flex-wrap items-baseline justify-between gap-sm border-b border-outline-variant px-lg py-md">
         <h2

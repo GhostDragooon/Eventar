@@ -18,11 +18,11 @@ import { useScrollFade } from '@/lib/useScrollFade';
 // whitespace-nowrap + shrink-0 keep each label intact at 375px; the item group's
 // overflow-x-auto is the safety net (user-lens 2026-09-19).
 const NAV_ITEM =
-  'nav-item tap-44 inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-[11px] py-[7px] text-[calc(0.8125rem*var(--text-scale))] font-medium';
+  'nav-item tap-44 inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-[0.6875rem] py-[0.4375rem] text-[calc(0.8125rem*var(--text-scale))] font-medium';
 const NAV_IDLE = 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface';
 const NAV_ACTIVE = 'bg-surface-container-high font-semibold text-on-surface';
 const PILL =
-  'tap-44 shrink-0 whitespace-nowrap rounded-full bg-primary px-md py-[7px] text-[calc(0.78125rem*var(--text-scale))] font-semibold text-on-primary';
+  'tap-44 shrink-0 whitespace-nowrap rounded-full bg-primary px-md py-[0.4375rem] text-[calc(0.78125rem*var(--text-scale))] font-semibold text-on-primary';
 const PILL_MOTION =
   'transition-[translate,scale] duration-150 ease-out hover:-translate-y-px active:scale-[.97] motion-reduce:transition-none motion-reduce:hover:translate-y-0';
 
@@ -55,23 +55,31 @@ export function SiteNav({
   loginHref,
   authSlot,
   beforeAuth,
-  className = 'mx-[18px]',
+  className = 'mx-[1.125rem]',
 }: SiteNavProps) {
   const navRef = useRef<HTMLDivElement>(null);
   useScrollFade(navRef);
 
+  const brandHref = signedIn && !isStaff ? '/events' : '/';
+
   return (
+    <>
+      {/* Phone (Ivan 2026-11-21): logo stays on top with no bar; the nav is the fixed bottom pill below.
+          The in-pill brand is hidden below sm, so the link exists once for assistive tech. */}
+      <div className="mx-[1.125rem] pt-sm sm:hidden">
+        <BrandMark href={brandHref} />
+      </div>
     <nav
       aria-label="Primary"
-      className={`glass-nav sticky top-[10px] z-[5] flex items-center justify-between gap-md rounded-full py-sm pl-md pr-sm ${className}`}
+      className={`glass-nav z-[5] flex items-center justify-between gap-md rounded-full py-sm pl-md pr-sm max-sm:fixed max-sm:inset-x-0 max-sm:bottom-[calc(0.625rem+env(safe-area-inset-bottom))] max-sm:justify-evenly sm:sticky sm:top-[0.625rem] ${className}`}
     >
-      <div className="shrink-0">
-        <BrandMark href={signedIn && !isStaff ? '/events' : '/'} hideWordmarkOnPhone />
+      <div className="hidden shrink-0 sm:block">
+        <BrandMark href={brandHref} hideWordmarkOnPhone />
       </div>
 
       {/* min-w-0 + overflow-x-auto: brand and CTA never shrink; this group scrolls if it must.
           "Upcoming events" -> "Events" below sm: the overflow fallback has no visible affordance on mobile. */}
-      <div ref={navRef} className="scroll-fade -my-[5px] flex min-w-0 items-center gap-[2px] overflow-x-auto py-[5px]">
+      <div ref={navRef} className="scroll-fade -my-[0.3125rem] flex min-w-0 items-center gap-[0.125rem] overflow-x-auto overflow-y-hidden py-[0.3125rem] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-sm:flex-1 max-sm:justify-evenly">
         {active === 'events' ? (
           <span aria-current="page" className={`${NAV_ITEM} ${NAV_ACTIVE}`}>
             <span className="sm:hidden"><span className="reserve-bold" data-text="Events">Events</span></span>
@@ -117,5 +125,6 @@ export function SiteNav({
           ))}
       </div>
     </nav>
+    </>
   );
 }

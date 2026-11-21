@@ -12,7 +12,7 @@ export function FaqAccordion({
   defaultOpen?: readonly string[];
 }) {
   return (
-    <Accordion multiple defaultValue={[...defaultOpen]} className="rounded-[20px] border border-outline-variant bg-surface-container-lowest px-md">
+    <Accordion multiple defaultValue={[...defaultOpen]} className="rounded-card border border-outline-variant bg-surface-container-lowest px-md">
       {items.map((item) => (
         <AccordionItem key={item.id} value={item.id}>
           <AccordionTrigger className="min-h-14 text-left font-title-lg text-title-lg text-on-surface hover:no-underline">

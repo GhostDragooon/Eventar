@@ -333,8 +333,8 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
               {t.label}
               <span className="sr-only">, </span>
               {/* bg-primary + text-on-primary, not the shipped text-white on --on-primary-container (1.32:1 in dark). */}
-              <span className={cn('ml-xs inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[calc(0.6875rem*var(--text-scale))] font-semibold', on ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant')}>{n}</span>
-              {on && <span className="absolute -bottom-px left-0 right-0 h-[2px] rounded-full bg-[color:var(--on-primary-container)]" aria-hidden />}
+              <span className={cn('ml-xs inline-flex h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full px-1 text-[calc(0.6875rem*var(--text-scale))] font-semibold', on ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant')}>{n}</span>
+              {on && <span className="absolute -bottom-px left-0 right-0 h-[0.125rem] rounded-full bg-[color:var(--on-primary-container)]" aria-hidden />}
             </button>
           );
         })}
@@ -346,7 +346,7 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
           <Input
             type="text" value={query} onChange={(e) => setQuery(e.target.value)}
             placeholder="Search events" aria-label="Search events"
-            className="h-11 w-full py-sm pl-[42px] pr-md text-body-md"
+            className="h-11 w-full py-sm pl-[2.625rem] pr-md text-body-md"
           />
         </div>
         <div className="inline-flex min-h-11 shrink-0 items-center gap-sm rounded-lg border border-outline-variant bg-surface-container-lowest px-md">
@@ -397,7 +397,7 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
       )}
 
       {visible.length === 0 ? (
-        <div className="rounded-[20px] border border-outline-variant bg-surface-container-lowest p-xl text-center">
+        <div className="rounded-card border border-outline-variant bg-surface-container-lowest p-xl text-center">
           <p className="font-body-md text-body-md text-on-surface-variant">
             {events.length === 0
               ? 'No events yet.'
@@ -488,16 +488,16 @@ function EventRow({ e, nowMs, selected, onToggle, onRestore, inBin, pending }: {
     <li className={cn('grid grid-cols-[44px_minmax(0,1fr)] gap-sm', e.deleted && 'opacity-70')}>
       <div className="flex items-center">
         <label className="grid size-11 shrink-0 cursor-pointer place-items-center">
-          <input type="checkbox" checked={selected} onChange={onToggle} aria-label={`Select ${e.title}`} className="size-[18px] cursor-pointer accent-[color:var(--on-primary-container)]" />
+          <input type="checkbox" checked={selected} onChange={onToggle} aria-label={`Select ${e.title}`} className="size-[1.125rem] cursor-pointer accent-[color:var(--on-primary-container)]" />
         </label>
       </div>
-      <div className={cn('grid grid-cols-[56px_minmax(0,1fr)] gap-xs rounded-[16px] border bg-surface-container-lowest p-xs', selected ? 'border-[color:var(--primary-fixed-dim)]' : 'border-outline-variant')}>
-        <div className="flex flex-col items-center justify-center rounded-[12px] bg-surface-container text-center">
+      <div className={cn('grid grid-cols-[56px_minmax(0,1fr)] gap-xs rounded-[1rem] border bg-surface-container-lowest p-xs', selected ? 'border-[color:var(--primary-fixed-dim)]' : 'border-outline-variant')}>
+        <div className="flex flex-col items-center justify-center rounded-control bg-surface-container text-center">
           <span className="text-[calc(1.375rem*var(--text-scale))] font-bold leading-none tabular-nums text-on-surface">{day}</span>
           <span className="mt-xs text-[calc(0.75rem*var(--text-scale))] leading-none text-on-surface-variant">{weekday} {month}</span>
-          {otherYear && <span className="mt-[2px] text-[calc(0.6875rem*var(--text-scale))] leading-none tabular-nums text-on-surface-variant">{year}</span>}
+          {otherYear && <span className="mt-[0.125rem] text-[calc(0.6875rem*var(--text-scale))] leading-none tabular-nums text-on-surface-variant">{year}</span>}
         </div>
-        <div className="flex min-w-0 flex-col rounded-[12px] bg-surface-container p-xs">
+        <div className="flex min-w-0 flex-col rounded-control bg-surface-container p-xs">
           <div className="flex min-w-0 flex-wrap items-center gap-x-sm">
             <span className="flex h-11 items-center"><StatusChip lifecycle={e.lifecycle} deleted={e.deleted} /></span>
             <Link href={`/events/${e.id}/details`} className="line-clamp-3 font-title-lg text-title-lg font-semibold text-on-surface transition-colors hover:text-[color:var(--on-primary-container)]">{e.title}</Link>

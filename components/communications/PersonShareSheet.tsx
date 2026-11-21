@@ -30,7 +30,7 @@ export function PersonShareSheet({
   }
 
   return (
-    <section className="space-y-md rounded-[20px] border border-outline-variant bg-surface-container-lowest p-lg">
+    <section className="space-y-md rounded-card border border-outline-variant bg-surface-container-lowest p-lg">
       <ul className="divide-y divide-outline-variant">
         {people.map((person) => (
           <li key={person.id}>
@@ -51,7 +51,7 @@ export function PersonShareSheet({
         {pending ? 'Sending…' : 'Share'}
       </Button>
       {status && (
-        <p role={status === 'Shared successfully.' ? 'status' : 'alert'} className={status === 'Shared successfully.' ? 'rounded-[12px] bg-success-container p-md text-on-success-container' : 'rounded-[12px] bg-error-container p-md text-on-error-container'}>
+        <p role={status === 'Shared successfully.' ? 'status' : 'alert'} className={status === 'Shared successfully.' ? 'rounded-control bg-success-container p-md text-on-success-container' : 'rounded-control bg-error-container p-md text-on-error-container'}>
           {status}
         </p>
       )}

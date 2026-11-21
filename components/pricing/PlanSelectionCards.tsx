@@ -21,7 +21,7 @@ export function PlanSelectionCards({
             <label
               key={plan.id}
               className={cn(
-                'flex cursor-pointer gap-md rounded-[20px] border p-lg',
+                'flex cursor-pointer gap-md rounded-card border p-lg',
                 selected ? 'border-primary bg-primary-container text-on-primary-container' : 'border-outline-variant bg-surface-container-lowest text-on-surface',
               )}
             >

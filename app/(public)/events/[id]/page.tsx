@@ -220,7 +220,7 @@ export default async function PublicEventPage({
           + date + venue (per user direction, hero is just a visual). */}
       <div
         aria-hidden
-        className="w-full h-[200px] sm:h-[280px] bg-surface-container"
+        className="w-full h-[12.5rem] sm:h-[17.5rem] bg-surface-container"
         style={
           heroImageUrl
             ? {
@@ -288,7 +288,7 @@ export default async function PublicEventPage({
                 return (
                   <li key={b.id} className="flex gap-md">
                     <span
-                      className="font-mono text-label-md text-on-primary-container shrink-0 mt-[2px]"
+                      className="font-mono text-label-md text-on-primary-container shrink-0 mt-[0.125rem]"
                       style={{ minWidth: 64 }}
                     >
                       {formatClock(b.start_time, event.timezone)}

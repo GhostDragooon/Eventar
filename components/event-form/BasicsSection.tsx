@@ -66,7 +66,7 @@ export default function BasicsSection({ value, onChange }: Props) {
  */
 export function CapacityField({ value, onChange }: Props) {
   return (
-    <label className="block max-w-[280px]">
+    <label className="block max-w-[17.5rem]">
       <FieldLabel>Max attendees (optional)</FieldLabel>
       <Input
         type="number"

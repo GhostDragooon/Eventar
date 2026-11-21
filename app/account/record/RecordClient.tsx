@@ -151,7 +151,7 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm">
+    <section className="bg-surface-container-lowest border border-outline-variant rounded-card p-lg shadow-sm">
       <div className="flex items-center gap-md mb-md">
         <div
           aria-hidden

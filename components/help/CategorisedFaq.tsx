@@ -31,7 +31,7 @@ export function CategorisedFaq({ categories }: { categories: readonly FaqCategor
         {category && category.items.length > 0 ? (
           <FaqAccordion items={category.items} />
         ) : (
-          <div className="rounded-[20px] border border-outline-variant bg-surface-container-lowest p-xl text-center">
+          <div className="rounded-card border border-outline-variant bg-surface-container-lowest p-xl text-center">
             <span className="material-symbols-outlined text-[32px] text-on-surface-variant" aria-hidden>help</span>
             <p className="mt-sm text-on-surface-variant">No help articles are available in this category.</p>
           </div>

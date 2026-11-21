@@ -96,18 +96,18 @@ export function LandingHero({
     <div className="hero-zone relative">
       <div className="hero-atmo pointer-events-none absolute inset-0" aria-hidden />
 
-      <div className="relative mx-auto max-w-[1200px] px-[15px] pt-[33px] text-center">
+      <div className="relative mx-auto max-w-[75rem] px-[0.9375rem] pt-[2.0625rem] text-center">
         {/* "I'm a…" — the artifact's sliding-thumb pill. The thumb is a single
             element that translates, so the two labels never reflow. Stays
             centered above the two-column split below.
             Equal top/bottom (Ivan, 2026-08-21): "top of hero" is really
             14px (.hero-zone's own padding-top, a pre-existing rule) + 33px
             (this pt) = 47px total — not 33px alone, which is what made the
-            two sides look unequal before. mb-[47px] below matches that real
+            two sides look unequal before. mb-[2.9375rem] below matches that real
             47px total exactly (47 > the grid's own mt-xl/32px, so it wins
             the margin-collapse outright, no ambiguity). 17px label-to-pill
             is unchanged, not part of this instruction. */}
-        <div className="mb-[47px] flex flex-col items-center gap-[17px]">
+        <div className="mb-[2.9375rem] flex flex-col items-center gap-[1.0625rem]">
           <span className="text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-[.08em] text-on-surface-variant">
             I’m a&hellip;
           </span>
@@ -118,7 +118,7 @@ export function LandingHero({
           >
             <span
               aria-hidden
-              className="aud-thumb absolute inset-y-[3px] left-[3px] z-0 w-[calc(50%-3px)] rounded-full bg-primary"
+              className="aud-thumb absolute inset-y-[0.1875rem] left-[0.1875rem] z-0 w-[calc(50%-0.1875rem)] rounded-full bg-primary"
               style={{ transform: aud === 'organiser' ? 'translateX(100%)' : 'none' }}
             />
             {(['practitioner', 'organiser'] as const).map((k) => (
@@ -128,7 +128,7 @@ export function LandingHero({
                 role="tab"
                 aria-selected={aud === k}
                 onClick={() => onAudienceChange(k)}
-                className={`relative z-[1] whitespace-nowrap rounded-full px-[14px] py-[10px] text-[calc(0.75rem*var(--text-scale))] font-semibold transition-colors sm:px-[22px] sm:text-[calc(0.8125rem*var(--text-scale))] ${
+                className={`relative z-[1] whitespace-nowrap rounded-full px-[0.875rem] py-[0.625rem] text-[calc(0.75rem*var(--text-scale))] font-semibold transition-colors sm:px-[1.375rem] sm:text-[calc(0.8125rem*var(--text-scale))] ${
                   aud === k ? 'text-on-primary' : 'text-on-surface-variant'
                 }`}
               >
@@ -159,15 +159,15 @@ export function LandingHero({
             of how many lines the copy underneath it wraps to. */}
         <div className="mt-xl grid items-start gap-xl text-center lg:grid-cols-2 lg:text-left">
           <div className="hero-copy">
-            <span className="inline-flex items-center gap-sm rounded-full border border-outline-variant bg-surface-container-lowest px-md py-[5px] text-[calc(0.75rem*var(--text-scale))] font-semibold text-on-surface-variant">
-              <span className="h-[6px] w-[6px] rounded-full bg-primary" aria-hidden />
+            <span className="inline-flex items-center gap-sm rounded-full border border-outline-variant bg-surface-container-lowest px-md py-[0.3125rem] text-[calc(0.75rem*var(--text-scale))] font-semibold text-on-surface-variant">
+              <span className="h-[0.375rem] w-[0.375rem] rounded-full bg-primary" aria-hidden />
               {c.chip}
             </span>
 
             {/* Variant D flips the artifact's default: the headline is SANS and
                 the emphasis is serif-italic in the link blue — not the other
                 way round. */}
-            <h1 className="mx-auto mt-[18px] max-w-[21ch] text-hero font-bold text-on-surface lg:mx-0">
+            <h1 className="mx-auto mt-[1.125rem] max-w-[21ch] text-hero font-bold text-on-surface lg:mx-0">
               {c.head[0]}
               <br />
               <em className="font-medium italic text-primary">{c.head[1]}</em>
@@ -193,12 +193,12 @@ export function LandingHero({
                 (both are #FFFFFF there), but text-white on --primary drops
                 to 2.23:1 in dark mode (fails AA) vs text-on-primary's
                 7.59:1 — dev-lens catch. */}
-            <div className="mt-[22px] flex flex-wrap justify-center gap-sm lg:justify-start">
+            <div className="mt-[1.375rem] flex flex-wrap justify-center gap-sm lg:justify-start">
               {c.ctas.map((cta) => (
                 <Link
                   key={cta.href}
                   href={cta.href}
-                  className="rounded-full bg-primary px-[19px] py-[9px] text-[calc(0.8125rem*var(--text-scale))] font-semibold text-on-primary transition-shadow hover:shadow-[0_8px_22px_rgba(13,116,226,.35)]"
+                  className="rounded-full bg-primary px-[1.1875rem] py-[0.5625rem] text-[calc(0.8125rem*var(--text-scale))] font-semibold text-on-primary transition-shadow hover:shadow-[0_8px_22px_rgba(13,116,226,.35)]"
                 >
                   {cta.label}
                 </Link>
@@ -208,7 +208,7 @@ export function LandingHero({
             {/* "8 bodies" means encoded rulebooks, NOT endorsements — the
                 artifact is explicit about that and the copy must not imply
                 otherwise. */}
-            <p className="mt-[18px] flex flex-wrap items-center justify-center gap-sm text-[calc(0.75rem*var(--text-scale))] text-on-surface-variant lg:justify-start">
+            <p className="mt-[1.125rem] flex flex-wrap items-center justify-center gap-sm text-[calc(0.75rem*var(--text-scale))] text-on-surface-variant lg:justify-start">
               Rule-aware for <b className="font-semibold text-on-surface">8 Hong Kong accrediting bodies</b>
               <span className="text-on-surface-variant">· HKICPA · Law Society · HKIE · HKCR · +4</span>
             </p>

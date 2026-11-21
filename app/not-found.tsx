@@ -10,7 +10,7 @@ export const metadata = { title: 'Page not found' };
 export default function NotFound() {
   return (
     <SiteShell>
-      <div className="max-w-[560px] mx-auto px-grid-margin py-xxl text-center">
+      <div className="max-w-[35rem] mx-auto px-grid-margin py-xxl text-center">
         <p className="text-label-md font-semibold uppercase tracking-[0.18em] text-[color:var(--on-primary-container)] mb-sm">
           404
         </p>

@@ -25,7 +25,7 @@ import { summariseDelivery, type DeliveryLogRow, type DeliverySummary } from '@/
  */
 function Panel({ meta, children }: { meta: string; children: React.ReactNode }) {
   return (
-    <div className="mt-md rounded-[14px] border border-outline-variant bg-surface-container-low p-md">
+    <div className="mt-md rounded-xl border border-outline-variant bg-surface-container-low p-md">
       <div className="flex items-baseline gap-sm">
         <h3 className="text-body-md font-semibold text-on-surface">Pass delivery</h3>
         <span className="ml-auto font-label-md text-label-md normal-case tracking-normal tabular-nums text-on-surface-variant">

@@ -84,7 +84,7 @@ export function TeamClient({
                   </span>
                 </div>
                 <span
-                  className={`rounded-full px-sm py-[2px] text-label-sm font-medium ${
+                  className={`rounded-full px-sm py-[0.125rem] text-label-sm font-medium ${
                     inv.accepted_at
                       ? 'bg-success-container text-on-success-container'
                       : new Date(inv.expires_at) < new Date()

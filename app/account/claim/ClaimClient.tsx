@@ -56,7 +56,7 @@ export function ClaimClient({
         </h1>
       </header>
 
-      <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm space-y-md">
+      <section className="bg-surface-container-lowest border border-outline-variant rounded-card p-lg shadow-sm space-y-md">
         <div className="flex items-start gap-md">
           <div
             aria-hidden
@@ -81,7 +81,7 @@ export function ClaimClient({
             aria-live="polite"
             className="font-body-md text-body-md text-on-warning-container bg-warning-container border border-warning-container rounded-lg px-md py-sm flex items-start gap-sm"
           >
-            <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>
+            <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[0.125rem]" aria-hidden>
               info
             </span>
             <span className="flex-1">
@@ -99,7 +99,7 @@ export function ClaimClient({
             aria-live="polite"
             className="font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm flex items-start gap-sm"
           >
-            <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden data-fill="1">
+            <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[0.125rem]" aria-hidden data-fill="1">
               check_circle
             </span>
             <span className="flex-1">
@@ -114,7 +114,7 @@ export function ClaimClient({
             aria-live="polite"
             className="font-body-md text-body-md text-on-surface-variant bg-surface-container border border-outline-variant rounded-lg px-md py-sm flex items-start gap-sm"
           >
-            <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>
+            <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[0.125rem]" aria-hidden>
               info
             </span>
             <span className="flex-1">

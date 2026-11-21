@@ -18,7 +18,7 @@ import { StaffProgrammePill } from '@/components/shell/StaffProgrammePill';
 import { getAccountMenuState } from '@/app/account/actions';
 
 const PILL_CLASS =
-  'rounded-full bg-primary px-md py-[7px] text-[calc(0.78125rem*var(--text-scale))] font-semibold text-on-primary transition-[translate,scale] duration-150 ease-out hover:-translate-y-px active:scale-[.97] motion-reduce:transition-none motion-reduce:hover:translate-y-0';
+  'rounded-full bg-primary px-md py-[0.4375rem] text-[calc(0.78125rem*var(--text-scale))] font-semibold text-on-primary transition-[translate,scale] duration-150 ease-out hover:-translate-y-px active:scale-[.97] motion-reduce:transition-none motion-reduce:hover:translate-y-0';
 
 export function LandingAuthPill() {
   // Signed-out default = safe first paint. `undefined` would suppress render

@@ -28,7 +28,7 @@ export function PricingComparison({
         <article
           key={tier.id}
           className={cn(
-            'relative flex flex-col rounded-[20px] border p-lg shadow-sm',
+            'relative flex flex-col rounded-card border p-lg shadow-sm',
             tier.highlighted ? 'border-2 border-primary bg-primary-container text-on-primary-container' : 'border-outline-variant bg-surface-container-lowest text-on-surface',
           )}
         >

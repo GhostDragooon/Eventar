@@ -63,15 +63,15 @@ export function StickyLiveBar({
         // a STICKY pill at y 10-62, so `top-0` parked an opaque strip on top of
         // Dashboard / Check-in / Analytics / Settings and the back link for the
         // entire live window — the one window where an operator most needs them.
-        className={`fixed inset-x-0 top-[72px] z-[4] transition-transform duration-200 ${
-          // -300%, not -full: parked at top-[72px] the bar must clear its own
+        className={`fixed inset-x-0 top-[4.5rem] z-[4] transition-transform duration-200 ${
+          // -300%, not -full: parked at top-[4.5rem] the bar must clear its own
           // height AND the 72px offset, or a sliver stays visible under the nav.
           pinned ? 'translate-y-0' : '-translate-y-[300%]'
         }`}
         aria-hidden={!pinned}
       >
-        <div className="flex items-center gap-md h-[44px] px-grid-margin bg-[#0A0A0A] text-white shadow-md">
-          <span className="live-pill-pulse inline-flex items-center gap-xs px-sm py-[2px] rounded-full border border-[#4ADE80] text-[#4ADE80] text-[calc(0.6875rem*var(--text-scale))] font-bold uppercase tracking-[0.12em]">
+        <div className="flex items-center gap-md h-[2.75rem] px-grid-margin bg-[#0A0A0A] text-white shadow-md">
+          <span className="live-pill-pulse inline-flex items-center gap-xs px-sm py-[0.125rem] rounded-full border border-[#4ADE80] text-[#4ADE80] text-[calc(0.6875rem*var(--text-scale))] font-bold uppercase tracking-[0.12em]">
             <span aria-hidden>●</span>Live
           </span>
           <span className="flex-1 min-w-0 truncate text-[calc(0.8125rem*var(--text-scale))] font-semibold">{title}</span>
@@ -81,7 +81,7 @@ export function StickyLiveBar({
           <Link
             href={`/events/${eventId}/checkin`}
             tabIndex={pinned ? 0 : -1}
-            className="inline-flex items-center gap-xs bg-primary text-on-primary px-md py-[6px] rounded-full text-[calc(0.75rem*var(--text-scale))] font-semibold hover:opacity-90 transition-opacity shrink-0"
+            className="inline-flex items-center gap-xs bg-primary text-on-primary px-md py-[0.375rem] rounded-full text-[calc(0.75rem*var(--text-scale))] font-semibold hover:opacity-90 transition-opacity shrink-0"
           >
             <span className="material-symbols-outlined text-[calc(0.9375rem*var(--text-scale))]" aria-hidden>group</span>
             Open check-in →

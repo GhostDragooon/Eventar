@@ -57,7 +57,7 @@ export function AuthBackdropCard({
       </div>
 
       <div className="relative z-[1] mx-auto flex min-h-dvh w-full max-w-6xl flex-col items-center justify-center gap-xl px-grid-margin py-xl lg:flex-row lg:items-center lg:justify-between lg:gap-xxl">
-        <div className="w-full max-w-[400px] rounded-[20px] border border-white/10 bg-surface-container-lowest/95 p-lg shadow-lg backdrop-blur-sm dark:bg-surface-container-high/95">
+        <div className="w-full max-w-[25rem] rounded-card border border-white/10 bg-surface-container-lowest/95 p-lg shadow-lg backdrop-blur-sm dark:bg-surface-container-high/95">
           <div className="flex flex-col gap-lg">{children}</div>
         </div>
 

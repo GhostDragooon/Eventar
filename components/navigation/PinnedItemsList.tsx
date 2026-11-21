@@ -14,7 +14,7 @@ export function PinnedItemsList({
   onRemove: (id: string) => void;
 }) {
   return (
-    <ol className="divide-y divide-outline-variant rounded-[12px] border border-outline-variant bg-surface-container-lowest">
+    <ol className="divide-y divide-outline-variant rounded-control border border-outline-variant bg-surface-container-lowest">
       {items.map((item, index) => (
         <li key={item.id} className="flex min-h-14 items-center gap-sm p-sm">
           <span className="material-symbols-outlined text-on-surface-variant" aria-hidden>

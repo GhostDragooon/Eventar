@@ -44,7 +44,7 @@ export function Slice({
         </div>
         <div className="min-w-0">
           <h2 className="text-[calc(0.9375rem*var(--text-scale))] font-bold tracking-[-0.01em] text-on-surface leading-tight pt-1">{title}</h2>
-          <p className="text-[calc(0.75rem*var(--text-scale))] text-on-surface-variant mt-[2px] pr-md leading-snug">{prompt}</p>
+          <p className="text-[calc(0.75rem*var(--text-scale))] text-on-surface-variant mt-[0.125rem] pr-md leading-snug">{prompt}</p>
         </div>
       </div>
       <div className="w-full md:w-2/3 flex items-center gap-xl">{children}</div>

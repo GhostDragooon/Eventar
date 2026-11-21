@@ -93,13 +93,13 @@ function TabBar({ pathname }: { pathname: string }) {
       {NAV.map((item) => {
         const current = currentLabel(pathname) === item.label;
         const cls = cn(
-          'nav-item relative flex min-h-12 min-w-11 flex-col items-center justify-center gap-[2px] whitespace-nowrap px-[2px] text-[calc(0.6875rem*var(--text-scale))] font-semibold',
+          'nav-item relative flex min-h-12 min-w-11 flex-col items-center justify-center gap-[0.125rem] whitespace-nowrap px-[0.125rem] text-[calc(0.6875rem*var(--text-scale))] font-semibold',
           current ? 'text-primary-ink' : 'text-on-surface-variant',
         );
         const inner = (
           <>
             {/* UX-02 review: the current tab needs a cue that is not colour (WCAG 1.4.1), so it gets a 2 px top rule. */}
-            {current && <span aria-hidden data-current-rule className="absolute inset-x-1 -top-xs h-[2px] rounded-full bg-primary-ink" />}
+            {current && <span aria-hidden data-current-rule className="absolute inset-x-1 -top-xs h-[0.125rem] rounded-full bg-primary-ink" />}
             <Icon name={item.icon} className="text-[calc(1.375rem*var(--text-scale))]" />
             <span>{item.label}</span>
           </>
@@ -178,7 +178,7 @@ export function AccountShell({
       <div className="flex flex-1 flex-col md:flex-row">
         <aside
           aria-label="Your Eventar portal"
-          className="hidden shrink-0 bg-sidebar md:sticky md:top-0 md:flex md:h-dvh md:w-[232px] md:flex-col md:self-start md:border-r md:border-outline-variant"
+          className="hidden shrink-0 bg-sidebar md:sticky md:top-0 md:flex md:h-dvh md:w-[14.5rem] md:flex-col md:self-start md:border-r md:border-outline-variant"
         >
           <div className="flex h-full flex-col gap-xs overflow-y-auto p-md">
             <div className="pb-sm">

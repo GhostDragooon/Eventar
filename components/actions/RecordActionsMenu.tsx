@@ -70,7 +70,7 @@ export function RecordActionsMenu({
         <span className="material-symbols-outlined" aria-hidden>more_vert</span>
       </Button>
       {open && !mobile && (
-        <div className="absolute right-0 z-30 mt-xs w-72 origin-top-right animate-overlay-in rounded-[12px] border border-outline-variant bg-popover p-xs shadow-lg">
+        <div className="absolute right-0 z-30 mt-xs w-72 origin-top-right animate-overlay-in rounded-control border border-outline-variant bg-popover p-xs shadow-lg">
           {menu}
         </div>
       )}

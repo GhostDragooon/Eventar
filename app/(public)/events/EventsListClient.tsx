@@ -77,7 +77,7 @@ export function EventsListClient({ events }: { events: PublicEventCard[] }) {
         ref={listRef}
         role="tablist"
         aria-label="Event categories"
-        className="scroll-fade relative flex items-center justify-center-safe gap-[40px] overflow-x-auto border-b border-outline-variant mb-lg"
+        className="scroll-fade relative flex items-center justify-center-safe gap-[2.5rem] overflow-x-auto border-b border-outline-variant mb-lg"
       >
         {CATEGORIES.map((c) => {
           const active = cat === c.key;
@@ -111,14 +111,14 @@ export function EventsListClient({ events }: { events: PublicEventCard[] }) {
         {indicator && (
           <span
             aria-hidden
-            className="absolute bottom-0 left-0 h-[2px] w-px origin-left bg-[color:var(--on-primary-container)] transition-transform duration-250 ease-out motion-reduce:transition-none"
+            className="absolute bottom-0 left-0 h-[0.125rem] w-px origin-left bg-[color:var(--on-primary-container)] transition-transform duration-250 ease-out motion-reduce:transition-none"
             style={{ transform: `translateX(${indicator.left}px) scaleX(${indicator.width})` }}
           />
         )}
       </div>
 
       {visible.length === 0 ? (
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-xl text-center">
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-card p-xl text-center">
           <p className="font-body-md text-body-md text-on-surface-variant">
             {events.length === 0 ? 'No open events right now — check back soon.' : 'Nothing in this category right now.'}
           </p>

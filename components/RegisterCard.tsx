@@ -301,7 +301,7 @@ export default function RegisterCard({
         <p
           className="font-body-md text-body-md text-on-surface-variant bg-primary-fixed border border-outline-variant rounded-lg px-md py-sm flex items-start gap-sm m-0"
         >
-          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>account_circle</span>
+          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[0.125rem]" aria-hidden>account_circle</span>
           <span className="flex-1">
             <Link href={signInHref} className="text-primary-ink hover:underline font-semibold">
               Log in or sign up
@@ -350,7 +350,7 @@ export default function RegisterCard({
           role="status"
           className="font-body-md text-body-md text-on-surface-variant bg-primary-fixed border border-outline-variant rounded-lg px-md py-sm flex items-start gap-sm m-0"
         >
-          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>link</span>
+          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[0.125rem]" aria-hidden>link</span>
           <span className="flex-1">
             {unlinkedRegistrationsCount === 1
               ? '1 earlier registration under this email isn’t linked to your account.'
@@ -404,7 +404,7 @@ export default function RegisterCard({
             role="alert"
             className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm outline-none"
           >
-            <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>
+            <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[0.125rem]" aria-hidden>
               warning
             </span>
             <span>{errorMessage}</span>

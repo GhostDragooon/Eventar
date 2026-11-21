@@ -54,7 +54,7 @@ export function SiteShell({
   loginHref?: string;
 }) {
   return (
-    <div className="app-atmo flex min-h-dvh flex-col text-on-surface">
+    <div className="app-atmo flex min-h-dvh flex-col text-on-surface max-sm:pb-[5rem]">
       <SiteNav
         active={active}
         signedIn={signedIn}

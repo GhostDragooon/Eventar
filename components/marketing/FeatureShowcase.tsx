@@ -42,7 +42,7 @@ export function FeatureShowcase({
         </ul>
         <Link href={action.href} className={cn(buttonVariants({ variant: 'default' }), 'px-lg')}>{action.label}</Link>
       </div>
-      <div className="relative min-h-80 rounded-[20px] bg-surface-container p-lg">{visual}</div>
+      <div className="relative min-h-80 rounded-card bg-surface-container p-lg">{visual}</div>
     </section>
   );
 }

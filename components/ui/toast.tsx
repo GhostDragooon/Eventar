@@ -56,7 +56,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       <div
         aria-live="polite"
         aria-label="Notifications"
-        className="fixed bottom-md left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-xs items-center pointer-events-none px-md w-full max-w-[480px]"
+        className="fixed bottom-md left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-xs items-center pointer-events-none px-md w-full max-w-[30rem]"
       >
         {toasts.map((t) => (
           <ToastItem key={t.id} t={t} onDismiss={dismiss} />
@@ -76,7 +76,7 @@ function ToastItem({ t, onDismiss }: { t: Toast; onDismiss: (id: number) => void
   return (
     <div
       role="status"
-      className={`pointer-events-auto flex items-center gap-sm w-full rounded-[12px] bg-[#0A0A0A] text-white shadow-lg px-md py-sm text-[calc(0.8125rem*var(--text-scale))] font-medium transition-[opacity,translate] motion-reduce:translate-y-0 ${
+      className={`pointer-events-auto flex items-center gap-sm w-full rounded-control bg-[#0A0A0A] text-white shadow-lg px-md py-sm text-[calc(0.8125rem*var(--text-scale))] font-medium transition-[opacity,translate] motion-reduce:translate-y-0 ${
         t.leaving ? 'duration-200 ease-in' : 'duration-250 ease-[cubic-bezier(0.32,0.72,0,1)]'
       } ${shown ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full'}`}
     >

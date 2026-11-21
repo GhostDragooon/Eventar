@@ -31,7 +31,7 @@ export function MultiSelectCombobox({
       <label htmlFor="multi-select-search" className="font-label-md text-label-md text-on-surface">
         {label}
       </label>
-      <div className="rounded-[12px] border border-outline-variant bg-surface-container-lowest p-sm">
+      <div className="rounded-control border border-outline-variant bg-surface-container-lowest p-sm">
         <div className="flex flex-wrap gap-xs pb-sm">
           {selected.map((id) => {
             const option = options.find((value) => value.id === id);

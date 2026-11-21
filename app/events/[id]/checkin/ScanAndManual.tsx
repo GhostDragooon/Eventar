@@ -61,7 +61,7 @@ export function ScanAndManual({
           onClick={onScanClick}
           disabled={closedMessage != null}
           aria-describedby={closedMessage ? 'checkin-closed-note' : undefined}
-          className="min-h-[64px] w-full gap-sm text-[calc(1rem*var(--text-scale))] font-bold"
+          className="min-h-[4rem] w-full gap-sm text-[calc(1rem*var(--text-scale))] font-bold"
         >
           <span className="material-symbols-outlined text-[calc(1.375rem*var(--text-scale))]" aria-hidden>
             qr_code_scanner
@@ -76,7 +76,7 @@ export function ScanAndManual({
           onClick={() => setCodeOpen(true)}
           disabled={closedMessage != null}
           aria-describedby={closedMessage ? 'checkin-closed-note' : undefined}
-          className="min-h-[64px] w-full gap-sm text-[calc(1rem*var(--text-scale))] font-bold"
+          className="min-h-[4rem] w-full gap-sm text-[calc(1rem*var(--text-scale))] font-bold"
         >
           <span className="material-symbols-outlined text-[calc(1.375rem*var(--text-scale))]" aria-hidden>
             keyboard

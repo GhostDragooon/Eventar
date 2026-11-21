@@ -21,7 +21,7 @@ export function ReviewBanner() {
       role="status"
       className="pointer-events-none fixed inset-x-0 bottom-0 z-[9999] flex justify-center px-md pb-md"
     >
-      <p className="rounded-full border border-[color:var(--warning,#B26B00)] bg-[color:var(--warning-container,#F9EFD9)] px-md py-[6px] text-[calc(0.75rem*var(--text-scale))] font-semibold text-[color:var(--warning,#B26B00)] shadow-sm">
+      <p className="rounded-full border border-[color:var(--warning,#B26B00)] bg-[color:var(--warning-container,#F9EFD9)] px-md py-[0.375rem] text-[calc(0.75rem*var(--text-scale))] font-semibold text-[color:var(--warning,#B26B00)] shadow-sm">
         Review mode — authentication is bypassed. Local only; impossible in a production build.
       </p>
     </div>

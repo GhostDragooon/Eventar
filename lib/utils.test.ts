@@ -51,3 +51,14 @@ describe('cn type-scale tokens', () => {
     expect(cn('text-label-md', 'leading-snug')).toBe('text-label-md leading-snug');
   });
 });
+
+describe('cn radius tokens', () => {
+  it('lets a later rounded-card or rounded-control replace an earlier radius', () => {
+    expect(cn('rounded-lg', 'rounded-card')).toBe('rounded-card');
+    expect(cn('rounded-card', 'rounded-control')).toBe('rounded-control');
+    expect(cn('rounded-control', 'rounded-xl')).toBe('rounded-xl');
+  });
+  it('keeps a side radius next to a full radius token', () => {
+    expect(cn('rounded-card', 'rounded-t-none')).toBe('rounded-card rounded-t-none');
+  });
+});

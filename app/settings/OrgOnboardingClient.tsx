@@ -88,7 +88,7 @@ export function OrgOnboardingClient({
     contactRole.trim() !== '';
 
   return (
-    <section className="mb-xl bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm">
+    <section className="mb-xl bg-surface-container-lowest border border-outline-variant rounded-card p-lg shadow-sm">
       <h2 className="font-title-lg text-title-lg text-on-surface mb-xs">Tell us about your organisation</h2>
       <p className="font-body-md text-body-md text-on-surface-variant mb-md">
         A one-time step so we can tailor Eventar to how you run events.

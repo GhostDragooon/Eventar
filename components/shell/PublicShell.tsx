@@ -64,7 +64,7 @@ export function PublicShell({
   unlinkedCount?: number;
 }) {
   return (
-    <div className="app-atmo flex min-h-dvh flex-col text-on-surface">
+    <div className="app-atmo flex min-h-dvh flex-col text-on-surface max-sm:pb-[5rem]">
       <SiteNav
         signedIn={signedIn}
         isStaff={isStaff}
@@ -73,14 +73,14 @@ export function PublicShell({
         beforeAuth={
           pill && (
             <span
-              className={`inline-flex items-center gap-xs rounded-full px-sm py-[3px] text-[calc(0.6875rem*var(--text-scale))] font-semibold ${
+              className={`inline-flex items-center gap-xs rounded-full px-sm py-[0.1875rem] text-[calc(0.6875rem*var(--text-scale))] font-semibold ${
                 pill.tone === 'success'
                   ? 'bg-success-container text-on-success-container'
                   : 'bg-surface-container-high text-on-surface-variant'
               }`}
             >
               <span
-                className={`h-[6px] w-[6px] rounded-full ${
+                className={`h-[0.375rem] w-[0.375rem] rounded-full ${
                   pill.tone === 'success' ? 'bg-[color:var(--success)]' : 'bg-outline'
                 }`}
                 aria-hidden

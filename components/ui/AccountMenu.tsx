@@ -24,7 +24,7 @@ import { Sheet } from '@/components/ui/Sheet';
 // SiteShell) — §4.2's explicit "Account control stays shrink-0" mobile
 // requirement applies to every consumer, not just one shell.
 const TRIGGER_CLASS =
-  'tap-44 shrink-0 whitespace-nowrap rounded-full bg-primary px-md py-[7px] text-[calc(0.78125rem*var(--text-scale))] font-semibold text-on-primary transition-[translate,scale] duration-150 ease-out hover:-translate-y-px active:scale-[.97] motion-reduce:transition-none motion-reduce:hover:translate-y-0';
+  'tap-44 shrink-0 whitespace-nowrap rounded-full bg-primary px-md py-[0.4375rem] text-[calc(0.78125rem*var(--text-scale))] font-semibold text-on-primary transition-[translate,scale] duration-150 ease-out hover:-translate-y-px active:scale-[.97] motion-reduce:transition-none motion-reduce:hover:translate-y-0';
 
 export function AccountMenu({
   complete,
@@ -131,7 +131,7 @@ export function AccountMenu({
         Account
       </button>
       {open && !mobile && (
-        <div className="absolute right-0 z-30 mt-xs w-64 origin-top-right animate-overlay-in rounded-[12px] border border-outline-variant bg-popover p-xs shadow-lg">
+        <div className="absolute right-0 z-30 mt-xs w-64 origin-top-right animate-overlay-in rounded-control border border-outline-variant bg-popover p-xs shadow-lg">
           {menu}
         </div>
       )}

@@ -20,16 +20,16 @@ const ROWS = [
 
 export function LedgerWindow() {
   return (
-    <div className="ledger-window relative z-[2] w-full overflow-hidden rounded-[22px] bg-surface-container-lowest text-left">
+    <div className="ledger-window relative z-[2] w-full overflow-hidden rounded-3xl bg-surface-container-lowest text-left">
       <div className="flex items-center gap-sm border-b border-outline-variant bg-surface-container-low px-md py-sm">
-        <i className="block h-[9px] w-[9px] rounded-full bg-outline" aria-hidden />
-        <i className="block h-[9px] w-[9px] rounded-full bg-outline" aria-hidden />
-        <i className="block h-[9px] w-[9px] rounded-full bg-outline" aria-hidden />
+        <i className="block h-[0.5625rem] w-[0.5625rem] rounded-full bg-outline" aria-hidden />
+        <i className="block h-[0.5625rem] w-[0.5625rem] rounded-full bg-outline" aria-hidden />
+        <i className="block h-[0.5625rem] w-[0.5625rem] rounded-full bg-outline" aria-hidden />
         {/* User-lens 2026-09-05: this window is a marketing sample. Without a
             label a visitor arriving from the hero could mistake it for their
             own live record — LedgerWindow reads as an app screenshot. Chip goes
             in the chrome bar so it survives even a first-glance skim. */}
-        <span className="ml-auto rounded-full bg-surface-container-high px-[7px] py-[1px] text-[calc(0.625rem*var(--text-scale))] font-semibold uppercase tracking-wider text-on-surface-variant">
+        <span className="ml-auto rounded-full bg-surface-container-high px-[0.4375rem] py-[0.0625rem] text-[calc(0.625rem*var(--text-scale))] font-semibold uppercase tracking-wider text-on-surface-variant">
           Sample
         </span>
       </div>
@@ -41,11 +41,11 @@ export function LedgerWindow() {
             The row list is unchanged; only the header + counter change. */}
         <div className="flex items-baseline justify-between gap-sm">
           <h2 className="text-[calc(0.9375rem*var(--text-scale))] font-semibold text-on-surface">Your Eventar record</h2>
-          <span className="rounded-full bg-primary-fixed px-sm py-[2px] text-[calc(0.6875rem*var(--text-scale))] font-semibold text-primary-ink">
+          <span className="rounded-full bg-primary-fixed px-sm py-[0.125rem] text-[calc(0.6875rem*var(--text-scale))] font-semibold text-primary-ink">
             3 events
           </span>
         </div>
-        <p className="mt-[3px] text-[calc(0.75rem*var(--text-scale))] text-on-surface-variant">
+        <p className="mt-[0.1875rem] text-[calc(0.75rem*var(--text-scale))] text-on-surface-variant">
           Dr. Chan Mei-ling · HKCR · Cycle 2024&ndash;26
         </p>
 
@@ -62,7 +62,7 @@ export function LedgerWindow() {
               {/* Provenance first — the artifact treats "how was this witnessed"
                   as the ledger's primary distinction, not a footnote. */}
               <span
-                className={`rounded-md px-sm py-[2px] text-[calc(0.625rem*var(--text-scale))] font-bold ${
+                className={`rounded-md px-sm py-[0.125rem] text-[calc(0.625rem*var(--text-scale))] font-bold ${
                   r.kind === 'Scanned'
                     ? 'bg-success-container text-success'
                     : 'bg-warning-container text-warning'

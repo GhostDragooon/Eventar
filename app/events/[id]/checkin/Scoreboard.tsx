@@ -61,13 +61,13 @@ export function Scoreboard({
   return (
     <section
       aria-label="Check-in scoreboard"
-      className="rounded-[20px] p-lg text-white"
+      className="rounded-card p-lg text-white"
       style={{ background: 'radial-gradient(120% 140% at 0% 0% in oklch, #123420 0%, #0A0A0A 55%)' }}
     >
       <div className="flex items-center justify-between mb-md">
         <p className="text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-[0.18em] text-white/50">Status</p>
         <span
-          className={`inline-flex items-center gap-xs px-sm py-[2px] rounded-full border text-[calc(0.6875rem*var(--text-scale))] font-bold uppercase tracking-[0.12em] ${
+          className={`inline-flex items-center gap-xs px-sm py-[0.125rem] rounded-full border text-[calc(0.6875rem*var(--text-scale))] font-bold uppercase tracking-[0.12em] ${
             isLive ? 'border-[#4ADE80] text-[#4ADE80] live-pill-pulse' : 'border-white/25 text-white/70'
           }`}
         >
@@ -99,7 +99,7 @@ export function Scoreboard({
       </div>
 
       <div
-        className="mt-sm w-full bg-white/10 h-[6px] rounded-full overflow-hidden"
+        className="mt-sm w-full bg-white/10 h-[0.375rem] rounded-full overflow-hidden"
         role="progressbar"
         aria-valuenow={Math.round(pct)}
         aria-valuemin={0}

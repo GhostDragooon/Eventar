@@ -9,7 +9,7 @@ export function AuthShell({ title, description, children, aside }: {
 }) {
   return (
     <main className="min-h-dvh bg-surface px-grid-margin py-xl text-on-surface">
-      <div className="mx-auto grid min-h-[calc(100dvh-4rem)] w-full max-w-5xl overflow-hidden rounded-[20px] border border-outline-variant bg-surface-container-lowest shadow-sm lg:grid-cols-5">
+      <div className="mx-auto grid min-h-[calc(100dvh-4rem)] w-full max-w-5xl overflow-hidden rounded-card border border-outline-variant bg-surface-container-lowest shadow-sm lg:grid-cols-5">
         <section className="flex flex-col justify-center space-y-lg p-xl lg:col-span-3">
           <BrandMark />
           <header className="space-y-xs">

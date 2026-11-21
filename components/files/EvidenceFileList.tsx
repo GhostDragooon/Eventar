@@ -26,7 +26,7 @@ export function EvidenceFileList({
   onRemove?: (id: string) => void;
 }) {
   return (
-    <ul className="divide-y divide-outline-variant rounded-[12px] border border-outline-variant bg-surface-container-lowest">
+    <ul className="divide-y divide-outline-variant rounded-control border border-outline-variant bg-surface-container-lowest">
       {files.map((file) => (
         <li key={file.id} className="flex flex-wrap items-center gap-sm p-md">
           <span className="material-symbols-outlined text-on-surface-variant" aria-hidden>folder_open</span>

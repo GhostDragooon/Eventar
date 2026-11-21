@@ -15,7 +15,7 @@ export function DisclosureDeleteAction({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="rounded-[12px] border border-outline-variant bg-surface-container-lowest">
+    <div className="rounded-control border border-outline-variant bg-surface-container-lowest">
       <button
         // ui-primitive-allow: disclosure trigger — the visible label is
         // arbitrary caller text, not action chrome, so it stays a plain

@@ -1,6 +1,6 @@
 # Plan: px to relative units sweep (2026-11-21)
 
-**Status 2026-11-21:** Batches 0 and 1 DONE, uncommitted. Ivan picked radii option (a) (rem tokens) and the recommended order; Batch 2 not started.
+**Status 2026-11-21:** Batches 0 and 1 DONE, uncommitted. Ivan picked radii option (a) (rem tokens) and the recommended order; Batch 2 (radii) DONE, uncommitted: `--radius-card` 1.25rem (20px) and `--radius-control` 0.75rem (12px) added to `@theme inline` and registered in `lib/utils.ts` twMerge; 90 files codemodded (20px card, 12px control, 14px xl, 18px 2xl, 22px 3xl, 10px lg, 16px and 2px to rem). Zero computed border-radius diffs on 6 routes at 1280px and 2 at 375px. Ratchet baseline 346 to 319. Token names were Ivan's "Start Batch 2" on the recommended names.
 - Batch 0: `scripts/check-ui-units.mjs` + `check:ui-units` script + `scripts/ui-units-baseline.json` (was 649 px, now 346 px). Planted px made it fail; removed.
 - Batch 1: 19 `--text-*` tokens in `globals.css` and 295 `text-[calc(Npx*...)]` sites in 82 files now `rem`. Zero computed-style diffs on 6 routes at 1280px and 3 routes at 375px (181, 175, 52, 43, 45, 39 elements at 1280). At root font size 20px a 12px label computes to 15px: rem works.
 - Correction to the Batch 1 text above: swapping to the token classes (`text-body-sm` etc.) is NOT zero-diff, because those tokens carry their own line-height, letter-spacing and weight. Sites got a rem `calc` instead. The 89 px calc sites left are all under `app/dev-preview-uiport/` (out of scope).

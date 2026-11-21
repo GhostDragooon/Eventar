@@ -19,7 +19,7 @@ const TYPE_SCALE = [
 ]
 
 const twMerge = extendTailwindMerge({
-  extend: { theme: { text: TYPE_SCALE } },
+  extend: { theme: { text: TYPE_SCALE, radius: ["card", "control"] } },
 })
 
 export function cn(...inputs: ClassValue[]) {

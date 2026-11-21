@@ -92,7 +92,7 @@ export default async function AnalyticsIndexPage() {
       </header>
 
       {completed.length === 0 ? (
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-xl text-center">
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-card p-xl text-center">
           <p className="font-body-md text-body-md text-on-surface-variant">No completed events yet.</p>
           <Link href="/dashboard" className={cn(buttonVariants(), 'mt-md h-11 gap-sm px-lg font-label-md text-label-md')}>Go to events</Link>
         </div>
@@ -102,12 +102,12 @@ export default async function AnalyticsIndexPage() {
             <li key={e.id}>
               <Link
                 href={`/events/${e.id}/analytics`}
-                className="flex items-center gap-md bg-surface-container-lowest border border-outline-variant rounded-[16px] p-md hover:bg-surface-container-low transition-colors"
+                className="flex items-center gap-md bg-surface-container-lowest border border-outline-variant rounded-[1rem] p-md hover:bg-surface-container-low transition-colors"
               >
-                <span className="w-[4px] self-stretch rounded-full shrink-0 bg-outline-variant" aria-hidden />
+                <span className="w-[0.25rem] self-stretch rounded-full shrink-0 bg-outline-variant" aria-hidden />
                 <div className="flex-1 min-w-0">
                   <p className="font-title-lg text-title-lg font-semibold text-on-surface truncate">{e.title}</p>
-                  <p className="font-body-md text-body-md text-on-surface-variant mt-[2px]">
+                  <p className="font-body-md text-body-md text-on-surface-variant mt-[0.125rem]">
                     {formatInTz(e.start_time, e.timezone)}{e.venue_name ? ` · ${e.venue_name}` : ''}
                   </p>
                 </div>
@@ -116,7 +116,7 @@ export default async function AnalyticsIndexPage() {
                     <span className="text-[calc(1.5rem*var(--text-scale))] font-extrabold tracking-[-0.02em] tabular-nums text-on-surface">{e.attended}</span>
                     <span className="text-body-md text-on-surface-variant"> / {e.registered} attended</span>
                   </p>
-                  <p className="font-label-md text-label-md text-[color:var(--on-primary-container)] font-semibold normal-case tracking-normal mt-[2px]">
+                  <p className="font-label-md text-label-md text-[color:var(--on-primary-container)] font-semibold normal-case tracking-normal mt-[0.125rem]">
                     {e.responses} response{e.responses === 1 ? '' : 's'}
                   </p>
                 </div>

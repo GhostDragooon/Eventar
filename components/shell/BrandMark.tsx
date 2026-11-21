@@ -34,8 +34,8 @@ export function BrandMark({
       <span
         className={`grid place-items-center rounded-lg bg-primary font-semibold text-on-primary ${
           compact
-            ? 'h-[26px] w-[26px] text-[calc(0.9375rem*var(--text-scale))]'
-            : 'h-[30px] w-[30px] text-[calc(1.0625rem*var(--text-scale))]'
+            ? 'h-[1.625rem] w-[1.625rem] text-[calc(0.9375rem*var(--text-scale))]'
+            : 'h-[1.875rem] w-[1.875rem] text-[calc(1.0625rem*var(--text-scale))]'
         }`}
         aria-hidden
       >

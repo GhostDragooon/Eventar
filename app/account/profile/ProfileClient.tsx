@@ -372,7 +372,7 @@ export function ProfileClient({
             : 'font-body-md text-body-md text-on-surface-variant bg-surface-container border border-outline-variant rounded-lg px-md py-sm flex items-start gap-sm'
         }
       >
-        <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>
+        <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[0.125rem]" aria-hidden>
           {gatesReady ? 'check_circle' : 'info'}
         </span>
         <span className="flex-1">
@@ -595,7 +595,7 @@ export function ProfileClient({
           box below is its own <form>, which is invalid HTML nested inside
           another <form> (H2). Splitting them also matches how a user thinks:
           "profile fields I edit" vs "credentials I declare against a body." */}
-      <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm">
+      <section className="bg-surface-container-lowest border border-outline-variant rounded-card p-lg shadow-sm">
         <div className="flex items-center gap-md mb-md">
           <div
             aria-hidden
@@ -662,7 +662,7 @@ export function ProfileClient({
             role="status"
             className="mt-md font-body-md text-body-md text-on-surface-variant bg-surface-container border border-outline-variant rounded-lg px-md py-sm flex items-start gap-sm"
           >
-            <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>info</span>
+            <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[0.125rem]" aria-hidden>info</span>
             <span className="flex-1">
               No accrediting bodies are open for self-declare right now. Please
               contact the event organiser.
@@ -874,7 +874,7 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm">
+    <section className="bg-surface-container-lowest border border-outline-variant rounded-card p-lg shadow-sm">
       <div className="flex items-center gap-md mb-md">
         <div
           aria-hidden

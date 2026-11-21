@@ -43,7 +43,7 @@ export default function DownloadQrButton({ eventId }: { eventId: string }) {
       </Button>
       {errorMessage && (
         <p role="alert" className="flex items-start gap-xs text-sm text-danger">
-          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
+          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[0.125rem]" aria-hidden>warning</span>
           {errorMessage}
         </p>
       )}

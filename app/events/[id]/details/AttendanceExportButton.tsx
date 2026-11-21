@@ -65,7 +65,7 @@ export function AttendanceExportButton({
           }
         >
           {state.kind === 'error' && (
-            <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
+            <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[0.125rem]" aria-hidden>warning</span>
           )}
           {help}
         </p>

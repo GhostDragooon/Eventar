@@ -26,7 +26,7 @@ function LoginLayout({ children }: { children: React.ReactNode }) {
   return (
     <SiteShell active="organiser">
       <div className="mx-auto w-full max-w-md px-grid-margin py-xl">
-        <div className="flex flex-col gap-lg bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm">
+        <div className="flex flex-col gap-lg bg-surface-container-lowest border border-outline-variant rounded-card p-lg shadow-sm">
           {children}
         </div>
       </div>

@@ -61,7 +61,7 @@ export function LiveScoreboard({
 
   return (
     <section
-      className="rounded-[20px] p-lg mb-xl text-white relative overflow-hidden"
+      className="rounded-card p-lg mb-xl text-white relative overflow-hidden"
       style={{ background: 'radial-gradient(120% 140% at 0% 0% in oklch, #123420 0%, #0A0A0A 55%)' }}
       aria-label="Event status"
     >
@@ -81,7 +81,7 @@ export function LiveScoreboard({
       {/* Progress rail (only meaningful while running) */}
       {!isDone && !isDraft && (
         <>
-          <div className="h-[6px] w-full rounded-full bg-white/10 overflow-hidden mb-xs" aria-hidden>
+          <div className="h-[0.375rem] w-full rounded-full bg-white/10 overflow-hidden mb-xs" aria-hidden>
             <div className="h-full w-full origin-left rounded-full bg-[#4ADE80] transition-transform duration-1000 ease-linear motion-reduce:transition-none" style={{ transform: `scaleX(${isUpcoming ? 0 : pct / 100})` }} />
           </div>
           <div className="flex justify-between text-[calc(0.6875rem*var(--text-scale))] tabular-nums text-white/50 mb-lg">
@@ -119,7 +119,7 @@ export function LiveScoreboard({
 function StatTile({ n, of, label, sub, tone }: { n: number; of?: number | null; label: string; sub: string; tone: 'green' | 'blue' | 'neutral' }) {
   const color = tone === 'green' ? 'text-[#4ADE80]' : tone === 'blue' ? 'text-[#79B8FF]' : 'text-white';
   return (
-    <div className="rounded-[14px] border border-white/10 bg-white/[0.03] p-md">
+    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-md">
       <p className="leading-none mb-sm">
         <span className={`text-[calc(1.875rem*var(--text-scale))] font-extrabold tracking-[-0.02em] tabular-nums ${color}`}>{n}</span>
         {of != null && <span className="text-body-md text-white/40"> / {of}</span>}

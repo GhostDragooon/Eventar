@@ -61,7 +61,7 @@ export function TeammateInvitationForm({
       </div>
       <Button type="submit" disabled={pending}>{pending ? 'Sending…' : 'Send invitation'}</Button>
       {status && (
-        <p role={status.kind === 'error' ? 'alert' : 'status'} className={status.kind === 'error' ? 'rounded-[12px] bg-error-container p-md text-on-error-container' : 'rounded-[12px] bg-success-container p-md text-on-success-container'}>
+        <p role={status.kind === 'error' ? 'alert' : 'status'} className={status.kind === 'error' ? 'rounded-control bg-error-container p-md text-on-error-container' : 'rounded-control bg-success-container p-md text-on-success-container'}>
           {status.message}
         </p>
       )}

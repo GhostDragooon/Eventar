@@ -16,7 +16,7 @@ export function SectionShell({
   children: React.ReactNode;
 }) {
   return (
-    <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm mb-lg">
+    <section className="bg-surface-container-lowest border border-outline-variant rounded-card p-lg shadow-sm mb-lg">
       <div className="flex items-center gap-sm mb-md">
         <SectionChip index={index} />
         <h2 className="text-[calc(1.25rem*var(--text-scale))] font-extrabold tracking-[-0.025em] text-on-surface">{title}</h2>
@@ -64,7 +64,7 @@ export function SectionStub({
 function SectionChip({ index, muted }: { index: string; muted?: boolean }) {
   return (
     <span
-      className={`inline-flex items-center justify-center w-[30px] h-[22px] rounded-md text-[calc(0.6875rem*var(--text-scale))] font-bold tabular-nums ${
+      className={`inline-flex items-center justify-center w-[1.875rem] h-[1.375rem] rounded-md text-[calc(0.6875rem*var(--text-scale))] font-bold tabular-nums ${
         muted
           ? 'bg-surface-container-high text-on-surface-variant'
           : 'bg-primary-container text-on-primary-container'

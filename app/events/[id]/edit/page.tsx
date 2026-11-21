@@ -273,7 +273,7 @@ export default async function StaffEventEditPage({
           <div className="lg:col-span-8 min-w-0">
             <DraftEditFormPanel event={event} blocks={blocks ?? []} />
           </div>
-          <aside className="lg:col-span-4 lg:sticky lg:top-[72px] space-y-md self-start">
+          <aside className="lg:col-span-4 lg:sticky lg:top-[4.5rem] space-y-md self-start">
             {/* The card sits OUTSIDE the form, so it publishes what was last SAVED,
                 not what is typed in the form (a typo fix pressed straight into
                 Publish went live with the old title: user-lens 2026-10-02). And a
@@ -394,7 +394,7 @@ export default async function StaffEventEditPage({
         </div>
 
         {/* Right (4 cols): sticky action panel */}
-        <aside className="lg:col-span-4 lg:sticky lg:top-[72px] space-y-md self-start">
+        <aside className="lg:col-span-4 lg:sticky lg:top-[4.5rem] space-y-md self-start">
           {/* No `event.status === 'draft'` publish card here: this whole
               branch only renders in the ternary's ELSE, which already
               guarantees status !== 'draft'. A guard for it was dead code —
@@ -648,7 +648,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm">
+    <section className="bg-surface-container-lowest border border-outline-variant rounded-card p-lg shadow-sm">
       <div className="flex items-center gap-md mb-md">
         <div aria-hidden className={`w-10 h-10 rounded-full flex items-center justify-center ${iconBg} ${iconColor}`}>
           <span className="material-symbols-outlined text-[calc(1.25rem*var(--text-scale))]">{icon}</span>
@@ -672,9 +672,9 @@ function ActionCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-md shadow-sm">
+    <div className="bg-surface-container-lowest border border-outline-variant rounded-card p-md shadow-sm">
       <div className="flex items-start gap-sm mb-sm">
-        <span className="material-symbols-outlined text-primary-ink text-[calc(1.25rem*var(--text-scale))] mt-[2px]" aria-hidden>
+        <span className="material-symbols-outlined text-primary-ink text-[calc(1.25rem*var(--text-scale))] mt-[0.125rem]" aria-hidden>
           {icon}
         </span>
         <div className="flex-1 min-w-0">

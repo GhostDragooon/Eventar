@@ -22,7 +22,7 @@ import Link from 'next/link';
 export function SiteFooter({ links = true, onEvents = false }: { links?: boolean; /** The page is /events: its footer entry renders as plain text, not a self-link. */ onEvents?: boolean }) {
   return (
     <footer className="mt-xxl w-full border-t border-outline-variant px-lg py-xl">
-      <div className="mx-auto flex max-w-[980px] flex-wrap items-center justify-between gap-md">
+      <div className="mx-auto flex max-w-[61.25rem] flex-wrap items-center justify-between gap-md">
         <p className="text-[calc(0.78125rem*var(--text-scale))] text-on-surface-variant">
           By <span className="font-bold text-on-surface">Eventar</span> · <abbr title="Continuing professional development">CPD</abbr> infrastructure, Hong Kong
         </p>

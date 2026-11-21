@@ -84,7 +84,7 @@ export function SpeakersCard({
   return (
     <section
       aria-label="Speakers"
-      className="bg-surface-container-lowest rounded-[20px] border border-outline-variant p-md"
+      className="bg-surface-container-lowest rounded-card border border-outline-variant p-md"
     >
       <header className="mb-sm flex items-center justify-between">
         <h2 className="font-label-md text-label-md uppercase text-on-surface-variant">

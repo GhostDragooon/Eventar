@@ -84,7 +84,7 @@ export default async function LandingPage() {
     }
   }
   return (
-    <div className="hero-ground flex min-h-dvh flex-col text-on-surface">
+    <div className="hero-ground flex min-h-dvh flex-col text-on-surface max-sm:pb-[5rem]">
       {/* Page-level, so `position: sticky` is bound by the whole document and
           the nav stays reachable to the footer. It does NOT reintroduce the
           white band it was moved to fix: `.hero-ground` paints the glow from
@@ -142,14 +142,14 @@ function FeatureBand({
   sub: string;
 }) {
   return (
-    <section id={id} className="mx-auto mt-[46px] max-w-[1200px] px-[15px]">
+    <section id={id} className="mx-auto mt-[2.875rem] max-w-[75rem] px-[0.9375rem]">
       <h2 className="text-center text-[calc(1.625rem*var(--text-scale))] font-semibold tracking-[-0.01em] text-on-surface">
         {title}
       </h2>
-      <p className="mt-[6px] text-center text-[calc(0.84375rem*var(--text-scale))] text-on-surface-variant">{sub}</p>
+      <p className="mt-[0.375rem] text-center text-[calc(0.84375rem*var(--text-scale))] text-on-surface-variant">{sub}</p>
       <div className="mt-lg grid gap-md md:grid-cols-3">
         {FEATURES[audience].map((f) => (
-          <article key={f.t} className="rounded-[14px] border border-outline-variant bg-surface-container-lowest p-lg">
+          <article key={f.t} className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
             <h3 className="text-[calc(0.9375rem*var(--text-scale))] font-semibold leading-snug text-on-surface">{f.t}</h3>
             <p className="mt-sm text-[calc(0.8125rem*var(--text-scale))] leading-[1.55] text-on-surface-variant">{f.d}</p>
           </article>

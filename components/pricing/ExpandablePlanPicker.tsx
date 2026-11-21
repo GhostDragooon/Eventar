@@ -27,7 +27,7 @@ export function ExpandablePlanPicker({
         const selected = tier.id === value;
         const open = tier.id === expanded;
         return (
-          <article key={tier.id} className={cn('rounded-[12px] border', selected ? 'border-primary bg-primary-container text-on-primary-container' : 'border-outline-variant bg-surface-container-lowest text-on-surface')}>
+          <article key={tier.id} className={cn('rounded-control border', selected ? 'border-primary bg-primary-container text-on-primary-container' : 'border-outline-variant bg-surface-container-lowest text-on-surface')}>
             <button
               // ui-primitive-allow: disclosure trigger, not action-button chrome — same convention as ShareLinkControl
               type="button"

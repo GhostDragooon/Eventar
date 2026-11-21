@@ -8,7 +8,7 @@ export function LicenceBanner({ missing }: { missing: boolean }) {
   return (
     <div
       role="status"
-      className="space-y-xs rounded-[20px] border border-outline-variant bg-primary-fixed p-lg font-body-md text-body-md text-on-surface"
+      className="space-y-xs rounded-card border border-outline-variant bg-primary-fixed p-lg font-body-md text-body-md text-on-surface"
     >
       <p className="m-0">
         Account setup is not finished: no current licence is declared. Credit is released only for events you check in to after you

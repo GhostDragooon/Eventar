@@ -140,7 +140,7 @@ export function TimePicker15({
             role="listbox"
             tabIndex={0}
             onKeyDown={onListKey}
-            className="relative max-h-[240px] overflow-y-auto py-sm focus:outline-none"
+            className="relative max-h-[15rem] overflow-y-auto py-sm focus:outline-none"
           >
             {Array.from({ length: 96 }, (_, i) => i * 15).map(min => {
               const isSelected = value === min;
@@ -154,7 +154,7 @@ export function TimePicker15({
                   onClick={() => commit(min)}
                   onMouseEnter={() => setHighlight(min)}
                   className={
-                    'mx-sm my-[2px] rounded-full px-md py-sm cursor-pointer transition-colors text-center font-body-lg text-body-lg ' +
+                    'mx-sm my-[0.125rem] rounded-full px-md py-sm cursor-pointer transition-colors text-center font-body-lg text-body-lg ' +
                     (isSelected
                       ? 'bg-primary text-on-primary font-bold'
                       : isHighlight

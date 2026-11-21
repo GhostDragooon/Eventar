@@ -2,7 +2,7 @@
 
 // Attendee-facing account editor. Style oracle: app/settings/SettingsClient.tsx
 // SectionCard pattern (bg-surface-container-lowest border border-outline-variant
-// rounded-[20px] p-lg shadow-sm) + Base UI Input from components/ui/input.
+// rounded-card p-lg shadow-sm) + Base UI Input from components/ui/input.
 //
 // Plan §7.1 fields: first_name, last_name, salutation, preferred_name,
 // phone (+ phone_country_code), country_code, display_language. full_name
@@ -239,7 +239,7 @@ export function AccountClient({
           line is done, so an attendee can confirm at a glance. */}
       <section
         aria-labelledby="cme-readiness-heading"
-        className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm"
+        className="bg-surface-container-lowest border border-outline-variant rounded-card p-lg shadow-sm"
       >
         <h2
           id="cme-readiness-heading"
@@ -289,7 +289,7 @@ export function AccountClient({
         <div
           role="status"
           aria-live="polite"
-          className="bg-primary-fixed border border-outline-variant rounded-[20px] p-lg flex flex-col gap-sm sm:flex-row sm:items-center sm:justify-between"
+          className="bg-primary-fixed border border-outline-variant rounded-card p-lg flex flex-col gap-sm sm:flex-row sm:items-center sm:justify-between"
         >
           <div className="flex items-start gap-md">
             <div
@@ -620,7 +620,7 @@ function SectionCard({
   id?: string;
 }) {
   return (
-    <section id={id} className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm scroll-mt-lg">
+    <section id={id} className="bg-surface-container-lowest border border-outline-variant rounded-card p-lg shadow-sm scroll-mt-lg">
       <div className="flex items-center gap-md mb-md">
         <div
           aria-hidden

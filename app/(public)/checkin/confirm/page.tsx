@@ -348,7 +348,7 @@ function Empty({
 
 function EventCard({ event, accent }: { event: EventRow; accent?: boolean }) {
   return (
-    <div className={`bg-surface-container-lowest border border-outline-variant rounded-[16px] p-md ${accent ? 'border-l-4 border-l-[color:var(--success)]' : ''}`}>
+    <div className={`bg-surface-container-lowest border border-outline-variant rounded-[1rem] p-md ${accent ? 'border-l-4 border-l-[color:var(--success)]' : ''}`}>
       <p className="font-title-lg text-title-lg font-semibold text-on-surface m-0">{event.title}</p>
       <p className="font-body-md text-body-md text-on-surface-variant mt-xs m-0">
         <span className="text-on-primary-container font-semibold">{formatDate(event.start_time, event.timezone)}</span>
@@ -393,7 +393,7 @@ function PassView({
       <EventCard event={event} />
 
       {/* Pass card — perforated-ticket pattern. */}
-      <div className="bg-surface-container-lowest border border-outline-variant rounded-[20px] overflow-hidden shadow-sm">
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-card overflow-hidden shadow-sm">
         {/* No name here: this pass is served on an anonymous, code-addressable
             GET, so the identity line would leak a stranger's name to anyone who
             guesses a code (Phase-8 gate 1). The event above + QR below identify
@@ -404,9 +404,9 @@ function PassView({
 
         {/* Notched divider (ticket perforation). */}
         <div className="relative flex items-center" aria-hidden>
-          <span className="w-[16px] h-[16px] rounded-full bg-background border border-outline-variant -ml-[8px]" />
+          <span className="w-[1rem] h-[1rem] rounded-full bg-background border border-outline-variant -ml-[0.5rem]" />
           <span className="flex-1 border-t border-dashed border-outline-variant" />
-          <span className="w-[16px] h-[16px] rounded-full bg-background border border-outline-variant -mr-[8px]" />
+          <span className="w-[1rem] h-[1rem] rounded-full bg-background border border-outline-variant -mr-[0.5rem]" />
         </div>
 
         <div className="flex flex-col items-center gap-md px-lg py-lg">
@@ -417,7 +417,7 @@ function PassView({
             alt="Your personal check-in QR code"
             width={218}
             height={218}
-            className="rounded-[12px] border-2 border-[#4ADE80] bg-white p-xs"
+            className="rounded-control border-2 border-[#4ADE80] bg-white p-xs"
           />
           <div className="text-center">
             <p className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-xs m-0">
@@ -502,7 +502,7 @@ function CheckedInView({
 
       <div className="flex flex-col items-center gap-md text-center py-md">
         <span
-          className="inline-flex items-center justify-center w-[72px] h-[72px] rounded-full bg-[color:var(--success)] text-white shadow-[0_0_0_8px_rgba(22,163,74,0.15)]"
+          className="inline-flex items-center justify-center w-[4.5rem] h-[4.5rem] rounded-full bg-[color:var(--success)] text-white shadow-[0_0_0_8px_rgba(22,163,74,0.15)]"
           aria-hidden
         >
           <span className="material-symbols-outlined text-[calc(2.5rem*var(--text-scale))]">check</span>
@@ -529,7 +529,7 @@ function CheckedInView({
           aria-live="polite"
           className="font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm flex items-start gap-sm m-0"
         >
-          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden data-fill="1">check_circle</span>
+          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[0.125rem]" aria-hidden data-fill="1">check_circle</span>
           <span className="flex-1"><abbr title="Continuing medical education">CME</abbr>/<abbr title="Continuing professional development">CPD</abbr> points recorded.</span>
         </p>
       )}
@@ -539,7 +539,7 @@ function CheckedInView({
           aria-live="polite"
           className="font-body-md text-body-md text-on-surface-variant bg-surface-container border border-outline-variant rounded-lg px-md py-sm flex items-start gap-sm m-0"
         >
-          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>info</span>
+          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[0.125rem]" aria-hidden>info</span>
           <span className="flex-1">
             CME/CPD points are pending.{' '}
             {/* H1 — signed-in visitors go straight to the claim page; only
@@ -565,7 +565,7 @@ function CheckedInView({
           aria-live="polite"
           className="font-body-md text-body-md text-on-surface-variant bg-surface-container border border-outline-variant rounded-lg px-md py-sm flex items-start gap-sm m-0"
         >
-          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>info</span>
+          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[0.125rem]" aria-hidden>info</span>
           <span className="flex-1">
             {/* H7 — 'missing' isn't one thing. For a signed-in attendee it
                 most often means an F1–F5 gate failed (profile, licence,

@@ -125,8 +125,8 @@ export function DatePicker({
           aria-label={inline ? (ariaLabel ?? 'Choose date') : 'Choose date'}
           className={
             inline
-              ? 'w-full max-w-[360px] bg-surface-container-lowest border border-outline-variant rounded-2xl p-md'
-              : 'mt-xs w-full max-w-[360px] bg-surface-container-lowest border border-outline-variant rounded-2xl p-md'
+              ? 'w-full max-w-[22.5rem] bg-surface-container-lowest border border-outline-variant rounded-2xl p-md'
+              : 'mt-xs w-full max-w-[22.5rem] bg-surface-container-lowest border border-outline-variant rounded-2xl p-md'
           }
         >
           <div className="flex items-center justify-between mb-md">

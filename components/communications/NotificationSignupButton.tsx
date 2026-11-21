@@ -44,7 +44,7 @@ export function NotificationSignupButton({ onSubscribe }: { onSubscribe: (email:
   }
 
   return (
-    <div className="flex max-w-lg flex-wrap items-center gap-sm rounded-[20px] border border-outline-variant bg-surface-container-lowest p-sm">
+    <div className="flex max-w-lg flex-wrap items-center gap-sm rounded-card border border-outline-variant bg-surface-container-lowest p-sm">
       <label htmlFor={emailId} className="sr-only">Email address</label>
       <Input id={emailId} type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email address" className="min-h-11 min-w-52 flex-1" />
       <Button type="button" disabled={pending} onClick={submit}>{pending ? 'Submitting…' : 'Subscribe'}</Button>

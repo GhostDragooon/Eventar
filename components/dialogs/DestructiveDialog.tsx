@@ -51,7 +51,7 @@ export function DestructiveDialog({
         </>
       }
     >
-      <label className="flex items-start gap-md rounded-[12px] bg-error-container p-md text-on-error-container">
+      <label className="flex items-start gap-md rounded-control bg-error-container p-md text-on-error-container">
         <input
           type="checkbox"
           checked={accepted}

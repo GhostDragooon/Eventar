@@ -50,14 +50,14 @@ const POINTS = [
 ] as const;
 
 export function WhyEventar() {
-  // No px-[15px] on the section below (2026-08-21, Ivan's call): the card's
+  // No px-[0.9375rem] on the section below (2026-08-21, Ivan's call): the card's
   // own p-xl already provides visual inset, so the section's own padding was
   // stacking on top of it — 15+32=47px before the text, vs Hero's bare 15px.
   // Dropping it lands the text at 32px instead, keeping the card's full
   // internal padding rather than sacrificing it for an exact match.
   return (
-    <section className="mx-auto mt-[46px] max-w-[1200px]">
-      <div className="rounded-[18px] bg-surface-container-low p-xl">
+    <section className="mx-auto mt-[2.875rem] max-w-[75rem]">
+      <div className="rounded-2xl bg-surface-container-low p-xl">
         <div className="flex flex-wrap items-center justify-between gap-md">
           <span className="text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-[.08em] text-on-surface-variant">
             Why Eventar
@@ -88,7 +88,7 @@ export function WhyEventar() {
               <article
                 key={p.title}
                 className={cn(
-                  'relative flex min-h-[300px] flex-col overflow-hidden rounded-[14px] p-lg',
+                  'relative flex min-h-[18.75rem] flex-col overflow-hidden rounded-xl p-lg',
                   p.photo
                     ? 'text-white'
                     : p.dark

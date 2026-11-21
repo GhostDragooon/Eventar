@@ -15,7 +15,7 @@ export function TestimonialCarousel({ items }: { items: readonly ApprovedTestimo
 
   if (!items.length) {
     return (
-      <section className="rounded-[20px] border border-outline-variant bg-surface-container-lowest p-xl text-center">
+      <section className="rounded-card border border-outline-variant bg-surface-container-lowest p-xl text-center">
         <p className="text-on-surface-variant">No approved testimonials are available.</p>
       </section>
     );
@@ -24,7 +24,7 @@ export function TestimonialCarousel({ items }: { items: readonly ApprovedTestimo
   const item = items[index];
 
   return (
-    <section aria-roledescription="carousel" aria-label="Testimonials" className="rounded-[20px] border border-outline-variant bg-surface-container-lowest p-xl">
+    <section aria-roledescription="carousel" aria-label="Testimonials" className="rounded-card border border-outline-variant bg-surface-container-lowest p-xl">
       <blockquote className="font-headline-sm text-headline-sm text-on-surface">&ldquo;{item.quote}&rdquo;</blockquote>
       <footer className="mt-md">
         <strong className="text-on-surface">{item.name}</strong>

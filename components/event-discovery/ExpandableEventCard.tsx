@@ -125,7 +125,7 @@ export function ExpandableEventCard({
             aria-modal="true"
             aria-labelledby={`event-dialog-${event.id}`}
             tabIndex={-1}
-            className="relative max-h-[calc(100dvh-2rem)] w-full max-w-3xl overflow-auto rounded-[20px] border border-outline-variant bg-surface-container-lowest shadow-xl"
+            className="relative max-h-[calc(100dvh-2rem)] w-full max-w-3xl overflow-auto rounded-card border border-outline-variant bg-surface-container-lowest shadow-xl"
           >
             <button
               ref={closeRef}
@@ -161,7 +161,7 @@ export function ExpandableEventCard({
                 </p>
               )}
 
-              <dl className="grid gap-md rounded-[12px] bg-surface-container p-md sm:grid-cols-2">
+              <dl className="grid gap-md rounded-control bg-surface-container p-md sm:grid-cols-2">
                 <div>
                   <dt className="font-label-md text-label-md text-on-surface-variant">Date</dt>
                   <dd className="font-body-md text-body-md text-on-surface">{event.dateLabel}</dd>

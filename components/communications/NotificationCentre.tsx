@@ -24,7 +24,7 @@ export function NotificationCentre({
   const visible = items.filter((item) => item.kind === tab);
 
   return (
-    <section className="overflow-hidden rounded-[20px] border border-outline-variant bg-surface-container-lowest">
+    <section className="overflow-hidden rounded-card border border-outline-variant bg-surface-container-lowest">
       <div role="tablist" aria-label="Updates" className="flex border-b border-outline-variant">
         {(['notification', 'team'] as const).map((value) => (
           <button

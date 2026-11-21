@@ -145,11 +145,11 @@ export default async function EventPosterPage({
             Off in print to keep the page disciplined on paper. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute left-0 top-0 h-[160px] w-[160px] border-l-2 border-t-2 border-[var(--po-accent)] opacity-25 print:hidden"
+          className="pointer-events-none absolute left-0 top-0 h-[10rem] w-[10rem] border-l-2 border-t-2 border-[var(--po-accent)] opacity-25 print:hidden"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute bottom-0 right-0 h-[160px] w-[160px] border-b-2 border-r-2 border-[var(--po-accent)] opacity-25 print:hidden"
+          className="pointer-events-none absolute bottom-0 right-0 h-[10rem] w-[10rem] border-b-2 border-r-2 border-[var(--po-accent)] opacity-25 print:hidden"
         />
 
         <div className="mx-auto flex max-w-3xl flex-col gap-xl p-grid-margin print:max-w-none print:p-0 print:gap-lg">

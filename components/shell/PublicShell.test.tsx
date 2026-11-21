@@ -106,14 +106,15 @@ describe('PublicShell: organiser door link', () => {
 
 describe('PublicShell: brand link', () => {
   it('goes to /events for a signed-in attendee, / for a visitor and for staff', () => {
-    const brand = () => screen.getByRole('link', { name: 'Eventar home' });
+    // Two links: the phone logo strip and the in-pill mark (CSS shows one per breakpoint; jsdom has no CSS).
+    const brand = () => screen.getAllByRole('link', { name: 'Eventar home' }).map((a) => a.getAttribute('href'));
     const { unmount } = render(<PublicShell signedIn accountComplete>content</PublicShell>);
-    expect(brand()).toHaveAttribute('href', '/events');
+    expect(brand()).toEqual(['/events', '/events']);
     unmount();
     const second = render(<PublicShell>content</PublicShell>);
-    expect(brand()).toHaveAttribute('href', '/');
+    expect(brand()).toEqual(['/', '/']);
     second.unmount();
     render(<PublicShell signedIn isStaff>content</PublicShell>);
-    expect(brand()).toHaveAttribute('href', '/');
+    expect(brand()).toEqual(['/', '/']);
   });
 });

@@ -22,9 +22,9 @@ export default function VenueSection({ value, onChange }: Props) {
             {value.venue_name}
           </p>
           {value.venue_address && (
-            <p className="font-body-md text-body-md text-on-surface-variant ml-[26px]">{value.venue_address}</p>
+            <p className="font-body-md text-body-md text-on-surface-variant ml-[1.625rem]">{value.venue_address}</p>
           )}
-          <p className="font-body-md text-body-md text-on-surface-variant ml-[26px]">
+          <p className="font-body-md text-body-md text-on-surface-variant ml-[1.625rem]">
             {value.city}
             {value.region ? `, ${value.region}` : ''}, {value.country}
           </p>

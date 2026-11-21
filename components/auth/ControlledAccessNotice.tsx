@@ -1,6 +1,6 @@
 export function ControlledAccessNotice({ contactLabel = 'Contact an administrator' }: { contactLabel?: string }) {
   return (
-    <section className="rounded-[12px] border border-outline-variant bg-surface-container p-md">
+    <section className="rounded-control border border-outline-variant bg-surface-container p-md">
       <div className="flex items-start gap-sm">
         <span className="material-symbols-outlined text-primary-ink" aria-hidden>lock</span>
         <div className="space-y-xs">

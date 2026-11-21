@@ -74,7 +74,7 @@ export function SplitActionButton({
         <span className="material-symbols-outlined" aria-hidden>expand_more</span>
       </button>
       {open && !mobile && (
-        <div className="absolute right-0 top-full z-30 mt-xs min-w-52 origin-top-right animate-overlay-in rounded-[12px] border border-outline-variant bg-popover p-xs shadow-lg">
+        <div className="absolute right-0 top-full z-30 mt-xs min-w-52 origin-top-right animate-overlay-in rounded-control border border-outline-variant bg-popover p-xs shadow-lg">
           {menu}
         </div>
       )}

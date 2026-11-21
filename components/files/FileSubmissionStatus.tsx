@@ -15,7 +15,7 @@ const CONFIG = {
 export function FileSubmissionStatus({ state, message }: { state: FileSubmissionState; message?: string }) {
   const [icon, style, label] = CONFIG[state];
   return (
-    <div role={state === 'rejected' ? 'alert' : 'status'} className={`flex items-start gap-sm rounded-[12px] p-md ${style}`}>
+    <div role={state === 'rejected' ? 'alert' : 'status'} className={`flex items-start gap-sm rounded-control p-md ${style}`}>
       <span className="material-symbols-outlined" aria-hidden>{icon}</span>
       <span>
         <strong className="block">{label}</strong>

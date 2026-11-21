@@ -38,7 +38,7 @@ export function FunnelCard({
   return (
     <section
       aria-label="Conversion funnel"
-      className="mt-lg p-lg bg-surface-container-lowest border border-outline-variant rounded-[20px] shadow-sm"
+      className="mt-lg p-lg bg-surface-container-lowest border border-outline-variant rounded-card shadow-sm"
     >
       <div className="flex items-center gap-sm mb-md">
         <span className="material-symbols-outlined text-primary-ink" aria-hidden>
@@ -69,7 +69,7 @@ export function FunnelCard({
             {i < steps.length - 1 && (
               <span
                 aria-hidden
-                className="hidden md:block absolute right-[-12px] top-1/2 -translate-y-1/2 text-on-surface-variant"
+                className="hidden md:block absolute right-[-0.75rem] top-1/2 -translate-y-1/2 text-on-surface-variant"
               >
                 <span className="material-symbols-outlined">chevron_right</span>
               </span>

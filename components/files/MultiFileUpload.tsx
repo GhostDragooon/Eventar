@@ -59,13 +59,13 @@ export function MultiFileUpload({
   }
 
   return (
-    <section className="space-y-md rounded-[20px] border border-outline-variant bg-surface-container-lowest p-lg">
+    <section className="space-y-md rounded-card border border-outline-variant bg-surface-container-lowest p-lg">
       <input ref={inputRef} id={inputId} type="file" multiple accept={accept} onChange={(event) => add(event.target.files)} className="sr-only" />
       <button
         // ui-primitive-allow: dashed drop-zone affordance, not action-button chrome
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="flex min-h-40 w-full flex-col items-center justify-center rounded-[12px] border border-dashed border-outline bg-surface-container-low p-lg text-center text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
+        className="flex min-h-40 w-full flex-col items-center justify-center rounded-control border border-dashed border-outline bg-surface-container-low p-lg text-center text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
       >
         <span className="material-symbols-outlined text-[32px] text-primary-ink" aria-hidden>cloud_upload</span>
         <strong>Choose evidence files</strong>
@@ -87,7 +87,7 @@ export function MultiFileUpload({
           ))}
         </ul>
       )}
-      {(localError || error) && <p role="alert" className="rounded-[12px] bg-error-container p-md text-on-error-container">{localError || error}</p>}
+      {(localError || error) && <p role="alert" className="rounded-control bg-error-container p-md text-on-error-container">{localError || error}</p>}
       <div className="flex justify-end">
         <Button type="button" disabled={!files.length || pending} onClick={onSubmit}>
           {pending ? 'Submitting…' : 'Submit files'}

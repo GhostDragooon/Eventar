@@ -86,7 +86,7 @@ export function EmailDeliveryStrip({
   return (
     <section
       aria-labelledby="email-delivery-heading"
-      className="mt-md rounded-[14px] border border-outline-variant bg-surface-container-low p-md"
+      className="mt-md rounded-xl border border-outline-variant bg-surface-container-low p-md"
     >
       <div className="flex items-baseline gap-sm flex-wrap">
         <h3 id="email-delivery-heading" className="text-body-md font-semibold text-on-surface">
@@ -94,7 +94,7 @@ export function EmailDeliveryStrip({
         </h3>
         <span
           className={
-            'ml-auto inline-flex items-center gap-xs rounded-full border px-sm py-[2px] font-label-md text-label-md ' +
+            'ml-auto inline-flex items-center gap-xs rounded-full border px-sm py-[0.125rem] font-label-md text-label-md ' +
             (deliveryLive
               ? 'border-outline-variant text-on-surface-variant'
               : 'border-warning text-warning bg-warning-container')

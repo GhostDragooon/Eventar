@@ -83,7 +83,7 @@ export function RingGauge({
       </div>
       <div className="text-center">
         <p className="text-label-md font-label-md text-on-surface-variant uppercase tracking-wide">{label}</p>
-        {caption && <p className="text-label-sm text-on-surface-variant mt-[2px]">{caption}</p>}
+        {caption && <p className="text-label-sm text-on-surface-variant mt-[0.125rem]">{caption}</p>}
       </div>
     </div>
   );

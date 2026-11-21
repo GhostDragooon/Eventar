@@ -91,7 +91,7 @@ export default async function CheckinIndexPage() {
       </header>
 
       {rows.length === 0 ? (
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-xl text-center">
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-card p-xl text-center">
           <p className="font-body-md text-body-md text-on-surface-variant">No published events.</p>
           <Link href="/events/new" className={cn(buttonVariants(), 'mt-md h-11 gap-sm px-lg font-label-md text-label-md')}>Create event</Link>
         </div>
@@ -101,19 +101,19 @@ export default async function CheckinIndexPage() {
             <li key={e.id}>
               <Link
                 href={`/events/${e.id}/checkin`}
-                className="flex items-center gap-md bg-surface-container-lowest border border-outline-variant rounded-[16px] p-md hover:bg-surface-container-low transition-colors"
+                className="flex items-center gap-md bg-surface-container-lowest border border-outline-variant rounded-[1rem] p-md hover:bg-surface-container-low transition-colors"
               >
-                <span className={`w-[4px] self-stretch rounded-full shrink-0 ${e.lifecycle === 'live' ? 'bg-[color:var(--success)]' : 'bg-[color:var(--on-primary-container)]'}`} aria-hidden />
+                <span className={`w-[0.25rem] self-stretch rounded-full shrink-0 ${e.lifecycle === 'live' ? 'bg-[color:var(--success)]' : 'bg-[color:var(--on-primary-container)]'}`} aria-hidden />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-sm flex-wrap">
                     <p className="font-title-lg text-title-lg font-semibold text-on-surface truncate">{e.title}</p>
                     {e.lifecycle === 'live' && (
-                      <span className="inline-flex items-center gap-xs px-sm py-[3px] rounded-full text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-wide bg-success-container text-on-success-container shrink-0">
-                        <span className="w-[6px] h-[6px] rounded-full bg-[color:var(--success)]" aria-hidden />Live
+                      <span className="inline-flex items-center gap-xs px-sm py-[0.1875rem] rounded-full text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-wide bg-success-container text-on-success-container shrink-0">
+                        <span className="w-[0.375rem] h-[0.375rem] rounded-full bg-[color:var(--success)]" aria-hidden />Live
                       </span>
                     )}
                   </div>
-                  <p className="font-body-md text-body-md text-on-surface-variant mt-[2px]">
+                  <p className="font-body-md text-body-md text-on-surface-variant mt-[0.125rem]">
                     {formatInTz(e.start_time, e.timezone)}{e.venue_name ? ` · ${e.venue_name}` : ''}
                   </p>
                 </div>
@@ -122,7 +122,7 @@ export default async function CheckinIndexPage() {
                     <span className={`text-[calc(1.5rem*var(--text-scale))] font-extrabold tracking-[-0.02em] tabular-nums ${e.lifecycle === 'live' ? 'text-[color:var(--success)]' : 'text-on-surface'}`}>{e.attended}</span>
                     <span className="text-body-md text-on-surface-variant"> / {e.registered}</span>
                   </p>
-                  <p className="font-label-md text-label-md text-on-surface-variant normal-case tracking-normal mt-[2px]">checked in</p>
+                  <p className="font-label-md text-label-md text-on-surface-variant normal-case tracking-normal mt-[0.125rem]">checked in</p>
                 </div>
                 <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] text-on-surface-variant shrink-0" aria-hidden>arrow_forward</span>
               </Link>

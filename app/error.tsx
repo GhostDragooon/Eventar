@@ -79,7 +79,7 @@ export default function GlobalError({
       <h1 className="text-[calc(1.875rem*var(--text-scale))] font-extrabold tracking-[-0.03em] mb-sm">
         {copy.heading}
       </h1>
-      <p className="font-body-md text-body-md text-on-surface-variant mb-lg max-w-[440px]">{copy.body}</p>
+      <p className="font-body-md text-body-md text-on-surface-variant mb-lg max-w-[27.5rem]">{copy.body}</p>
       {stillFailing && (
         <p ref={stillRef} tabIndex={-1} role="alert" className="font-body-md text-body-md text-on-surface mb-md outline-none">
           Still not working. Try again in a moment, or go back.

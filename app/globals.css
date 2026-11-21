@@ -240,15 +240,15 @@
   --text-4xl--line-height: 1.1111;
 
   /* Custom spacing scale from mockups (in addition to Tailwind defaults) */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-base: 8px;
-  --spacing-md: 16px;
-  --spacing-grid-gutter: 16px;
-  --spacing-lg: 24px;
-  --spacing-grid-margin: 24px;
-  --spacing-xl: 32px;
-  --spacing-xxl: 48px;
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-base: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-grid-gutter: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-grid-margin: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-xxl: 3rem;
 
   /* Container scale for max-w-* utilities. Tailwind v4 resolves max-w-{key}
      against --spacing-{key} when that key exists in the spacing scale — which
@@ -281,6 +281,8 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-card: 1.25rem;
+  --radius-control: 0.75rem;
 }
 
 :root {
@@ -623,7 +625,7 @@
     font-family: var(--font-material-symbols), 'Material Symbols Outlined';
     font-weight: normal;
     font-style: normal;
-    font-size: 24px;
+    font-size: 1.5rem;
     line-height: 1;
     letter-spacing: normal;
     text-transform: none;
@@ -655,7 +657,7 @@
   /* Hit area to 44px without changing the look: an invisible ::after grows each edge by half the
      shortfall, and does nothing when the element is already 44px or taller. */
   .tap-44 { position: relative; }
-  .tap-44::after { content: ""; position: absolute; inset-inline: 0; inset-block: min(0px, calc((100% - 44px) / 2)); }
+  .tap-44::after { content: ""; position: absolute; inset-inline: 0; inset-block: min(0px, calc((100% - 2.75rem) / 2)); }
 /* Reserved bold: nav labels switch to semibold when active; a hidden semibold copy
    (data-text) sets the width so siblings never shift. Weight must match font-semibold (T2). */
 .reserve-bold { display: inline-block; vertical-align: top; } /* top: the 0-height ::after line otherwise lifts the text above sibling labels */
@@ -670,8 +672,8 @@
   -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--fl), #000 calc(100% - var(--fr)), transparent 100%);
   mask-image: linear-gradient(to right, transparent 0, #000 var(--fl), #000 calc(100% - var(--fr)), transparent 100%);
 }
-.scroll-fade[data-fade-start='1'] { --fl: 28px; }
-.scroll-fade[data-fade-end='1'] { --fr: 28px; }
+.scroll-fade[data-fade-start='1'] { --fl: 1.75rem; }
+.scroll-fade[data-fade-end='1'] { --fr: 1.75rem; }
 
 /* Blurred icon swap: outgoing state blurs and fades, incoming reverses (S2). Opacity only under reduced motion. */
 .icon-swap { position: relative; display: inline-grid; place-items: center; }
@@ -749,30 +751,30 @@
    Governs the ROOT scroller only (scroll-padding does not inherit); nested
    scrollers like the staff nav strip are unaffected, which is correct. */
 html {
-  scroll-padding-top: 72px;
+  scroll-padding-top: 4.5rem;
 }
 
 .hero-ground {
   background:
-    radial-gradient(680px 340px at 82% -6% in oklch, rgba(108, 170, 239, 0.34), transparent 66%),
-    radial-gradient(560px 320px at 3% 2% in oklch, rgba(68, 148, 188, 0.24), transparent 66%),
-    radial-gradient(520px 280px at 46% -8% in oklch, rgba(28, 60, 148, 0.14), transparent 64%),
+    radial-gradient(42.5rem 21.25rem at 82% -6% in oklch, rgba(108, 170, 239, 0.34), transparent 66%),
+    radial-gradient(35rem 20rem at 3% 2% in oklch, rgba(68, 148, 188, 0.24), transparent 66%),
+    radial-gradient(32.5rem 17.5rem at 46% -8% in oklch, rgba(28, 60, 148, 0.14), transparent 64%),
     var(--surface-container-lowest, #fff);
   background-repeat: no-repeat;
 }
 
 /* Transparent so the root's glow shows through; keeps only its own spacing. */
 .hero-zone {
-  padding-top: 14px;
+  padding-top: 0.875rem;
 }
 
 /* The dot field is masked so it fades out rather than ending on a hard edge —
    without the mask it reads as a texture swatch pasted over the hero. */
 .hero-atmo {
   background-image: radial-gradient(rgba(28, 60, 148, 0.24) 1px, transparent 1.5px);
-  background-size: 18px 18px;
-  -webkit-mask-image: radial-gradient(880px 520px at 66% 0% in oklch, #000 40%, transparent 80%);
-  mask-image: radial-gradient(880px 520px at 66% 0% in oklch, #000 40%, transparent 80%);
+  background-size: 1.125rem 1.125rem;
+  -webkit-mask-image: radial-gradient(55rem 32.5rem at 66% 0% in oklch, #000 40%, transparent 80%);
+  mask-image: radial-gradient(55rem 32.5rem at 66% 0% in oklch, #000 40%, transparent 80%);
 }
 
 /* THE SHARED NAV MATERIAL — one design language across every shell.
@@ -803,8 +805,8 @@ html {
    wash so they belong to the same world without competing with data. */
 .app-atmo {
   background:
-    radial-gradient(760px 300px at 88% -10% in oklch, rgba(108, 170, 239, 0.13), transparent 68%),
-    radial-gradient(520px 260px at 2% -4% in oklch, rgba(68, 148, 188, 0.09), transparent 68%),
+    radial-gradient(47.5rem 18.75rem at 88% -10% in oklch, rgba(108, 170, 239, 0.13), transparent 68%),
+    radial-gradient(32.5rem 16.25rem at 2% -4% in oklch, rgba(68, 148, 188, 0.09), transparent 68%),
     var(--background);
 }
 /* Dark uses the SAME two-path mechanism as the token block above (:root.dark
@@ -817,13 +819,13 @@ html {
    users got a white frosted pill with a near-white border on a #0a0a0a page. */
 :root.dark .app-atmo {
   background:
-    radial-gradient(760px 300px at 88% -10% in oklch, rgba(108, 170, 239, 0.1), transparent 68%),
+    radial-gradient(47.5rem 18.75rem at 88% -10% in oklch, rgba(108, 170, 239, 0.1), transparent 68%),
     var(--background);
 }
 @media (prefers-color-scheme: dark) {
   :root:not(.light) .app-atmo {
     background:
-      radial-gradient(760px 300px at 88% -10% in oklch, rgba(108, 170, 239, 0.1), transparent 68%),
+      radial-gradient(47.5rem 18.75rem at 88% -10% in oklch, rgba(108, 170, 239, 0.1), transparent 68%),
       var(--background);
   }
 }
@@ -863,7 +865,7 @@ html {
    `.hero-copy` restaggers ITS OWN children (chip/h1/sub/CTAs/stat) so the
    fine-grained rise survives them moving one level deeper into the grid. */
 @keyframes heroUp {
-  from { opacity: 0; transform: translateY(14px); }
+  from { opacity: 0; transform: translateY(0.875rem); }
   to   { opacity: 1; transform: none; }
 }
 .hero-zone > div > * {
@@ -890,8 +892,8 @@ html {
 :root.dark .hero-ground,
 :root.dark .hero-zone {
   background:
-    radial-gradient(680px 340px at 82% -6% in oklch, rgba(108, 170, 239, 0.22), transparent 66%),
-    radial-gradient(560px 320px at 3% 2% in oklch, rgba(68, 148, 188, 0.17), transparent 66%),
+    radial-gradient(42.5rem 21.25rem at 82% -6% in oklch, rgba(108, 170, 239, 0.22), transparent 66%),
+    radial-gradient(35rem 20rem at 3% 2% in oklch, rgba(68, 148, 188, 0.17), transparent 66%),
     var(--background);
 }
 :root.dark .hero-atmo {
@@ -910,8 +912,8 @@ html {
   :root:not(.light) .hero-ground,
   :root:not(.light) .hero-zone {
     background:
-      radial-gradient(680px 340px at 82% -6% in oklch, rgba(108, 170, 239, 0.22), transparent 66%),
-      radial-gradient(560px 320px at 3% 2% in oklch, rgba(68, 148, 188, 0.17), transparent 66%),
+      radial-gradient(42.5rem 21.25rem at 82% -6% in oklch, rgba(108, 170, 239, 0.22), transparent 66%),
+      radial-gradient(35rem 20rem at 3% 2% in oklch, rgba(68, 148, 188, 0.17), transparent 66%),
       var(--background);
   }
   :root:not(.light) .hero-atmo {
@@ -950,7 +952,7 @@ html {
 /* Events home bulk bar. CX-04R motion 2a: the bar rises in 8 px with opacity when the first row is ticked, 180 ms.
    Under reduced motion it only fades. Nothing else on that page animates. */
 @keyframes bulkBarIn {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(0.5rem); }
   to   { opacity: 1; transform: none; }
 }
 @keyframes bulkBarFade {

@@ -753,7 +753,7 @@ export default function NewEventForm(props: Props) {
             type="checkbox"
             checked={selfServe}
             onChange={(e) => setSelfServe(e.target.checked)}
-            className="mt-[3px] w-[18px] h-[18px] shrink-0 accent-[color:var(--on-primary-container)] cursor-pointer"
+            className="mt-[0.1875rem] w-[1.125rem] h-[1.125rem] shrink-0 accent-[color:var(--on-primary-container)] cursor-pointer"
           />
           <span>
             <span className="block font-body-lg text-body-lg text-on-surface">
@@ -950,7 +950,7 @@ export default function NewEventForm(props: Props) {
           role="alert"
           className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm outline-none"
         >
-          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
+          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[0.125rem]" aria-hidden>warning</span>
           <span className="flex-1">{err}</span>
         </p>
       )}
@@ -971,7 +971,7 @@ export default function NewEventForm(props: Props) {
           data-testid="save-confirmation"
           className="font-body-md text-body-md text-on-success-container bg-success-container border border-success-container rounded-lg px-md py-sm flex items-start gap-sm"
         >
-          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden data-fill="1">check_circle</span>
+          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[0.125rem]" aria-hidden data-fill="1">check_circle</span>
           <span className="flex-1">Saved.</span>
         </p>
       )}
@@ -1021,7 +1021,7 @@ function FormSection({
           tabIndex={-1}
           className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm outline-none"
         >
-          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
+          <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[0.125rem]" aria-hidden>warning</span>
           <span className="flex-1">{error}</span>
         </p>
       )}
@@ -1062,7 +1062,7 @@ function ProgressStrip({
       // the checkmarks report the same `v1`/`v2`/`v4` validation flags that
       // drive submit-time scroll-to-first-invalid, so the state is real and
       // must not be flattened into navigation.
-      className="mt-0 flex list-none flex-wrap items-center gap-[6px] rounded-lg border border-outline-variant bg-surface-container-lowest p-md text-[calc(0.875rem*var(--text-scale))] text-on-surface-variant"
+      className="mt-0 flex list-none flex-wrap items-center gap-[0.375rem] rounded-lg border border-outline-variant bg-surface-container-lowest p-md text-[calc(0.875rem*var(--text-scale))] text-on-surface-variant"
     >
       {steps.map((step, i) => {
         const badgeClass = step.complete
@@ -1072,16 +1072,16 @@ function ProgressStrip({
           ? 'font-medium text-on-surface'
           : 'text-on-surface-variant';
         return (
-          <li key={step.n} className="flex items-center gap-[6px]">
+          <li key={step.n} className="flex items-center gap-[0.375rem]">
             <span
               aria-hidden
-              className={`grid size-[18px] shrink-0 place-items-center rounded-full border text-[calc(0.65625rem*var(--text-scale))] font-semibold ${badgeClass}`}
+              className={`grid size-[1.125rem] shrink-0 place-items-center rounded-full border text-[calc(0.65625rem*var(--text-scale))] font-semibold ${badgeClass}`}
             >
               {/* lucide, matching Breadcrumbs — and immune to the icon-font
                   sizing trap by construction: an SVG sizes by width/height,
                   so it cannot be overridden by a font-size rule the way a
                   ligature glyph can. */}
-              {step.complete ? <CheckIcon className="size-[11px]" /> : step.n}
+              {step.complete ? <CheckIcon className="size-[0.6875rem]" /> : step.n}
             </span>
             <span className={labelClass}>
               {step.label}

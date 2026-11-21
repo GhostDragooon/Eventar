@@ -25,7 +25,7 @@ export function NotFoundState({
 }) {
   return (
     <main className="grid min-h-[70dvh] place-items-center bg-surface p-grid-margin">
-      <section className="relative w-full max-w-3xl overflow-hidden rounded-[20px] border border-outline-variant bg-surface-container-lowest p-xl text-center shadow-sm">
+      <section className="relative w-full max-w-3xl overflow-hidden rounded-card border border-outline-variant bg-surface-container-lowest p-xl text-center shadow-sm">
         <span className="pointer-events-none absolute inset-0 grid place-items-center font-display text-[12rem] text-surface-container-highest" aria-hidden>404</span>
         <div className="relative space-y-md">
           <span className="material-symbols-outlined text-[40px] text-primary-ink" aria-hidden>travel_explore</span>

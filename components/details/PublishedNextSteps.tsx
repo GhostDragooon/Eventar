@@ -37,10 +37,10 @@ export function PublishedNextSteps({ eventId, origin, checkinOpens }: { eventId:
         role="status"
         className="flex items-start gap-sm rounded-lg border border-success-container bg-success-container px-md py-sm font-body-md text-body-md text-on-success-container outline-none"
       >
-        <span className="material-symbols-outlined mt-[2px] text-[calc(1.125rem*var(--text-scale))]" aria-hidden data-fill="1">check_circle</span>
+        <span className="material-symbols-outlined mt-[0.125rem] text-[calc(1.125rem*var(--text-scale))]" aria-hidden data-fill="1">check_circle</span>
         <span className="flex-1">Published. Your registration page is live.</span>
       </div>
-      <div className="rounded-[20px] border border-outline-variant bg-surface-container-lowest p-md">
+      <div className="rounded-card border border-outline-variant bg-surface-container-lowest p-md">
         <h2 id="published-next-heading" className="font-title-lg text-title-lg leading-tight text-on-surface">What to do next</h2>
         <ul className="mt-sm">
           <li className="flex min-h-11 flex-wrap items-center gap-sm py-sm">

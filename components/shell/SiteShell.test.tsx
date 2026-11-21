@@ -116,15 +116,16 @@ describe('SiteShell: organiser door link', () => {
 
 describe('SiteShell: brand link', () => {
   it('goes to /events for a signed-in attendee, / for a visitor and for staff', () => {
-    const brand = () => screen.getByRole('link', { name: 'Eventar home' });
+    // Two links: the phone logo strip and the in-pill mark (CSS shows one per breakpoint; jsdom has no CSS).
+    const brand = () => screen.getAllByRole('link', { name: 'Eventar home' }).map((a) => a.getAttribute('href'));
     const { unmount } = render(<SiteShell signedIn accountComplete>content</SiteShell>);
-    expect(brand()).toHaveAttribute('href', '/events');
+    expect(brand()).toEqual(['/events', '/events']);
     unmount();
     const second = render(<SiteShell>content</SiteShell>);
-    expect(brand()).toHaveAttribute('href', '/');
+    expect(brand()).toEqual(['/', '/']);
     second.unmount();
     render(<SiteShell signedIn isStaff>content</SiteShell>);
-    expect(brand()).toHaveAttribute('href', '/');
+    expect(brand()).toEqual(['/', '/']);
   });
 });
 
@@ -132,7 +133,7 @@ describe('SiteShell: nav items', () => {
   it('has no "Home" link; the brand mark is home', () => {
     render(<SiteShell>content</SiteShell>);
     expect(screen.queryByRole('link', { name: /^home$/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Eventar home' })).toHaveAttribute('href', '/');
+    expect(screen.getAllByRole('link', { name: 'Eventar home' }).map((a) => a.getAttribute('href'))).toEqual(['/', '/']);
   });
 
   it.each([
@@ -147,6 +148,6 @@ describe('SiteShell: nav items', () => {
     expect(current?.textContent).toContain(label);
     // The footer repeats some labels; only the primary nav must not link to its own page.
     expect(within(nav).queryByRole('link', { name: new RegExp(label === 'Log in' ? '^log in$' : label, 'i') })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Eventar home' })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'Eventar home' })).toHaveLength(2);
   });
 });

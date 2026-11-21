@@ -12,7 +12,7 @@ export function RetryFeedback({
   onRetry: () => void;
 }) {
   return (
-    <div role="alert" className="flex flex-wrap items-center gap-md rounded-[12px] bg-error-container p-md text-on-error-container">
+    <div role="alert" className="flex flex-wrap items-center gap-md rounded-control bg-error-container p-md text-on-error-container">
       <span className="material-symbols-outlined" aria-hidden>error</span>
       <p className="min-w-0 flex-1">{message}</p>
       <Button type="button" variant="outline" disabled={pending} onClick={onRetry} className="border-error text-error">

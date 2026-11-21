@@ -23,7 +23,7 @@ export function MetricsSection({
         </header>
         <dl className="mt-xl grid gap-md md:grid-cols-3">
           {metrics.map((metric) => (
-            <div key={metric.id} className="rounded-[20px] border border-outline-variant bg-surface-container-lowest p-lg shadow-sm">
+            <div key={metric.id} className="rounded-card border border-outline-variant bg-surface-container-lowest p-lg shadow-sm">
               <dt className="font-label-md text-label-md uppercase text-on-surface-variant">{metric.label}</dt>
               <dd className="mt-sm font-headline-md text-headline-md text-on-surface">{metric.displayValue}</dd>
               <p className="mt-sm text-on-surface-variant">{metric.description}</p>

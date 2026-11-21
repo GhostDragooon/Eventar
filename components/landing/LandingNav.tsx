@@ -24,7 +24,7 @@ export function LandingNav({
 }: { signedIn?: boolean; isStaff?: boolean; accountComplete?: boolean; unlinkedCount?: number } = {}) {
   return (
     <SiteNav
-      className="mx-auto w-[calc(100%-30px)] max-w-[1170px]"
+      className="mx-auto w-[calc(100%-30px)] max-w-[73.125rem]"
       signedIn={signedIn ?? false}
       isStaff={isStaff}
       accountComplete={accountComplete}

@@ -412,7 +412,7 @@ function MoreKindsMenu({ onPick }: { onPick: (kind: BlockKind) => void }) {
         <div
           role="menu"
           aria-label="More event types"
-          className="absolute right-0 z-30 mt-xs w-56 max-h-72 origin-top-right animate-overlay-in overflow-y-auto bg-popover border border-outline-variant rounded-[12px] p-xs shadow-lg"
+          className="absolute right-0 z-30 mt-xs w-56 max-h-72 origin-top-right animate-overlay-in overflow-y-auto bg-popover border border-outline-variant rounded-control p-xs shadow-lg"
         >
           {SECONDARY_KINDS.map((k) => (
             <button
@@ -538,7 +538,7 @@ function BlockErrorBanner({
       role="alert"
       className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
     >
-      <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>warning</span>
+      <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[0.125rem]" aria-hidden>warning</span>
       <span>
         Still needed to continue: {missing.length < 2 ? missing[0] : `${missing.slice(0, -1).join(', ')} and ${missing[missing.length - 1]}`}.
       </span>
@@ -598,7 +598,7 @@ function BlockEditor({ block, parallel, touched, errors, onTouch, onChange, onRe
     <div
       data-block-id={block.localId}
       className={
-        'rounded-[20px] p-md space-y-md bg-surface-container-lowest border-2 transition-colors ' +
+        'rounded-card p-md space-y-md bg-surface-container-lowest border-2 transition-colors ' +
         (showRedShell ? 'border-error' : 'border-outline-variant')
       }
     >
@@ -639,7 +639,7 @@ function BlockEditor({ block, parallel, touched, errors, onTouch, onChange, onRe
             type="checkbox"
             checked={block.sponsored}
             onChange={e => onChange({ sponsored: e.target.checked, sponsorName: e.target.checked ? block.sponsorName : '' })}
-            className="w-[18px] h-[18px] shrink-0 accent-[color:var(--on-primary-container)] cursor-pointer"
+            className="w-[1.125rem] h-[1.125rem] shrink-0 accent-[color:var(--on-primary-container)] cursor-pointer"
           />
           <span className="font-body-md text-body-md text-on-surface">
             Sponsored / industry-supported
@@ -748,7 +748,7 @@ function FillerEditor({ block, touched, errors, onTouch, onChange, onRemove }: {
     <div
       data-block-id={block.localId}
       className={
-        'rounded-[20px] p-md space-y-md bg-surface-container-lowest border-2 transition-colors ' +
+        'rounded-card p-md space-y-md bg-surface-container-lowest border-2 transition-colors ' +
         (showRedShell ? 'border-error' : 'border-outline-variant')
       }
     >

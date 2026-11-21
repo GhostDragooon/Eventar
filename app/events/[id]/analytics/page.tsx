@@ -164,7 +164,7 @@ export default async function EventAnalyticsPage({
           blue = response (action/participation). */}
       <section
         aria-label="Outcome"
-        className="mb-lg rounded-[20px] p-lg text-white"
+        className="mb-lg rounded-card p-lg text-white"
         style={{ background: 'radial-gradient(120% 140% at 0% 0% in oklch, #123420 0%, #0A0A0A 55%)' }}
       >
         <p className="text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-[0.18em] text-white/50 mb-md">Outcome</p>
@@ -179,12 +179,12 @@ export default async function EventAnalyticsPage({
       {/* §01 Funnel — ring gauges. Each ring's max is the previous stage in
           the funnel; the centre numeric is the raw count. */}
       <div className="flex items-center gap-sm mb-md">
-        <span className="inline-flex items-center justify-center w-[30px] h-[22px] rounded-md text-[calc(0.6875rem*var(--text-scale))] font-bold tabular-nums bg-primary-container text-on-primary-container" aria-hidden>01</span>
+        <span className="inline-flex items-center justify-center w-[1.875rem] h-[1.375rem] rounded-md text-[calc(0.6875rem*var(--text-scale))] font-bold tabular-nums bg-primary-container text-on-primary-container" aria-hidden>01</span>
         <h2 className="text-[calc(1.25rem*var(--text-scale))] font-extrabold tracking-[-0.025em] text-on-surface">Funnel</h2>
       </div>
       <section
         aria-label="Headline metrics"
-        className="mb-lg p-lg bg-surface-container-lowest border border-outline-variant rounded-[20px] shadow-sm grid grid-cols-1 md:grid-cols-3 gap-lg"
+        className="mb-lg p-lg bg-surface-container-lowest border border-outline-variant rounded-card shadow-sm grid grid-cols-1 md:grid-cols-3 gap-lg"
       >
         <RingGauge
           label="Registered"
@@ -219,10 +219,10 @@ export default async function EventAnalyticsPage({
 
       {/* §02 Feedback — per-question distributions, one color family each. */}
       <div className="flex items-center gap-sm mt-lg mb-md">
-        <span className="inline-flex items-center justify-center w-[30px] h-[22px] rounded-md text-[calc(0.6875rem*var(--text-scale))] font-bold tabular-nums bg-primary-container text-on-primary-container" aria-hidden>02</span>
+        <span className="inline-flex items-center justify-center w-[1.875rem] h-[1.375rem] rounded-md text-[calc(0.6875rem*var(--text-scale))] font-bold tabular-nums bg-primary-container text-on-primary-container" aria-hidden>02</span>
         <h2 className="text-[calc(1.25rem*var(--text-scale))] font-extrabold tracking-[-0.025em] text-on-surface">Feedback</h2>
       </div>
-      <div className="bg-surface-container-lowest border border-outline-variant rounded-[20px] shadow-sm overflow-hidden">
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-card shadow-sm overflow-hidden">
         <BarDistributionSlice
           icon="event_note"
           iconBg="fixed"
@@ -266,7 +266,7 @@ export default async function EventAnalyticsPage({
 
 function OutcomeStat({ pct, label, sub, tone }: { pct: number; label: string; sub: string; tone: 'green' | 'blue' }) {
   return (
-    <div className="rounded-[14px] border border-white/10 bg-white/[0.03] p-md">
+    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-md">
       <p className="leading-none mb-sm">
         <span className={`text-[calc(2.125rem*var(--text-scale))] font-extrabold tracking-[-0.02em] tabular-nums ${tone === 'green' ? 'text-[#4ADE80]' : 'text-[#79B8FF]'}`}>
           {pct}%

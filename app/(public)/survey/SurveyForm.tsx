@@ -103,13 +103,13 @@ export default function SurveyForm({
           <h1 className="font-headline-md text-headline-md text-primary-ink mb-sm">{eventTitle}</h1>
           <div className="font-body-md text-body-md text-on-surface-variant mb-md space-y-1">
             <p className="flex items-start gap-xs">
-              <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>
+              <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[0.125rem]" aria-hidden>
                 schedule
               </span>
               <span>{formatInTz(eventStartTime, eventTimezone)}</span>
             </p>
             <p className="flex items-start gap-xs">
-              <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>
+              <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[0.125rem]" aria-hidden>
                 location_on
               </span>
               <span>{eventVenueName}</span>
@@ -138,7 +138,7 @@ export default function SurveyForm({
         <div className="col-span-12 lg:col-span-8">
           <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
             {state.kind === 'ok' ? (
-              <div className="bg-primary text-on-primary rounded-[20px] p-lg text-center space-y-sm shadow-lg">
+              <div className="bg-primary text-on-primary rounded-card p-lg text-center space-y-sm shadow-lg">
                 <div
                   aria-hidden
                   className="inline-flex items-center justify-center w-14 h-14 bg-on-primary/10 rounded-full"
@@ -342,7 +342,7 @@ export default function SurveyForm({
                     role="alert"
                     className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
                   >
-                    <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>
+                    <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[0.125rem]" aria-hidden>
                       warning
                     </span>
                     <span>{state.message}</span>

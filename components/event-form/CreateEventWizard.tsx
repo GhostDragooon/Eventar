@@ -159,7 +159,7 @@ export function CreateEventWizard({ value, onChange, onReady }: Props) {
               role="alert"
               className="font-body-md text-body-md text-error bg-error-container border border-error-container rounded-lg px-md py-sm flex items-start gap-sm"
             >
-              <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[2px]" aria-hidden>
+              <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[0.125rem]" aria-hidden>
                 warning
               </span>
               <span>{basicsError}</span>
@@ -201,7 +201,7 @@ export function CreateEventWizard({ value, onChange, onReady }: Props) {
 
       {stepIndex === 2 && (
         <div ref={stepRef} className="space-y-md">
-          <dl className="space-y-sm rounded-[12px] bg-surface-container p-md">
+          <dl className="space-y-sm rounded-control bg-surface-container p-md">
             <ReviewRow label="Event name" value={value.title} />
             {value.format && <ReviewRow label="Format" value={value.format} />}
             <ReviewRow

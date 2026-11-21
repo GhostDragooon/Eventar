@@ -289,7 +289,7 @@ export default function RosterClient({
         </p>
       )}
 
-      <section className="bg-surface-container-lowest rounded-[20px] border border-outline-variant p-md overflow-hidden">
+      <section className="bg-surface-container-lowest rounded-card border border-outline-variant p-md overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-md border-b border-outline-variant pb-sm mb-sm">
           <div className="flex gap-sm flex-wrap">
             <FilterPill active={statusFilter === 'all'} onClick={() => setStatusFilter('all')} label={`All (${registeredTotal})`} />
@@ -425,9 +425,9 @@ function RosterRowItem({
           {r.full_name}
         </p>
         {eligibility && ELIGIBILITY_NOTE[eligibility] && (
-          <p className="mt-[2px] flex items-start gap-xs font-body-md text-[calc(0.75rem*var(--text-scale))] text-on-surface-variant">
+          <p className="mt-[0.125rem] flex items-start gap-xs font-body-md text-[calc(0.75rem*var(--text-scale))] text-on-surface-variant">
             <span
-              className="material-symbols-outlined text-[calc(0.875rem*var(--text-scale))] leading-none mt-[2px]"
+              className="material-symbols-outlined text-[calc(0.875rem*var(--text-scale))] leading-none mt-[0.125rem]"
               aria-hidden
             >
               error
@@ -514,7 +514,7 @@ function WalkInDialog({
   }
 
   return (
-    <div className="border border-outline-variant rounded-[20px] p-md bg-surface-container-low">
+    <div className="border border-outline-variant rounded-card p-md bg-surface-container-low">
       <div className="flex items-center justify-between mb-sm">
         <h2 className="font-title-lg text-title-lg text-on-surface">Walk-in registration</h2>
         <button type="button" onClick={onClose} className="font-label-md text-label-md text-primary-ink hover:underline">
@@ -621,7 +621,7 @@ function ScannerPanel({
   }, []);
 
   return (
-    <div className="border border-outline-variant rounded-[20px] p-md bg-surface-container-low">
+    <div className="border border-outline-variant rounded-card p-md bg-surface-container-low">
       <div className="flex items-center justify-between mb-sm">
         <h2 className="font-title-lg text-title-lg text-on-surface">Point camera at QR</h2>
         <button

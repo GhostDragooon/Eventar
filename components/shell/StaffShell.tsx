@@ -99,7 +99,7 @@ export function NavRow({
           "Communications" to "Communicati…" once the Soon chip took its space. */}
       <span className="reserve-bold flex-1 whitespace-nowrap text-left" data-text={label}>{label}</span>
       {count !== undefined && (
-        <span className="rounded-full bg-surface-container-high px-sm py-[1px] text-[calc(0.6875rem*var(--text-scale))] font-semibold text-on-surface-variant">
+        <span className="rounded-full bg-surface-container-high px-sm py-[0.0625rem] text-[calc(0.6875rem*var(--text-scale))] font-semibold text-on-surface-variant">
           {count}
         </span>
       )}
@@ -120,7 +120,7 @@ export function NavRow({
         className={`${base} cursor-default text-on-surface-variant/45`}
       >
         {inner}
-        <span className="rounded-full border border-outline-variant px-sm py-[1px] text-[calc(0.625rem*var(--text-scale))] font-semibold uppercase tracking-[.06em] text-on-surface-variant/70">
+        <span className="rounded-full border border-outline-variant px-sm py-[0.0625rem] text-[calc(0.625rem*var(--text-scale))] font-semibold uppercase tracking-[.06em] text-on-surface-variant/70">
           Soon
         </span>
       </span>
@@ -172,7 +172,7 @@ export function StaffShell(props: StaffShellProps) {
             position; a horizontal strip below md, which is what the pre-2026-08-08
             shell did too (the spec's real mobile answer is a bottom nav with
             Scan as the centre action — that is its own piece of work). */}
-        <aside className="shrink-0 bg-sidebar md:sticky md:top-0 md:h-dvh md:w-[248px] md:self-start">
+        <aside className="shrink-0 bg-sidebar md:sticky md:top-0 md:h-dvh md:w-[15.5rem] md:self-start">
           <div className="flex h-full flex-col gap-md p-md">
             {/* Brand mark. Reinstated 2026-08-09 per the mockup. Staff shell
                 points at /dashboard (BrandMark's own docblock already specified
@@ -239,9 +239,9 @@ export function StaffShell(props: StaffShellProps) {
                 and this chip carries the signed-in person and their role.
                 Static on purpose (no hover fill, no pointer): it has no
                 handler; Settings and Sign out are the rows above. */}
-            <div className="mt-auto flex items-center gap-sm rounded-[12px] px-md py-sm">
+            <div className="mt-auto flex items-center gap-sm rounded-control px-md py-sm">
               <span
-                className="grid h-[30px] w-[30px] flex-shrink-0 place-items-center rounded-full bg-primary-container text-[calc(0.75rem*var(--text-scale))] font-semibold text-on-primary-container"
+                className="grid h-[1.875rem] w-[1.875rem] flex-shrink-0 place-items-center rounded-full bg-primary-container text-[calc(0.75rem*var(--text-scale))] font-semibold text-on-primary-container"
                 aria-hidden
               >
                 {staff.email.slice(0, 2).toUpperCase()}
@@ -251,7 +251,7 @@ export function StaffShell(props: StaffShellProps) {
                   {firstName(staff.full_name) || staff.email.split('@')[0]}
                 </div>
                 <div
-                  className="max-w-[160px] truncate text-[calc(0.71875rem*var(--text-scale))] text-on-surface-variant"
+                  className="max-w-[10rem] truncate text-[calc(0.71875rem*var(--text-scale))] text-on-surface-variant"
                   title={staff.email}
                 >
                   {staff.email}
@@ -266,7 +266,7 @@ export function StaffShell(props: StaffShellProps) {
           <main
             id="main-content"
             tabIndex={-1}
-            className="w-full max-w-[1440px] flex-1 p-grid-margin pb-xxl"
+            className="w-full max-w-[90rem] flex-1 p-grid-margin pb-xxl"
           >
             {children}
           </main>

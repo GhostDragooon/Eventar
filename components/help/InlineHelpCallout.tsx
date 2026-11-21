@@ -10,7 +10,7 @@ export function InlineHelpCallout({
   label?: string;
 }) {
   return (
-    <aside className="flex items-start gap-md rounded-[12px] bg-primary-container p-md text-on-primary-container">
+    <aside className="flex items-start gap-md rounded-control bg-primary-container p-md text-on-primary-container">
       <span className="material-symbols-outlined" aria-hidden>info</span>
       <div className="min-w-0 flex-1">
         <strong className="block">{title}</strong>

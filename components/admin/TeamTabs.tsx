@@ -34,7 +34,7 @@ export function TeamTabs({ teams, onMessage }: { teams: readonly Team[]; onMessa
           </button>
         ))}
       </div>
-      <ul role="tabpanel" className="divide-y divide-outline-variant rounded-b-[20px] border border-t-0 border-outline-variant bg-surface-container-lowest">
+      <ul role="tabpanel" className="divide-y divide-outline-variant rounded-b-card border border-t-0 border-outline-variant bg-surface-container-lowest">
         {team?.members.map((member) => (
           <li key={member.id} className="flex items-center gap-md p-md">
             <IdentityAvatar name={member.name} />

@@ -167,7 +167,7 @@ export function WorkspaceSwitcher({
       </Button>
 
       {open && !mobile && (
-        <div className="absolute z-30 mt-xs w-full min-w-72 origin-top-left animate-overlay-in rounded-[12px] border border-outline-variant bg-popover p-sm shadow-lg">
+        <div className="absolute z-30 mt-xs w-full min-w-72 origin-top-left animate-overlay-in rounded-control border border-outline-variant bg-popover p-sm shadow-lg">
           {menu}
         </div>
       )}

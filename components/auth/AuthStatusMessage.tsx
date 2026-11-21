@@ -26,7 +26,7 @@ export function AuthStatusMessage({ status }: { status: AuthStatus }) {
       ref={ref}
       role={status.kind === 'error' ? 'alert' : 'status'}
       aria-live={status.kind === 'error' ? undefined : 'polite'}
-      className={cn('flex items-start gap-sm rounded-[12px] p-md font-body-md text-body-md', style)}
+      className={cn('flex items-start gap-sm rounded-control p-md font-body-md text-body-md', style)}
     >
       <span className="material-symbols-outlined text-[20px]" aria-hidden>{icon}</span>
       <p>{status.message}</p>

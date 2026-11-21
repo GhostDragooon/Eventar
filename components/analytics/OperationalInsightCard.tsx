@@ -2,7 +2,7 @@ import { operationalInsightText, type NarrativeMetrics } from '@/lib/analytics/n
 
 export function OperationalInsightCard({ metrics }: { metrics: NarrativeMetrics }) {
   return (
-    <div className="mt-lg p-lg bg-surface-container rounded-[20px] border border-outline-variant flex items-start gap-md">
+    <div className="mt-lg p-lg bg-surface-container rounded-card border border-outline-variant flex items-start gap-md">
       <span className="material-symbols-outlined text-primary-ink" aria-hidden>
         info
       </span>

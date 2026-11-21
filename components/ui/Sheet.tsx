@@ -32,7 +32,7 @@ export function Sheet({
         <Drawer.Viewport className="fixed inset-0 z-50 flex items-end">
           <Drawer.Popup
             className={cn(
-              'max-h-[85dvh] w-full overflow-y-auto overscroll-contain rounded-t-[20px] border border-b-0 border-outline-variant bg-popover p-sm pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-xl',
+              'max-h-[85dvh] w-full overflow-y-auto overscroll-contain rounded-t-card border border-b-0 border-outline-variant bg-popover p-sm pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-xl',
               'translate-y-[var(--drawer-swipe-movement-y,0px)] transition-transform duration-250 ease-[cubic-bezier(0.32,0.72,0,1)]',
               'data-[starting-style]:translate-y-full data-[ending-style]:translate-y-full data-[swiping]:transition-none',
               'motion-reduce:transition-none',

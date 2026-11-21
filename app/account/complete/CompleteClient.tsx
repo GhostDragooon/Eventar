@@ -708,7 +708,7 @@ function StepIndicator({ current }: { current: number }) {
 
 function SectionCard({ icon, title, children }: { icon: string; title: string; children: React.ReactNode }) {
   return (
-    <section className="bg-surface-container-lowest border border-outline-variant rounded-[20px] p-lg shadow-sm">
+    <section className="bg-surface-container-lowest border border-outline-variant rounded-card p-lg shadow-sm">
       <div className="flex items-center gap-md mb-md">
         <div aria-hidden className="w-10 h-10 rounded-full bg-primary-fixed text-primary-ink flex items-center justify-center">
           <span className="material-symbols-outlined text-[calc(1.25rem*var(--text-scale))]">{icon}</span>

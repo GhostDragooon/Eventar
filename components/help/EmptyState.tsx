@@ -10,7 +10,7 @@ export function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <section className="rounded-[20px] border border-dashed border-outline bg-surface-container-low p-xl text-center">
+    <section className="rounded-card border border-dashed border-outline bg-surface-container-low p-xl text-center">
       <span className="material-symbols-outlined text-[40px] text-on-surface-variant" aria-hidden>{icon}</span>
       <h2 className="mt-md font-title-lg text-title-lg text-on-surface">{title}</h2>
       <p className="mt-xs font-body-md text-body-md text-on-surface-variant">{description}</p>

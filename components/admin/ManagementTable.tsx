@@ -24,7 +24,7 @@ export function ManagementTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-[20px] border border-outline-variant bg-surface-container-lowest">
+    <div className="overflow-x-auto rounded-card border border-outline-variant bg-surface-container-lowest">
       <table className="w-full">
         <thead>
           <tr className="text-left text-on-surface-variant">

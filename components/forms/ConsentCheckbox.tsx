@@ -14,7 +14,7 @@ export function ConsentCheckbox({
   required?: boolean;
 }) {
   return (
-    <label htmlFor={id} className="flex cursor-pointer items-start gap-md rounded-[12px] border border-outline-variant bg-surface-container-lowest p-md">
+    <label htmlFor={id} className="flex cursor-pointer items-start gap-md rounded-control border border-outline-variant bg-surface-container-lowest p-md">
       <input
         id={id}
         type="checkbox"
