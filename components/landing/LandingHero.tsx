@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import type { Audience } from './AudienceExperience';
 import { LedgerWindow } from './LedgerWindow';
+import { SALES_HREF } from '@/lib/sales';
 
 /**
  * Landing hero — ported from the approved design artifact
@@ -71,7 +72,8 @@ const COPY = {
     // 2026-11-21 (Ivan, one button one page): organisers have no page of their own
     // besides /login, and the nav pill already opens it while this toggle is on
     // Organiser, so the hero repeats nothing.
-    ctas: [],
+    // 2026-11-21 (Ivan): the one button here reaches sales, on web and phone.
+    ctas: [{ label: 'Talk to sales', href: SALES_HREF }],
   },
 } as const;
 

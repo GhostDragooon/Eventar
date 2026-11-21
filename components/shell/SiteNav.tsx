@@ -20,9 +20,11 @@ import { useScrollFade } from '@/lib/useScrollFade';
 const NAV_ITEM =
   'nav-item tap-44 inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-[0.6875rem] py-[0.4375rem] text-[calc(0.8125rem*var(--text-scale))] font-medium';
 const NAV_IDLE = 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface';
+// Phone only (Ivan 2026-11-21): the bottom pill is two equal halves, Events and the login door. The web nav is unchanged.
+const HALF = 'max-sm:flex-1 max-sm:justify-center max-sm:bg-surface-container-high';
 const NAV_ACTIVE = 'bg-surface-container-high font-semibold text-on-surface';
 const PILL =
-  'tap-44 shrink-0 whitespace-nowrap rounded-full bg-primary px-md py-[0.4375rem] text-[calc(0.78125rem*var(--text-scale))] font-semibold text-on-primary';
+  'tap-44 shrink-0 max-sm:flex-1 max-sm:text-center whitespace-nowrap rounded-full bg-primary px-md py-[0.4375rem] text-[calc(0.78125rem*var(--text-scale))] font-semibold text-on-primary';
 const PILL_MOTION =
   'transition-[translate,scale] duration-150 ease-out hover:-translate-y-px active:scale-[.97] motion-reduce:transition-none motion-reduce:hover:translate-y-0';
 
@@ -84,12 +86,12 @@ export function SiteNav({
           "Upcoming events" -> "Events" below sm: the overflow fallback has no visible affordance on mobile. */}
       <div ref={navRef} className="scroll-fade -my-[0.3125rem] flex min-w-0 items-center gap-[0.125rem] overflow-x-auto overflow-y-hidden py-[0.3125rem] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-sm:flex-1 max-sm:justify-evenly">
         {active === 'events' ? (
-          <span aria-current="page" className={`${NAV_ITEM} ${NAV_ACTIVE}`}>
+          <span aria-current="page" className={`${NAV_ITEM} ${NAV_ACTIVE} ${HALF}`}>
             <span className="sm:hidden"><span className="reserve-bold" data-text="Events">Events</span></span>
             <span className="hidden sm:inline"><span className="reserve-bold" data-text="Upcoming events">Upcoming events</span></span>
           </span>
         ) : (
-          <Link href="/events" className={`${NAV_ITEM} ${NAV_IDLE}`}>
+          <Link href="/events" className={`${NAV_ITEM} ${NAV_IDLE} ${HALF}`}>
             <span className="sm:hidden"><span className="reserve-bold" data-text="Events">Events</span></span>
             <span className="hidden sm:inline"><span className="reserve-bold" data-text="Upcoming events">Upcoming events</span></span>
           </Link>
@@ -108,7 +110,7 @@ export function SiteNav({
           ))}
       </div>
 
-      <div className="flex shrink-0 items-center gap-sm">
+      <div className="flex shrink-0 items-center gap-sm max-sm:flex-1 max-sm:justify-end">
         {beforeAuth}
         {authSlot ??
           (signedIn ? (

@@ -24,9 +24,11 @@ describe('LandingHero — audience CTAs', () => {
     }
   });
 
-  it('organiser view renders no hero button: the nav pill is the only door to /login', () => {
+  it('organiser view has one hero button, Talk to sales; the nav pill stays the only door to /login', () => {
     render(<LandingHero audience="organiser" onAudienceChange={vi.fn()} />);
-    expect(screen.queryAllByRole('link').filter((el) => el.closest('.hero-copy'))).toHaveLength(0);
+    const links = screen.queryAllByRole('link').filter((el) => el.closest('.hero-copy'));
+    expect(links.map((l) => l.textContent)).toEqual(['Talk to sales']);
+    expect(links[0].getAttribute('href')).not.toBe('/login');
   });
 
   it('switching audience swaps the CTA set (toggle click calls onAudienceChange)', () => {
