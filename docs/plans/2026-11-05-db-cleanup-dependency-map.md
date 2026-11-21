@@ -18,10 +18,16 @@ _Read-only survey of the **local stack** (127.0.0.1:54322, read-only session), p
    - (b) **The hashes do not cover every column.** The evidence hash omits `user_id`, `organisation_id`, `actor_id` and the metadata columns. The audit hash omits `organisation_id`, `actor_role`, `subject_type` and `id`. UPDATE is revoked from every API role, so only the table owner could edit them, and nothing anchors the chain head externally. "content_valid" means consistent for the hashed columns, not "history unchanged". [read from source; grants EXEC]
    - (c) **Verifier EXECUTE grants disagree.** `verify_audit_chain` / `verify_ledger_chain`: `service_role` only. `verify_evidence_chain`: `authenticated` only (also Low finding in `security-audit-20261104.md`). No single role can run all three. `scripts/ci/replay-and-verify.sh` checks audit and ledger but not evidence. [EXEC]
 
+8. **From the 2026-11-16 structure review (§11), not ruled.** Recommendation first for each:
+   - (a) **Revoke the write grants that no policy allows** (§11 #7, with the `anon` EXECUTE on trigger functions, #8). Recommend yes: one migration, K1, with a `42501` test per table.
+   - (b) **Drop `events.poster_path`** (§11 #5). Recommend yes, in the same migration as the legacy-column retirement (item 2).
+   - (c) **The 8 functions with no app caller** (§11 #4). Recommend keep, and read their gates before any is exposed in UI. They are planned blocks.
+   - (d) Naming drift, unindexed FKs, empty tables: recommend leave.
+
 **Execute** (only Ivan):
 1. Update anything outside the repo that held the old Seoul DB password (a linked `supabase` CLI, psql or a GUI). You reset it today so the MCP could connect.
 
-**Queued for Claude** (after the picks above): Tier 1 (schema map + function-dump script, no DB change).
+**Queued for Claude** (after the picks above): regenerate `docs/db/SCHEMA_SUMMARY.md` (a peer built the Tier 1 schema map on 2026-11-14; it still lists the dropped `is_manager`).
 
 **Other sessions:** none running at survey time. On 2026-11-07, "Handoffs and silence consolidation" shipped Q51 (role rights) to Seoul; §10 maps its reach.
 
@@ -191,6 +197,33 @@ Q51's `event_writer_guard` trigger sits on 9 tables (`events`, `agenda_blocks`, 
 **Effect on §0:** items 1–6 are unchanged and still open. Item 0 is done. Item 7 (a) and (c) are done and on Seoul. Item 7 (b) is still a DEFERRED row. One addition for item 1's card: retiring the legacy columns (item 2) must keep `set_event_cpd_config` passing the Q51 guard on `events`.
 
 The Q51 absence claims (no legacy-column, eligibility or `auth_email()` references) come from one grep pass of the migration file, not an independent second pass.
+
+## §11 Structure review (local, 2026-11-16)
+
+Ivan asked for a review of the DB structure ("too messy"). Five Sonnet agents measured the local stack read-only; the orchestrator re-ran the numbers tagged **[checked]**. Other numbers are **[agent EXEC]**: run by an agent, read by the orchestrator, not re-run. Seoul was not read for this pass. Five migrations landed since §10 (`20261114100000` to `20261114140000`; 170 files now). Of them only `20261114110000` touches a map item: `auth_email()` now needs a confirmed account (Q52).
+
+**Verdict:** the live schema is sound. The mess is in four places around it: history, duplicated stores, surface built ahead of the app, and grants wider than policies.
+
+Clean [agent EXEC]: 35 tables, 347 columns, all RLS; 81 policies, 112 indexes, 43 triggers, 86 functions (65 public, 21 `app_private`). No duplicate indexes, no function overloads, no trigger function without a trigger, no definer function without a pinned `search_path`. 39 CHECK value lists, 0 enum types. Chains: audit 0 bad of 92,453, ledger 0 of 979, evidence 0 bad content of 756, under UTC and Hong Kong time.
+
+| # | Finding | Numbers | Block | Tier |
+|---|---|---|---|---|
+| 1 | **History is fragmented, not the schema.** | 170 files, 1,035,867 bytes, 198 function definitions for 86 live functions. `update_event_with_blocks` 14 files, `create_event_with_blocks` 13, `mark_attended` 11, `award_attendance_credit` 10, `self_check_in` 9 **[checked]**. 37 rewrites within 48 hours of the previous one. 141 policies created, 57 dropped. July and August hold 104 of the 170 files. | all | 3 (squash, §5) |
+| 2 | **Legacy accreditation columns still drift.** | Legacy body without group / group without legacy: 24 / 49 → 31 / 59 **[checked]**. `event_registration_eligibility` still reads only the legacy columns and returns `not_cpd ×5` on `043018e9…`. | B1/B2 | 2 (§0 items 1, 2) |
+| 3 | **Check-in method has three vocabularies.** | `registrations.check_in_method` and `registration_checkins.check_in_method`: `qr` 903, `manual` 8. `participation_evidence.capture_method`: `self_serve` 748, `manual_entry` 8 **[checked]**. Store drift stays 0 / 0; 155 check-ins with no evidence, unchanged. | B1 | leave; note for §4 |
+| 4 | **Functions with no app caller.** | 8 public functions have 0 hits in `app`, `lib`, `components`, `proxy.ts`, `scripts` on two independent greps **[checked]**: `confirm_credit_entry`, `lapse_licence`, `revoke_licence`, `supersede_licence`, `pseudonymise_user`, `set_staff_role`, `transition_dsr`, `withdraw_consent`. Each has 1 to 3 test files and 5 to 22 docs naming it, so they are planned building blocks, not dead code. `authenticated` holds EXECUTE on all 8. Their internal gates were not read. | B3/B5/K1/K3 | decision, not cleanup |
+| 5 | **Columns with no reader anywhere.** | 0 app files, 0 DB functions, 0 policies: `events.poster_path`, `organisation_body_authorisations.body_reference`, `practitioner_licences.cycle_config_override`, `practitioner_licences.cycle_start_override`, and `label_zh_hant` on `degrees`, `positions`, `professions`, `societies`, `specialties` (app second pass **[checked]**; `poster_path` appears in `seed.sql` and 1 test). | B2/B3/K1 | 2 for `poster_path`; rest are planned (cycle evaluator, zh labels) |
+| 6 | **Empty tables.** | Exact count 0: `credit_disputes`, `data_subject_requests`, `speaker_checkins`, `survey_responses`, `organisers`, `additional_appointments`, `society_memberships`. | various | none; unbuilt features, not debt |
+| 7 | **Write grants with no policy.** | `authenticated` holds INSERT/UPDATE/DELETE on `organisations`, `organisers`, `accrediting_bodies`, `survey_responses`; INSERT/DELETE on `staff` and `users`; DELETE on `speaker_checkins`. Each table has only SELECT policies (`users` also UPDATE) **[checked]**. RLS denies the writes today. 18 table/command pairs. | K1 mostly | 2 (revoke) |
+| 8 | **Trigger functions executable by `anon`.** | 7 public functions, 1 a definer (`trigger_reconcile_on_attendance_points_change`). Postgres refuses a direct call to a trigger function, so this is untidy, not a hole [INFERRED from Postgres behaviour, not executed]. | K1 | 2, with #7 |
+| 9 | **Naming drift.** | `check_in_at` (1 table) against `checked_in_at` (2); `start_time`/`end_time` (2) against `starts_at`/`ends_at` (1). 16 tables have neither `created_at` nor `updated_at`; 11 have `created_at` only. | all | leave: a rename touches every reader |
+| 10 | **`events` is the heaviest table.** | 33 columns, 7 triggers, 9 CHECKs, 15 alter-files. 6 columns NULL in all 564 local rows (`format`, `hero_image_url`, `max_attendees`, `poster_path`, `registration_open_at`, `registration_close_at`); all but `poster_path` have app readers. | B2 | none |
+| 11 | **Unindexed foreign keys.** | 14, including 4 on `participation_evidence` and `events.created_by` (the Q51 "member sees own events" key). No slow query was measured. | B1/B2 | none until measured |
+| 12 | **Fixture debt grew.** | Events 482 → 564; with credit 439 → 522 **[checked]**. Staff 283 → 327, 124 with no auth user. `users` with no auth row: 240, unchanged. | local only | §0 item 4 |
+
+Not evidence: the 11 never-scanned indexes and the 40 always-NULL columns are local test statistics and say nothing about production use. `SCHEMA_SUMMARY.md` lists 87 functions; live is 86 because it still lists the dropped `is_manager`.
+
+Evidence chain links: 83 breaks, 13 explained by an `evidence_deleted` row, 70 old; 0 untraced deletes since Q50. 27 tables have no `organisation_id`: reference tables, user-owned tables and children scoped through their parent; none was checked against the multi-tenancy rule row by row.
 
 ## Verification
 
