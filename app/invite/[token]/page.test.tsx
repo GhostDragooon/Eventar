@@ -47,7 +47,10 @@ beforeEach(() => {
   router.replace.mockReset();
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 // B1 (2026-09-25): a signed-out invitee used to get a page whose only sign-in
 // control was the shell's pill — the practitioner door, with the invite lost.
@@ -208,7 +211,6 @@ describe('invite page — the email already has practitioner data (D3)', () => {
     fireEvent.click(screen.getByRole('button', { name: /^use a different email$/i }));
     // Hard navigation (full reload) through the shared helper, not router.push.
     await waitFor(() => expect(loc.href).toBe(SIGN_IN_HREF));
-    vi.unstubAllGlobals();
     expect(signOut).toHaveBeenCalledTimes(1);
     // The invite was not accepted on the way out.
     expect(acceptInvite).toHaveBeenCalledTimes(1);

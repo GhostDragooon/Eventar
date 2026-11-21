@@ -18,8 +18,10 @@ const TYPE_SCALE = [
   "label-sm",
 ]
 
-const twMerge = extendTailwindMerge({
-  extend: { theme: { text: TYPE_SCALE, radius: ["card", "control"] } },
+const twMerge = extendTailwindMerge<"text-box">({
+  // `text-trim` (globals.css .text-trim, text-box-trim) is not a colour: without this group tailwind-merge
+  // read it as one and a later colour class on Button evicted it.
+  extend: { theme: { text: TYPE_SCALE, radius: ["card", "control"] }, classGroups: { "text-box": ["text-trim"] } },
 })
 
 export function cn(...inputs: ClassValue[]) {

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const signOut = vi.fn();
 vi.mock('@/lib/supabase/browser', () => ({ supabaseBrowser: () => ({ auth: { signOut } }) }));
 
-import { SIGN_OUT_FAILED, signOutAndLeave } from './signOut';
+import { SIGN_OUT_FAILED, revokeSession, signOutAndLeave } from './signOut';
 
 let loc: { href: string };
 beforeEach(() => {
@@ -31,5 +31,26 @@ describe('signOutAndLeave', () => {
     signOut.mockRejectedValue(new TypeError('Failed to fetch'));
     expect(await signOutAndLeave('/')).toBe(SIGN_OUT_FAILED);
     expect(loc.href).toBe('/account');
+  });
+});
+
+describe('revokeSession', () => {
+  it('returns null on success and never navigates', async () => {
+    signOut.mockResolvedValue({ error: null });
+    expect(await revokeSession()).toBeNull();
+    expect(loc.href).toBe('/account');
+  });
+
+  it('returns the failure message on an error or a throw', async () => {
+    signOut.mockResolvedValue({ error: { message: 'boom' } });
+    expect(await revokeSession()).toBe(SIGN_OUT_FAILED);
+    signOut.mockRejectedValue(new TypeError('Failed to fetch'));
+    expect(await revokeSession()).toBe(SIGN_OUT_FAILED);
+  });
+
+  it('signOutAndLeave carries an invite through /login?next=', async () => {
+    signOut.mockResolvedValue({ error: null });
+    expect(await signOutAndLeave('/login?next=%2Finvite%2Ft')).toBeNull();
+    expect(loc.href).toBe('/login?next=%2Finvite%2Ft');
   });
 });

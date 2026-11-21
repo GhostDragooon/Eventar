@@ -10,7 +10,7 @@ import { useScrollFade } from '@/lib/useScrollFade';
 // The one top nav for every public and auth page (Ivan, 2026-11-20): SiteShell,
 // PublicShell and LandingNav all render this, so the items and their order cannot
 // drift between surfaces. Glass pill: brand | Upcoming events | Organiser log in |
-// auth CTA. No "Home" item (the brand mark is home).
+// auth CTA (the landing sets loginHref, so its one pill is the organiser door while its toggle is on Organiser). No "Home" item (the brand mark is home).
 //
 // An item that points at the current page renders as a <span aria-current="page">,
 // not a link, so no page links to itself. The brand mark stays a link.

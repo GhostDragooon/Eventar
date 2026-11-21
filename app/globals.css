@@ -974,7 +974,7 @@ html {
 }
 
 /* ---------------------------------------------------------------------------
-   Motion pass M2 (locked 2026-11-19; specimen app/dev-preview-uiport/motion).
+   Motion pass M2 (locked 2026-11-19; the specimen page was deleted at close, 2026-11-21).
    --------------------------------------------------------------------------- */
 @theme {
   --animate-overlay-in: overlay-in 250ms cubic-bezier(0.32, 0.72, 0, 1);
