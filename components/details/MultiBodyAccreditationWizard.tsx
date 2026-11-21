@@ -215,7 +215,7 @@ export function MultiBodyAccreditationWizard({ eventId, startTime, bodies, bodyD
   }
 
   return (
-    <section className="mt-lg rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
+    <section className="mt-lg rounded-card border border-outline-variant bg-surface-container-lowest p-lg shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-md">
         <div>
           <h2 className="font-heading text-headline-sm text-on-surface">Multiple accrediting bodies</h2>

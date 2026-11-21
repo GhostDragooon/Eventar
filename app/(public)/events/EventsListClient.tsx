@@ -77,7 +77,7 @@ export function EventsListClient({ events }: { events: PublicEventCard[] }) {
         ref={listRef}
         role="tablist"
         aria-label="Event categories"
-        className="scroll-fade relative flex items-center justify-center-safe gap-[2.5rem] overflow-x-auto border-b border-outline-variant mb-lg"
+        className="scroll-fade relative flex items-center justify-center-safe gap-xl overflow-x-auto border-b border-outline-variant mb-lg"
       >
         {CATEGORIES.map((c) => {
           const active = cat === c.key;

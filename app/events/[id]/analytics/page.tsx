@@ -141,7 +141,7 @@ export default async function EventAnalyticsPage({
           <p className="text-label-md font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-xs">
             Analytics
           </p>
-          <h1 className="text-[calc(1.875rem*var(--text-scale))] leading-[1.15] font-extrabold tracking-[-0.025em] text-on-surface mb-xs">
+          <h1 className="font-headline-lg text-headline-lg text-on-surface mb-xs">
             {event.title}
           </h1>
           <p className="font-body-md text-body-md text-on-surface-variant">{heroMeta}</p>

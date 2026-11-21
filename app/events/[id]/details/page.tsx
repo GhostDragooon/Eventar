@@ -377,7 +377,7 @@ export default async function EventDetailsPage({
         <div className="min-w-0">
           <p className="text-label-md font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-xs">Event Manager</p>
           <div className="flex items-center gap-sm flex-wrap">
-            <h1 className="text-[calc(1.875rem*var(--text-scale))] leading-[1.1] font-extrabold tracking-[-0.025em] text-on-surface">{event.title}</h1>
+            <h1 className="font-headline-lg text-headline-lg text-on-surface">{event.title}</h1>
             {structuralLocked && <LockIcon />}
             <StatusChip lifecycle={lifecycle} />
           </div>
@@ -461,7 +461,7 @@ export default async function EventDetailsPage({
       {canSeeConfirmationsSent && (
         <section
           aria-labelledby="evidence-export-heading"
-          className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg mt-lg"
+          className="rounded-card border border-outline-variant bg-surface-container-lowest p-lg mt-lg shadow-sm"
         >
           <h2 id="evidence-export-heading" className="font-title-lg text-title-lg text-on-surface mb-xs">
             Evidence export
@@ -554,7 +554,7 @@ export default async function EventDetailsPage({
       {canSeeConfirmationsSent && (
         <section
           aria-labelledby="attendance-evidence-heading"
-          className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg mt-lg"
+          className="rounded-card border border-outline-variant bg-surface-container-lowest p-lg mt-lg shadow-sm"
         >
           <h2 id="attendance-evidence-heading" className="font-title-lg text-title-lg text-on-surface mb-xs">
             Attendance evidence

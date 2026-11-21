@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/help/EmptyState';
 import { exportParticipantsCsv, type ParticipantRow } from './actions';
 
 export function ParticipantsClient({ participants }: { participants: ParticipantRow[] }) {
@@ -52,12 +53,19 @@ export function ParticipantsClient({ participants }: { participants: Participant
       </div>
 
       {exportError && (
-        <p role="alert" className="rounded-xl bg-error-container p-md text-on-error-container text-body-md">
+        <p role="alert" className="rounded-lg border border-error-container bg-error-container px-md py-sm text-on-error-container text-body-md">
           {exportError}
         </p>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-outline-variant">
+      {filtered.length === 0 ? (
+        <EmptyState
+          icon="group"
+          title={search ? 'No participants match' : 'No participants yet'}
+          description={search ? 'Try another name or email.' : 'People appear after their first registration.'}
+        />
+      ) : (
+      <div className="overflow-x-auto rounded-card border border-outline-variant shadow-sm">
         <table className="w-full text-left">
           <thead>
             <tr className="border-b border-outline-variant bg-surface-container-lowest">
@@ -69,14 +77,7 @@ export function ParticipantsClient({ participants }: { participants: Participant
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-md py-lg text-center text-body-md text-on-surface-variant">
-                  {search ? 'No participants match your search.' : 'No participants yet.'}
-                </td>
-              </tr>
-            ) : (
-              filtered.map((p, i) => (
+            {filtered.map((p, i) => (
                 <tr key={`${p.email}-${i}`} className="border-b border-outline-variant last:border-0">
                   <td className="px-md py-sm text-body-md text-on-surface">{p.full_name ?? '—'}</td>
                   <td className="px-md py-sm text-body-md text-on-surface-variant">{p.email}</td>
@@ -86,11 +87,11 @@ export function ParticipantsClient({ participants }: { participants: Participant
                     {new Date(p.last_registration).toLocaleDateString()}
                   </td>
                 </tr>
-              ))
-            )}
+            ))}
           </tbody>
         </table>
       </div>
+      )}
 
       <p className="text-body-sm text-on-surface-variant">
         {filtered.length} participant{filtered.length !== 1 ? 's' : ''}

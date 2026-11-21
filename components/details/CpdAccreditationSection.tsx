@@ -152,7 +152,7 @@ export function CpdAccreditationSection({
   const selectedBody = bodies.find((b) => b.id === bodyId) ?? null;
 
   return (
-    <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
+    <section className="rounded-card border border-outline-variant bg-surface-container-lowest p-lg shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-md">
         <div>
           <h2 className="font-heading text-headline-sm text-on-surface"><abbr title="Continuing professional development">CPD</abbr> accreditation</h2>

@@ -57,7 +57,7 @@ export function WhyEventar() {
   // internal padding rather than sacrificing it for an exact match.
   return (
     <section className="mx-auto mt-[2.875rem] max-w-[75rem]">
-      <div className="rounded-2xl bg-surface-container-low p-xl">
+      <div className="rounded-card bg-surface-container-low p-xl shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-md">
           <span className="text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-[.08em] text-on-surface-variant">
             Why Eventar

@@ -50,8 +50,8 @@ export function EventCard({ event, saved = false, onSaveChange, href, onOpen }: 
     <article
       className={
         event.dateBlock
-          ? 'flex items-stretch gap-md rounded-[1rem] border border-outline-variant bg-surface-container-lowest p-md'
-          : 'flex flex-col overflow-hidden rounded-card border border-outline-variant bg-surface-container-lowest'
+          ? 'flex items-stretch gap-md rounded-card border border-outline-variant bg-surface-container-lowest p-md shadow-sm'
+          : 'flex flex-col overflow-hidden rounded-card border border-outline-variant bg-surface-container-lowest shadow-sm'
       }
     >
       {media}

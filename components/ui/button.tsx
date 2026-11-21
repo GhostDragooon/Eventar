@@ -4,7 +4,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 // Shape rule (2026-08-08, "one language everywhere"): ACTIONS are full-pill,
-// content surfaces stay soft-rect (14px cards, 18px panels). That is the
+// content surfaces stay soft-rect (20px cards, shadow-sm). That is the
 // documented radius system the whole product follows, so a button next to a
 // card is intentional contrast rather than drift. Changed from `rounded-lg`,
 // which made every button read as the pre-landing design.

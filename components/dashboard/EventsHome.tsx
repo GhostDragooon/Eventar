@@ -312,7 +312,7 @@ export function EventsHome({ events, nowMs, initialTab = 'active' }: EventsHomeP
     <>
       <header className="mb-md flex flex-wrap items-center justify-between gap-md">
         <div>
-          <h1 className="text-[calc(1.75rem*var(--text-scale))] font-bold tracking-[-0.02em] text-on-surface">Events</h1>
+          <h1 className="font-headline-lg text-headline-lg text-on-surface">Events</h1>
           <p className="text-[calc(0.8125rem*var(--text-scale))] text-on-surface-variant">
             {counts.active} active event{counts.active === 1 ? '' : 's'}. Finished events are in <Link href="/analytics" className="underline underline-offset-2 hover:text-on-surface">History</Link>.
           </p>
@@ -491,7 +491,7 @@ function EventRow({ e, nowMs, selected, onToggle, onRestore, inBin, pending }: {
           <input type="checkbox" checked={selected} onChange={onToggle} aria-label={`Select ${e.title}`} className="size-[1.125rem] cursor-pointer accent-[color:var(--on-primary-container)]" />
         </label>
       </div>
-      <div className={cn('grid grid-cols-[56px_minmax(0,1fr)] gap-xs rounded-[1rem] border bg-surface-container-lowest p-xs', selected ? 'border-[color:var(--primary-fixed-dim)]' : 'border-outline-variant')}>
+      <div className={cn('grid grid-cols-[56px_minmax(0,1fr)] gap-xs rounded-card border bg-surface-container-lowest p-xs shadow-sm', selected ? 'border-[color:var(--primary-fixed-dim)]' : 'border-outline-variant')}>
         <div className="flex flex-col items-center justify-center rounded-control bg-surface-container text-center">
           <span className="text-[calc(1.375rem*var(--text-scale))] font-bold leading-none tabular-nums text-on-surface">{day}</span>
           <span className="mt-xs text-[calc(0.75rem*var(--text-scale))] leading-none text-on-surface-variant">{weekday} {month}</span>

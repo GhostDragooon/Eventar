@@ -9,14 +9,22 @@ export const SIGN_OUT_FAILED = 'Could not sign out. Try again.';
  * signed out; pressing again then succeeds). So we leave the page only on success, with a hard navigation (a full reload drops every in-memory
  * session view). On failure nothing changes and the caller shows the returned message; pressing again retries.
  * Returns the message to show, or null after navigating away.
+ * `revokeSession` is the same revoke without the navigation, for a screen that swaps in place (the /login panel).
  */
-export async function signOutAndLeave(to: '/' | '/login'): Promise<string | null> {
+export async function revokeSession(): Promise<string | null> {
   try {
     const { error } = await supabaseBrowser().auth.signOut();
     if (error) return SIGN_OUT_FAILED;
   } catch {
     return SIGN_OUT_FAILED;
   }
+  return null;
+}
+
+// `/login?next=…` carries an invite through the organiser door; the caller encodes `next`.
+export async function signOutAndLeave(to: '/' | '/login' | `/login?next=${string}`): Promise<string | null> {
+  const failed = await revokeSession();
+  if (failed) return failed;
   window.location.href = to;
   return null;
 }

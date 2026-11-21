@@ -40,7 +40,7 @@ export function TeamClient({
     <div className="space-y-xl">
       <section>
         <h2 className="font-title-lg text-title-lg text-on-surface mb-md">Members</h2>
-        <div className="overflow-x-auto rounded-xl border border-outline-variant">
+        <div className="overflow-x-auto rounded-card border border-outline-variant shadow-sm">
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-outline-variant bg-surface-container-lowest">
@@ -71,7 +71,7 @@ export function TeamClient({
             {invites.map((inv) => (
               <div
                 key={inv.id}
-                className="flex items-center justify-between rounded-xl border border-outline-variant px-md py-sm"
+                className="flex items-center justify-between rounded-card border border-outline-variant px-md py-sm shadow-sm"
               >
                 <div>
                   <span className="text-body-md text-on-surface">{ROLE_LABELS[inv.role] ?? inv.role}</span>
@@ -142,7 +142,7 @@ function InviteLinkGenerator() {
       </div>
 
       {result?.kind === 'url' && (
-        <div className="mt-md rounded-xl border border-outline-variant bg-surface-container-lowest p-md">
+        <div className="mt-md rounded-card border border-outline-variant bg-surface-container-lowest p-md shadow-sm">
           <p className="text-body-sm text-on-surface-variant mb-xs">Share this link (expires in 7 days):</p>
           <div className="flex items-center gap-sm">
             <code className="flex-1 overflow-x-auto rounded-lg bg-surface-container-high px-sm py-xs text-body-sm text-on-surface">
@@ -160,7 +160,7 @@ function InviteLinkGenerator() {
       )}
 
       {result?.kind === 'error' && (
-        <p role="alert" className="mt-md rounded-xl bg-error-container p-md text-on-error-container text-body-md">
+        <p role="alert" className="mt-md rounded-lg border border-error-container bg-error-container px-md py-sm text-on-error-container text-body-md">
           {result.message}
         </p>
       )}

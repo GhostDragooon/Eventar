@@ -24,6 +24,7 @@ vi.mock('./SpeakersCard', () => ({
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import RosterClient from './RosterClient';
+import { ToastProvider } from '@/components/ui/toast';
 
 afterEach(() => {
   cleanup();
@@ -37,6 +38,7 @@ const min = (m: number) => new Date(T0 + m * 60_000).toISOString();
 
 function renderDesk(startInMin: number, serverNowMs = T0, canCheckIn = true, rowOverride: Record<string, unknown> = {}, eligibilityUnavailable = false) {
   return render(
+    <ToastProvider>
     <RosterClient
       serverNowMs={serverNowMs}
       canCheckIn={canCheckIn}
@@ -59,7 +61,8 @@ function renderDesk(startInMin: number, serverNowMs = T0, canCheckIn = true, row
       maxAttendees={null}
       speakerNames={[]}
       initialSpeakerCheckins={[]}
-    />,
+    />
+    </ToastProvider>,
   );
 }
 

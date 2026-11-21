@@ -12,7 +12,8 @@ import { Scoreboard } from './Scoreboard';
 import { ScanAndManual } from './ScanAndManual';
 import { SpeakersCard, type SpeakerCheckinRow } from './SpeakersCard';
 import { Button } from '@/components/ui/button';
-import { shake } from '@/lib/motion/shake';
+import { EmptyState } from '@/components/help/EmptyState';
+import { useToast } from '@/components/ui/toast';
 
 type RosterRow = {
   id: string;
@@ -110,8 +111,10 @@ export default function RosterClient({
   const [statusFilter, setStatusFilter] = useState<'all' | 'attended' | 'registered'>('all');
   const [scannerOpen, setScannerOpen] = useState(false);
   const [walkInOpen, setWalkInOpen] = useState(false);
-  const [toast, setToast] = useState<Toast | null>(null);
-  const toastRef = useRef<HTMLDivElement>(null);
+  // Shared toast: an outcome with a Log in action stays until dismissed; the rest auto-dismiss.
+  const { toast: pushToast } = useToast();
+  const setToast = (t: Toast) =>
+    pushToast(t.kind === 'ok' ? 'success' : 'error', t.message, t.signInHref ? { label: 'Log in', href: t.signInHref } : undefined);
   // Server time minus this browser's clock, fixed at mount: nowMs below is the server's clock moving forward.
   const [clockOffsetMs] = useState<number>(() => serverNowMs - Date.now());
   const [nowMs, setNowMs] = useState<number>(serverNowMs);
@@ -163,14 +166,6 @@ export default function RosterClient({
       client.removeChannel(channel);
     };
   }, [eventId]);
-
-  useEffect(() => {
-    if (!toast) return;
-    if (toast.kind === 'err') shake(toastRef.current);
-    // Errors stay up long enough to read while serving a queue.
-    const t = setTimeout(() => setToast(null), toast.kind === 'err' ? 8000 : 3000);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -310,9 +305,11 @@ export default function RosterClient({
 
         <div className="overflow-x-auto">
           {filtered.length === 0 ? (
-            <p className="p-md font-body-md text-body-md text-on-surface-variant">
-              {search || statusFilter !== 'all' ? 'No matches.' : 'No registrants yet.'}
-            </p>
+            <EmptyState
+              icon="group"
+              title={search || statusFilter !== 'all' ? 'No matches' : 'No registrants yet'}
+              description={search || statusFilter !== 'all' ? 'Try another name, code or filter.' : 'People appear here as they register.'}
+            />
           ) : (
             <>
               <div className="grid grid-cols-[minmax(0,1fr)_110px_150px_90px] gap-md px-sm pb-xs font-label-md text-label-md text-on-surface-variant uppercase tracking-wider" aria-hidden>
@@ -339,26 +336,6 @@ export default function RosterClient({
         </div>
       </section>
 
-      {toast && (
-        <div
-          ref={toastRef}
-          role="status"
-          className={
-            'fixed bottom-4 left-1/2 -translate-x-1/2 rounded-lg px-md py-sm font-body-md text-body-md shadow-lg z-50 ' +
-            (toast.kind === 'ok' ? 'bg-primary text-on-primary' : 'bg-error text-on-error')
-          }
-        >
-          {toast.message}
-          {toast.signInHref && (
-            <>
-              {' '}
-              <a href={toast.signInHref} className="underline font-semibold">
-                Log in
-              </a>
-            </>
-          )}
-        </div>
-      )}
     </div>
   );
 }

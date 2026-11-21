@@ -11,7 +11,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { classifyPath, safeNextPath } from '@/lib/authDoor';
 import { supabaseBrowser } from '@/lib/supabase/browser';
-import { SIGN_OUT_FAILED } from '@/lib/signOut';
+import { SIGN_OUT_FAILED, revokeSession } from '@/lib/signOut';
 import { getAccountMenuState } from '@/app/account/actions';
 
 export default function LoginPage() {
@@ -202,14 +202,12 @@ function PractitionerPanel({
   async function signOut() {
     setPending(true);
     setFailed(false);
-    try {
-      const { error } = await supabaseBrowser().auth.signOut();
-      if (error) throw error;
-      onSignedOut();
-    } catch {
+    if (await revokeSession()) {
       setPending(false);
       setFailed(true);
+      return;
     }
+    onSignedOut();
   }
 
   const cta = 'min-h-11 w-full font-label-md text-label-md';

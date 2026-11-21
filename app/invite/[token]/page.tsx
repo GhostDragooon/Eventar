@@ -7,7 +7,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { SiteShell } from '@/components/shell/SiteShell';
 import { cn } from '@/lib/utils';
 import { supabaseBrowser } from '@/lib/supabase/browser';
-import { SIGN_OUT_FAILED } from '@/lib/signOut';
+import { signOutAndLeave } from '@/lib/signOut';
 import { acceptInvite } from './actions';
 
 type View =
@@ -40,7 +40,7 @@ export default function InviteAcceptPage() {
   // An invitee signs in through the organiser door and comes back here (B1,
   // 2026-09-25). The shell's own "Sign in" pill is the practitioner door and
   // would drop the invite on the floor.
-  const signInHref = `/login?next=${encodeURIComponent(`/invite/${token}`)}`;
+  const signInHref = `/login?next=${encodeURIComponent(`/invite/${token}`)}` as const;
 
   // Read the session in the browser so a signed-out visitor is offered the
   // sign-in link up front rather than an accept button that can only fail. The
@@ -103,14 +103,11 @@ export default function InviteAcceptPage() {
   async function switchToAnotherEmail() {
     setPending(true);
     setError(null);
-    try {
-      const { error: signOutError } = await supabaseBrowser().auth.signOut();
-      if (signOutError) throw signOutError;
-      router.push(signInHref);
-      // Stay "pending" while the navigation completes.
-    } catch {
+    const failed = await signOutAndLeave(signInHref);
+    // On success the page is reloading: stay "pending" until it does.
+    if (failed) {
       setPending(false);
-      setError({ error: SIGN_OUT_FAILED });
+      setError({ error: failed });
     }
   }
 
@@ -126,7 +123,7 @@ export default function InviteAcceptPage() {
         ref={alertRef}
         tabIndex={-1}
         role="alert"
-        className="mb-md rounded-xl bg-error-container p-md text-on-error-container text-body-md outline-none"
+        className="mb-md rounded-lg border border-error-container bg-error-container px-md py-sm text-on-error-container text-body-md outline-none"
       >
         {error.error}
       </p>
@@ -244,7 +241,7 @@ function InviteFrame({ token, children }: { token: string; children: React.React
       {/* py-xl, as the door pages have: the spacing token is xxl, so the py-2xl
           this had set no padding at all and the card sat under the sticky header. */}
       <div className="mx-auto max-w-md px-md py-xl text-center">
-        <div className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-xl shadow-sm">
+        <div className="rounded-card border border-outline-variant bg-surface-container-lowest p-xl shadow-sm">
           {children}
         </div>
       </div>

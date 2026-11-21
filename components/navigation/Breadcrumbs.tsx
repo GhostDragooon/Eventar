@@ -45,17 +45,17 @@ export function Breadcrumbs({
 }) {
   return (
     <nav aria-label="Breadcrumb" className={className}>
-      <ol className="flex flex-wrap items-center gap-[0.375rem] text-[calc(0.875rem*var(--text-scale))] text-on-surface-variant">
+      <ol className="flex flex-wrap items-center gap-xs text-[calc(0.875rem*var(--text-scale))] text-on-surface-variant">
         {items.map((item, index) => {
           const last = index === items.length - 1;
           const Icon = item.icon;
           const iconSize = 'size-[calc(14px*var(--text-scale))] shrink-0';
           // px-1/py-0.5 + rounded-sm come from the reference: they give the
           // focus ring something to sit around without shifting the baseline.
-          const box = 'flex items-center gap-[0.375rem] rounded-sm px-1 py-0.5';
+          const box = 'flex items-center gap-xs rounded-sm px-1 py-0.5';
 
           return (
-            <li key={`${item.label}-${index}`} className="flex items-center gap-[0.375rem]">
+            <li key={`${item.label}-${index}`} className="flex items-center gap-xs">
               {last || !item.href ? (
                 <span
                   aria-current={last ? 'page' : undefined}

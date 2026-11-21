@@ -87,12 +87,12 @@ export default async function AnalyticsIndexPage() {
   return (
     <StaffShell staff={{ email: staff.email, role: staff.role }}>
       <header className="mb-lg">
-        <h1 className="text-[calc(1.875rem*var(--text-scale))] leading-[1.1] font-extrabold tracking-[-0.025em] text-on-surface">History</h1>
+        <h1 className="font-headline-lg text-headline-lg text-on-surface">History</h1>
         <p className="font-body-md text-body-md text-on-surface-variant mt-xs">{completed.length} completed event{completed.length === 1 ? '' : 's'}. Pick one to review it.</p>
       </header>
 
       {completed.length === 0 ? (
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-card p-xl text-center">
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-card p-xl text-center shadow-sm">
           <p className="font-body-md text-body-md text-on-surface-variant">No completed events yet.</p>
           <Link href="/dashboard" className={cn(buttonVariants(), 'mt-md h-11 gap-sm px-lg font-label-md text-label-md')}>Go to events</Link>
         </div>
@@ -102,7 +102,7 @@ export default async function AnalyticsIndexPage() {
             <li key={e.id}>
               <Link
                 href={`/events/${e.id}/analytics`}
-                className="flex items-center gap-md bg-surface-container-lowest border border-outline-variant rounded-[1rem] p-md hover:bg-surface-container-low transition-colors"
+                className="flex items-center gap-md bg-surface-container-lowest border border-outline-variant rounded-card p-md shadow-sm hover:bg-surface-container-low transition-colors"
               >
                 <span className="w-[0.25rem] self-stretch rounded-full shrink-0 bg-outline-variant" aria-hidden />
                 <div className="flex-1 min-w-0">

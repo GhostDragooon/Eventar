@@ -1062,7 +1062,7 @@ function ProgressStrip({
       // the checkmarks report the same `v1`/`v2`/`v4` validation flags that
       // drive submit-time scroll-to-first-invalid, so the state is real and
       // must not be flattened into navigation.
-      className="mt-0 flex list-none flex-wrap items-center gap-[0.375rem] rounded-lg border border-outline-variant bg-surface-container-lowest p-md text-[calc(0.875rem*var(--text-scale))] text-on-surface-variant"
+      className="mt-0 flex list-none flex-wrap items-center gap-xs rounded-lg border border-outline-variant bg-surface-container-lowest p-md text-[calc(0.875rem*var(--text-scale))] text-on-surface-variant"
     >
       {steps.map((step, i) => {
         const badgeClass = step.complete
@@ -1072,7 +1072,7 @@ function ProgressStrip({
           ? 'font-medium text-on-surface'
           : 'text-on-surface-variant';
         return (
-          <li key={step.n} className="flex items-center gap-[0.375rem]">
+          <li key={step.n} className="flex items-center gap-xs">
             <span
               aria-hidden
               className={`grid size-[1.125rem] shrink-0 place-items-center rounded-full border text-[calc(0.65625rem*var(--text-scale))] font-semibold ${badgeClass}`}

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/Dialog';
+import { EmptyState } from '@/components/help/EmptyState';
 import { setRegistrationRole, removeRegistrationRole } from '../details/multiBodyActions';
 import { updateRegistrationContact } from './actions';
 
@@ -149,9 +150,11 @@ export default function RegistrationsClient({
       </div>
 
       {shown.length === 0 ? (
-        <p className="rounded-lg border border-outline-variant bg-surface-container-lowest p-md font-body-md text-body-md text-on-surface-variant">
-          {emptyMessage(search.trim(), filter)}
-        </p>
+        <EmptyState
+          icon="group"
+          title={search.trim() || filter !== 'all' ? 'No registrations to show' : 'No registrations yet'}
+          description={emptyMessage(search.trim(), filter)}
+        />
       ) : (
         <ul className="flex flex-col gap-xs rounded-lg border border-outline-variant bg-surface-container-lowest p-xs">
           {shown.map((r) => (

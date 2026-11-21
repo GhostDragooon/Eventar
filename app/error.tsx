@@ -76,7 +76,7 @@ export default function GlobalError({
       <p className="text-label-md font-semibold uppercase tracking-[0.18em] text-[color:var(--error)] mb-sm">
         Something broke
       </p>
-      <h1 className="text-[calc(1.875rem*var(--text-scale))] font-extrabold tracking-[-0.03em] mb-sm">
+      <h1 className="font-headline-lg text-headline-lg mb-sm">
         {copy.heading}
       </h1>
       <p className="font-body-md text-body-md text-on-surface-variant mb-lg max-w-[27.5rem]">{copy.body}</p>

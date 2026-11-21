@@ -348,7 +348,7 @@ function Empty({
 
 function EventCard({ event, accent }: { event: EventRow; accent?: boolean }) {
   return (
-    <div className={`bg-surface-container-lowest border border-outline-variant rounded-[1rem] p-md ${accent ? 'border-l-4 border-l-[color:var(--success)]' : ''}`}>
+    <div className={`bg-surface-container-lowest border border-outline-variant rounded-card p-md shadow-sm ${accent ? 'border-l-4 border-l-[color:var(--success)]' : ''}`}>
       <p className="font-title-lg text-title-lg font-semibold text-on-surface m-0">{event.title}</p>
       <p className="font-body-md text-body-md text-on-surface-variant mt-xs m-0">
         <span className="text-on-primary-container font-semibold">{formatDate(event.start_time, event.timezone)}</span>

@@ -203,8 +203,12 @@ describe('invite page — the email already has practitioner data (D3)', () => {
 
   it('"Use a different email" signs out, then goes to /login carrying the invite', async () => {
     await reachPrompt();
+    const loc = { href: '' };
+    vi.stubGlobal('location', loc);
     fireEvent.click(screen.getByRole('button', { name: /^use a different email$/i }));
-    await waitFor(() => expect(router.push).toHaveBeenCalledWith(SIGN_IN_HREF));
+    // Hard navigation (full reload) through the shared helper, not router.push.
+    await waitFor(() => expect(loc.href).toBe(SIGN_IN_HREF));
+    vi.unstubAllGlobals();
     expect(signOut).toHaveBeenCalledTimes(1);
     // The invite was not accepted on the way out.
     expect(acceptInvite).toHaveBeenCalledTimes(1);

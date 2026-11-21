@@ -152,7 +152,7 @@ function FeatureBand({
       <p className="mt-[0.375rem] text-center text-[calc(0.84375rem*var(--text-scale))] text-on-surface-variant">{sub}</p>
       <div className="mt-lg grid gap-md md:grid-cols-3">
         {FEATURES[audience].map((f) => (
-          <article key={f.t} className="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
+          <article key={f.t} className="rounded-card border border-outline-variant bg-surface-container-lowest p-lg shadow-sm">
             <h3 className="text-[calc(0.9375rem*var(--text-scale))] font-semibold leading-snug text-on-surface">{f.t}</h3>
             <p className="mt-sm text-[calc(0.8125rem*var(--text-scale))] leading-[1.55] text-on-surface-variant">{f.d}</p>
           </article>

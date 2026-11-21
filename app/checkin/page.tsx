@@ -81,7 +81,7 @@ export default async function CheckinIndexPage() {
     <StaffShell staff={{ email: staff.email, role: staff.role }}>
       <header className="mb-lg">
         <p className="text-label-md font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-xs">Check-in</p>
-        <h1 className="text-[calc(1.875rem*var(--text-scale))] leading-[1.1] font-extrabold tracking-[-0.025em] text-on-surface">Check-in: choose an event</h1>
+        <h1 className="font-headline-lg text-headline-lg text-on-surface">Check-in: choose an event</h1>
         <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
           Open the desk for an event that is live now or coming up. A desk opens 60 minutes before the start.
         </p>
@@ -91,7 +91,7 @@ export default async function CheckinIndexPage() {
       </header>
 
       {rows.length === 0 ? (
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-card p-xl text-center">
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-card p-xl text-center shadow-sm">
           <p className="font-body-md text-body-md text-on-surface-variant">No published events.</p>
           <Link href="/events/new" className={cn(buttonVariants(), 'mt-md h-11 gap-sm px-lg font-label-md text-label-md')}>Create event</Link>
         </div>
@@ -101,7 +101,7 @@ export default async function CheckinIndexPage() {
             <li key={e.id}>
               <Link
                 href={`/events/${e.id}/checkin`}
-                className="flex items-center gap-md bg-surface-container-lowest border border-outline-variant rounded-[1rem] p-md hover:bg-surface-container-low transition-colors"
+                className="flex items-center gap-md bg-surface-container-lowest border border-outline-variant rounded-card p-md shadow-sm hover:bg-surface-container-low transition-colors"
               >
                 <span className={`w-[0.25rem] self-stretch rounded-full shrink-0 ${e.lifecycle === 'live' ? 'bg-[color:var(--success)]' : 'bg-[color:var(--on-primary-container)]'}`} aria-hidden />
                 <div className="flex-1 min-w-0">
