@@ -150,13 +150,22 @@ export async function exportRegistrantsCsv(
 
   // CSV layout per design doc §C: event metadata header, blank separator row,
   // column header, data rows. Times are emitted as ISO in the exporting person's zone
-  // (browser, else IP, else the venue's) with its offset, plus (timezone), so the organizer can re-parse them deterministically; the venue/title go through
+  // (see the zone note below) with its offset, plus (timezone), so the organizer can re-parse them deterministically; the venue/title go through
   // buildCsv's escape so commas in titles don't break parsing.
-  const tz = resolveViewerTz([viewerTz, (await headers()).get('x-vercel-ip-timezone')], event.timezone);
+  // An event's time belongs to its venue (Ivan 2026-11-21: HK event, HK clock), and the reader sees it relative to
+  // their own clock too. So Start and End keep the venue's zone, and when the exporter is elsewhere (browser zone,
+  // else IP zone) two more rows give the same instants in their zone, so the difference is already worked out.
+  const viewerZone = resolveViewerTz([viewerTz, (await headers()).get('x-vercel-ip-timezone')], event.timezone);
   const metadata: string[][] = [
     ['Event', event.title],
-    ['Start', `${isoInTz(event.start_time, tz)} (${tz})`],
-    ['End', `${isoInTz(event.end_time, tz)} (${tz})`],
+    ['Start', `${isoInTz(event.start_time, event.timezone)} (${event.timezone})`],
+    ['End', `${isoInTz(event.end_time, event.timezone)} (${event.timezone})`],
+    ...(viewerZone === event.timezone
+      ? []
+      : [
+          ['Start (your time)', `${isoInTz(event.start_time, viewerZone)} (${viewerZone})`],
+          ['End (your time)', `${isoInTz(event.end_time, viewerZone)} (${viewerZone})`],
+        ]),
     ['Venue', event.venue_name],
     ['Total registered', String(registeredCount)],
     [''], // blank separator row

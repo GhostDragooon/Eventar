@@ -92,7 +92,7 @@ describe('exportRegistrantsCsv — ownership', () => {
     expect('csvBase64' in result).toBe(true);
   });
 
-  it('prints Start and End in the exporting person\'s zone: browser, else IP, else the venue (r3/r4 MINOR, Ivan 2026-11-21)', async () => {
+  it('keeps Start and End in the venue zone and adds the exporter\'s zone beside them (Ivan 2026-11-21)', async () => {
     mockEventRow!.start_time = '2020-12-04T01:00:00+00:00';
     mockEventRow!.end_time = '2020-12-04T09:00:00+00:00'; // ended long ago → export gate open
     const csvOf = async (viewerTz?: string) => {
@@ -100,15 +100,18 @@ describe('exportRegistrantsCsv — ownership', () => {
       if (!('csvBase64' in result)) throw new Error('export refused');
       return Buffer.from(result.csvBase64, 'base64').toString('utf-8');
     };
-    expect(await csvOf('Europe/Berlin')).toContain('Start,2020-12-04T02:00:00+01:00 (Europe/Berlin)');
+    const us = await csvOf('America/New_York'); // a US exporter of a Hong Kong event
+    expect(us).toContain('Start,2020-12-04T09:00:00+08:00 (Asia/Hong_Kong)');
+    expect(us).toContain('Start (your time),2020-12-03T20:00:00-05:00 (America/New_York)');
+    expect(us).toContain('End (your time),2020-12-04T04:00:00-05:00 (America/New_York)');
     mockIpTz = 'Asia/Tokyo';
-    expect(await csvOf()).toContain('Start,2020-12-04T10:00:00+09:00 (Asia/Tokyo)');
+    expect(await csvOf()).toContain('Start (your time),2020-12-04T10:00:00+09:00 (Asia/Tokyo)');
     expect(await csvOf('Not/AZone')).toContain('(Asia/Tokyo)');
     mockIpTz = null;
-    const venue = await csvOf();
-    expect(venue).toContain('Start,2020-12-04T09:00:00+08:00 (Asia/Hong_Kong)');
-    expect(venue).toContain('End,2020-12-04T17:00:00+08:00 (Asia/Hong_Kong)');
-    expect(venue).not.toContain('+00:00');
+    const sameZone = await csvOf('Asia/Hong_Kong');
+    expect(sameZone).toContain('Start,2020-12-04T09:00:00+08:00 (Asia/Hong_Kong)');
+    expect(sameZone).not.toContain('your time');
+    expect(sameZone).not.toContain('+00:00');
   });
 
   it('allows an eventar_staff who does not own the event', async () => {
