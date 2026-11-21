@@ -13,7 +13,7 @@ const idSchema = z.string().uuid();
 const contactSchema = z.object({
   registrationId: idSchema,
   fullName: z.string().trim().min(1, 'A name is required.').max(200, 'A name is at most 200 characters.'),
-  email: z.string().trim().toLowerCase().max(254, 'An email is at most 254 characters.').email('That is not an email address.'),
+  email: z.string().trim().toLowerCase().max(254, 'An email is at most 254 characters.').email('Please enter a valid email address.'),
 });
 
 export type UpdateRegistrationContactResult = { ok: true } | { error: string };

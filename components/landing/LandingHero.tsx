@@ -80,12 +80,16 @@ const COPY = {
 export function LandingHero({
   audience,
   onAudienceChange,
+  signedIn = false,
 }: {
   audience: Audience;
   onAudienceChange: (audience: Audience) => void;
+  signedIn?: boolean;
 }) {
   const aud = audience;
   const c = COPY[aud];
+  // A signed-in practitioner has already signed up; the same slot opens the attendee events list.
+  const ctas = aud === 'practitioner' && signedIn ? [{ label: 'Find events', href: '/events' }] : c.ctas;
 
   return (
     <div className="hero-zone relative">
@@ -189,7 +193,7 @@ export function LandingHero({
                 to 2.23:1 in dark mode (fails AA) vs text-on-primary's
                 7.59:1 — dev-lens catch. */}
             <div className="mt-[1.375rem] flex min-h-[2.375rem] flex-wrap justify-center gap-sm lg:justify-start">
-              {c.ctas.map((cta) => (
+              {ctas.map((cta) => (
                 <Link
                   key={cta.href}
                   href={cta.href}

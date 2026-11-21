@@ -195,7 +195,7 @@ export function CpdAccreditationSection({
       )}
 
       {roleBlocked && (
-        <p className="mt-md rounded-lg bg-surface-container-low px-md py-sm text-body-md text-on-surface-variant">
+        <p id="cpd-role-why" className="mt-md rounded-lg bg-surface-container-low px-md py-sm text-body-md text-on-surface-variant">
           Your role can’t set accreditation. An organiser admin can add or change it from this page.
         </p>
       )}
@@ -225,6 +225,7 @@ export function CpdAccreditationSection({
             name="bodyId"
             value={bodyId}
             disabled={locked || pending || bodiesUnavailable}
+            aria-describedby={roleBlocked ? 'cpd-role-why' : undefined}
             onChange={(e) => setBodyId(e.target.value)}
             className="mt-xs w-full rounded-lg border border-outline-variant bg-surface px-md py-sm text-body-md text-on-surface disabled:opacity-60"
           >
@@ -253,6 +254,7 @@ export function CpdAccreditationSection({
             max="24"
             value={hours}
             disabled={locked || pending || bodiesUnavailable}
+            aria-describedby={roleBlocked ? 'cpd-role-why' : undefined}
             onChange={(e) => setHours(e.target.value)}
             placeholder="—"
             className="mt-xs w-full rounded-lg border border-outline-variant bg-surface px-md py-sm text-body-md text-on-surface disabled:opacity-60"
@@ -262,6 +264,7 @@ export function CpdAccreditationSection({
         <Button
           type="submit"
           disabled={locked || pending || bodiesUnavailable}
+          aria-describedby={roleBlocked ? 'cpd-role-why' : undefined}
           className="px-lg py-sm text-label-md font-semibold"
         >
           {pending ? 'Saving…' : 'Save'}

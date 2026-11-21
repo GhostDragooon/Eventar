@@ -443,7 +443,7 @@ export function EventsHome({ events, nowMs, initialTab = 'active', canCreate = t
 
       {events.length >= FETCH_CAP && (
         <p className="mt-lg text-[calc(0.8125rem*var(--text-scale))] text-on-surface-variant">
-          Only the {FETCH_CAP} events with the latest dates are loaded, so older ones may be missing here. Finished events are in History.
+          Only the {FETCH_CAP} events with the latest dates are loaded, so older ones may be missing here and from the tab counts. Finished events are in History.
         </p>
       )}
 
@@ -515,7 +515,7 @@ function EventRow({ e, nowMs, selected, onToggle, onRestore, inBin, pending }: {
         </div>
         <div className="flex min-w-0 flex-col rounded-control bg-surface-container p-xs">
           <div className="flex min-w-0 flex-wrap items-center gap-x-sm">
-            <span className="flex h-11 items-center"><StatusChip lifecycle={e.lifecycle} deleted={e.deleted} /></span>
+            <span className="flex h-11 items-center"><StatusChip lifecycle={e.lifecycle} deleted={e.deleted} full={e.maxAttendees != null && e.registered >= e.maxAttendees} /></span>
             <Link href={`/events/${e.id}/details`} className="line-clamp-3 font-title-lg text-title-lg font-semibold text-on-surface transition-colors hover:text-[color:var(--on-primary-container)]">{e.title}</Link>
           </div>
           <div className="-mt-xs pb-xs">

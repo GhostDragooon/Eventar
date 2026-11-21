@@ -102,7 +102,7 @@ export default async function LandingPage() {
       <main className="flex-1">
         {/* LedgerWindow now renders inside LandingHero itself (its right
             column, 2026-08-20) rather than as a page-level child here. */}
-        <AudienceExperience>
+        <AudienceExperience signedIn={signedIn}>
           <WhyEventar />
 
           {/* Was a bare `id="verification"` on the ledger mockup: a nav item

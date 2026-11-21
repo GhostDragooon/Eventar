@@ -138,7 +138,7 @@ function ChangeEmailForm({ currentEmail }: { currentEmail: string }) {
             isSignedOutError(result.error)
               ? signedOutCopy(result.error)
               : result.error === 'invalid_email'
-              ? 'That doesn’t look like a valid email address.'
+              ? 'Please enter a valid email address.'
               : result.error === 'same_email'
                 ? 'That’s already your email.'
                 : result.error === 'email_exists'

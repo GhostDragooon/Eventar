@@ -15,12 +15,12 @@ export type { Audience } from './AudienceContext';
  * value itself. (LedgerWindow moved inside LandingHero's own right column
  * 2026-08-20 — it no longer passes through here.)
  */
-export function AudienceExperience({ children }: { children?: ReactNode }) {
+export function AudienceExperience({ children, signedIn = false }: { children?: ReactNode; signedIn?: boolean }) {
   const { audience, setAudience } = useAudience();
 
   return (
     <>
-      <LandingHero audience={audience} onAudienceChange={setAudience} />
+      <LandingHero audience={audience} onAudienceChange={setAudience} signedIn={signedIn} />
       {children}
       <HowItWorks audience={audience} />
     </>

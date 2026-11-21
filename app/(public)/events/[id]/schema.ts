@@ -7,7 +7,7 @@ const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 export const registrationInputSchema = z.object({
   event_id:  z.string().uuid(),
   full_name: z.string().trim().min(1, 'Name required').max(100, 'Name too long'),
-  email:     z.string().trim().toLowerCase().regex(EMAIL_RE, 'Invalid email'),
+  email:     z.string().trim().toLowerCase().regex(EMAIL_RE, 'Please enter a valid email address.'),
 });
 
 export type RegistrationInput = z.infer<typeof registrationInputSchema>;

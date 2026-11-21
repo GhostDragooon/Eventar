@@ -255,7 +255,7 @@ export async function markAttended(
 const walkInSchema = z.object({
   eventId: z.string().uuid(),
   fullName: z.string().trim().min(1, 'Name required').max(100),
-  email: z.string().trim().toLowerCase().regex(/^[^@\s]+@[^@\s]+\.[^@\s]+$/, 'Invalid email'),
+  email: z.string().trim().toLowerCase().regex(/^[^@\s]+@[^@\s]+\.[^@\s]+$/, 'Please enter a valid email address.'),
 });
 
 /**

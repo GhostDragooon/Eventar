@@ -2,7 +2,7 @@ import { SiteShell } from '@/components/shell/SiteShell';
 import { PricingClient } from './PricingClient';
 
 export const metadata = {
-  title: 'Pricing — Eventar',
+  title: 'Pricing',
   description: 'Plans and pricing for Eventar CPD event management.',
 };
 

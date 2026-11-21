@@ -26,7 +26,9 @@ const LABELS: Record<Lifecycle, string> = {
   cancelled: 'Cancelled',
 };
 
-export function StatusPill({ lifecycle }: { lifecycle: Lifecycle }) {
+export function StatusPill({ lifecycle, full = false }: { lifecycle: Lifecycle; full?: boolean }) {
+  // A full event still derives as 'registering'; the pill says what a visitor can actually do (UX-R6).
+  const isFull = full && lifecycle === 'registering';
   // h-8 matches components/ui/button.tsx's default size — this pill sits next
   // to real Buttons (e.g. EventCard's "View details") and was drifting
   // shorter without a fixed height.
@@ -39,5 +41,6 @@ export function StatusPill({ lifecycle }: { lifecycle: Lifecycle }) {
       </span>
     );
   }
+  if (isFull) return <span className={`${base} ${STYLES.upcoming}`}>At capacity</span>;
   return <span className={`${base} ${STYLES[lifecycle]}`}>{LABELS[lifecycle]}</span>;
 }

@@ -186,9 +186,7 @@ export function MultiBodyAccreditationWizard({ eventId, startTime, bodies, bodyD
   if (!canSetAccreditation) {
     return (
       <div className="mt-md space-y-sm">
-        <p className="rounded-lg bg-surface-container-low px-md py-sm text-body-md text-on-surface-variant">
-          Your role can’t set accreditation. An organiser admin can add or change it from this page.
-        </p>
+        {/* The reason is printed once, by CpdAccreditationSection directly above (UX-R6). */}
         {groups.length > 0 && (
           <ul className="space-y-xs text-body-md text-on-surface">
             {groups.map((g) => (

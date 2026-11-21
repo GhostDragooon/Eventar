@@ -62,7 +62,7 @@ describe('updateRegistrationContact', () => {
     ['a bad registration id', { ...valid, registrationId: 'x' }, /./],
     ['an empty name', { ...valid, fullName: '   ' }, /A name is required/],
     ['a name over 200 characters', { ...valid, fullName: 'x'.repeat(201) }, /at most 200/],
-    ['an email that is not an email', { ...valid, email: 'not-an-email' }, /not an email address/],
+    ['an email that is not an email', { ...valid, email: 'not-an-email' }, /valid email address/],
   ])('refuses %s before the database is asked', async (_label, input, message) => {
     const res = await updateRegistrationContact(input);
     expect(res).toEqual({ error: expect.stringMatching(message) });

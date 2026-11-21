@@ -330,9 +330,9 @@ describe('MultiBodyAccreditationWizard', () => {
   describe('role gate (CX-05)', () => {
     const locked = /your role can.t set accreditation/i;
 
-    it('shows the locked note instead of the entry button for a role that cannot set accreditation', () => {
+    it('shows no entry button for a role that cannot set accreditation, and does not repeat the reason (CpdAccreditationSection prints it once, above)', () => {
       render(<MultiBodyAccreditationWizard eventId="e1" startTime="2026-09-01T00:00:00Z" bodies={bodies} bodyDirectory={bodies} occurrences={occurrences} initialGroups={[]} frozen={false} canSetAccreditation={false} />);
-      expect(screen.getByText(locked)).toBeTruthy();
+      expect(screen.queryByText(locked)).toBeNull();
       expect(screen.queryByText(/configure multiple accrediting bodies/i)).toBeNull();
     });
 
@@ -348,7 +348,7 @@ describe('MultiBodyAccreditationWizard', () => {
           canSetAccreditation={false}
         />,
       );
-      expect(screen.getByText(locked)).toBeTruthy();
+      expect(screen.queryByText(locked)).toBeNull();
       expect(screen.getByText('HKCP — HK College of Pathologists')).toBeTruthy();
       expect(screen.queryByRole('button', { name: /remove/i })).toBeNull();
       expect(screen.queryByText(/add a body/i)).toBeNull();

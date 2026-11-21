@@ -379,7 +379,7 @@ export default async function EventDetailsPage({
           <div className="flex items-center gap-sm flex-wrap">
             <h1 className="font-headline-lg text-headline-lg text-on-surface">{event.title}</h1>
             {structuralLocked && <LockIcon />}
-            <StatusChip lifecycle={lifecycle} />
+            <StatusChip lifecycle={lifecycle} full={event.max_attendees != null && regs.length >= event.max_attendees} />
           </div>
           <p className="font-body-md text-body-md text-on-surface-variant mt-xs flex items-center gap-xs flex-wrap">
             <span>{formatInTz(event.start_time, event.timezone)}</span>

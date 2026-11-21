@@ -20,7 +20,7 @@ export function SubscriptionDialog({
 
   function submit() {
     if (!/^\S+@\S+\.\S+$/.test(email)) {
-      setError('Enter a valid email address.');
+      setError('Please enter a valid email address.');
       return;
     }
     setError(null);

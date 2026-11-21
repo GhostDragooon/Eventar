@@ -25,7 +25,7 @@ export function NotificationSignupButton({ onSubscribe }: { onSubscribe: (email:
 
   async function submit() {
     if (!/^\S+@\S+\.\S+$/.test(email)) {
-      setStatus('Enter a valid email address.');
+      setStatus('Please enter a valid email address.');
       return;
     }
     setPending(true);

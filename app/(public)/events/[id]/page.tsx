@@ -239,7 +239,7 @@ export default async function PublicEventPage({
           Container padding matches the gap so page edges share the rhythm. */}
       <div className="mx-auto flex w-full max-w-md flex-col gap-lg px-grid-margin py-xxl">
         {/* §9 status pill, top-left of its container, leading the title row. */}
-        <StatusPill lifecycle={lifecycle} />
+        <StatusPill lifecycle={lifecycle} full={event.max_attendees != null && (registrationCount ?? 0) >= event.max_attendees} />
 
         {/* §1 hero + 2-row event meta */}
         <header className="flex flex-col gap-sm">

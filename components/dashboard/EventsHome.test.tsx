@@ -351,7 +351,7 @@ describe('EventsHome', () => {
 
     it('says when the list stopped at 300 events, and points at History', () => {
       renderManage(Array.from({ length: 300 }, (_, i) => event({ id: `e-${i}`, title: `Event ${i}` })));
-      expect(screen.getByText(/Only the 300 events with the latest dates are loaded, so older ones may be missing here\. Finished events are in History\./)).toBeInTheDocument();
+      expect(screen.getByText(/Only the 300 events with the latest dates are loaded, so older ones may be missing here and from the tab counts\. Finished events are in History\./)).toBeInTheDocument();
     });
 
     it('says nothing about a cap under 300', () => {

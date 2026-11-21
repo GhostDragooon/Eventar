@@ -37,4 +37,12 @@ describe('LandingHero — audience CTAs', () => {
     screen.getByRole('tab', { name: /organiser/i }).click();
     expect(onAudienceChange).toHaveBeenCalledWith('organiser');
   });
+
+  // UX-R6: a signed-in visitor is not asked to sign up. They get the one attendee page they can use.
+  it('signed-in practitioner view offers "Find events" -> /events instead of Sign up', () => {
+    render(<LandingHero audience="practitioner" onAudienceChange={vi.fn()} signedIn />);
+    const ctas = screen.getAllByRole('link').filter((el) => el.closest('.hero-copy'));
+    expect(ctas.map((l) => l.textContent)).toEqual(['Find events']);
+    expect(ctas[0]).toHaveAttribute('href', '/events');
+  });
 });

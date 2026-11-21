@@ -240,6 +240,10 @@ describe('CpdAccreditationSection — a role that cannot set accreditation', () 
     expect((screen.getByLabelText(/cpd hours/i) as HTMLInputElement).value).toBe('');
     expect(screen.getByRole('button', { name: /save/i })).toBeDisabled();
     expect(screen.getByText(/your role can.t set accreditation\. an organiser admin can add or change it from this page/i)).toBeTruthy();
+    // UX-R6: each disabled control points at that sentence.
+    for (const el of [screen.getByLabelText(/accrediting body/i), screen.getByLabelText(/cpd hours/i), screen.getByRole('button', { name: /save/i })]) {
+      expect(el).toHaveAttribute('aria-describedby', 'cpd-role-why');
+    }
   });
 
   it('is unchanged when the role may set it (default and explicit true)', () => {
