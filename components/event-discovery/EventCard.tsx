@@ -129,7 +129,7 @@ export function EventCard({ event, saved = false, onSaveChange, href, onOpen }: 
             )}
             {event.status && (
               <span
-                className={`inline-flex items-center gap-xs rounded-full px-sm py-[0.1875rem] text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-wide ${
+                className={`text-trim inline-flex items-center gap-xs rounded-full px-sm py-[0.1875rem] text-[calc(0.6875rem*var(--text-scale))] font-semibold uppercase tracking-wide ${
                   event.status.tone === 'success'
                     ? 'bg-success-container text-on-success-container'
                     : 'bg-surface-container-high text-on-surface-variant'

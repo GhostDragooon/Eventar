@@ -161,7 +161,7 @@
      multiplied by --text-scale so /settings → Text size can scale the whole
      M3 token family. Arbitrary text-[Npx] literals elsewhere in components
      won't scale until they're migrated to tokens (v1 caveat). */
-  --text-hero: calc(clamp(2rem, 1.6rem + 1.7vw, 3rem) * var(--text-scale)); /* landing h1, fluid (T2) */
+  --text-hero: var(--text-hero-step); /* landing h1; @theme inline copies this value into the utility, so the steps live in --text-hero-step in the :root block below (Ivan 2026-11-21, option B) */
   --text-hero--line-height: 1.1;
   --text-hero--letter-spacing: -0.02em;
   --text-display: calc(3rem * var(--text-scale));
@@ -169,7 +169,7 @@
   --text-display--letter-spacing: -0.02em;
   --text-display--font-weight: 700;
 
-  --text-headline-lg: calc(clamp(1.75rem, 1.475rem + 1.17vw, 2.4375rem) * var(--text-scale)); /* fluid: 28px at 375, 39px from ~1320 (T2) */
+  --text-headline-lg: var(--text-headline-lg-step); /* steps in the :root block below */
   --text-headline-lg--line-height: 1.25;
   --text-headline-lg--font-weight: 700;
 
@@ -652,12 +652,19 @@
   abbr[title] { text-decoration: none; }
 }
 
+/* Stepped heading sizes (Ivan 2026-11-21, option B): rem only, no vw in text. */
+:root { --text-hero-step: calc(2rem * var(--text-scale)); --text-headline-lg-step: calc(1.75rem * var(--text-scale)); }
+@media (min-width: 48rem) { :root { --text-hero-step: calc(2.5rem * var(--text-scale)); --text-headline-lg-step: calc(2.125rem * var(--text-scale)); } }
+@media (min-width: 64rem) { :root { --text-hero-step: calc(3rem * var(--text-scale)); --text-headline-lg-step: calc(2.4375rem * var(--text-scale)); } }
+
 /* In @layer components so Tailwind utilities (e.g. md:[mask-image:none]) can override these helpers. */
 @layer components {
   /* Hit area to 44px without changing the look: an invisible ::after grows each edge by half the
      shortfall, and does nothing when the element is already 44px or taller. */
   .tap-44 { position: relative; }
   .tap-44::after { content: ""; position: absolute; inset-inline: 0; inset-block: min(0px, calc((100% - 2.75rem) / 2)); }
+  /* Optical vertical centring: trims half-leading so cap height is centred. Chromium and Safari; others keep today's look. */
+  .text-trim { text-box: trim-both cap alphabetic; }
 /* Reserved bold: nav labels switch to semibold when active; a hidden semibold copy
    (data-text) sets the width so siblings never shift. Weight must match font-semibold (T2). */
 .reserve-bold { display: inline-block; vertical-align: top; } /* top: the 0-height ::after line otherwise lifts the text above sibling labels */
