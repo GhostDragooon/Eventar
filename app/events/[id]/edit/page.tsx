@@ -200,7 +200,7 @@ export default async function StaffEventEditPage({
         items={[
           { label: 'Events', href: '/dashboard', icon: LayoutDashboardIcon },
           { label: event.title, href: `/events/${id}/details`, icon: CalendarDaysIcon },
-          { label: 'Edit', icon: SquarePenIcon },
+          { label: writable ? 'Edit' : 'View', icon: SquarePenIcon },
         ]}
         className="mb-sm"
       />

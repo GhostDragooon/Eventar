@@ -65,6 +65,7 @@ vi.mock('./updateAction', () => ({ updateEvent: vi.fn() }));
 import { afterEach, describe, expect, it } from 'vitest';
 import PublishDraftButton from './PublishDraftButton';
 import { DraftSavedBanner } from '@/components/event-form/DraftSavedBanner';
+import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
 import { CpdAccreditationSection } from '@/components/details/CpdAccreditationSection';
 import StaffEventEditPage from './page';
 import { NOT_EVENT_WRITER, eventWriteRefusal } from '@/lib/lifecycle/eventLifecycle';
@@ -153,6 +154,13 @@ describe('draft edit page for an account that may not change this event', () => 
     expect(textOf(tree)).toContain(eventWriteRefusal(role));
     // A body_admin who created an old draft itself is not told 'only the organiser who created this event'.
     if (role !== 'organiser_member') expect(textOf(tree)).not.toContain(NOT_EVENT_WRITER);
+  });
+
+  // UX-R1: the crumb names the page as it is for this role.
+  it.each([['body_admin', 'View'], ['auditor', 'View'], ['organiser_admin', 'Edit']] as const)('%s: breadcrumb ends in %s', async (role, label) => {
+    const crumbs = findAll(await draftTree(role), Breadcrumbs);
+    const items = (crumbs[0].props as { items: { label: string }[] }).items;
+    expect(items[items.length - 1].label).toBe(label);
   });
 });
 
