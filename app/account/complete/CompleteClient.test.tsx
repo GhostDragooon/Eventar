@@ -21,6 +21,8 @@ import { CompleteClient } from './CompleteClient';
 beforeEach(() => push.mockReset());
 afterEach(cleanup);
 
+const CONSENT_LABEL = 'I agree to Eventar using my details this way. I know the full terms and privacy policy are not published yet.';
+
 const account = {
   id: 'u1',
   full_name: 'Alice Wong',
@@ -206,9 +208,9 @@ describe('CompleteClient: the consent step', () => {
       />,
     );
     expect(
-      screen.getByText(/By continuing you agree to the terms and privacy policy we will publish before launch\./),
+      screen.getByText(/By continuing you agree to Eventar using your details for this\. The full terms and privacy policy are not published yet\. We will show them to you before launch\./),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText('I agree to the Eventar terms and privacy policy once published.')).toBeInTheDocument();
+    expect(screen.getByLabelText(CONSENT_LABEL)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/you accept the current/i);
   });
 
@@ -218,7 +220,7 @@ describe('CompleteClient: the consent step', () => {
         activeBodies={[]} professions={[]} positions={[]} specialties={[]} />,
     );
     expect(screen.getByText('Tick the box above to continue.')).toBeInTheDocument();
-    fireEvent.click(screen.getByLabelText('I agree to the Eventar terms and privacy policy once published.'));
+    fireEvent.click(screen.getByLabelText(CONSENT_LABEL));
     expect(screen.queryByText('Tick the box above to continue.')).toBeNull();
   });
 });

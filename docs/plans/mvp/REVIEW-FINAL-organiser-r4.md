@@ -1,0 +1,62 @@
+# MVP acceptance walk r4: ORGANISER-ADMIN lens (2026-11-21)
+
+Actor: disposable `zz-org-r4-1@example.test`, staff row `75753792-8e59-4ae4-89c0-d54c1ca8e87b` (`organiser_admin`, default organisation), auth uid `5c0ce736-99da-42be-a5f9-371dd336fda4`. Signed in via real Mailpit magic link (To checked; link in 0600 file, not printed; one-shot local redirect on :8765). Role read from the page: sidebar footer "Organiser Admin". HEAD 1a7d2bf, app :3100, review mode OFF (`/events/new` signed-out gave 307). Tags: [X] executed, [R] read in code, [I] inferred.
+
+Verdict: no BLOCKER, no MAJOR. Two MINOR (CSV timezone label, unresolved stale 'Name required'), F1 still open (MINOR, Ivan decision pending, not fixed). The ~130-call budget was exceeded (rate-limit resume); NOT RUN items are listed at the end.
+
+## Rows so far
+
+| Row | Verdict | Evidence |
+|---|---|---|
+| O1 sign in lands on Events | PASS [X] | Callback lands on `/dashboard`, tab title "Events · Eventar", sidebar: Check-in, Events, History, ADMIN Settings, Sign out. Footer "Organiser Admin". Banner "Email delivery: development stub (no inbox)." |
+| O2 create + Save draft | PASS [X] | Name typed, venue picked by clicking first row ("Hong Kong Convention and Exhibition Centre"), "Timezone follows the venue - Asia/Hong_Kong.", date Thu 3 Dec 2026 (my click landed on the 3rd after layout shift), 09:00 AM to 12:00 PM via pickers. Save draft -> `/events/13660e33-.../edit`, "Draft saved. Review and publish when you are ready." DB: status draft, created_by = staff row, start 01:00Z end 04:00Z (12:00 HKT end shown as 3h span), tz Asia/Hong_Kong. Drafts-tab clause PASS [X]: tab shows title "ZZ-R4 Organiser event" (not an id), count 4 -> 5. |
+| O5 one Events home, counts vs SQL | PASS [X] | Tabs Active 30 / Drafts 5 / Cancelled 2 / Deleted 2. SQL over the 300 latest-dated events of the default org (the page's own cap, footnote "Only the 300 events with the latest dates are loaded"): published not-ended 30, draft not-deleted 5, cancelled 2, draft deleted 2. Match. Two older drafts (9 and 11 Oct) and one older cancelled are outside the 300-row window and so not listed: disclosed by the footnote. |
+
+| O3 agenda no silent loss | PASS [X] (3 blocks partly SQL-seeded) | Block 1 (Keynote) built with real clicks (times, title, topic, speaker) and Save changes: 1 row `b444e04c`. Blocks 2-3 (Lecture, Workshop) were INSERTed by SQL as setup (synthetic, to save budget). Reload showed all 3. Renamed block 2 in UI, Save: same 3 ids (S6 stable). Remove Workshop, Save: 2 rows, ids b444e04c and 7b2dee4f unchanged. Added Panel 12:30 PM to 01:00 PM (event ends 12:00 PM): inline "This block runs outside the event's start/end window." and on Save the red banner under the Agenda heading: "“ZZ-R4 Late panel” (12:30 PM to 01:00 PM) must sit inside the event’s time window, 09:00 AM to 12:00 PM." Also "Still needed to continue: topic 1 (title + speaker)." DB after: 2 blocks, event end unchanged (S5, S6). No raw `agenda_block_outside_event_window` text. |
+| O4 publish gate (creator) | PASS [X] | Dialog "Publish this event?" / "Your registration page goes live. Anyone with the link can register." / "Registration opens now." / "Check-in opens at 03 Dec 2026, 08:00 (Asia/Hong_Kong), 60 minutes before the start." / "Details cannot be edited after publishing yet, so check them first." Confirm: DB published, published_at set, 2 blocks kept, lands on `/events/<id>/details` (tab "Event Manager"). Keep-editing branch not clicked this run. |
+| O6 Registrations vs Check-in | PASS [X] | Registrations: "Everyone registered for this event. Edit contact details and roles here. To check people in, open Check-in." + Check-in link; tabs All (2) / Registered (2) / Attended (0) / Cancelled (0) = DB. Check-in: "Live capture only: scan, enter a code or add a walk-in. To edit a person’s details or roles, open Registrations." + Registrations link. |
+| O7 check-in 3 states + stale | PASS [X] | Window moved by SQL (`shift.sh`: delete blocks, update events+occurrences, reinsert blocks shifted, because S5 trigger blocks a plain update). BEFORE (start +5h): "NOT OPEN YET", "Starts in 4h 59m", "Check-in has not opened yet. It opens 60 minutes before the event starts."; Scan, Enter code disabled; Walk-in panel opens with the closed copy in red; regs 2, `registration_checkins` 0. INSIDE (start +30m): "Check-in is open."; walk-in wrote 1 check-in. AFTER (start -5h, end -1h): "Closed", "Ended 1h ago", "Check-in is closed. This event has ended."; Scan, Enter code, speaker and roster controls disabled with `aria-describedby=checkin-closed-note`; `+ Walk-in` stays enabled (same NIT as r3 F2). Stale page (still showing OPEN) then roster "Check in →" clicked: toast "Check-in is closed. This event has ended."; DB unchanged (1 check-in). First stale click gave "Invalid code format." because my fixture codes `ZR4A01/ZR4B02` contain characters outside the app alphabet (same artefact as r3 F4); I changed them to `KJCVCD/KJCVCE` and re-clicked. |
+| O8 staff walk-in | PASS [X] | Fresh panel, real typing: toast "Registered & checked in ZZ R4 Walkin." Row: source=walk_in, user_id NULL, profile_snapshot NULL, status attended, check_in_method manual; `registration_checkins` 1. Staff id and auth uid appear in no column of the registration or check-in row (jsonb text search, 0 hits). |
+| O9 post-event + registrants CSV | PASS [X] with route note | History/analytics page "Export CSV" is the funnel summary only. The registrants export is the button "Export registrants (CSV)" on the event's `/edit` page. Real click; I patched `HTMLAnchorElement.prototype.click` to capture the data-URI instead of saving (instrumentation only). File `registrants-zz-r4-organiser-event-20261121.csv`, UTF-8 BOM, row: `"'=HYPERLINK(""http://x"",""y"")",zz-r4-b@example.test,...` so the cell reads back with a leading apostrophe (S7 live PASS). |
+| Wrong-turn: whitespace-only name | PASS [X] | Typed 3 spaces + valid email, Register: button shows greyed "Registering…" for about 1s, then red "Name required". Reason is given in words. |
+| Wrong-turn: invalid email | browser validation [X] | `notanemail` in a `type=email` field: native "Please include an '@' in the email address. 'notanemail' is missing an '@'." (read from `validationMessage`; the bubble was not in a frame). No app message, nothing written. |
+| S8 capacity | PASS [X] | `max_attendees=4`, 3 registrations, walk-in form open with name+email typed; last seat taken by SQL (4 non-cancelled); Register: inline "This event is at capacity."; count stayed 4, no `zz-r4-cap` row. |
+| Sign-out + old cookie | PASS [X] | Sidebar "Sign out" lands on `/login` ("Organiser log in"); the auth cookie is gone from `document.cookie`. Re-set the old cookie value and fetched `/dashboard`: final URL `/login?next=%2Fdashboard`. (The Supabase refresh-token revoke itself was not read from the DB.) |
+| F1 re-test | STILL REPRODUCES [X] | psql, simulated JWT (sub = the organiser, role authenticated), `set local role authenticated`, event starting in 5 hours: `insert into speaker_checkins(...)` returned `INSERT 0 1`. Rolled back, leftover 0. Unchanged since r3: MINOR, Ivan decision pending, not fixed. |
+
+## Observations so far
+- NIT: after Save draft the edit page shows "CPD hours 3" next to "Not accredited" (create form had the field empty). Not investigated.
+- MINOR (unresolved, needs a clean repro): after the whitespace-only attempt, "Name required" stayed on screen while the name field held "   ZZ R4 Walkin" and a valid email; clicking Register wrote nothing and the message did not clear. In a fresh panel (reload, click, type name, type email) the same data registered fine. Could be stale form state after a failed submit; I did not isolate it.
+- MINOR: registrants CSV header lines label UTC times as Hong Kong: `Start,2026-11-21T04:26:45.738597+00:00 (Asia/Hong_Kong)` (real HKT start is 12:26). Same for End.
+- NIT: registrants CSV is reachable only from the event's Edit page, not from History or the analytics page (which offers the funnel summary).
+- NIT: sidebar footer name flips between "ZZ-R4" (full name) and the email on the form pages. Not investigated.
+
+## Not run yet
+- O4 Keep-editing branch and non-creator colleague publish.
+- O3 blocks 2-3 were created by SQL, not by clicks (synthetic setup).
+- NEW-UI regression sweep was only incidental (no phone-width bottom pill pass, no dark theme, no rail at other widths). At 1024 px the sidebar rail, page headings ("Events", "Create event", "Registrations", "Check-in"), cards, red inline errors, the walk-in toast and sign-out all rendered and worked; nothing looked broken in the frames taken. The phone bottom pill was NOT RUN.
+- O5 `Keep editing` and Drafts counts at other roles NOT RUN.
+
+## Findings (ranked)
+
+- F1 MINOR (open, Ivan's call): speaker check-in window is app-layer only; direct INSERT into `speaker_checkins` by an org member succeeds before the window. See table.
+- F2 MINOR: registrants CSV header says `Start,2026-11-21T04:26:45.738597+00:00 (Asia/Hong_Kong)`: a UTC instant labelled as Hong Kong (HKT would be 12:26).
+- F3 MINOR (unresolved): stale red "Name required" with a filled name after a whitespace-only attempt; submit did nothing until the panel was reopened. Not isolated; not reproduced in a clean run.
+- F4 NIT: registrants CSV only on the event's Edit page; History/analytics offers only the funnel summary ("Export CSV").
+- F5 NIT: `+ Walk-in` stays enabled when check-in is closed (opens a panel with the closed copy); same as r3.
+- F6 NIT: Edit page shows "CPD hours 3" while "Not accredited"; sidebar footer shows "ZZ-R4" on some pages and the email on others.
+- F7 NOTE (tooling): `scripts/walk-window.sh` still cannot move an event with agenda blocks (S5 trigger); I used delete + reinsert (`shift.sh` in scratchpad).
+- F8 NOTE (fixture artefact): roster Check-in on codes with `0`/`1` returned "Invalid code format." (twice across r3/r4); not a product bug.
+- F9 NOTE: the Needs-attention card on the Events home carries other sessions' fixtures (22 items); not mine.
+
+## Screenshots
+Tool-saved frames exist on disk under `/Users/ivan/.claude/projects/-Users-ivan-Eventar/d34a0c1c-6fa2-4cf1-b5a9-ceb867212205/tool-results/` (named `mcp-Claude_Browser-blob-*.jpg`, not renamed per step): O1 dashboard (…898mg5), create form (…18gakx), venue dropdown (…vrum8r), venue picked (…chrptz), draft saved (…1ji90g), Drafts tab (…wooj4f), agenda block form (…udosy9, …kgtdsz), out-of-window inline error (…uvzpr0), agenda banner (…t0y9st), publish dialog (…e46e94), registrations (…ko16gh), check-in BEFORE (…1sm77j) and its walk-in panel (…i8nu9m), walk-in whitespace and Name required (…daghxl, …slsoc9, …q3sl6s), walk-in success toast (…slxfqi), stale invalid-code toast (…3fngyr), sign-out login page (…3ld91n). Not captured as frames: INSIDE state, AFTER state (read by DOM), capacity message (read by DOM), CSV (read by captured data-URI).
+
+## Honesty notes
+- Blocks 2-3 of O3 and all fixture windows/registrations R1/R2 were SQL setup. The registrants CSV was captured by patching `HTMLAnchorElement.prototype.click` (the export click was real; the file was not saved to disk).
+- Old-cookie check replays the cookie in the browser; it proves the server rejects it, not why.
+- Magic link written to a 0600 file, one-shot localhost redirect on :8765 (now not listening), files deleted; the link and token were never printed.
+- Native `<select>`/pickers were all driven with real clicks; no `form_input` or `dispatchEvent` substitute was used.
+
+## Teardown (stderr visible)
+Deleted in one superuser transaction: participation_evidence (1), speaker_checkins (0), registration_checkins (1), email_log (1), registrations (4), agenda_blocks (2), event_occurrences (1), events (1), staff (1); then auth user `5c0ce736-99da-42be-a5f9-371dd336fda4` via admin API (HTTP 200). Leftover: `events=0 staff=0 auth=0 regs=0 agenda=0 occ=0 public.users=0 evidence_orphans=0`. Residue that stays: `audit_events` rows for the organiser (3 with `actor_user_id` = the deleted uid; sign-in, publish, walk-in and similar), permanent by hard rule 11. Ids: event `13660e33-b5a1-4deb-b986-87bad54ca6a0`, staff `75753792-8e59-4ae4-89c0-d54c1ca8e87b`, blocks `b444e04c-9c29-4f7d-9076-d9a153365cf1`, `7b2dee4f-83a8-443b-b257-71e047fdb72e`, `a981a6dd-d34e-4b1c-b354-270de616c7bc`. Pre-existing `ZZ-WALK org` and one older `ZZ` event were not mine and were left alone. The browser pane holds no session cookie.

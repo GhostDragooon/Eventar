@@ -315,7 +315,7 @@ export function CompleteClient({
           <SectionCard icon="fact_check" title="Privacy and terms">
             <p className="font-body-md text-body-md text-on-surface-variant m-0">
               Eventar uses your professional identity to release <abbr title="Continuing medical education">CME</abbr>/<abbr title="Continuing professional development">CPD</abbr> credit for events you attend.
-              By continuing you agree to the terms and privacy policy we will publish before launch.
+              By continuing you agree to Eventar using your details for this. The full terms and privacy policy are not published yet. We will show them to you before launch.
             </p>
             <label className="mt-md flex items-start gap-sm cursor-pointer">
               <input
@@ -325,7 +325,7 @@ export function CompleteClient({
                 className="mt-1 h-4 w-4 rounded border-outline-variant"
               />
               <span className="font-body-md text-body-md text-on-surface">
-                I agree to the Eventar terms and privacy policy once published.
+                I agree to Eventar using my details this way. I know the full terms and privacy policy are not published yet.
               </span>
             </label>
             {consentStatus && <StatusBanner status={consentStatus} />}
