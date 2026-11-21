@@ -287,11 +287,18 @@ export default function RegisterCard({
 
   const isSubmitting = state.kind === 'submitting';
   const errorMessage = state.kind === 'error' ? state.message : null;
+  const missing = !name.trim() ? (!email.trim() ? 'name and email' : 'name') : !email.trim() ? 'email' : null;
+  const missingHint = missing && !isSubmitting ? `Enter your ${missing} to register.` : '';
 
   // ─── States 1, 2, 4: Initial / Submitting / Error ─────────────────────
   return (
     <Section>
       <h2 className="font-title-lg text-title-lg text-on-surface m-0 -mb-sm">Register</h2>
+      {/* Why Register is grey, right under the heading (Ivan 2026-11-21). The line's height is always reserved so the
+          fields do not jump while the visitor types. */}
+      <p aria-live="polite" className="m-0 -mt-sm min-h-[1.25em] font-body-md text-body-md text-on-surface-variant">
+        {missingHint}
+      </p>
       {/* Walk-in flow nudge (signed-out only). Copy is honest for both CPD
           and non-CPD events — "release CME/CPD points for accredited events"
           scopes the promise to the case where it matters, so a general

@@ -551,3 +551,19 @@ describe('RegisterCard — account prompt on the success card (FR-003)', () => {
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 });
+
+describe('RegisterCard — why Register is disabled', () => {
+  const hint = () => screen.getByRole('heading', { name: 'Register' }).nextElementSibling as HTMLElement;
+
+  it('names the missing item right under the heading, and clears it when the form is valid', () => {
+    render(<RegisterCard {...baseProps} lifecycle="registering" />);
+    expect(hint()).toHaveTextContent('Enter your name and email to register.');
+    fireEvent.change(screen.getByPlaceholderText('Your name'), { target: { value: '   ' } });
+    expect(hint()).toHaveTextContent('Enter your name and email to register.');
+    fireEvent.change(screen.getByPlaceholderText('Your name'), { target: { value: 'Ada' } });
+    expect(hint()).toHaveTextContent('Enter your email to register.');
+    fireEvent.change(screen.getByPlaceholderText('you@example.com'), { target: { value: 'a@b.co' } });
+    expect(hint()).toHaveTextContent('');
+    expect(screen.getByRole('button', { name: 'Register' })).toBeEnabled();
+  });
+});
