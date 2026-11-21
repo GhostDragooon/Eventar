@@ -139,9 +139,7 @@ describe('AttendeeSignUpPage: short card', () => {
     expect(screen.queryByText(/expires after 15 minutes/i)).not.toBeInTheDocument();
     const main = screen.getByRole('main');
     expect(Array.from(main.querySelectorAll('a')).map((a) => a.textContent)).toEqual(['Log in']);
-    // The only link to /login is the nav's Organiser log in item.
-    const toLogin = screen.getAllByRole('link').filter((a) => a.getAttribute('href') === '/login');
-    expect(toLogin).toHaveLength(1);
-    expect(screen.getByRole('navigation', { name: /primary/i }).contains(toLogin[0])).toBe(true);
+    // Ivan 2026-11-22: no organiser door anywhere on the attendee path; nothing here links to /login.
+    expect(screen.queryAllByRole('link').filter((a) => a.getAttribute('href') === '/login')).toHaveLength(0);
   });
 });

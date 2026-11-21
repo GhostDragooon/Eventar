@@ -73,7 +73,12 @@ describe('LandingNav — state-aware attendee-first CTA (shell parity)', () => {
     render(<LandingNav signedIn={false} />);
     expect(screen.getByRole('link', { name: /upcoming events/i })).toHaveAttribute('href', '/events');
     expect(screen.queryByRole('link', { name: /organisers? log in/i })).not.toBeInTheDocument();
-    for (const gone of [/how it works/i, /^platform$/i, /^for organisers$/i, /start an event/i, /^home$/i]) {
+    // Ivan 2026-11-22: web nav also carries the footer pages plus About and Plan (hidden on phone by CSS).
+    expect(screen.getByRole('link', { name: /^how it works$/i })).toHaveAttribute('href', '/#how-it-works');
+    expect(screen.getByRole('link', { name: /^platform$/i })).toHaveAttribute('href', '/#platform');
+    expect(screen.getByRole('link', { name: /^about$/i })).toHaveAttribute('href', '/about');
+    expect(screen.getByRole('link', { name: /^plan$/i })).toHaveAttribute('href', '/pricing');
+    for (const gone of [/^for organisers$/i, /start an event/i, /^home$/i]) {
       expect(screen.queryByRole('link', { name: gone })).not.toBeInTheDocument();
     }
   });

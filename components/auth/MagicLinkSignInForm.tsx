@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, type ReactNode } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AuthStatusMessage, type AuthStatus } from './AuthStatusMessage';
@@ -20,6 +20,12 @@ type Props = {
    * its own default destination.
    */
   next?: string;
+  /**
+   * Shown under the button once this form has returned an error twice in a row
+   * (Ivan 2026-11-22: a wrong-door hint, triggered by the visitor's own failed
+   * attempts counted here in the browser, never by a lookup of the address).
+   */
+  helpAfterFailures?: ReactNode;
 };
 
 export function MagicLinkSignInForm({
@@ -28,6 +34,7 @@ export function MagicLinkSignInForm({
   placeholder = 'you@company.com',
   submitLabel = 'Send magic link',
   next,
+  helpAfterFailures,
 }: Props) {
   const [pending, startTransition] = useTransition();
   // The error the page arrived with (an expired link, a failed role check) sits
@@ -38,6 +45,7 @@ export function MagicLinkSignInForm({
     initialError ? { kind: 'error', message: initialError } : null,
   );
   const [status, setStatus] = useState<AuthStatus | null>(null);
+  const [failures, setFailures] = useState(0);
 
   function submit(formData: FormData) {
     setNotice(null);
@@ -47,6 +55,7 @@ export function MagicLinkSignInForm({
     const sentTo = String(formData.get('email') ?? '').trim();
     startTransition(async () => {
       const result = await submitMagicLink(formData);
+      setFailures((n) => ('error' in result ? n + 1 : 0));
       setStatus(
         'error' in result
           ? { kind: 'error', message: result.error }
@@ -65,7 +74,9 @@ export function MagicLinkSignInForm({
   // guarantee.
   return (
     <form action={submit} className="space-y-md">
+      {/* Errors sit above the field, as on a payment-grade log-in (Ivan 2026-11-22); only the success note lands under the button. */}
       {notice && <AuthStatusMessage status={notice} />}
+      {status?.kind === 'error' && <AuthStatusMessage status={status} />}
       {next && <input type="hidden" name="next" value={next} />}
       <label className="block space-y-xs">
         <span className="font-label-md text-label-md text-on-surface">Email address</span>
@@ -90,7 +101,8 @@ export function MagicLinkSignInForm({
         <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))]" aria-hidden>mail</span>
         {pending ? 'Sending…' : submitLabel}
       </Button>
-      {status && <AuthStatusMessage status={status} />}
+      {status?.kind === 'success' && <AuthStatusMessage status={status} />}
+      {failures >= 2 && helpAfterFailures}
     </form>
   );
 }

@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 type State =
   | { kind: 'idle' }
   | { kind: 'loading' }
-  | { kind: 'error'; message: string };
+  | { kind: 'error'; message: string; final: boolean };
 
 export default function ConfirmButton({
   code,
@@ -29,7 +29,7 @@ export default function ConfirmButton({
     startTransition(async () => {
       const res = await selfCheckIn(code);
       if ('error' in res) {
-        setState({ kind: 'error', message: res.error });
+        setState({ kind: 'error', message: res.error, final: 'final' in res && res.final === true });
       }
       // Success: revalidatePath swaps PassView → CheckedInView; this
       // component unmounts before any local ok-state could paint.
@@ -46,7 +46,7 @@ export default function ConfirmButton({
       <Button
         type="button"
         onClick={onClick}
-        disabled={state.kind === 'loading'}
+        disabled={state.kind === 'loading' || (state.kind === 'error' && state.final)}
         // Was hand-rolled to get a visible focus ring: the base layer set an
         // outline *colour* but no width, so it fell back to the low-contrast
         // UA ring. The shared Button supplies its own `focus-visible:ring-3`,
@@ -63,6 +63,12 @@ export default function ConfirmButton({
         >
           <span className="material-symbols-outlined text-[calc(1.125rem*var(--text-scale))] mt-[0.125rem]" aria-hidden>warning</span>
           <span>{state.message}</span>
+        </p>
+      )}
+      {/* Hidden once a refusal is final: "Tap when you arrive" would contradict the disabled button. */}
+      {!(state.kind === 'error' && state.final) && (
+        <p className="font-body-md text-body-md text-on-surface-variant text-center m-0">
+          Tap when you arrive · staff will see you in the roster instantly.
         </p>
       )}
     </div>

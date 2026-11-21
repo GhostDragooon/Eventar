@@ -31,7 +31,7 @@ describe('SiteShell — state-aware right-side CTA', () => {
     expect(screen.queryByRole('link', { name: /^log in$/i })).not.toBeInTheDocument();
   });
 
-  it('the Log in CTA does NOT point at /login; the only /login link is the labelled organiser one', () => {
+  it('the Log in CTA does NOT point at /login, and the nav has no other /login link', () => {
     // Q32 audience boundary, as amended by Doctrine 2026-10-30 section 1 (two doors, both reachable, each labelled):
     // the plain CTA is the attendee door. The organiser door is a separate link that says so. This still guards a
     // "one Log in for everyone" regression that would put a signed-out attendee on the wrong door.
@@ -42,7 +42,7 @@ describe('SiteShell — state-aware right-side CTA', () => {
     );
     expect(screen.getByRole('link', { name: /^log in$/i })).not.toHaveAttribute('href', '/login');
     const toLogin = screen.getAllByRole('link').filter((a) => a.getAttribute('href') === '/login');
-    expect(toLogin.map((a) => a.textContent)).toEqual(['Organisers log inOrganiser log in']);
+    expect(toLogin).toEqual([]);
   });
 
   it('signed-in Account menu trigger marks itself active via aria-current when active="account"', () => {
@@ -95,11 +95,12 @@ describe('SiteShell — state-aware right-side CTA', () => {
   });
 });
 
-// Doctrine section 1: the organiser door is reachable from every public page, not only after flipping the landing pill.
-describe('SiteShell: organiser door link', () => {
-  it('shows "Organiser log in" to /login for a signed-out visitor', () => {
+// Ivan 2026-11-22: attendee and organiser paths are separated by the landing pill. The nav has no organiser door
+// (this reverses Doctrine 2026-10-30 section 1, which wanted it on every public page).
+describe('SiteShell: no organiser door in the nav', () => {
+  it('shows no organiser link to /login for a signed-out visitor', () => {
     render(<SiteShell active="events">content</SiteShell>);
-    expect(screen.getByRole('link', { name: /organisers? log in/i })).toHaveAttribute('href', '/login');
+    expect(screen.queryByRole('link', { name: /organisers?/i })).not.toBeInTheDocument();
   });
 
   it('does not show it to a signed-in attendee', () => {
@@ -138,7 +139,6 @@ describe('SiteShell: nav items', () => {
 
   it.each([
     ['events', 'Upcoming events'],
-    ['organiser', 'Organiser log in'],
     ['signin', 'Log in'],
   ] as const)('the %s item that points at this page is a non-link with aria-current', (active, label) => {
     render(<SiteShell active={active}>content</SiteShell>);

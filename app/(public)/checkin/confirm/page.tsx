@@ -451,12 +451,7 @@ function PassView({
         </p>
       ) : checkinState === 'open' ? (
         selfServe ? (
-          <>
-            <ConfirmButton code={code} />
-            <p className="font-body-md text-body-md text-on-surface-variant text-center m-0">
-              Tap when you arrive · staff will see you in the roster instantly.
-            </p>
-          </>
+          <ConfirmButton code={code} />
         ) : (
           <p className="font-body-md text-body-md text-on-surface-variant text-center m-0">
             Check-in is open — please see reception with this pass.

@@ -22,7 +22,7 @@ vi.mock('./actions', () => ({
 }));
 
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import AttendeeSignInPage from './page';
 
 afterEach(() => {
@@ -134,5 +134,22 @@ describe('AttendeeSignInPage — no self-links', () => {
     expect(current).toHaveTextContent(/^log in$/i);
     const main = screen.getByRole('main');
     expect(Array.from(main.querySelectorAll('a')).map((a) => a.textContent)).toEqual(['Sign up']);
+  });
+
+  // Ivan 2026-11-22: a wrong-page helper line shows only after two failed log-ins, counted in the browser.
+  it('shows no organiser helper line until two log-ins have failed, then points at /login', async () => {
+    const { sendAttendeeMagicLink } = await import('./actions');
+    vi.mocked(sendAttendeeMagicLink).mockResolvedValue({ error: 'Could not send a link.' });
+    render(<AttendeeSignInPage />);
+    await waitFor(() => expect(screen.getByRole('button', { name: /^next$/i })).toBeInTheDocument());
+    expect(screen.queryByRole('link', { name: /^log in as an organiser$/i })).not.toBeInTheDocument();
+    for (let i = 1; i <= 2; i++) {
+      fireEvent.change(screen.getByRole('textbox', { name: /email address/i }), { target: { value: 'a@example.com' } });
+      fireEvent.click(await screen.findByRole('button', { name: /^next$/i }));
+      await waitFor(() => expect(sendAttendeeMagicLink).toHaveBeenCalledTimes(i));
+      await screen.findAllByText(/could not send/i);
+    }
+    expect(await screen.findByRole('link', { name: /^log in as an organiser$/i })).toHaveAttribute('href', '/login');
+    expect(screen.queryByText(/a@example\.com/)).not.toBeInTheDocument();
   });
 });

@@ -9,8 +9,9 @@ import { useScrollFade } from '@/lib/useScrollFade';
 
 // The one top nav for every public and auth page (Ivan, 2026-11-20): SiteShell,
 // PublicShell and LandingNav all render this, so the items and their order cannot
-// drift between surfaces. Glass pill: brand | Upcoming events | Organiser log in |
-// auth CTA (the landing sets loginHref, so its one pill is the organiser door while its toggle is on Organiser). No "Home" item (the brand mark is home).
+// drift between surfaces. Glass pill: brand | Upcoming events |
+// auth CTA (the landing sets loginHref, so its one pill is the organiser door while its toggle is on Organiser). No organiser item
+// (Ivan 2026-11-22: the landing pill separates attendee and organiser paths). No "Home" item (the brand mark is home).
 //
 // An item that points at the current page renders as a <span aria-current="page">,
 // not a link, so no page links to itself. The brand mark stays a link.
@@ -18,17 +19,27 @@ import { useScrollFade } from '@/lib/useScrollFade';
 // whitespace-nowrap + shrink-0 keep each label intact at 375px; the item group's
 // overflow-x-auto is the safety net (user-lens 2026-09-19).
 const NAV_ITEM =
-  'nav-item tap-44 inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-[0.6875rem] py-[0.4375rem] text-[calc(0.8125rem*var(--text-scale))] font-medium';
+  'nav-item tap-44 inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-[0.6875rem] max-[22.5rem]:px-sm py-[0.4375rem] text-[calc(0.8125rem*var(--text-scale))] font-medium';
 const NAV_IDLE = 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface';
 // Phone only (Ivan 2026-11-21): the bottom pill is two equal halves, Events and the login door. The web nav is unchanged.
-const HALF = 'max-sm:flex-1 max-sm:justify-center max-sm:bg-surface-container-high';
+const HALF = 'max-sm:flex-1 max-sm:justify-center';
 const NAV_ACTIVE = 'bg-surface-container-high font-semibold text-on-surface';
+// At 320px "Organiser log in" is wider than half the pill, so the halves came out 121 vs 127; tighter padding there keeps them equal.
 const PILL =
-  'tap-44 shrink-0 max-sm:flex-1 max-sm:text-center whitespace-nowrap rounded-full bg-primary px-md py-[0.4375rem] text-[calc(0.78125rem*var(--text-scale))] font-semibold text-on-primary';
+  'tap-44 shrink-0 max-sm:flex-1 max-sm:text-center whitespace-nowrap rounded-full bg-primary px-md max-[22.5rem]:px-sm py-[0.4375rem] text-[calc(0.78125rem*var(--text-scale))] font-semibold text-on-primary';
 const PILL_MOTION =
   'transition-[translate,scale] duration-150 ease-out hover:-translate-y-px active:scale-[.97] motion-reduce:transition-none motion-reduce:hover:translate-y-0';
 
-export type SiteNavActive = 'events' | 'organiser' | 'signin' | 'account';
+export type SiteNavActive = 'events' | 'signin' | 'account' | 'about' | 'plan';
+
+// Web only (Ivan 2026-11-22): the footer's pages plus About and Plan, from md (768px) up: measured 667px of pill content, so
+// between sm and md they would scroll inside the pill. The phone bar stays Events | Log in.
+const WEB_ITEMS = [
+  { key: 'how', label: 'How it works', href: '/#how-it-works' },
+  { key: 'platform', label: 'Platform', href: '/#platform' },
+  { key: 'about', label: 'About', href: '/about' },
+  { key: 'plan', label: 'Plan', href: '/pricing' },
+] as const;
 
 export type SiteNavProps = {
   active?: SiteNavActive;
@@ -38,7 +49,7 @@ export type SiteNavProps = {
   isStaff?: boolean;
   accountComplete?: boolean;
   unlinkedCount?: number;
-  /** Where the signed-out "Log in" pill goes. When set, the separate "Organiser log in" item is omitted (the pill is that door). */
+  /** Where the signed-out "Log in" pill goes (the landing sets the organiser door while its toggle is on Organiser). */
   loginHref?: string;
   /** Visible label of the signed-out pill; default "Log in". The landing sets "Organiser log in" while its toggle is on Organiser. */
   loginLabel?: string;
@@ -76,7 +87,7 @@ export function SiteNav({
       </div>
     <nav
       aria-label="Primary"
-      className={`glass-nav z-[5] flex items-center justify-between gap-md rounded-full py-sm pl-md pr-sm max-sm:fixed max-sm:inset-x-0 max-sm:bottom-[calc(0.625rem+env(safe-area-inset-bottom))] max-sm:justify-evenly sm:sticky sm:top-[0.625rem] ${className}`}
+      className={`glass-nav z-[5] flex items-center justify-between gap-md rounded-full py-sm pl-md pr-sm max-sm:gap-0 max-sm:pl-sm max-sm:fixed max-sm:inset-x-0 max-sm:bottom-[calc(0.625rem+env(safe-area-inset-bottom))] max-sm:justify-evenly sm:sticky sm:top-[0.625rem] ${className}`}
     >
       <div className="hidden shrink-0 sm:block">
         <BrandMark href={brandHref} hideWordmarkOnPhone />
@@ -84,7 +95,7 @@ export function SiteNav({
 
       {/* min-w-0 + overflow-x-auto: brand and CTA never shrink; this group scrolls if it must.
           "Upcoming events" -> "Events" below sm: the overflow fallback has no visible affordance on mobile. */}
-      <div ref={navRef} className="scroll-fade -my-[0.3125rem] flex min-w-0 items-center gap-[0.125rem] overflow-x-auto overflow-y-hidden py-[0.3125rem] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-sm:flex-1 max-sm:justify-evenly">
+      <div ref={navRef} className={`scroll-fade -my-[0.3125rem] flex min-w-0 items-center gap-[0.125rem] overflow-x-auto overflow-y-hidden py-[0.3125rem] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-sm:flex-1 max-sm:justify-evenly max-sm:gap-0`}>
         {active === 'events' ? (
           <span aria-current="page" className={`${NAV_ITEM} ${NAV_ACTIVE} ${HALF}`}>
             <span className="sm:hidden"><span className="reserve-bold" data-text="Events">Events</span></span>
@@ -96,18 +107,17 @@ export function SiteNav({
             <span className="hidden sm:inline"><span className="reserve-bold" data-text="Upcoming events">Upcoming events</span></span>
           </Link>
         )}
-        {/* Organiser door (doctrine section 1). Short label below sm so phone visitors still reach /login; the sr-only tail keeps the accessible name containing the visible word (WCAG 2.5.3). */}
-        {!signedIn &&
-          !loginHref &&
-          (active === 'organiser' ? (
-            <span aria-current="page" className={`${NAV_ITEM} ${NAV_ACTIVE}`}>
-              <span className="sm:hidden">Organisers<span className="sr-only"> log in</span></span><span className="hidden sm:inline">Organiser log in</span>
+        {WEB_ITEMS.map((item) =>
+          active === item.key ? (
+            <span key={item.key} aria-current="page" className={`${NAV_ITEM} ${NAV_ACTIVE} max-md:hidden`}>
+              <span className="reserve-bold" data-text={item.label}>{item.label}</span>
             </span>
           ) : (
-            <Link href="/login" className={`${NAV_ITEM} ${NAV_IDLE}`}>
-              <span className="sm:hidden">Organisers<span className="sr-only"> log in</span></span><span className="hidden sm:inline">Organiser log in</span>
+            <Link key={item.key} href={item.href} className={`${NAV_ITEM} ${NAV_IDLE} max-md:hidden`}>
+              <span className="reserve-bold" data-text={item.label}>{item.label}</span>
             </Link>
-          ))}
+          ),
+        )}
       </div>
 
       <div className="flex shrink-0 items-center gap-sm max-sm:flex-1 max-sm:justify-end">

@@ -116,4 +116,23 @@ describe('MagicLinkSignInForm', () => {
     expect(screen.queryByText(/expired or was already used/i)).not.toBeInTheDocument();
     expect(screen.getAllByRole('alert')).toHaveLength(1);
   });
+
+  it('shows the wrong-door help only after two failed submits, and a success resets the count', async () => {
+    const results = [{ error: 'no' }, { ok: true as const }, { error: 'no' }, { error: 'no' }];
+    const submitMagicLink = vi.fn(async () => results.shift()!);
+    render(<MagicLinkSignInForm submitMagicLink={submitMagicLink} helpAfterFailures={<p>Wrong door?</p>} />);
+    const go = async (n: number) => {
+      fireEvent.change(screen.getByRole('textbox', { name: /email address/i }), { target: { value: 'a@example.com' } });
+      fireEvent.click(screen.getByRole('button', { name: /send magic link/i }));
+      await waitFor(() => expect(submitMagicLink).toHaveBeenCalledTimes(n));
+      await waitFor(() => expect(screen.getByRole('button', { name: /send magic link/i })).not.toBeDisabled());
+    };
+    await go(1);
+    expect(screen.queryByText('Wrong door?')).toBeNull();
+    await go(2); // success resets
+    await go(3);
+    expect(screen.queryByText('Wrong door?')).toBeNull();
+    await go(4);
+    expect(screen.getByText('Wrong door?')).toBeInTheDocument();
+  });
 });

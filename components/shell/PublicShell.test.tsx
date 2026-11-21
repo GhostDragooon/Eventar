@@ -30,7 +30,7 @@ describe('PublicShell — state-aware right-side CTA (SiteShell parity)', () => 
     expect(screen.queryByRole('link', { name: /^log in$/i })).not.toBeInTheDocument();
   });
 
-  it('the Log in CTA does NOT point at /login; the only /login link is the labelled organiser one', () => {
+  it('the Log in CTA does NOT point at /login, and the nav has no other /login link', () => {
     // Mirror of the SiteShell regression guard (Q32 as amended by Doctrine 2026-10-30 section 1). This shell is
     // attendee-facing (event pages, check-in pass, survey), so the plain CTA routes to the attendee door.
     render(
@@ -40,7 +40,7 @@ describe('PublicShell — state-aware right-side CTA (SiteShell parity)', () => 
     );
     expect(screen.getByRole('link', { name: /^log in$/i })).not.toHaveAttribute('href', '/login');
     const toLogin = screen.getAllByRole('link').filter((a) => a.getAttribute('href') === '/login');
-    expect(toLogin.map((a) => a.textContent)).toEqual(['Organisers log inOrganiser log in']);
+    expect(toLogin).toEqual([]);
   });
 
   it('defaults to signed-out when `signedIn` prop is omitted', () => {
@@ -94,13 +94,14 @@ describe('PublicShell — state-aware right-side CTA (SiteShell parity)', () => 
   });
 });
 
-describe('PublicShell: organiser door link', () => {
-  it('shows "Organiser log in" to /login for a signed-out visitor, not for a signed-in one', () => {
+// Ivan 2026-11-22: the landing pill separates the paths; no organiser door in the nav.
+describe('PublicShell: no organiser door in the nav', () => {
+  it('shows no organiser link for a signed-out or a signed-in visitor', () => {
     const { unmount } = render(<PublicShell>content</PublicShell>);
-    expect(screen.getByRole('link', { name: /organisers? log in/i })).toHaveAttribute('href', '/login');
+    expect(screen.queryByRole('link', { name: /organisers?/i })).not.toBeInTheDocument();
     unmount();
     render(<PublicShell signedIn accountComplete>content</PublicShell>);
-    expect(screen.queryByRole('link', { name: /organisers? log in/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /organisers?/i })).not.toBeInTheDocument();
   });
 });
 

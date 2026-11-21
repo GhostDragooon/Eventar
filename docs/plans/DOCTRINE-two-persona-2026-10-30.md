@@ -10,6 +10,8 @@
 
 Landing pill picks the door: **Attendee | Organiser**.
 
+> **Clarified (Ivan, 2026-11-22):** the landing pill is the ONLY place the two paths separate. No public header, nav, footer or attendee page carries an Organiser item or a link to `/login`. The 2026-11-01 reading "both doors reachable from the public chrome" (commit `1bab723`) was wrong and is withdrawn. `Talk to sales` lives on the Organiser tab of the landing hero only. The one cross-link: after two failed log-ins (counted in the browser, no DB lookup, no email shown) each door's card shows a one-line wrong-door helper pointing at the other door.
+
 Both doors use the same simple form:
 
 - Email → **Next** (log in)

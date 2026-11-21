@@ -24,7 +24,7 @@ export default function LoginPage() {
 
 function LoginLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SiteShell active="organiser">
+    <SiteShell>
       <div className="mx-auto w-full max-w-md px-grid-margin py-xl">
         <div className="flex flex-col gap-lg bg-surface-container-lowest border border-outline-variant rounded-card p-lg shadow-sm">
           {children}
@@ -146,16 +146,15 @@ function LoginForm() {
         }
         next={next}
         submitLabel="Next"
+        helpAfterFailures={
+          <p className="font-body-md text-body-md text-on-surface-variant m-0">
+            Are you an attendee?{' '}
+            <Link href="/account/sign-in" className="font-semibold text-[color:var(--on-primary-container)] hover:underline">
+              Log in as an attendee
+            </Link>
+          </p>
+        }
       />
-
-      {(urlErrorCode === 'not_authorized' || urlErrorCode === 'not_organiser') && !signedOutHere && (
-        <p className="font-body-md text-body-md text-on-surface-variant m-0">
-          Attending an event?{' '}
-          <Link href="/account/sign-up" className="font-semibold text-[color:var(--on-primary-container)] hover:underline">
-            Sign up
-          </Link>
-        </p>
-      )}
 
       <details className="group">
         <summary className="cursor-pointer font-body-md text-body-md text-[color:var(--on-primary-container)] hover:underline list-none">

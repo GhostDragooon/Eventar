@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function PricingPage() {
   return (
-    <SiteShell>
+    <SiteShell active="plan">
       <div className="mx-auto max-w-5xl px-grid-margin py-xxl">
         <header className="mb-xl text-center">
           <h1 className="font-headline-lg text-headline-lg text-on-surface">Plans &amp; Pricing</h1>

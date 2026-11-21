@@ -66,7 +66,7 @@ function summariseCreditForAttendee(
  */
 export async function selfCheckIn(
   code: string,
-): Promise<{ ok: true; eventId: string; credit?: AttendeeCredit } | { error: string }> {
+): Promise<{ ok: true; eventId: string; credit?: AttendeeCredit } | { error: string; final?: true }> {
   if (!isValidRegistrationCode(code)) return { error: 'Invalid code format.' };
 
   const admin = supabaseAdmin();
@@ -106,23 +106,24 @@ export async function selfCheckIn(
     // find a staff member, or stop trying. Collapsing them into the generic
     // default told an attendee their registration was invalid when it was
     // perfectly valid and merely early.
+    // `final` = retrying cannot succeed on this page; the button disables itself.
     case 'not_open_yet':
-      return { error: "Check-in isn’t open yet. It opens an hour before the event starts." };
+      return { error: "Check-in isn’t open yet. It opens an hour before the event starts.", final: true };
     case 'closed':
       // Distinct from not_open_yet on purpose: telling someone who arrived
       // late to "wait" sends them to a moment that has already passed, and
       // nothing would ever correct them.
-      return { error: 'Check-in for this event has closed. Please see a member of staff.' };
+      return { error: 'Check-in for this event has closed. Please see a member of staff.', final: true };
     case 'self_serve_off':
-      return { error: "Self check-in isn’t enabled for this event — please see reception." };
+      return { error: "Self check-in isn’t enabled for this event — please see reception.", final: true };
     case 'cancelled':
-      return { error: 'This registration was cancelled.' };
+      return { error: 'This registration was cancelled.', final: true };
     case 'unavailable':
-      return { error: "This event isn’t accepting check-ins." };
+      return { error: "This event isn’t accepting check-ins.", final: true };
     case 'no_matching_occurrence':
       // Multi-occurrence events only: no session/day matches this check-in
       // time. Distinct from the generic default — the code IS valid.
-      return { error: 'No matching session found for this check-in time. Please see a member of staff.' };
+      return { error: 'No matching session found for this check-in time. Please see a member of staff.', final: true };
     default:
       return { error: 'This registration is no longer valid.' };
   }

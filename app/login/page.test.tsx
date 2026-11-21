@@ -100,20 +100,34 @@ describe('/login — no session', () => {
     expect(await screen.findByLabelText(/email address/i)).toBeInTheDocument();
   });
 
-  // The page's own nav item is not a link, and the card carries no cross-link to the other door.
-  it('marks the Organiser log in nav item as the current page, not a link, and links nowhere else to a door', async () => {
+  // Ivan 2026-11-22: the nav has no organiser item at all; the card carries one helper line for a wrong-page visitor.
+  it('has no organiser nav item and no attendee helper line before any failed log-in', async () => {
     noSession();
     visit('');
     await screen.findByLabelText(/email address/i);
     const nav = screen.getByRole('navigation', { name: /primary/i });
     expect(screen.queryByRole('link', { name: /organisers? log in/i })).not.toBeInTheDocument();
-    const current = nav.querySelector('[aria-current="page"]');
-    expect(current?.tagName).toBe('SPAN');
-    expect(current).not.toHaveAttribute('aria-label');
-    expect(current).toHaveTextContent(/organiser log in/i);
-    expect(screen.queryByRole('link', { name: /attendee/i })).not.toBeInTheDocument();
+    expect(nav.querySelector('[aria-current="page"]')).toBeNull();
+    expect(screen.queryByRole('link', { name: /log in as an attendee/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /sign up/i })).not.toBeInTheDocument();
     expect(screen.getAllByRole('link').filter((a) => a.getAttribute('href') === '/login')).toHaveLength(0);
+  });
+
+  it('shows the attendee helper line only after two failed log-ins, with no email in it', async () => {
+    const { sendMagicLink } = await import('./actions');
+    vi.mocked(sendMagicLink).mockResolvedValue({ error: 'Could not send a link.' });
+    noSession();
+    visit('');
+    await screen.findByLabelText(/email address/i);
+    for (let i = 1; i <= 2; i++) {
+      expect(screen.queryByRole('link', { name: /^log in as an attendee$/i })).not.toBeInTheDocument();
+      fireEvent.change(screen.getByLabelText(/email address/i), { target: { value: 'a@example.com' } });
+      fireEvent.click(await screen.findByRole('button', { name: /^next$/i }));
+      await waitFor(() => expect(sendMagicLink).toHaveBeenCalledTimes(i));
+      await screen.findAllByText(/could not send/i);
+    }
+    expect(await screen.findByRole('link', { name: /^log in as an attendee$/i })).toHaveAttribute('href', '/account/sign-in');
+    expect(screen.queryByText(/a@example\.com/)).not.toBeInTheDocument();
   });
 });
 

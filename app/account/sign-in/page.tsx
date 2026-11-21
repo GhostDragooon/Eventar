@@ -75,9 +75,17 @@ function AttendeeSignInForm() {
         placeholder="you@example.com"
         submitLabel="Next"
         next={next}
+        helpAfterFailures={
+          <p className="font-body-md text-body-md text-on-surface-variant m-0">
+            Are you an organiser?{' '}
+            <Link href="/login" className="font-semibold text-[color:var(--on-primary-container)] hover:underline">
+              Log in as an organiser
+            </Link>
+          </p>
+        }
       />
 
-      <p className="font-body-md text-body-md text-on-surface-variant text-center m-0">
+      <p className="font-body-md text-body-md text-on-surface-variant m-0">
         New here?{' '}
         <Link
           href={next ? `/account/sign-up?next=${encodeURIComponent(next)}` : '/account/sign-up'}
