@@ -123,6 +123,10 @@ beforeEach(() => {
 });
 
 describe('walkInRegisterAndCheckIn', () => {
+  it('refuses an invalid email with the one shared sentence', async () => {
+    await expect(walkInRegisterAndCheckIn({ ...validInput, email: 'bad@' })).resolves.toEqual({ error: 'Please enter a valid email address.' });
+  });
+
   // Rule 12 (DB-02 dev review F3): the person is registered BEFORE mark_attended can refuse. A refusal after the
   // insert must say the registration exists (and its code), not read as "nothing happened": a retry otherwise
   // answers "already registered" and code entry refuses too.

@@ -17,7 +17,7 @@ import { isMultiBodyConfigured } from '@/lib/cpd/multiBodyShape';
 import { listAuthorisedBodies } from '@/lib/cpd/authorisedBodies';
 import { StaffShell } from '@/components/shell/StaffShell';
 import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
-import { LayoutDashboardIcon, CalendarDaysIcon, SquarePenIcon } from 'lucide-react';
+import { LayoutDashboardIcon, CalendarDaysIcon, SquarePenIcon, EyeIcon } from 'lucide-react';
 import NewEventForm, {
   type InitialEvent,
   type InitialBlock,
@@ -200,7 +200,7 @@ export default async function StaffEventEditPage({
         items={[
           { label: 'Events', href: '/dashboard', icon: LayoutDashboardIcon },
           { label: event.title, href: `/events/${id}/details`, icon: CalendarDaysIcon },
-          { label: writable ? 'Edit' : 'View', icon: SquarePenIcon },
+          { label: writable ? 'Edit' : 'View', icon: writable ? SquarePenIcon : EyeIcon },
         ]}
         className="mb-sm"
       />

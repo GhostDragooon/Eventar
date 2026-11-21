@@ -298,7 +298,7 @@ export function EventsHome({ events, nowMs, initialTab = 'active', canCreate = t
     const rows = events.filter((e) => picked.has(e.id));
     const header = ['Title', 'Status', 'Category', 'Date', 'Venue', 'Registered', 'Capacity', 'Attended'];
     const body = rows.map((e) =>
-      [e.title, PILL[e.lifecycle].label, e.category ? CATEGORY_LABEL[e.category] ?? '' : '', e.dateLabel, e.venueName ?? '', String(e.registered), e.maxAttendees == null ? '' : String(e.maxAttendees), String(e.attended)]
+      [e.title, e.lifecycle === 'registering' && e.maxAttendees != null && e.registered >= e.maxAttendees ? 'At capacity' : PILL[e.lifecycle].label, e.category ? CATEGORY_LABEL[e.category] ?? '' : '', e.dateLabel, e.venueName ?? '', String(e.registered), e.maxAttendees == null ? '' : String(e.maxAttendees), String(e.attended)]
         .map(csvEscape).join(','),
     );
     const blob = new Blob([[header.join(','), ...body].join('\n')], { type: 'text/csv' });

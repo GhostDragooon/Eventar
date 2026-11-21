@@ -44,8 +44,8 @@ type Props = {
   /** Credits already posted for this event — every write below is DB-frozen once this is true. */
   frozen: boolean;
   /**
-   * Whether this role may set accreditation (canSetAccreditation(staff.role)). False shows the same locked
-   * note as the single-body field instead of the entry button, and any configured bodies read-only. Defaults
+   * Whether this role may set accreditation (canSetAccreditation(staff.role)). False shows no entry button and
+   * any configured bodies read-only; the reason is printed once, by CpdAccreditationSection directly above. Defaults
    * true like CpdAccreditationSection; the actions and the database refuse regardless.
    */
   canSetAccreditation?: boolean;

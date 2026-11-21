@@ -384,6 +384,11 @@ describe('EventsHome', () => {
       expect(row.replace(/^"/, '').startsWith(`'${title.slice(0, 1)}`)).toBe(true);
     });
 
+    it('exports At capacity for a full registering event, matching its chip', async () => {
+      const csv = await exportedCsv([event({ id: 'f3', title: 'Full one', maxAttendees: 5, registered: 5 })], ['Full one']);
+      expect(csv.split('\n')[1]).toContain(',At capacity,');
+    });
+
     it('leaves an ordinary title alone and still quotes commas', async () => {
       const csv = await exportedCsv([event({ id: 'f2', title: 'Plain, with comma' })], ['Plain, with comma']);
       expect(csv.split('\n')[1].startsWith('"Plain, with comma",')).toBe(true);

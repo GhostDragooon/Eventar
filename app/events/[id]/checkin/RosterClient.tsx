@@ -509,7 +509,7 @@ function WalkInDialog({
           required
           placeholder="Full name"
           value={name}
-          onChange={e => { setName(e.target.value); setError(null); setSignInHref(null); }}
+          onChange={e => { setName(e.target.value); if (!signInHref) setError(null); }}
           className="px-md py-sm bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
         />
         <input
@@ -517,7 +517,7 @@ function WalkInDialog({
           required
           placeholder="Email"
           value={email}
-          onChange={e => { setEmail(e.target.value); setError(null); setSignInHref(null); }}
+          onChange={e => { setEmail(e.target.value); if (!signInHref) setError(null); }}
           className="px-md py-sm bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
         />
         {error && (

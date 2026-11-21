@@ -8,6 +8,7 @@ import type { Lifecycle } from '@/lib/lifecycle/eventLifecycle';
    3:1 large-text exemption starts at 18.66px bold. It now uses the same
    container+ink form as its siblings (7.21:1). The pulse and the dot are what
    carry "happening now" instead of the fill. */
+// 'At capacity' (registering + full) reuses the neutral upcoming style.
 const STYLES: Record<Lifecycle, string> = {
   drafted: 'bg-warning-container text-on-warning-container border border-transparent',
   registering: 'bg-primary-container text-on-primary-container border border-transparent',
