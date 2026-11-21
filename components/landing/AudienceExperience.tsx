@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { useAudience } from './AudienceContext';
 import { LandingHero } from './LandingHero';
 import { HowItWorks } from './HowItWorks';
 
-export type Audience = 'practitioner' | 'organiser';
+export type { Audience } from './AudienceContext';
 
 /**
  * Holds the one audience toggle shared by the Hero and HowItWorks, per
@@ -15,7 +16,7 @@ export type Audience = 'practitioner' | 'organiser';
  * 2026-08-20 — it no longer passes through here.)
  */
 export function AudienceExperience({ children }: { children?: ReactNode }) {
-  const [audience, setAudience] = useState<Audience>('practitioner');
+  const { audience, setAudience } = useAudience();
 
   return (
     <>

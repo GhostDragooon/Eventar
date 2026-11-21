@@ -5,20 +5,16 @@ import { LandingHero } from './LandingHero';
 
 afterEach(cleanup);
 
-// Two audiences, one shape (spec 001 FR-001): practitioner mode offers the pair
-// "Sign up" (sign-up) and "Log in" (sign-in), mirroring the organiser pair,
-// which is deliberately unchanged. This reverses the 2026-09-25 single-CTA
-// ("Get started" -> /events) shape of e6c2dc0; the lock below fails loudly if a
-// future edit collapses the practitioner pair again or drops the organiser pair.
+// One button, one page (Ivan 2026-11-21): Log in lives in the nav pill, which follows
+// this toggle, so the hero repeats no login. Practitioners keep "Sign up" (a page the
+// pill does not open); organisers have no page besides /login, so their hero has none.
 describe('LandingHero — audience CTAs', () => {
-  it('practitioner view renders the pair: "Sign up" -> /account/sign-up and "Log in" -> /account/sign-in', () => {
+  it('practitioner view renders one CTA: "Sign up" -> /account/sign-up, no login', () => {
     render(<LandingHero audience="practitioner" onAudienceChange={vi.fn()} />);
     const ctas = screen.getAllByRole('link').filter((el) => el.closest('.hero-copy'));
-    expect(ctas).toHaveLength(2);
+    expect(ctas).toHaveLength(1);
     expect(ctas[0]).toHaveAccessibleName('Sign up');
     expect(ctas[0]).toHaveAttribute('href', '/account/sign-up');
-    expect(ctas[1]).toHaveAccessibleName('Log in');
-    expect(ctas[1]).toHaveAttribute('href', '/account/sign-in');
   });
 
   it('practitioner CTAs never point at the organiser door or the workspace (Q32)', () => {
@@ -28,12 +24,9 @@ describe('LandingHero — audience CTAs', () => {
     }
   });
 
-  it('organiser view renders both CTAs unchanged: "Start an Event" and "Organiser log in"', () => {
+  it('organiser view renders no hero button: the nav pill is the only door to /login', () => {
     render(<LandingHero audience="organiser" onAudienceChange={vi.fn()} />);
-    const start = screen.getByRole('link', { name: /^start an event$/i });
-    expect(start).toHaveAttribute('href', '/login?next=/events/new');
-    const login = screen.getByRole('link', { name: /organisers? log in/i });
-    expect(login).toHaveAttribute('href', '/login');
+    expect(screen.queryAllByRole('link').filter((el) => el.closest('.hero-copy'))).toHaveLength(0);
   });
 
   it('switching audience swaps the CTA set (toggle click calls onAudienceChange)', () => {

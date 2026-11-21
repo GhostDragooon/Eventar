@@ -38,6 +38,8 @@ export type SiteNavProps = {
   unlinkedCount?: number;
   /** Where the signed-out "Log in" pill goes. When set, the separate "Organiser log in" item is omitted (the pill is that door). */
   loginHref?: string;
+  /** Visible label of the signed-out pill; default "Log in". The landing sets "Organiser log in" while its toggle is on Organiser. */
+  loginLabel?: string;
   /** Replaces the whole right-hand auth control (the landing's client island, which resolves the session itself). */
   authSlot?: React.ReactNode;
   /** Extra node beside the auth control (PublicShell's state pill). */
@@ -53,6 +55,7 @@ export function SiteNav({
   accountComplete = false,
   unlinkedCount = 0,
   loginHref,
+  loginLabel = 'Log in',
   authSlot,
   beforeAuth,
   className = 'mx-[1.125rem]',
@@ -120,7 +123,7 @@ export function SiteNav({
             </span>
           ) : (
             <Link href={loginHref ?? '/account/sign-in'} className={`${PILL} ${PILL_MOTION}`}>
-              Log in
+              {loginLabel}
             </Link>
           ))}
       </div>

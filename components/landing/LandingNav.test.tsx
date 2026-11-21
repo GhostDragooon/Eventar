@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { LandingNav } from './LandingNav';
+import { AudienceProvider } from './AudienceContext';
 
 afterEach(cleanup);
 
@@ -68,12 +69,26 @@ describe('LandingNav — state-aware attendee-first CTA (shell parity)', () => {
     expect(screen.getByRole('link', { name: /^log in$/i })).toHaveAttribute('href', '/account/sign-in');
   });
 
-  it('renders the shared nav: Upcoming events and Organiser log in, no landing anchors, no Start an Event, no Home', () => {
+  it('attendee view: Upcoming events plus one Log in pill, no separate Organiser link', () => {
     render(<LandingNav signedIn={false} />);
     expect(screen.getByRole('link', { name: /upcoming events/i })).toHaveAttribute('href', '/events');
-    expect(screen.getByRole('link', { name: /organisers? log in/i })).toHaveAttribute('href', '/login');
+    expect(screen.queryByRole('link', { name: /organisers? log in/i })).not.toBeInTheDocument();
     for (const gone of [/how it works/i, /^platform$/i, /^for organisers$/i, /start an event/i, /^home$/i]) {
       expect(screen.queryByRole('link', { name: gone })).not.toBeInTheDocument();
     }
+  });
+
+  it('organiser view: the one pill reads "Organiser log in" and opens /login, no attendee Log in', () => {
+    render(
+      <AudienceProvider initial="organiser">
+        <LandingNav signedIn={false} />
+      </AudienceProvider>,
+    );
+    expect(screen.getByRole('link', { name: /^organiser log in$/i })).toHaveAttribute('href', '/login');
+    expect(screen.queryByRole('link', { name: /^log in$/i })).not.toBeInTheDocument();
+    // one button, one page: no two links in the nav open the same href
+    // (the brand mark renders twice by design, phone and in-pill, so it is left out)
+    const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href')).filter((h) => h !== '/');
+    expect(new Set(hrefs).size).toBe(hrefs.length);
   });
 });

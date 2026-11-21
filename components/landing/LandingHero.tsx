@@ -61,24 +61,17 @@ const COPY = {
     chip: 'For practitioners · CME/CPD attendance without the paperwork',
     head: ['Your CME/CPD log', 'should keep itself.'],
     sub: 'Find accredited events, register, check in on the day. Your Eventar record captures what you attended and the points released — alongside iCMECPD and your college, not instead of them.',
-    ctas: [
-      { label: 'Sign up', href: '/account/sign-up' },
-      { label: 'Log in', href: '/account/sign-in' },
-    ],
+    // Log in lives in the nav pill (2026-11-21); the hero keeps the one page it does not open.
+    ctas: [{ label: 'Sign up', href: '/account/sign-up' }],
   },
   organiser: {
     chip: 'For organisers & training providers',
     head: ['Run the event,', 'not the admin behind it.'],
     sub: 'Publish to practitioners looking for accredited hours, keep accreditation configuration in one place, and let attendance and points fall out of the check-in itself.',
-    ctas: [
-      // Retargeted 2026-09-24 (Ivan's "two pathways" call): /events/new is
-      // in proxy.ts's matcher, which signs out any session lacking a staff
-      // row before bouncing to /login?error=not_authorized. Going through
-      // /login first keeps a signed-in practitioner's session alive when
-      // they click the organiser CTA. Same round-trip for anon visitors.
-      { label: 'Start an Event', href: '/login?next=/events/new' },
-      { label: 'Organiser log in', href: '/login' },
-    ],
+    // 2026-11-21 (Ivan, one button one page): organisers have no page of their own
+    // besides /login, and the nav pill already opens it while this toggle is on
+    // Organiser, so the hero repeats nothing.
+    ctas: [],
   },
 } as const;
 
@@ -193,7 +186,7 @@ export function LandingHero({
                 (both are #FFFFFF there), but text-white on --primary drops
                 to 2.23:1 in dark mode (fails AA) vs text-on-primary's
                 7.59:1 — dev-lens catch. */}
-            <div className="mt-[1.375rem] flex flex-wrap justify-center gap-sm lg:justify-start">
+            <div className="mt-[1.375rem] flex min-h-[2.375rem] flex-wrap justify-center gap-sm lg:justify-start">
               {c.ctas.map((cta) => (
                 <Link
                   key={cta.href}

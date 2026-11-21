@@ -1,4 +1,7 @@
+'use client';
+
 import { SiteNav } from '@/components/shell/SiteNav';
+import { useAudience } from './AudienceContext';
 import { LandingAuthPill } from './LandingAuthPill';
 
 /**
@@ -12,6 +15,10 @@ import { LandingAuthPill } from './LandingAuthPill';
  * column inset by 15px so the pill lines up with the sections below; explicit
  * width is load-bearing because a flex item's `mx-auto` disables cross-axis stretch.
  *
+ * One login control (Ivan 2026-11-21): the pill opens the door the landing toggle is on,
+ * attendee `/account/sign-in` or organiser `/login`. Passing `loginHref` drops SiteNav's
+ * separate "Organiser log in" link, so no two buttons open the same page.
+ *
  * `app/page.tsx` is dynamic and always passes `signedIn`, so SiteNav's own CTA renders.
  * The `LandingAuthPill` client island is the fallback for a caller that omits `signedIn`
  * (it resolves the session in the browser); `/` no longer takes that path.
@@ -22,9 +29,13 @@ export function LandingNav({
   accountComplete = true,
   unlinkedCount = 0,
 }: { signedIn?: boolean; isStaff?: boolean; accountComplete?: boolean; unlinkedCount?: number } = {}) {
+  const { audience } = useAudience();
+  const organiser = audience === 'organiser';
   return (
     <SiteNav
       className="mx-auto w-[calc(100%-1.875rem)] max-w-[73.125rem]"
+      loginHref={organiser ? '/login' : '/account/sign-in'}
+      loginLabel={organiser ? 'Organiser log in' : 'Log in'}
       signedIn={signedIn ?? false}
       isStaff={isStaff}
       accountComplete={accountComplete}

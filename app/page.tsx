@@ -4,6 +4,7 @@ import { LandingNav } from '@/components/landing/LandingNav';
 import { AudienceExperience } from '@/components/landing/AudienceExperience';
 import { WhyEventar } from '@/components/landing/WhyEventar';
 import { SiteFooter } from '@/components/shell/SiteFooter';
+import { AudienceProvider } from '@/components/landing/AudienceContext';
 
 /**
  * Landing — ported from the approved design artifact `cpd-design-exploration`,
@@ -84,6 +85,7 @@ export default async function LandingPage() {
     }
   }
   return (
+    <AudienceProvider>
     <div className="hero-ground flex min-h-dvh flex-col text-on-surface max-sm:pb-[5rem]">
       {/* Page-level, so `position: sticky` is bound by the whole document and
           the nav stays reachable to the footer. It does NOT reintroduce the
@@ -127,6 +129,7 @@ export default async function LandingPage() {
 
       <SiteFooter />
     </div>
+    </AudienceProvider>
   );
 }
 
