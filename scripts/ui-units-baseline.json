@@ -24,7 +24,7 @@
   "components/help/EmptyState.tsx": 1,
   "components/help/NotFoundState.tsx": 1,
   "components/landing/HowItWorks.tsx": 4,
-  "components/landing/LandingHero.tsx": 12,
+  "components/landing/LandingHero.tsx": 11,
   "components/landing/LandingNav.tsx": 4,
   "components/landing/WhyEventar.tsx": 3,
   "components/lifecycle/StatusPill.tsx": 2,
