@@ -10,6 +10,7 @@ export type AccreditingBodyOption = {
   full_name: string;
   short_name: string | null;
   cycle_config: unknown;
+  jurisdiction?: string | null;
 };
 
 export type CpdAccreditationSectionProps = {

@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { priorApprovalDeadline } from './priorApproval';
 
+const HK = 'Asia/Hong_Kong';
+
 // Fixed "now" so `passed` doesn't depend on the wall-clock date the test
 // happens to run on (same discipline as lib/tz.test.ts's fixed reference
 // date). All dates below are chosen relative to this instant.
@@ -12,10 +14,10 @@ describe('priorApprovalDeadline', () => {
   });
 
   it('returns null when cycle_config has no prior_approval key', () => {
-    expect(priorApprovalDeadline('2026-12-01T09:00:00Z', {})).toBeNull();
-    expect(priorApprovalDeadline('2026-12-01T09:00:00Z', { report_by_month: 9 })).toBeNull();
-    expect(priorApprovalDeadline('2026-12-01T09:00:00Z', null)).toBeNull();
-    expect(priorApprovalDeadline('2026-12-01T09:00:00Z', { _seed_placeholder: true })).toBeNull();
+    expect(priorApprovalDeadline('2026-12-01T09:00:00Z', {}, HK)).toBeNull();
+    expect(priorApprovalDeadline('2026-12-01T09:00:00Z', { report_by_month: 9 }, HK)).toBeNull();
+    expect(priorApprovalDeadline('2026-12-01T09:00:00Z', null, HK)).toBeNull();
+    expect(priorApprovalDeadline('2026-12-01T09:00:00Z', { _seed_placeholder: true }, HK)).toBeNull();
   });
 
   it('a date safely inside the window: not passed', () => {
@@ -24,7 +26,7 @@ describe('priorApprovalDeadline', () => {
     // HKCP: apply >=30 days before the event. Event is ~3.5 months out.
     const result = priorApprovalDeadline('2026-12-01T09:00:00Z', {
       prior_approval: { lead_time_days: 30, accepts_retrospective: false, applies_to: 'local', source: 'test' },
-    });
+    }, HK);
     expect(result).not.toBeNull();
     expect(result!.passed).toBe(false);
   });
@@ -36,7 +38,7 @@ describe('priorApprovalDeadline', () => {
     // already behind "now", and HKCP does not accept late local applications.
     const result = priorApprovalDeadline('2026-08-20T09:00:00Z', {
       prior_approval: { lead_time_days: 30, accepts_retrospective: false, applies_to: 'local', source: 'test' },
-    });
+    }, HK);
     expect(result).not.toBeNull();
     expect(result!.passed).toBe(true);
   });
@@ -55,7 +57,7 @@ describe('priorApprovalDeadline', () => {
         applies_to: 'overseas',
         source: 'HKAM CME/CPD Guidelines, Cycle 2026-2028',
       },
-    });
+    }, HK);
     expect(result).not.toBeNull();
     // The event already happened, but the 60-day-after grace window hasn't
     // closed yet as of FIXED_NOW — still not passed.
@@ -69,9 +71,26 @@ describe('priorApprovalDeadline', () => {
     // (the HK calendar date), landing on 1 Sep 2026, not 31 Aug.
     const result = priorApprovalDeadline('2026-10-01T00:30:00+08:00', {
       prior_approval: { lead_time_days: 30, accepts_retrospective: false, applies_to: 'local', source: 'test' },
-    });
+    }, HK);
     expect(result).not.toBeNull();
     // 23:59:59.999 HKT on 1 Sep 2026 = 15:59:59.999 UTC same day.
     expect(result!.deadline.toISOString()).toBe('2026-09-01T15:59:59.999Z');
+  });
+
+  it('follows the body\'s own zone: an Australian body gets Australian end-of-day, not Hong Kong', () => {
+    // 09:00 AEDT on 1 Dec 2026 is 22:00 UTC on 30 Nov. Sydney calendar date 1 Dec, minus 30 days = 1 Nov.
+    // 23:59:59.999 AEDT (UTC+11) on 1 Nov 2026 = 12:59:59.999 UTC.
+    const result = priorApprovalDeadline('2026-12-01T09:00:00+11:00', {
+      prior_approval: { lead_time_days: 30, accepts_retrospective: false, applies_to: 'local', source: 'test' },
+    }, 'Australia/Sydney');
+    expect(result!.deadline.toISOString()).toBe('2026-11-01T12:59:59.999Z');
+  });
+
+  it('uses the zone offset in force on the deadline day (daylight saving)', () => {
+    // London: 1 Oct 2026 minus 30 days = 1 Sep (BST, UTC+1) -> 22:59:59.999 UTC.
+    const result = priorApprovalDeadline('2026-10-01T09:00:00+01:00', {
+      prior_approval: { lead_time_days: 30, accepts_retrospective: false, applies_to: 'local', source: 'test' },
+    }, 'Europe/London');
+    expect(result!.deadline.toISOString()).toBe('2026-09-01T22:59:59.999Z');
   });
 });

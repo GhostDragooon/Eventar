@@ -253,7 +253,7 @@ export default async function EventDetailsPage({
   if (missingBodyIds.length > 0) {
     const missingRes = await admin
       .from('accrediting_bodies')
-      .select('id, full_name, short_name, cycle_config')
+      .select('id, full_name, short_name, cycle_config, jurisdiction')
       .in('id', missingBodyIds);
     if (missingRes.error) {
       console.error('[details] missing accrediting_bodies lookup failed', { code: missingRes.error.code });

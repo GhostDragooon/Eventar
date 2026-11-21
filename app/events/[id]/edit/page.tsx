@@ -181,7 +181,7 @@ export default async function StaffEventEditPage({
   if (missingBodyIds.length > 0) {
     const missingRes = await supabaseAdmin()
       .from('accrediting_bodies')
-      .select('id, full_name, short_name, cycle_config')
+      .select('id, full_name, short_name, cycle_config, jurisdiction')
       .in('id', missingBodyIds);
     if (missingRes.error) {
       console.error('[edit] missing accrediting_bodies lookup failed', { code: missingRes.error.code });

@@ -57,7 +57,7 @@ describe('CpdAccreditationSection — multi-body coexistence', () => {
 });
 
 describe('CpdAccreditationSection — prior-approval advisory suppressed when locked', () => {
-  const hkcp = { id: 'b1', full_name: 'HK College of Pathologists', short_name: 'HKCP', cycle_config: { prior_approval: { lead_time_days: 30, accepts_retrospective: false, applies_to: 'local', source: 'test' } } };
+  const hkcp = { id: 'b1', full_name: 'HK College of Pathologists', short_name: 'HKCP', jurisdiction: 'HK', cycle_config: { prior_approval: { lead_time_days: 30, accepts_retrospective: false, applies_to: 'local', source: 'test' } } };
 
   // Found in the 2026-09-17 phase-completion review (user-lens): the banner
   // above already says this body binding is stale/"not what's actually in
