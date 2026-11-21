@@ -34,4 +34,16 @@ describe('LiveScoreboard', () => {
     expect(screen.getByText('ELAPSED')).toBeInTheDocument();
     expect(screen.getByText('WRAPS IN')).toBeInTheDocument();
   });
+
+  // UX-R6 (user-lens): a full event is not "open".
+  it('the Registered tile says full, not open, at capacity', () => {
+    render(<LiveScoreboard lifecycle="registering" {...props} registered={5} capacity={5} />);
+    expect(screen.getByText(/· full$/)).toBeInTheDocument();
+    expect(screen.queryByText(/· open$/)).toBeNull();
+  });
+
+  it('the Registered tile says open below capacity', () => {
+    render(<LiveScoreboard lifecycle="registering" {...props} registered={4} capacity={5} />);
+    expect(screen.getByText(/· open$/)).toBeInTheDocument();
+  });
 });

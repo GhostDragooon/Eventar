@@ -534,13 +534,14 @@ function WalkInDialog({
           </p>
         )}
         {missing && !closedMessage && !submitting && (
-          <p aria-live="polite" className="m-0 font-body-md text-body-md text-on-surface-variant">
+          <p id="walkin-why" aria-live="polite" className="m-0 font-body-md text-body-md text-on-surface-variant">
             Enter the {missing} to register this walk-in.
           </p>
         )}
         <Button
           type="submit"
           disabled={submitting || closedMessage != null || missing != null}
+          aria-describedby={missing && !closedMessage ? 'walkin-why' : undefined}
           className="self-start min-h-11 px-md py-sm font-label-md text-label-md"
         >
           {submitting ? 'Registering…' : 'Register & check in'}

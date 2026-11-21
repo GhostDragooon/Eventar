@@ -40,6 +40,16 @@ vi.mock('@/lib/supabase/server', () => ({
     },
   })),
 }));
+const { adminCounts } = vi.hoisted(() => ({ adminCounts: { byEvent: {} as Record<string, number>, calls: [] as string[] } }));
+vi.mock('@/lib/supabase/admin', () => ({
+  supabaseAdmin: () => ({
+    from: () => ({
+      select: () => ({
+        eq: async (_c: string, id: string) => (adminCounts.calls.push(id), { count: adminCounts.byEvent[id] ?? 0, error: null }),
+      }),
+    }),
+  }),
+}));
 vi.mock('@/app/account/actions', () => ({ getAccountMenuState: vi.fn() }));
 vi.mock('@/components/shell/SiteShell', () => ({ SiteShell: () => null }));
 vi.mock('@/components/shell/AccountShell', () => ({ AccountShell: () => null }));
@@ -91,16 +101,40 @@ function cardTitles(node: unknown): string[] | null {
   }
   return null;
 }
+const cards = async () => {
+  const find = (node: unknown): Array<{ title: string; full?: boolean }> | null => {
+    const el = node as { props?: { events?: Array<{ title: string; full?: boolean }>; children?: unknown } };
+    if (!el || typeof el !== 'object') return null;
+    if (Array.isArray(el.props?.events)) return el.props.events;
+    for (const c of ([] as unknown[]).concat(el.props?.children ?? [])) { const f = find(c); if (f) return f; }
+    return null;
+  };
+  return find(await PublicEventsPage()) ?? [];
+};
 const listed = async () => cardTitles(await PublicEventsPage()) ?? [];
 
 describe('public events listing', () => {
   beforeEach(() => {
+    adminCounts.byEvent = {};
+    adminCounts.calls = [];
     vi.useFakeTimers({ toFake: ['Date'], now: NOW });
     state.rows = [];
     state.user = null;
     vi.mocked(getAccountMenuState).mockReset();
   });
   afterEach(() => vi.useRealTimers());
+
+  // The chip must agree with the event's own page: a full registering event is flagged, others are not.
+  it('flags an event at its cap as full, counts only capped events', async () => {
+    const full = upcoming(0), open = upcoming(1), uncapped = upcoming(2);
+    full.title = 'Full'; full.max_attendees = 2;
+    open.title = 'Open'; open.max_attendees = 2;
+    uncapped.title = 'Uncapped';
+    adminCounts.byEvent = { [full.id as string]: 2, [open.id as string]: 1 };
+    state.rows = [full, open, uncapped];
+    expect((await cards()).map((c) => [c.title, c.full])).toEqual([['Full', true], ['Open', false], ['Uncapped', false]]);
+    expect(adminCounts.calls).toHaveLength(2);
+  });
 
   it('lists the upcoming events when 120 past published events exist', async () => {
     state.rows = [...Array.from({ length: 120 }, (_, i) => past(i)), ...Array.from({ length: 3 }, (_, i) => upcoming(i))];

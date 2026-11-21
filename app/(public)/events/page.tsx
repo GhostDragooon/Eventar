@@ -1,4 +1,5 @@
 import { supabaseServer } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { SiteShell } from '@/components/shell/SiteShell';
 import { AccountShell } from '@/components/shell/AccountShell';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
@@ -48,7 +49,7 @@ export default async function PublicEventsPage() {
   const nowMs = Date.now();
   const { data: events, error: eventsErr } = await supabase
     .from('events')
-    .select('id, title, description, status, start_time, end_time, timezone, venue_name, city, category, registration_close_at, registration_open_at, hosted_by, organized_by, deleted_at')
+    .select('id, title, description, status, start_time, end_time, timezone, venue_name, city, category, max_attendees, registration_close_at, registration_open_at, hosted_by, organized_by, deleted_at')
     .eq('status', 'published')
     .is('deleted_at', null)
     .gte('end_time', new Date(nowMs).toISOString())
@@ -56,6 +57,22 @@ export default async function PublicEventsPage() {
     .order('id', { ascending: true })
     .limit(100);
   if (eventsErr) throw eventsErr;
+
+  // A full event must not read "Registering" here while its own page says "At capacity". Anon cannot read
+  // `registrations` (PII), so the count comes via service-role, only for events that have a cap (an integer, not sensitive).
+  // ponytail: one head-count per capped event (at most 100, in parallel); move to one RPC if the list grows past that.
+  const capped = (events ?? []).filter((e) => e.max_attendees != null);
+  const fullIds = new Set(
+    (
+      await Promise.all(
+        capped.map(async (e) => {
+          const { count, error } = await supabaseAdmin().from('registrations').select('id', { count: 'exact', head: true }).eq('event_id', e.id);
+          if (error) throw error;
+          return [e.id, (count ?? 0) >= (e.max_attendees as number)] as const;
+        }),
+      )
+    ).filter(([, isFull]) => isFull).map(([id]) => id),
+  );
 
   type PartnerEntry = { name?: string } | string;
   const names = (v: unknown): string[] =>
@@ -84,6 +101,7 @@ export default async function PublicEventsPage() {
         venue: [e.venue_name, e.city].filter(Boolean).join(', '),
         organizers: [...names(e.hosted_by), ...names(e.organized_by)].slice(0, 3),
         lifecycle,
+        full: fullIds.has(e.id),
       };
     });
 

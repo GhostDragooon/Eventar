@@ -237,6 +237,7 @@ describe('RosterClient: walk-in form', () => {
     const submit = screen.getByRole('button', { name: /register & check in/i });
     expect(submit).toBeDisabled();
     expect(screen.getByText('Enter the name and email to register this walk-in.')).toBeInTheDocument();
+    expect(submit).toHaveAttribute('aria-describedby', 'walkin-why');
     fireEvent.change(email, { target: { value: 'a@x.test' } });
     fireEvent.change(name, { target: { value: '   ' } });
     expect(submit).toBeDisabled();

@@ -16,6 +16,8 @@ export type PublicEventCard = {
   venue: string;
   organizers: string[];
   lifecycle: Lifecycle;
+  /** Registering but at its cap: the card says so instead of "Registering". */
+  full?: boolean;
 };
 
 // Category selector (locked): horizontal tabs, SENTENCE CASE, no boxes, a
@@ -37,7 +39,8 @@ const CATEGORIES: { key: string; label: string }[] = [
 
 // Green is reserved for live/verified (vault Frontend Design Standard §2);
 // everything else takes the neutral container.
-function lifecycleStatus(lifecycle: Lifecycle): EventCardStatus {
+function lifecycleStatus(lifecycle: Lifecycle, full = false): EventCardStatus {
+  if (lifecycle === 'registering' && full) return { label: 'At capacity', tone: 'neutral' };
   if (lifecycle === 'registering') return { label: 'Registering', tone: 'success' };
   if (lifecycle === 'live') return { label: 'Live', tone: 'success' };
   return { label: 'Not open', tone: 'neutral' };
@@ -135,7 +138,7 @@ export function EventsListClient({ events }: { events: PublicEventCard[] }) {
                   dateLabel: e.time,
                   venueLabel: e.venue,
                   dateBlock: { day: e.day, month: e.month },
-                  status: lifecycleStatus(e.lifecycle),
+                  status: lifecycleStatus(e.lifecycle, e.full),
                   organizers: e.organizers,
                 }}
                 href={`/events/${e.id}`}

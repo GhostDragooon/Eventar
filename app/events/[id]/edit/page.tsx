@@ -407,7 +407,7 @@ export default async function StaffEventEditPage({
               <ActionCard
                 icon="public"
                 title="Public page"
-                body="Live and accepting registrations."
+                body={atCapacity ? 'Live. Registration is full (capacity reached).' : 'Live and accepting registrations.'}
               >
                 <Link
                   href={`/events/${event.id}`}

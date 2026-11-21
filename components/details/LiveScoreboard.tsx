@@ -100,7 +100,7 @@ export function LiveScoreboard({
           n={registered}
           of={capacity}
           label="Registered"
-          sub={lifecycle === 'registering' ? 'open' : lifecycle === 'drafted' ? 'draft' : 'closed'}
+          sub={lifecycle === 'registering' ? (capacity != null && registered >= capacity ? 'full' : 'open') : lifecycle === 'drafted' ? 'draft' : 'closed'}
           tone={lifecycle === 'registering' ? 'blue' : 'neutral'}
         />
         <StatTile
