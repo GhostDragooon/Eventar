@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { exportRegistrantsCsv } from '@/app/events/[id]/edit/actions';
+import { browserTz } from '@/lib/tz';
 
 type State =
   | { kind: 'idle' }
@@ -22,7 +23,7 @@ export default function ExportRegistrantsButton({
   function onClick() {
     setState({ kind: 'loading' });
     startTransition(async () => {
-      const res = await exportRegistrantsCsv(eventId);
+      const res = await exportRegistrantsCsv(eventId, browserTz());
       if ('error' in res) {
         setState({ kind: 'error', message: res.error });
         return;

@@ -7,6 +7,8 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { buildEventQrPng } from '@/lib/qr';
 import { getRequestOrigin } from '@/lib/origin';
 import { buildCsv } from '@/lib/csv';
+import { isoInTz, resolveViewerTz } from '@/lib/tz';
+import { headers } from 'next/headers';
 import { slugifyTitle } from '@/lib/slugify';
 
 const PUBLISH_ROLE_REFUSED = "Your role can’t publish events. Ask an organiser admin to publish this draft.";
@@ -93,6 +95,7 @@ export async function getEventQrPng(
 
 export async function exportRegistrantsCsv(
   eventId: string,
+  viewerTz?: string,
 ): Promise<{ csvBase64: string; filename: string } | { error: string }> {
   const staff = await requireStaff();
   const supabase = await supabaseServer();
@@ -146,13 +149,14 @@ export async function exportRegistrantsCsv(
   }
 
   // CSV layout per design doc §C: event metadata header, blank separator row,
-  // column header, data rows. Times are emitted as raw ISO + (timezone) so the
-  // organizer can re-parse them deterministically; the venue/title go through
+  // column header, data rows. Times are emitted as ISO in the exporting person's zone
+  // (browser, else IP, else the venue's) with its offset, plus (timezone), so the organizer can re-parse them deterministically; the venue/title go through
   // buildCsv's escape so commas in titles don't break parsing.
+  const tz = resolveViewerTz([viewerTz, (await headers()).get('x-vercel-ip-timezone')], event.timezone);
   const metadata: string[][] = [
     ['Event', event.title],
-    ['Start', `${event.start_time} (${event.timezone})`],
-    ['End', `${event.end_time} (${event.timezone})`],
+    ['Start', `${isoInTz(event.start_time, tz)} (${tz})`],
+    ['End', `${isoInTz(event.end_time, tz)} (${tz})`],
     ['Venue', event.venue_name],
     ['Total registered', String(registeredCount)],
     [''], // blank separator row

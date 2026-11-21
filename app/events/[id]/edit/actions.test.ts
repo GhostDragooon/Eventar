@@ -10,6 +10,8 @@
 import { vi } from 'vitest';
 vi.mock('server-only', () => ({}));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
+let mockIpTz: string | null = null;
+vi.mock('next/headers', () => ({ headers: async () => ({ get: (k: string) => (k === 'x-vercel-ip-timezone' ? mockIpTz : null) }) }));
 
 type Staff = { id: string; role: 'organiser_member' | 'eventar_staff'; email: string; full_name: string | null; organisation_id: string | null };
 let mockStaff: Staff;
@@ -68,6 +70,7 @@ beforeEach(() => {
   };
   adminRegRows = [{ full_name: 'Alice Wong', email: 'alice@x.com', registered_at: new Date().toISOString() }];
   selectedColumns = '';
+  mockIpTz = null;
 });
 
 describe('exportRegistrantsCsv — ownership', () => {
@@ -87,6 +90,25 @@ describe('exportRegistrantsCsv — ownership', () => {
   it('allows the owner', async () => {
     const result = await exportRegistrantsCsv(eventId);
     expect('csvBase64' in result).toBe(true);
+  });
+
+  it('prints Start and End in the exporting person\'s zone: browser, else IP, else the venue (r3/r4 MINOR, Ivan 2026-11-21)', async () => {
+    mockEventRow!.start_time = '2020-12-04T01:00:00+00:00';
+    mockEventRow!.end_time = '2020-12-04T09:00:00+00:00'; // ended long ago → export gate open
+    const csvOf = async (viewerTz?: string) => {
+      const result = await exportRegistrantsCsv(eventId, viewerTz);
+      if (!('csvBase64' in result)) throw new Error('export refused');
+      return Buffer.from(result.csvBase64, 'base64').toString('utf-8');
+    };
+    expect(await csvOf('Europe/Berlin')).toContain('Start,2020-12-04T02:00:00+01:00 (Europe/Berlin)');
+    mockIpTz = 'Asia/Tokyo';
+    expect(await csvOf()).toContain('Start,2020-12-04T10:00:00+09:00 (Asia/Tokyo)');
+    expect(await csvOf('Not/AZone')).toContain('(Asia/Tokyo)');
+    mockIpTz = null;
+    const venue = await csvOf();
+    expect(venue).toContain('Start,2020-12-04T09:00:00+08:00 (Asia/Hong_Kong)');
+    expect(venue).toContain('End,2020-12-04T17:00:00+08:00 (Asia/Hong_Kong)');
+    expect(venue).not.toContain('+00:00');
   });
 
   it('allows an eventar_staff who does not own the event', async () => {

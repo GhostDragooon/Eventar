@@ -23,6 +23,40 @@ export function formatInTzWithZone(iso: string, timeZone: string): string {
   return `${formatInTz(iso, timeZone)} (${zone})`;
 }
 
+// The instant as the venue's wall clock with its UTC offset ("2026-12-04T09:00:00+08:00"): machine-parseable like
+// the raw ISO, and honest about whose clock it is. The CSV export used to print the UTC string next to the venue's
+// zone name, which read as local time.
+export function isoInTz(iso: string, timeZone: string): string {
+  const d = new Date(iso);
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat('en-CA', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23', timeZone,
+    }).formatToParts(d).map((x) => [x.type, x.value]),
+  );
+  const wallAsUtc = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+  const offMin = Math.round((wallAsUtc - Math.floor(d.getTime() / 1000) * 1000) / 60_000);
+  const a = Math.abs(offMin);
+  const off = `${offMin < 0 ? '-' : '+'}${String(Math.floor(a / 60)).padStart(2, '0')}:${String(a % 60).padStart(2, '0')}`;
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}${off}`;
+}
+
+// Which zone a time is shown in for the person exporting it: their browser's zone, else the zone of the IP they
+// connected from (Vercel sends it as x-vercel-ip-timezone; nothing is looked up, so no external service), else the
+// event's own venue zone. A value that is not a real IANA zone is skipped, never thrown on.
+export function resolveViewerTz(candidates: Array<string | null | undefined>, eventTz: string): string {
+  for (const tz of candidates) {
+    if (!tz) continue;
+    try {
+      new Intl.DateTimeFormat('en-GB', { timeZone: tz });
+      return tz;
+    } catch {
+      // not a zone: try the next one
+    }
+  }
+  return eventTz;
+}
+
 export function browserTz(): string {
   if (typeof Intl === 'undefined') return 'UTC';
   return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
