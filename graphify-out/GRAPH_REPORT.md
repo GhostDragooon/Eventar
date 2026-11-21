@@ -1,15 +1,16 @@
-# Graph Report - .  (2026-11-21)
+# Graph Report - Eventar  (2026-11-22)
 
 ## Corpus Check
-- cluster-only mode — file stats not available
+- 1771 files · ~1,420,291 words
+- Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 11255 nodes · 11163 edges · 4126 communities (1023 shown, 3103 thin omitted)
-- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 88 edges (avg confidence: 0.77)
+- 11356 nodes · 11255 edges · 4158 communities (1054 shown, 3104 thin omitted)
+- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 91 edges (avg confidence: 0.77)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `6d8c7108`
+- Built from commit: `95f79137`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -354,6 +355,7 @@
 - [[_COMMUNITY_Evidence speaker check-in window move and restore|Evidence: speaker check-in window move and restore]]
 - [[_COMMUNITY_Principle III The database is the authority|Principle III: The database is the authority]]
 - [[_COMMUNITY_noRecordLabel.test.ts|noRecordLabel.test.ts]]
+- [[_COMMUNITY_Handoff — 2026-10-01 → 02 — Core-UX instruction validation + live baseline (Step 0), then Band 1|Handoff — 2026-10-01 → 02 — Core-UX instruction: validation + live baseline (Step 0), then Band 1]]
 - [[_COMMUNITY_Handoff, 2026-10-31 the 2026-10-30 two-persona doctrine mapped against code, plans and vault; live docs amended; five rulings recorded; nothing built|Handoff, 2026-10-31: the 2026-10-30 two-persona doctrine mapped against code, plans and vault; live docs amended; five rulings recorded; nothing built]]
 - [[_COMMUNITY_input.tsx|input.tsx]]
 - [[_COMMUNITY_Phase 6.5 — Dashboard Redesign + Per-Event `details` Implementation Plan|Phase 6.5 — Dashboard Redesign + Per-Event `/details` Implementation Plan]]
@@ -432,6 +434,7 @@
 - [[_COMMUNITY_.mcp.json|.mcp.json]]
 - [[_COMMUNITY_pnpm-workspace.yaml|pnpm-workspace.yaml]]
 - [[_COMMUNITY_agent_version|agent_version]]
+- [[_COMMUNITY_theme.ts|theme.ts]]
 - [[_COMMUNITY_generated_at|generated_at]]
 - [[_COMMUNITY_human_review_required|human_review_required]]
 - [[_COMMUNITY_check-handoff.mjs|check-handoff.mjs]]
@@ -790,7 +793,6 @@
 - [[_COMMUNITY_check-ui-primitives.mjs|check-ui-primitives.mjs]]
 - [[_COMMUNITY_eventar-submission (Q3 preparation specialist)|eventar-submission (Q3 preparation specialist)]]
 - [[_COMMUNITY_page.test.ts|page.test.ts]]
-- [[_COMMUNITY_actions.test.ts|actions.test.ts]]
 - [[_COMMUNITY_Eventar DB review query set and last measured baseline|Eventar DB review: query set and last measured baseline]]
 - [[_COMMUNITY_Erasure and data subject requests interim runbook|Erasure and data subject requests: interim runbook]]
 - [[_COMMUNITY_2026-08-29-rag-execution-plan|2026-08-29-rag-execution-plan.md]]
@@ -1562,6 +1564,10 @@
 - [[_COMMUNITY_Pivot-era rule Measurement vs inference|Pivot-era rule: Measurement vs inference]]
 - [[_COMMUNITY_Pivot-era rule Multi-tenancy|Pivot-era rule: Multi-tenancy]]
 - [[_COMMUNITY_Pivot 2026-07-03 (Q20)|Pivot 2026-07-03 (Q20)]]
+- [[_COMMUNITY_evidence-1eebbbe8|evidence-1eebbbe8.md]]
+- [[_COMMUNITY_evidence-4b67c4b8|evidence-4b67c4b8.md]]
+- [[_COMMUNITY_evidence-b18b174c|evidence-b18b174c.md]]
+- [[_COMMUNITY_evidence-b781d044|evidence-b781d044.md]]
 - [[_COMMUNITY_Static gates|Static gates]]
 - [[_COMMUNITY_Coding Rule 7 Surface conflicts, do not average them|Coding Rule 7: Surface conflicts, do not average them]]
 - [[_COMMUNITY_Commercialisation Proposal.md (vault)|Commercialisation Proposal.md (vault)]]
@@ -3648,8 +3654,8 @@
 10. `buttonVariants` - 41 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `RosterClient()` --indirect_call--> `tick()`  [INFERRED]
-  app/events/[id]/checkin/RosterClient.tsx → components/dashboard/EventsHome.test.tsx
+- `refused()` --calls--> `run()`  [INFERRED]
+  tests/rls/agenda_block_window.rls.test.ts → app/account/complete/page.test.tsx
 - `CheckedInView()` --calls--> `formatInTz()`  [EXTRACTED]
   app/(public)/checkin/confirm/page.tsx → lib/tz.ts
 - `registerAs()` --indirect_call--> `registerForEvent()`  [INFERRED]
@@ -3665,27 +3671,27 @@
 ## Hyperedges (group relationships)
 - **Spec-Driven Development Command Pipeline** — _claude_skills_speckit_specify_skill_speckit_specify, _claude_skills_speckit_clarify_skill_speckit_clarify, _claude_skills_speckit_plan_skill_speckit_plan, _claude_skills_speckit_tasks_skill_speckit_tasks, _claude_skills_speckit_analyze_skill_speckit_analyze, _claude_skills_speckit_implement_skill_speckit_implement, _claude_skills_speckit_converge_skill_speckit_converge [EXTRACTED 1.00]
 
-## Communities (4126 total, 3103 thin omitted)
+## Communities (4158 total, 3104 thin omitted)
 
 ### Community 0 - "page.tsx"
-Cohesion: 0.04
-Nodes (78): AccountLayout(), AnalyticsIndexPage(), metadata, CheckinIndexPage(), metadata, metadata, StaffCheckinPage(), h (+70 more)
+Cohesion: 0.07
+Nodes (48): ManageRedirect(), goes(), redirect, EventAnalyticsPage(), metadata, StaffCheckinPage(), h, open() (+40 more)
 
 ### Community 1 - "utils.ts"
-Cohesion: 0.06
-Nodes (26): CardLinks(), Head(), Links(), NestedLinks(), metadata, NotFound(), NotificationCentre(), NotificationItem (+18 more)
+Cohesion: 0.13
+Nodes (20): computeHasCreditByEvent(), listMyAttendanceRecords(), listMyCreditRecords(), AttendeeCheckinPage(), loadMyRegistrations(), items, s, bucketOf() (+12 more)
 
 ### Community 2 - "supabaseServer"
-Cohesion: 0.06
-Nodes (60): computeHasCreditByEvent(), getAccountMenuState(), getMyAccountAndProfile(), getUnlinkedRegistrationCount(), listMyAppointments(), listMyAttendanceRecords(), listMyCreditRecords(), listMyLicences() (+52 more)
+Cohesion: 0.13
+Nodes (24): getAccountMenuState(), getMyAccountAndProfile(), getUnlinkedRegistrationCount(), listMyAppointments(), listMyLicences(), listMySocietyMemberships(), requireAuthenticatedSelf(), CompleteAccountPage() (+16 more)
 
 ### Community 3 - "Full SDD Cycle Workflow"
 Cohesion: 0.29
 Nodes (7): speckit-implement, speckit-plan, speckit-specify, speckit-tasks, Integration Auto-Resolution, Human Review Gates (review-spec, review-plan), Full SDD Cycle Workflow
 
 ### Community 4 - "orchestrator.ts"
-Cohesion: 0.16
-Nodes (17): buildParticipationClaim(), buildParticipationClaims(), DEPENDS_ON, evaluateEntry(), Failure, newPackageId(), PARTICIPATION_AGENT, basePackage() (+9 more)
+Cohesion: 0.07
+Nodes (41): seq(), buildParticipationClaim(), buildParticipationClaims(), DEPENDS_ON, evaluateEntry(), Failure, newPackageId(), PARTICIPATION_AGENT (+33 more)
 
 ### Community 5 - "resolve_staff"
 Cohesion: 0.06
@@ -3696,36 +3702,36 @@ Cohesion: 0.14
 Nodes (15): ChainRow, admin, createAnonClient(), createTestUser(), deleteTestUser(), TestUser, loadEnvLocal(), makeStaffFixture() (+7 more)
 
 ### Community 7 - "button.tsx"
-Cohesion: 0.04
-Nodes (37): CollegeExportButton(), State, metadata, PricingClient(), TIERS, AsyncActionButton(), AsyncResult, DisclosureDeleteAction() (+29 more)
+Cohesion: 0.05
+Nodes (35): TIERS, AsyncActionButton(), AsyncResult, DisclosureDeleteAction(), MultiStepRunButton(), RunStep, RetryFeedback(), SaveToggleButton() (+27 more)
 
 ### Community 8 - "parts.tsx"
-Cohesion: 0.06
-Nodes (29): Mode, MODES, MotionDemo(), Tab, SETS, ACTIVE, Agenda(), AgendaRow() (+21 more)
+Cohesion: 0.04
+Nodes (60): AnalyticsIndexPage(), metadata, CheckinIndexPage(), metadata, ownEvents(), Mode, MODES, MotionDemo() (+52 more)
 
 ### Community 9 - "actions.ts"
-Cohesion: 0.05
-Nodes (62): LANGUAGES, SALUTATIONS, Status, initialAccount, addMyAppointment(), addMySocietyMembership(), ALLOWED_AVATAR_TYPES, changeEmail() (+54 more)
+Cohesion: 0.10
+Nodes (27): credentialLabelForBody(), FormState, ProfileClient(), Status, activeBodies, existingLicences, toForm(), AccountActionError (+19 more)
 
 ### Community 10 - "exportCollegeActions.ts"
-Cohesion: 0.18
-Nodes (16): BodyRow, COLLEGE_EXPORT_HEADER, CollegeExportLookups, EventInfo, EvidenceRow, labelOrFreeText(), LedgerRow, LicenceRow (+8 more)
+Cohesion: 0.08
+Nodes (26): CollegeExportButton(), State, BodyRow, COLLEGE_EXPORT_HEADER, CollegeExportLookups, EventInfo, EvidenceRow, labelOrFreeText() (+18 more)
 
 ### Community 11 - "frames.tsx"
-Cohesion: 0.11
-Nodes (25): Defects(), AccrCard(), ActionCard(), ActionCol(), Banner(), Block(), EditTop(), Narrow() (+17 more)
+Cohesion: 0.08
+Nodes (40): LiveDialog(), CheckinBody(), CreateFooter(), DialogPanel(), EventHeader(), Facts(), Frame(), Icon() (+32 more)
 
 ### Community 12 - "RosterClient.tsx"
-Cohesion: 0.06
-Nodes (39): CreditSummary, isCollision(), markAttended(), methodSchema, staffOrSignedOut(), summariseCredit(), awardMock, awardOutcomes (+31 more)
+Cohesion: 0.07
+Nodes (37): CreditSummary, isCollision(), markAttended(), methodSchema, staffOrSignedOut(), summariseCredit(), awardMock, awardOutcomes (+29 more)
 
 ### Community 13 - "updateAction.ts"
-Cohesion: 0.08
-Nodes (35): DraftEditFormPanel(), blockArraySchema, blockFitsEnvelope(), eventIdSchema, rpcErrorMessage(), updateEvent(), UpdateResult, zodErrors() (+27 more)
+Cohesion: 0.05
+Nodes (52): ConfigSchema, CpdConfigResult, setEventCpdConfig(), requireStaffMock, rpcMock, DraftEditFormPanel(), metadata, blockArraySchema (+44 more)
 
 ### Community 14 - "EventsHome.test.tsx"
-Cohesion: 0.24
-Nodes (9): confirmCancel(), event(), exportedCsv(), NOW, renderManage(), { softDeleteMock, cancelMock, restoreMock }, start(), tick() (+1 more)
+Cohesion: 0.21
+Nodes (10): EventFormat, confirmCancel(), event(), exportedCsv(), NOW, renderManage(), { softDeleteMock, cancelMock, restoreMock }, start() (+2 more)
 
 ### Community 18 - "sessionDistribution.ts"
 Cohesion: 0.26
@@ -3736,56 +3742,56 @@ Cohesion: 0.06
 Nodes (30): Environment Facts (verified 2026-07-11/12 — do not rediscover), Milestone A — Demo-Ready: Implementation Plan, Task 10: Residual grant hygiene + fail-loud fixture cleanup (LIVE migration + test refactor), Task 11: Collateral drafts (CPD Ledger naming — Q29), Task 12: Graph refresh, Task 13: Phase-completion protocol (three lenses + backtest), Task 14: Close-out, Task 1: Shared demo helper + `tsx` availability (+22 more)
 
 ### Community 20 - "staffPageFakes.ts"
-Cohesion: 0.16
-Nodes (11): h, liveA, liveB, at(), eventRow(), fakeSupabase(), Node, Outcome (+3 more)
+Cohesion: 0.10
+Nodes (25): endedA, endedB, h, h, liveA, liveB, ev(), hrefsFor() (+17 more)
 
 ### Community 21 - "cn"
 Cohesion: 0.05
-Nodes (54): LiveDialog(), CheckinBody(), CreateFooter(), DialogPanel(), EventHeader(), Facts(), Frame(), Icon() (+46 more)
+Nodes (38): SETS, TABS, TABS4, AccountPill(), EventsBody(), Foot, Ground(), Group (+30 more)
 
 ### Community 22 - "Eventar: MVP walk + frontend coherence pass"
 Cohesion: 0.04
 Nodes (44): Assessment (read-only, 2026-11-19), Batch 1: dead classes (mechanical, about 20 min), Batch 2: copy and instructions (about 2 h), Batch 3: modal, menu, toast structure (about 2 h), Batch 4: type and radius (about 3 h), Batch 5: states (about 2 h), Combined execution order (all three guides, after picks), Context (+36 more)
 
 ### Community 23 - "NewEventForm.tsx"
-Cohesion: 0.07
-Nodes (33): CpdBodyOption, encodeBound(), FieldSection, hhmmLocal(), initialBasicsFrom(), initialBlocksFrom(), initialDateTimeFrom(), InitialEvent (+25 more)
+Cohesion: 0.09
+Nodes (27): CpdBodyOption, encodeBound(), FieldSection, hhmmLocal(), initialBasicsFrom(), initialBlocksFrom(), initialDateTimeFrom(), InitialEvent (+19 more)
 
 ### Community 24 - "select.tsx"
-Cohesion: 0.11
-Nodes (21): Invite, Member, ROLE_LABELS, TeamClient(), InvitationDraft, InvitationResult, TeammateInvitationForm(), roles (+13 more)
+Cohesion: 0.07
+Nodes (31): Invite, Member, ROLE_LABELS, TeamClient(), InvitationDraft, InvitationResult, TeammateInvitationForm(), roles (+23 more)
 
 ### Community 25 - "Project State — Eventar"
 Cohesion: 0.25
 Nodes (7): Boundary rules (Q32/Q47: read before touching nav, redirect or CTA), Locked decisions (full text: vault Decisions Log), Now, Pointers, Project State — Eventar, Queued for Claude (no ruling needed), Waiting on Ivan (recommendation first)
 
 ### Community 27 - "page.tsx"
-Cohesion: 0.07
-Nodes (31): loaded, NOW, AttendeeCheckinPage(), metadata, ClaimBanner(), LicenceBanner(), bucketOf(), opensWithinADay() (+23 more)
+Cohesion: 0.08
+Nodes (28): loaded, NOW, metadata, ClaimClient(), Status, ClaimPage(), metadata, ClaimBanner() (+20 more)
 
 ### Community 29 - "isReviewMode"
-Cohesion: 0.21
-Nodes (8): ReviewBanner(), hasRealAuthCookie(), isRealAuthCookiePresent(), isReviewMode(), resolveReviewStaff(), REVIEW_STAFF, proxy(), { getUser, signOut, from }
+Cohesion: 0.07
+Nodes (30): acceptRequiredConsents(), requireAuthenticatedSelf(), { s }, AccountLayout(), inputSchema, mockEventRow, mockUpdatedRow, { requireStaffMock } (+22 more)
 
 ### Community 30 - "page.tsx"
-Cohesion: 0.11
-Nodes (12): HOSTILE, { replace, getSession, getUser, signOut, nextParam }, { replace, getSession, getUser, signOut, nextParam }, AttendeeSignInForm(), mockSearchParams, sessionEnded(), AUTH_ERROR_MESSAGES_ATTENDEE, AUTH_ERROR_MESSAGES_ORGANIZER (+4 more)
+Cohesion: 0.15
+Nodes (10): HOSTILE, { replace, getSession, getUser, signOut, nextParam }, { replace, getSession, getUser, signOut, nextParam }, AttendeeSignInForm(), AttendeeSignInPage(), mockSearchParams, sessionEnded(), checkDoorSession() (+2 more)
 
 ### Community 31 - "Dialog.tsx"
-Cohesion: 0.16
-Nodes (8): DestructiveDialog(), InformationDialog(), ProfileSettingsDialog(), ReferralDialog(), ReferralDraft, ScrollableInformationDialog(), Dialog(), FOCUSABLE
+Cohesion: 0.07
+Nodes (23): CodeState, ManualCodeDialog(), ScanAndManual(), SubmitResult, noop, NotificationSignupButton(), SignupResult, DestructiveDialog() (+15 more)
 
 ### Community 32 - "Review round 1b: CX-07 disposition (2026-10-23)"
 Cohesion: 0.22
 Nodes (8): Decision for Ivan (it changes the tri-state contract, so not a drive-by), Fixed in this round (inside CX-07's own files, each with a test that fails without it), Needs Ivan (outside this card's files, or a decision), Not applied, low value, Option A applied and live-checked (Ivan's word, 2026-10-23), Residue and process, Review round 1b: CX-07 disposition (2026-10-23), The one finding that matters: the fix covers one door [X]
 
 ### Community 33 - "actions.ts"
-Cohesion: 0.38
-Nodes (6): BulkAction, BulkResult, bulkUpdate(), eventIdsSchema, restoreEvents(), softDeleteEvents()
+Cohesion: 0.21
+Nodes (12): BulkAction, BulkResult, bulkUpdate(), cancelEvents(), eventIdsSchema, restoreEvents(), softDeleteEvents(), { requireStaff } (+4 more)
 
 ### Community 34 - "supabaseAdmin"
-Cohesion: 0.06
-Nodes (56): CandidateRow, dispatch(), presentedSecret(), secretMatches(), authorizeEvent(), sendReminderForEvent(), sendSurveyInviteForEvent(), EmailSendControls() (+48 more)
+Cohesion: 0.07
+Nodes (44): CandidateRow, dispatch(), presentedSecret(), secretMatches(), authorizeEvent(), sendReminderForEvent(), sendSurveyInviteForEvent(), EventRow (+36 more)
 
 ### Community 35 - "RV-FINAL, dev lens"
 Cohesion: 0.13
@@ -3808,20 +3814,20 @@ Cohesion: 0.12
 Nodes (14): Props, venueValid(), HK_VIEWBOX, Props, Deferred, pending, searchCalled(), { searchVenues } (+6 more)
 
 ### Community 41 - "mustDelete"
-Cohesion: 0.08
-Nodes (8): GroupRow, InsertOutcome, mustDelete(), AuditRow, ChainRow, RUN, ChainRow, ChainRow
+Cohesion: 0.07
+Nodes (10): ChainRow, LedgerRow, makeStaffFixture(), GroupRow, InsertOutcome, mustDelete(), AuditRow, ChainRow (+2 more)
 
 ### Community 42 - "RegisterCard.tsx"
-Cohesion: 0.19
-Nodes (10): CodeState, ManualCodeDialog(), ScanAndManual(), SubmitResult, noop, FormState, Props, RegisterCard() (+2 more)
+Cohesion: 0.16
+Nodes (20): addMyAppointment(), addMySocietyMembership(), ALLOWED_AVATAR_TYPES, changeEmail(), claimMyRegistrations(), declareMyLicence(), deleteMyAppointment(), deleteMySocietyMembership() (+12 more)
 
 ### Community 43 - "actions.test.ts"
-Cohesion: 0.12
-Nodes (13): { colCapture }, EventRow, { mockSendReal, mockSendStub }, opOrder, profileSnapshot, rpcCalls, SessionUser, StaffRow (+5 more)
+Cohesion: 0.07
+Nodes (35): registerForEvent(), { colCapture }, EventRow, { mockSendReal, mockSendStub }, opOrder, profileSnapshot, rpcCalls, SessionUser (+27 more)
 
 ### Community 44 - "AgendaSection.tsx"
-Cohesion: 0.09
-Nodes (29): agendaProblem(), AgendaSection(), agendaSummary(), agendaValid(), BlockDraft, BlockEditor(), BlockErrors, blockHasErrors() (+21 more)
+Cohesion: 0.10
+Nodes (24): agendaProblem(), agendaSummary(), agendaValid(), BlockDraft, BlockEditor(), BlockErrors, blockHasErrors(), BlockHeader() (+16 more)
 
 ### Community 46 - "MINOR"
 Cohesion: 0.15
@@ -3848,7 +3854,7 @@ Cohesion: 0.05
 Nodes (40): 10. Open Questions / Risks, 11. Glossary, 1. Overview, 2. Stack, 3. Architecture, 4. Repo Structure, 5. Data Model, 6. Auth + Roles (+32 more)
 
 ### Community 56 - "Handoff — 2026-10-09 — Cross-organisation reads on staff pages, and `get_org_participants`"
-Cohesion: 0.14
+Cohesion: 0.22
 Nodes (8): 1. Verdicts, 2. What shipped (two commits on `main`, local, NOT pushed, NOT applied to Seoul), 3. Verification, 4. Open for Ivan, 5. Follow-ups (task chips created), 6. Corrections to earlier records, 7. Method notes, Handoff — 2026-10-09 — Cross-organisation reads on staff pages, and `get_org_participants`
 
 ### Community 57 - "seed_grant_posture.rls.test.ts"
@@ -3857,7 +3863,7 @@ Nodes (6): ALL, EXPECTED, LOOKUP, NONE, Posture, Priv
 
 ### Community 58 - "requireStaff"
 Cohesion: 0.08
-Nodes (32): AttendanceExportButton(), State, ConfigSchema, CpdConfigResult, setEventCpdConfig(), requireStaffMock, rpcMock, exportAttendanceEvidence() (+24 more)
+Nodes (31): Columns, fetchDecoratedEvents(), fmtDate(), fmtDayKey(), fmtTime(), AttendanceExportButton(), State, EvidenceExportButton() (+23 more)
 
 ### Community 59 - "CPD Sprint 2 — Design: Security wrapper + audit path + attendee identity"
 Cohesion: 0.12
@@ -3868,12 +3874,12 @@ Cohesion: 0.08
 Nodes (12): CHAIN_FUNCTIONS, PINNED, VERIFIERS, sqlSuperuserQuery(), runProbe(), Block, RUN, eventIds (+4 more)
 
 ### Community 63 - "page.tsx"
-Cohesion: 0.17
-Nodes (9): event, ActionGroup(), ActionItem, Props, PageButton(), pageItems(), Pagination(), PinnedItem (+1 more)
+Cohesion: 0.11
+Nodes (10): InitialBlock, createBase, initialBlocks, initialEvent, initialVenue, pushMock, refreshMock, SaveResult (+2 more)
 
 ### Community 64 - "seed-demo.ts"
-Cohesion: 0.06
-Nodes (54): ConfirmationEmailProps, pillLink, renderConfirmationEmail(), cardStyle, eyebrowStyle, ReminderEmailProps, renderReminderEmail(), renderSurveyInviteEmail() (+46 more)
+Cohesion: 0.17
+Nodes (26): fail(), main(), step(), admin(), anonClient(), localEnv(), signedInClient(), sqlLocal() (+18 more)
 
 ### Community 65 - "Review: door copy (user lens)"
 Cohesion: 0.15
@@ -3884,16 +3890,16 @@ Cohesion: 0.29
 Nodes (6): DB-05 backtest review (live behaviour, local stack only), Findings, Fixtures and cleanup, Not reached, Verdict, Verified OK
 
 ### Community 67 - "attendance_issuance.rls.test.ts"
-Cohesion: 0.10
-Nodes (19): addCompatBridgeGroup(), AwardRow, ChainRow, checkin(), cleanupA2(), CreditRow, declareAndVerify(), makeA2Fixture() (+11 more)
+Cohesion: 0.11
+Nodes (16): addCompatBridgeGroup(), AwardRow, ChainRow, checkin(), cleanupA2(), CreditRow, declareAndVerify(), makeA2Fixture() (+8 more)
 
 ### Community 68 - "page.tsx"
-Cohesion: 0.11
-Nodes (20): Columns, fetchDecoratedEvents(), fmtDate(), fmtDayKey(), fmtTime(), ownEvents(), DashboardPage(), metadata (+12 more)
+Cohesion: 0.20
+Nodes (9): DashboardPage(), metadata, TAB_KEYS, AttentionItem, AttentionTone, NeedsAttention(), TONE, DevEmailStubBanner() (+1 more)
 
 ### Community 69 - "page.tsx"
-Cohesion: 0.10
-Nodes (19): FEATURES, metadata, getAccountMenuState, getUser, Audience, AudienceProvider(), Ctx, useAudience() (+11 more)
+Cohesion: 0.09
+Nodes (20): FEATURES, metadata, getAccountMenuState, getUser, Audience, AudienceProvider(), Ctx, useAudience() (+12 more)
 
 ### Community 70 - "Locked patterns"
 Cohesion: 0.05
@@ -3901,19 +3907,15 @@ Nodes (40): 10. TC scoreboard timer — countdown to START, not end, 11. Survey 
 
 ### Community 71 - "DateTimeSection.tsx"
 Cohesion: 0.19
-Nodes (14): BreadcrumbComparePage(), DateTimeSection(), dateTimeSummary(), durationOrNull(), formatDateShort(), Props, splitClock(), show() (+6 more)
+Nodes (11): BreadcrumbComparePage(), DateTimeSection(), dateTimeSummary(), DateTimeValue, durationOrNull(), formatDateShort(), Props, splitClock() (+3 more)
 
 ### Community 72 - "Findings"
 Cohesion: 0.12
 Nodes (16): §10 Security & tenancy smoke, §12 Theme matrix (partial), §3 Error & edge pages, §4 Public / marketing surfaces, §5 Attendee onboarding & account, §6 Organiser onboarding & settings, §7 Organiser core, §8 Credit, evidence, reporting data flow — GOLDEN PATH (+8 more)
 
-### Community 73 - "Organiser IA + data-design spec — v1 (2026-07-12)"
-Cohesion: 0.18
-Nodes (7): Data presentation rules (the intuition layer), Input → output map (where data enters, what leaves), Layout decision, Main nav — Ivan's 8 areas, with add/subtract calls, Organiser IA + data-design spec — v1 (2026-07-12), Version cut (against Ivan's must/nice lists), DOCTRINE POINTER — read before persona / shell / CX-04 / UX-02
-
 ### Community 75 - "page.tsx"
-Cohesion: 0.16
-Nodes (14): sendAttendeeMagicLink(), form(), landing(), { signInWithOtp }, attendeeNextPath(), wizardLandingPath(), AttendeeSignUpForm(), GlobalError() (+6 more)
+Cohesion: 0.30
+Nodes (7): sendAttendeeMagicLink(), form(), landing(), { signInWithOtp }, attendeeNextPath(), wizardLandingPath(), AttendeeSignUpForm()
 
 ### Community 76 - "page.tsx"
 Cohesion: 0.11
@@ -3940,20 +3942,20 @@ Cohesion: 0.29
 Nodes (6): Environment, Findings, Fixtures and cleanup, Not reached (and why), REVIEW-DB04-user: user-lens walk of card DB-04 (edit form, agenda saves, published event), Worked well
 
 ### Community 85 - "NewEventForm.test.tsx"
-Cohesion: 0.06
-Nodes (31): chain(), LiveToday(), draftTree(), eventRow, fakeClient(), findAll(), publishCardOf(), Role (+23 more)
+Cohesion: 0.18
+Nodes (14): LiveToday(), PublishDraftButton(), eventProps, { publishEvent, push, refresh }, DraftSavedBanner(), listeners, markDraftSaved(), resetDraftStatus() (+6 more)
 
 ### Community 86 - "multiBodyActions.ts"
 Cohesion: 0.06
-Nodes (46): accreditationStaff(), actingStaffId(), addAccreditationGroup(), addAccreditationRow(), linkAccreditationOccurrence(), MultiBodyResult, removeAccreditationGroup(), removeAccreditationRow() (+38 more)
+Nodes (48): accreditationStaff(), actingStaffId(), addAccreditationGroup(), addAccreditationRow(), linkAccreditationOccurrence(), MultiBodyResult, removeAccreditationGroup(), removeAccreditationRow() (+40 more)
 
 ### Community 87 - "REVIEW UX-04 (dev lens)"
 Cohesion: 0.18
 Nodes (10): Auth trace: can another organisation's staff open /events/<id>/registrations? No., BLOCKER: none, Checked, no finding, Counts, Findings, Gates [X], MAJOR, MINOR (+2 more)
 
 ### Community 88 - "page.test.ts"
-Cohesion: 0.31
-Nodes (8): cardTitles(), event(), listed(), NOW, past(), Row, { state }, upcoming()
+Cohesion: 0.24
+Nodes (10): metadata, PublicEventsPage(), cardTitles(), event(), listed(), NOW, past(), Row (+2 more)
 
 ### Community 89 - "AttendanceSection.tsx"
 Cohesion: 0.16
@@ -3976,16 +3978,16 @@ Cohesion: 0.40
 Nodes (6): cron-dispatch GitHub Actions workflow, Fire dispatch step (curl POST with Bearer CRON_SECRET), /api/cron/dispatch has no trigger, /api/cron/dispatch endpoint, CRON_SECRET, P3 — Pilot Infra
 
 ### Community 96 - "CompleteClient.test.tsx"
-Cohesion: 0.25
-Nodes (4): CompleteClient(), account, licence, { push }
+Cohesion: 0.07
+Nodes (18): AccountClient(), LANGUAGES, SALUTATIONS, Status, initialAccount, ClaimActionError, claimErrorCopy(), CompleteClient() (+10 more)
 
 ### Community 97 - "actions.test.ts"
-Cohesion: 0.33
-Nodes (3): captured, { jar }, OtpRequest
+Cohesion: 0.20
+Nodes (7): sendMagicLink(), captured, { jar }, OtpRequest, supabaseAnonServer(), ClientOptions, { createServerClient }
 
 ### Community 98 - "SettingsClient.tsx"
-Cohesion: 0.10
-Nodes (21): RadioOption, SettingsClient(), SettingsSignOut(), subscribeStorage(), STAFF, TEXT_OPTIONS, TextOpt, THEME_OPTIONS (+13 more)
+Cohesion: 0.15
+Nodes (9): RadioOption, SettingsClient(), SettingsSignOut(), subscribeStorage(), STAFF, TEXT_OPTIONS, TextOpt, THEME_OPTIONS (+1 more)
 
 ### Community 99 - "devEmailStub.ts"
 Cohesion: 0.25
@@ -4000,8 +4002,8 @@ Cohesion: 0.10
 Nodes (19): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModules, jsx, lib, module (+11 more)
 
 ### Community 103 - "EventCard.tsx"
-Cohesion: 0.19
-Nodes (9): EVENTS, EventCard(), EventCardRecord, Props, event, ExpandableEventCard(), FOCUSABLE, Props (+1 more)
+Cohesion: 0.12
+Nodes (16): EVENTS, CATEGORIES, EventsListClient(), lifecycleStatus(), PublicEventCard, EventCard(), EventCardRecord, EventCardStatus (+8 more)
 
 ### Community 104 - "Phase 7 — Resend integration (design)"
 Cohesion: 0.06
@@ -4048,12 +4050,12 @@ Cohesion: 0.14
 Nodes (13): Counts, /events/[id]/checkin, /events/[id]/details (toolbar), /events/[id]/registrations, Findings, Fixtures removed, Four questions per page, MAJOR (+5 more)
 
 ### Community 116 - "CreateEventWizard.tsx"
-Cohesion: 0.20
-Nodes (9): CreateEventWizard(), CreateEventWizardValue, Props, STEPS, emptyValue, toRange(), EventWizardStepIndicator(), Props (+1 more)
+Cohesion: 0.10
+Nodes (15): CreateEventWizard(), CreateEventWizardValue, Props, STEPS, emptyValue, toRange(), EventWizardStepIndicator(), Props (+7 more)
 
 ### Community 117 - "page.tsx"
-Cohesion: 0.11
-Nodes (19): AccountClient(), Failure, InviteAcceptPage(), View, ALLOWED_TYPES, HeroImageSection(), Props, LandingAuthPill() (+11 more)
+Cohesion: 0.13
+Nodes (16): Failure, View, ALLOWED_TYPES, HeroImageSection(), Props, LandingAuthPill(), SiteNavActive, SiteNavProps (+8 more)
 
 ### Community 118 - "implementation-notes.html — Phase 2 implementation notes"
 Cohesion: 0.24
@@ -4068,8 +4070,8 @@ Cohesion: 0.08
 Nodes (25): A. Pushed 10 local commits to origin (no diff, just `git push`), Addendum — 2026-05-27 evening: Phase 4 closed, B. Attempted phase-3.5/4 real-DB backtest sweep — deferred, blocked by empty data state, C. Phase 5 brainstorm — not started, Commits this session, Files added this session, Handoff — 2026-05-27 (end of session), Highest priority — A1–A3 real-DB backtest, now with unblockers (+17 more)
 
 ### Community 122 - "page.tsx"
-Cohesion: 0.22
-Nodes (9): CheckedInView(), EventCard(), EventRow, formatClock(), formatDate(), formatTimeRange(), metadata, PassView() (+1 more)
+Cohesion: 0.06
+Nodes (42): AttendeeCredit, selfCheckIn(), summariseCreditForAttendee(), { award }, { rpc }, State, { selfCheckInMock }, CheckedInView() (+34 more)
 
 ### Community 123 - "Spine-first strategy — DIRECTION (2026-11-05)"
 Cohesion: 0.12
@@ -4091,25 +4093,29 @@ Nodes (11): Accessibility checks [X], Environment notes, Findings, Four question
 Cohesion: 0.13
 Nodes (5): get_feature_paths(), get_repo_root(), _persist_feature_json(), resolve_specify_init_dir(), common.sh script
 
-### Community 132 - "page.test.ts"
+### Community 131 - "error.test.tsx"
 Cohesion: 0.21
-Nodes (8): cardsFor(), eventB, findAll(), h, DOT, NOTE, ReadinessCell, ReadinessStrip()
+Nodes (8): GlobalError(), { usePathname }, uuid, LoginForm(), classifyPath(), isOrganiserWorkspacePath(), safeNextPath(), config
+
+### Community 132 - "page.test.ts"
+Cohesion: 0.19
+Nodes (8): open(), cardsFor(), eventB, findAll(), h, open(), PublishedNextSteps(), settle()
 
 ### Community 133 - "Handoff, 2026-11-03: acceptance walk run 2 done, fix wave pushed; MVP still open on three product decisions"
 Cohesion: 0.06
 Nodes (30): 0. Ivan's action list, Agent calls and caps (judge by the notification, not the agent's tally), Code Analysis, Commits pushed (`6e8ec7d..db8b829`), Config, Data & results, Evidence & Data, Files Changed (+22 more)
 
 ### Community 134 - "page.test.tsx"
-Cohesion: 0.19
-Nodes (10): BackToRegistrations(), El, eventRow, findElement(), { getUnlinkedRegistrationCount }, renderPage(), { state }, PublicShell() (+2 more)
+Cohesion: 0.14
+Nodes (17): BackToRegistrations(), formatClock(), formatDate(), formatTimeRange(), normalizePartners(), PartnerEntry, PartnerStrip(), PublicEventPage() (+9 more)
 
 ### Community 135 - "find_boundary_violations"
 Cohesion: 0.21
 Nodes (13): AST, Call, Path, main(), _dynamic_import_target(), find_boundary_violations(), _imports_privileged(), The literal module name of importlib.import_module("x") / __import__("x"), else (+5 more)
 
 ### Community 136 - "AccountShell.tsx"
-Cohesion: 0.16
-Nodes (9): AuthShell(), currentLabel(), Icon(), matches(), NAV, RailRow(), TabBar(), signOut (+1 more)
+Cohesion: 0.18
+Nodes (10): cardStyle, eyebrowStyle, ReminderEmailProps, renderReminderEmail(), renderSurveyInviteEmail(), SurveyInviteEmailProps, check(), main() (+2 more)
 
 ### Community 137 - "INVESTIGATION: "nothing dies in silence", seven areas"
 Cohesion: 0.25
@@ -4127,13 +4133,17 @@ Nodes (8): 1. Scope cuts (deferrals with re-entry triggers), 2. Decision changes
 Cohesion: 0.29
 Nodes (8): docs/plans/phase-6.5-mockup.html — Visual decisions (locked picks + variant comparison), docs/plans/phase-6-analytics-q2-mockup.html, §7a instructional color system (green=open, blue=action, amber=hold, red=stopped), live-pill-pulse CSS keyframe animation (locked status pill), Material 3 indigo design tokens (primary #142175), Material Symbols Outlined icon font, docs/plans/phase-6-analytics-q2-mockup.html (locked framework), Status pill set — all 6 states (Drafted/Registering/Upcoming/Live/Completed/Cancelled)
 
+### Community 145 - "self_check_in.rls.test.ts"
+Cohesion: 0.20
+Nodes (9): ManagementRecord, ManagementTable(), records, RecordStatus, StatusBadge(), styles, users, UserManagementTable() (+1 more)
+
 ### Community 146 - "emailActions.test.ts"
-Cohesion: 0.17
-Nodes (9): EventRow, { mockRenderReminder }, { mockSendReal, mockSendStub }, Reg, Staff, composeSendMessage(), EmailKind, EmailSendCounts (+1 more)
+Cohesion: 0.20
+Nodes (6): ATTESTATION_LABEL, ENTRY_TYPE_LABEL, ENTRY_TYPE_STYLE, formatDateOnly(), MONTHS_SHORT, RecordClient()
 
 ### Community 148 - "accountCompleteness.test.ts"
-Cohesion: 0.20
-Nodes (9): CONSENT_TYPES, ConsentType, LEGAL_VERSIONS, COMPLETE_PROFILE, COMPLETE_ROW, { mockSupabaseServer }, Row, VALID_CONSENTS (+1 more)
+Cohesion: 0.12
+Nodes (16): AccountCompleteness, CompletenessRow, ConsentEmbed, INCOMPLETE, LicenceEmbed, nonBlank(), ProfileEmbed, CONSENT_TYPES (+8 more)
 
 ### Community 150 - "Handoff — 13 Sep 2026 — Essential MVP Gap Closure"
 Cohesion: 0.11
@@ -4184,8 +4194,8 @@ Cohesion: 0.18
 Nodes (10): EmailDeliveryRow, EmailDeliveryStrip(), isPurpose(), Purpose, PURPOSE_LABEL, PURPOSES, STATUS_LABEL, STATUS_ORDER (+2 more)
 
 ### Community 165 - "actions.test.ts"
-Cohesion: 0.40
-Nodes (4): mockEventRow, mockUpdatedRow, { requireStaffMock }, revalidatePathMock
+Cohesion: 0.22
+Nodes (7): chain(), draftTree(), eventRow, fakeClient(), findAll(), publishCardOf(), Role
 
 ### Community 167 - "Handoff — 2026-09-25 — Two-persona boundary & funnel review"
 Cohesion: 0.15
@@ -4200,8 +4210,8 @@ Cohesion: 0.15
 Nodes (12): dir, fnLast, fnList, grab(), id, names(), out, root (+4 more)
 
 ### Community 175 - "actions.test.ts"
-Cohesion: 0.25
-Nodes (6): eventId, requireStaffMock, revalidatePathMock, rpcCalls, rpcResult, valid
+Cohesion: 0.17
+Nodes (10): contactSchema, idSchema, eventId, requireStaffMock, revalidatePathMock, rpcCalls, rpcResult, valid (+2 more)
 
 ### Community 176 - "Handoff, 2026-11-14: graph refreshed, PROJECT_STATE cut to one screen, SQL map added, closing protocol made mandatory"
 Cohesion: 0.29
@@ -4228,20 +4238,20 @@ Cohesion: 0.07
 Nodes (29): 1. An accessibility regression I introduced — caught, fixed, and now better than baseline, 2. A hydration mismatch I introduced — caught, fixed, 3. The serif reaches only two-thirds of headings — logged, not fixed, Admission checklist (BLOCK-ARCHITECTURE.md §"New-work admission checklist"), Also noted, not actioned, Correction to a prior migration's comment, Design audit — fonts, layout, global-vs-page tokens, alignment (2026-08-02), ▶ Execution plan for the remaining work (+21 more)
 
 ### Community 190 - "actions.ts"
-Cohesion: 0.14
-Nodes (15): exportRegistrantsCsv(), getEventQrPng(), publishEvent(), PublishResult, EventRow, Staff, { revalidatePath }, Role (+7 more)
+Cohesion: 0.08
+Nodes (32): exportRegistrantsCsv(), getEventQrPng(), publishEvent(), PublishResult, EventRow, Staff, { revalidatePath }, Role (+24 more)
 
 ### Community 191 - "Lifecycle"
-Cohesion: 0.27
-Nodes (6): ProgrammeEvent, StatusChip(), LABELS, StatusPill(), STYLES, Lifecycle
+Cohesion: 0.20
+Nodes (9): Findings, ranked, Fixtures and teardown, Gap 3 counts (event `ZZ-GAP checkin`, registration code ZZGP42, practitioner has no staff row), Gap 4a read-back, Gap 4b read-back (body_admin), Gap table, REVIEW-FINAL-gaps — four remaining MVP acceptance gaps (2026-11-21), Screenshots (+1 more)
 
 ### Community 192 - "actions.ts"
 Cohesion: 0.21
 Nodes (8): acceptInvite(), InviteFailure, inviteRpcFailure(), PRACTITIONER_TABLES, RPC_FAILURES, { getUser, rpc, reads }, TABLES, USER
 
 ### Community 193 - "WorkspaceSwitcher.tsx"
-Cohesion: 0.18
-Nodes (12): RecordAction, RecordActionsMenu(), actions, SplitAction, SplitActionButton(), actions, workspaces, Workspace (+4 more)
+Cohesion: 0.17
+Nodes (14): RecordAction, RecordActionsMenu(), actions, SplitAction, SplitActionButton(), actions, formatMinutes12h(), TimePicker15() (+6 more)
 
 ### Community 194 - "The attribution model (Ivan, 2026-08-14)"
 Cohesion: 0.18
@@ -4388,8 +4398,8 @@ Cohesion: 0.20
 Nodes (11): EventDateTimeRangePicker(), EventDateTimeRangeValue, Props, base, validateDateTimeRange(), DatePicker(), formatDateLong(), monthCells() (+3 more)
 
 ### Community 271 - "7.1 Mechanical cards (`mechanical`)"
-Cohesion: 0.08
-Nodes (24): 7.0 The prompts to start an agent, 7.1 Mechanical cards (`mechanical`), 7.2 SQL cards (`sql`; one at a time, in this order), 7.3 Design cards (`design`; Ivan's locked frontend pipeline), 7.4 Coordinator (milestones M1, M2, final; Ivan starts it), 7.5 Reviewers (RV-M1, RV-M2, RV-FINAL; Ivan starts them), 7. Task cards, CX-01 · Make the RLS gate trustworthy and lint green (+16 more)
+Cohesion: 0.22
+Nodes (9): 7.0 The prompts to start an agent, 7.3 Design cards (`design`; Ivan's locked frontend pipeline), 7.4 Coordinator (milestones M1, M2, final; Ivan starts it), 7.5 Reviewers (RV-M1, RV-M2, RV-FINAL; Ivan starts them), 7. Task cards, UX-01 · Design round for the MVP's three undecided surfaces, UX-02 · P1b: the practitioner portal shell (A2, A3, A5), UX-03 · P2b-lite: confirm before publishing, confirm after saving, and say what is next (O2, O4) (+1 more)
 
 ### Community 275 - "Evidence Tiers (Asserted/Corroborated/Session-Complete)"
 Cohesion: 0.33
@@ -4400,32 +4410,32 @@ Cohesion: 0.29
 Nodes (5): allowedFiles, ignoredDirectories, ignoredPathSubstrings, scannedExtensions, violations
 
 ### Community 281 - "RegistrationSection.tsx"
-Cohesion: 0.12
-Nodes (13): FeedbackSection(), fmtHM(), Props, baseProps, Props, RegistrationSection(), relativeTime(), baseProps (+5 more)
+Cohesion: 0.19
+Nodes (7): FeedbackSection(), fmtHM(), Props, baseProps, AgendaBlockTitle, LeadingSession, SurveyValuableRow
 
 ### Community 282 - "test_settings.py"
 Cohesion: 0.46
 Nodes (7): load(), test_empty_value_counts_as_missing(), test_http_rejected_in_production(), test_https_allowed_in_production(), test_localhost_host_rejected(), test_missing_variable_names_it_and_the_fix(), test_valid_local()
 
 ### Community 285 - "route.test.ts"
-Cohesion: 0.48
+Cohesion: 0.43
 Nodes (5): GET(), errorRedirect(), { exchange }, location(), makeRequest()
 
 ### Community 286 - "accreditationCell.ts"
-Cohesion: 0.38
-Nodes (5): AccreditationCell, AccreditationCellInput, deriveAccreditationCell(), base, ReadinessState
+Cohesion: 0.21
+Nodes (9): AccreditationCell, AccreditationCellInput, deriveAccreditationCell(), base, DOT, NOTE, ReadinessCell, ReadinessState (+1 more)
 
 ### Community 287 - "exportBatching.test.ts"
-Cohesion: 0.17
-Nodes (7): fakeAdmin(), h, Row, Tables, retryStaleJwt(), fetchMock, ok()
+Cohesion: 0.22
+Nodes (9): 7.1 Mechanical cards (`mechanical`), CX-01 · Make the RLS gate trustworthy and lint green, CX-03 · Fix `cn()` so type-scale classes keep their text colour, CX-04 · Programme shows drafts and opens each event; Programme and Manage explain themselves (O2, O5, O9) · SHIPPED, steps 3 and 4 superseded by CX-04R (Doctrine 2026-10-30), CX-04R · One Events home, organiser sidebar Check-in · Events · History · Settings (O1, O5, O9; Doctrine 2026-10-30) · CARDED 2026-10-31 (order: CX-04R, UX-02 re-cut, door copy; nothing else), CX-05 · Gate the multi-body accreditation wizard by role (O6; Ivan, 2026-10-11), CX-06a · The practitioner funnel: door, success prompt, empty record, `next` (A1, A2, A4, A5), CX-06b · Practitioner and staff chrome fixes (A6, A7) (+1 more)
 
 ### Community 288 - "page.test.tsx"
 Cohesion: 0.38
 Nodes (4): acceptButton(), { getSession, signOut, acceptInvite, router }, promptHeading(), reachPrompt()
 
 ### Community 289 - "NeedsAttention.tsx"
-Cohesion: 0.32
-Nodes (5): AttentionItem, AttentionTone, NeedsAttention(), item(), TONE
+Cohesion: 0.22
+Nodes (8): Findings (ranked), Honesty notes, MVP acceptance walk r4: ORGANISER-ADMIN lens (2026-11-21), Not run yet, Observations so far, Rows so far, Screenshots, Teardown (stderr visible)
 
 ### Community 290 - "LiveScoreboard.tsx"
 Cohesion: 0.38
@@ -4436,12 +4446,12 @@ Cohesion: 0.09
 Nodes (22): 1. Coverage, 2.1 A failed agenda read became a deleted agenda — `2ad5f09`, 2.2 Load failures rendered as "nothing here" — `54cfa83` (public), `c20b2ad` (staff), 2.3 Every QR check-in was reported as a "self-scan" — `c739e32`, 2.4 The door check-in button had no visible focus ring — `7bc7f59`, 2.5 Create-form labels disagreed with themselves — `f7acee2`, 2.6 Analytics misquoted the question respondents answered — `10da4b8`, 2.7 The demo fixture rotted and its banner over-promised — `5530764` (+14 more)
 
 ### Community 292 - "EvidenceFileList.tsx"
-Cohesion: 0.10
-Nodes (19): IdentityAvatar(), ManagementRecord, ManagementTable(), records, RecordStatus, StatusBadge(), styles, Team (+11 more)
+Cohesion: 0.11
+Nodes (16): IdentityAvatar(), Team, TeamTabs(), teams, base(), dotAt(), EvidenceFile, EvidenceFileList() (+8 more)
 
 ### Community 293 - "layout.tsx"
-Cohesion: 0.16
-Nodes (9): geistMono, geistSans, materialSymbols, metadata, THEME_INIT_SCRIPT, formatBytes(), MultiFileUpload(), SelectedFile (+1 more)
+Cohesion: 0.25
+Nodes (6): geistMono, geistSans, materialSymbols, metadata, THEME_INIT_SCRIPT, TooltipProvider()
 
 ### Community 296 - "Stage-A Account Profile Plan (Duplicate)"
 Cohesion: 0.67
@@ -4472,8 +4482,8 @@ Cohesion: 0.09
 Nodes (21): 1. Push the session's commits, 2. Visual smoke-check on `:3000` (one-time, user), 3. Phase-8 deploy gates — unchanged from prior, drift incremented, 4. Deferred user-lens polish (7 items), 5. Vault notes to write (per "Vault writes pending" above), Architecture decisions worth remembering, Backtest evidence, DB change (+13 more)
 
 ### Community 320 - "PersonShareSheet.tsx"
-Cohesion: 0.40
-Nodes (4): PersonShareSheet(), SharePerson, ShareResult, people
+Cohesion: 0.22
+Nodes (8): Checklist, Decide (recommendation first), Findings that stay open (no BLOCKER), Gates on the final HEAD (`1a7d2bf`, product tree clean), Honesty notes, MVP acceptance walk, run 4 (2026-11-21): summary, Not run (gaps), Update after the walk (2026-11-21, Ivan ruled "Reword now")
 
 ### Community 332 - "Eventar — Handoff Summary"
 Cohesion: 0.09
@@ -4484,8 +4494,8 @@ Cohesion: 0.10
 Nodes (20): Definition of Done, Phase 8 — Vercel Deploy Implementation Plan, Stage 1 — Local prep + domain procurement (parallel), Stage 2 — Vercel + DNS, Stage 3 — First deploy + verified-sender swap, Stage 4 — Phase close, Task 10: End-to-end live smoke — [USER+CONTROLLER], Task 11: Three-check protocol against live URL — [CONTROLLER] (+12 more)
 
 ### Community 334 - "eventEmails.bulk.test.ts"
-Cohesion: 0.33
-Nodes (5): event, LogRow, { mockSendReal, mockSendStub }, regs, rows
+Cohesion: 0.25
+Nodes (5): expectNothingWritten(), Fx, RUN, Win, writes()
 
 ### Community 335 - "foundation-contract.ts"
 Cohesion: 0.33
@@ -4496,8 +4506,8 @@ Cohesion: 0.53
 Nodes (5): check(), db, insertLog(), main(), regIds
 
 ### Community 337 - "confirm_credit_entry.rls.test.ts"
-Cohesion: 0.33
-Nodes (3): ChainRow, LedgerRow, makeStaffFixture()
+Cohesion: 0.43
+Nodes (7): backdrop(), lum(), pixel(), Probe(), ProbeWhat, ratio(), Rgba
 
 ### Community 339 - "RAG (B9) execution plan — 2026-08-29"
 Cohesion: 0.10
@@ -4507,13 +4517,17 @@ Nodes (21): Clustering (e-means) — R1-e, Handing stages to subagents, Kickoff 
 Cohesion: 0.10
 Nodes (20): `1bd31f4` — Stage B4-B5, `29765e2` — Stage A enforcement, `2a64e18` — UI-port sweep review-and-commit, `4b4256e` — Stage B1-B3, `4e92603` — D4 re-review fixes, `52f66e5` — D4 first fix pass, `605a559` — Stage C (this handoff's last commit), `74dcab8` — RAG / B9 admission (+12 more)
 
+### Community 344 - "Handoff — 2026-10-01 → 02 — Core-UX instruction: validation + live baseline (Step 0), then Band 1"
+Cohesion: 0.25
+Nodes (7): 1. Environment for this baseline (read before reproducing), 2. Findings log — persona × flow × result, 3. Verdicts on the instruction's claims, 4. Corrections to earlier records, 5. Decisions locked this session (Ivan, AskUserQuestion), 6. Not done / open, Handoff — 2026-10-01 → 02 — Core-UX instruction: validation + live baseline (Step 0), then Band 1
+
 ### Community 345 - "Handoff, 2026-10-31: the 2026-10-30 two-persona doctrine mapped against code, plans and vault; live docs amended; five rulings recorded; nothing built"
 Cohesion: 0.10
 Nodes (20): 0. Ivan's action list, Code analysis (read, not changed), Docs (repo), Evidence & data, Files changed, Handoff, 2026-10-31: the 2026-10-30 two-persona doctrine mapped against code, plans and vault; live docs amended; five rulings recorded; nothing built, Key decisions, Not touched (+12 more)
 
 ### Community 346 - "input.tsx"
-Cohesion: 0.08
-Nodes (19): ParticipantRow, ParticipantsClient(), ORG_TYPES, OrgOnboardingClient(), SCALES, Status, NotificationSignupButton(), SignupResult (+11 more)
+Cohesion: 0.18
+Nodes (9): isoToLocalInputValue(), Props, RegistrationCloseEditor(), Props, RegistrationSection(), relativeTime(), baseProps, SectionShell() (+1 more)
 
 ### Community 347 - "Phase 6.5 — Dashboard Redesign + Per-Event `/details` Implementation Plan"
 Cohesion: 0.10
@@ -4551,9 +4565,13 @@ Nodes (5): description, maximum, minimum, type, confidence
 Cohesion: 0.50
 Nodes (3): authorise(), test_role_by_use_case(), test_unknown_use_case_false()
 
+### Community 364 - "ManageRedirect"
+Cohesion: 0.29
+Nodes (6): §0 Ivan's action list, Gates, Gotchas, Handoff 2026-11-22: door separation, wrong-door helper, web nav, What happened, Where we're going
+
 ### Community 365 - "page.tsx"
-Cohesion: 0.16
-Nodes (9): PractitionerPanel(), View, AuthStatus, AuthStatusMessage(), ControlledAccessNotice(), MagicLinkResult, MagicLinkSignInForm(), Props (+1 more)
+Cohesion: 0.06
+Nodes (25): metadata, POINTS, event, View, metadata, PricingClient(), AuthStatus, AuthStatusMessage() (+17 more)
 
 ### Community 367 - "CPD frontend — design exploration (2026-07-13)"
 Cohesion: 0.11
@@ -4596,8 +4614,8 @@ Cohesion: 0.50
 Nodes (4): status, description, enum, type
 
 ### Community 385 - "page.test.tsx"
-Cohesion: 0.25
-Nodes (6): El, run(), { s, redirect }, addBlock(), iso(), refused()
+Cohesion: 0.50
+Nodes (3): addBlock(), iso(), refused()
 
 ### Community 398 - "Eventar — Terms of Service"
 Cohesion: 0.11
@@ -4616,8 +4634,8 @@ Cohesion: 0.11
 Nodes (17): Answers to the brief, Findings, Gates (run by me, sequentially, on the tree as found), MAJOR-1 (DB-01): `invite_tokens` is a definer-only, audited table, but `service_role` keeps INSERT/UPDATE/DELETE, and the new test pins that as correct, MINOR-1 (DB-01): `controlled_lists.rls.test.ts` now has misleading titles and comments, and its RLS-layer purpose is masked, MINOR-2 (CX-03): the token list in `lib/utils.ts` is hand-copied twice and not tied to `globals.css`, MINOR-3 (CX-03): registering sizes also makes them conflict with `leading-*`; neither the hand-back nor the test mentions it, MINOR-4 (CX-01): `deleteTestUser` still swallows the same error that CX-01 made loud on the create side (+9 more)
 
 ### Community 404 - "mockParticipationSource.ts"
-Cohesion: 0.19
-Nodes (9): defaultPath, here, MockFile, MockParticipationSource, HKCP_BODY, StubSource, EventRecord, LedgerEntry (+1 more)
+Cohesion: 0.57
+Nodes (5): applyTextSize(), isTextSize(), readTextSize(), TextSize, writeTextSize()
 
 ### Community 406 - "Seated Professional Conference Audience"
 Cohesion: 1.00
@@ -4634,6 +4652,10 @@ Nodes (12): ENDED_TIMES, LIVE_TIMES, markAttendedResult, mockFrom, { MockNotAuth
 ### Community 426 - "agent_version"
 Cohesion: 0.67
 Nodes (3): description, type, agent_version
+
+### Community 427 - "theme.ts"
+Cohesion: 0.57
+Nodes (5): applyTheme(), isTheme(), readTheme(), Theme, writeTheme()
 
 ### Community 428 - "generated_at"
 Cohesion: 0.67
@@ -4668,8 +4690,8 @@ Cohesion: 0.12
 Nodes (16): Environment and cleanup, Four questions per page (complete attendee, 1280), M1. Phone tab bar: three of five tabs are dead and the phone shows no "Soon" cue [X], m1. "Soon" text and rail labels are low contrast [X], m2. 404 under /account/* offers "Sign in" to a signed-in attendee and no way back to the portal [X], M2. The event pages leave the shell and speak a different vocabulary [X], m3. Registrations is "Soon" while the registration list already exists under Account [X], m4. Onboarding bar hides the account email below 640 px [X] (+8 more)
 
 ### Community 477 - "EventsHome.tsx"
-Cohesion: 0.13
-Nodes (17): cancelEvents(), CATEGORIES, EventsListClient(), lifecycleStatus(), PublicEventCard, bucket(), CATEGORY_LABEL, EventsHome() (+9 more)
+Cohesion: 0.40
+Nodes (4): AUTH_ERROR_MESSAGES_ATTENDEE, AUTH_ERROR_MESSAGES_ORGANIZER, AuthAudience, resolveAuthError()
 
 ### Community 569 - "Operator Checklist — Eventar MVP"
 Cohesion: 0.08
@@ -4724,8 +4746,8 @@ Cohesion: 0.13
 Nodes (15): 0. How to use this document, 10. Change log, 11. Carried in from the 2026-10-14/16 session (follow-ups, none blocking), 1. The MVP definition (Ivan, 2026-10-11), 2. Gap map: where each requirement stands today, 3.1 Shared files: who edits them, in which order, 3.2 Taking a card (Ivan's protocol, 2026-10-17), 3.3 Card index (type and start condition: the only place start conditions live) (+7 more)
 
 ### Community 641 - "Handoff — 2026-10-01 → 02 — Core-UX instruction: validation + live baseline (Step 0), then Band 1"
-Cohesion: 0.13
-Nodes (15): 1. Environment for this baseline (read before reproducing), 2. Findings log — persona × flow × result, 3. Verdicts on the instruction's claims, 4. Corrections to earlier records, 5. Decisions locked this session (Ivan, AskUserQuestion), 6. Not done / open, 8.1 What the package does now (behaviour, not a file list), 8.2 Found by execution, not in the plan (root causes) (+7 more)
+Cohesion: 0.25
+Nodes (8): 8.1 What the package does now (behaviour, not a file list), 8.2 Found by execution, not in the plan (root causes), 8.3 Reviews and what became of them, 8.4 Backtest and gates (2026-10-09, run sequentially, node v24.6.0), 8.5 Carried to later packages (recorded, not built), 8.6 Open for Ivan, 8.7 Ivan's decision on the second pass (2026-10-11): option B2, partial drop, 8. Band 2, Lane B, P2a (honest create → publish): implementation record, 2026-10-02 → 10-09
 
 ### Community 642 - "Handoff — 2026-05-31 (Phase 6 shipped, Phase 5 close-out landed)"
 Cohesion: 0.13
@@ -4740,8 +4762,8 @@ Cohesion: 0.20
 Nodes (8): T0, ActionTrigger(), Trigger(), Toast, ToastContext, ToastContextValue, ToastProvider(), useToast()
 
 ### Community 645 - "exportEvidenceActions.ts"
-Cohesion: 0.22
-Nodes (11): EvidenceExportButton(), State, chainVerdictForEntry(), csvEscape(), CsvRow, errorMessageOr(), exportEventEvidence(), ExportEvidenceResult (+3 more)
+Cohesion: 0.33
+Nodes (6): Data presentation rules (the intuition layer), Input → output map (where data enters, what leaves), Layout decision, Main nav — Ivan's 8 areas, with add/subtract calls, Organiser IA + data-design spec — v1 (2026-07-12), Version cut (against Ivan's must/nice lists)
 
 ### Community 646 - "Engineering Doctrine — Eventar CPD Platform"
 Cohesion: 0.14
@@ -4784,7 +4806,7 @@ Cohesion: 0.14
 Nodes (13): Dry run (Workstream X), Gates, Handoff — 17 Sep 2026 — Stage 10 Dual-Track Close-Out, How to reproduce the dry run, Not done (per the instruction's explicit non-goals), Other findings fixed, Residuals — found, not fixed, explicitly flagged, Summary (+5 more)
 
 ### Community 656 - "Session handoff, 2026-10-09: P2a is finished in the working tree; the `test:rls` helper fix is half-started"
-Cohesion: 0.14
+Cohesion: 0.15
 Nodes (13): 0.1 Decide, 0.2 Execute (only you can; in priority order), 0.3 Queued for me (waits for your "continue" and your pick), 0.4 Other sessions (not mine), 0. Ivan's action list (consolidated 2026-10-10; replaces the old §3), 1. Standing instructions from Ivan that are still live, 2. State of the tree (branch `main`, HEAD `d6adae1`; all of my work is uncommitted), 3. Decisions waiting for Ivan (+5 more)
 
 ### Community 657 - "Consolidated handoff, 2026-10-11: where Eventar stands, what is open, and the build plan"
@@ -5052,8 +5074,8 @@ Cohesion: 0.18
 Nodes (10): Core Principles, Governance, [PRINCIPLE_1_NAME], [PRINCIPLE_2_NAME], [PRINCIPLE_3_NAME], [PRINCIPLE_4_NAME], [PRINCIPLE_5_NAME], [PROJECT_NAME] Constitution (+2 more)
 
 ### Community 723 - "participationSource.ts"
-Cohesion: 0.31
-Nodes (4): seq(), canonicalSha256Hex(), hashTaxonomyOrNull(), SupabaseParticipationSource
+Cohesion: 0.33
+Nodes (6): 7.2 SQL cards (`sql`; one at a time, in this order), DB-01 · Seed drift and the CI grant assertion (B7, B8), DB-02 · P3: check-in only inside the live window (O7, O8), DB-03 · Teammates can work on events they did not create; deleted events stay private (O6), DB-04 · P4: agenda saves never lose or duplicate anything (O3), DB-05 · P6: audited roster edit and the `registrations` UPDATE bypass closed (O6; stretch)
 
 ### Community 724 - "Eventar RAG (B9): revise the existing plan, cluster with e-means, never k-means"
 Cohesion: 0.20
@@ -5112,8 +5134,8 @@ Cohesion: 0.20
 Nodes (9): Completion standard, Eventar UI Port Foundation, Non-negotiable colour contract, Porting model, Production sources of truth, Purpose, Related files, Required implementation sequence (+1 more)
 
 ### Community 738 - "pageWindow.test.ts"
-Cohesion: 0.31
-Nodes (8): ev(), hrefsFor(), past(), Row, { state }, hrefsOf(), NOW, treeOf()
+Cohesion: 0.33
+Nodes (5): §0 Ivan's action list, Gate chain after the reword, Graph notes, Handoff 2026-11-21: MVP acceptance walk r4, consent copy reword, What happened
 
 ### Community 739 - "Block Architecture — the system skeleton and its guardrails"
 Cohesion: 0.22
@@ -5312,8 +5334,8 @@ Cohesion: 0.25
 Nodes (7): Behavioural acceptance criteria, Colour acceptance criteria, Eventar component porting task, Hard constraints, Required reading, Scope, Verification
 
 ### Community 789 - "validateClaim.ts"
-Cohesion: 0.39
-Nodes (7): AGENTS, assertValidClaim(), CLAIM_TYPES, FOUR, QUESTIONS, validateClaim(), ValidationResult
+Cohesion: 0.33
+Nodes (5): Cleanup and residue, Findings, MVP acceptance walk r4: PRACTITIONER lens (2026-11-21) - FINAL, Not run (gaps), Rows so far
 
 ### Community 790 - "eventar-evidence (orchestrator)"
 Cohesion: 0.25
@@ -5336,16 +5358,16 @@ Cohesion: 0.29
 Nodes (6): Completion Report, Done When, Mandatory Post-Execution Hooks, Outline, Pre-Execution Checks, User Input
 
 ### Community 795 - "page.test.ts"
-Cohesion: 0.33
-Nodes (5): eventB, h, open(), open(), settle()
+Cohesion: 0.60
+Nodes (3): AccreditationShapeGroup, isBridgeShapedConfig(), isMultiBodyConfigured()
 
 ### Community 796 - "updateAction.test.ts"
 Cohesion: 0.29
 Nodes (6): mockEvent, requireStaffMock, revalidatePathMock, rpcCalls, validBlock, validEvent
 
 ### Community 797 - "orgActions.test.ts"
-Cohesion: 0.29
-Nodes (5): eventar, mockFrom, mockRequireStaff, mockRpc, validInput
+Cohesion: 0.18
+Nodes (9): completeOrgOnboarding(), completeOrgOnboardingSchema, provisionOrganisation(), provisionOrgSchema, eventar, mockFrom, mockRequireStaff, mockRpc (+1 more)
 
 ### Community 798 - "Auth and session guard details"
 Cohesion: 0.29
@@ -5484,12 +5506,8 @@ Cohesion: 0.33
 Nodes (5): eventar-submission (Q3 preparation specialist), Hard rules, Inputs (read only), Single responsibility, The rule that defines this agent
 
 ### Community 832 - "page.test.ts"
-Cohesion: 0.33
-Nodes (4): endedA, endedB, h, ended
-
-### Community 833 - "actions.test.ts"
-Cohesion: 0.40
-Nodes (4): { requireStaff }, requireStaffMock_member(), { rpc, eventRows }, staffWithRole()
+Cohesion: 0.50
+Nodes (3): findAll(), formProps(), Role
 
 ### Community 834 - "Eventar DB review: query set and last measured baseline"
 Cohesion: 0.33
@@ -5637,7 +5655,7 @@ Nodes (4): Eventar — accredited CPD events, records your regulator can verify,
 
 ### Community 872 - "DB schema summary (generated)"
 Cohesion: 0.40
-Nodes (4): DB schema summary (generated), Functions (94), `name@last-defining-migration`, Migrations (178), oldest first, Tables (50) and where each was created
+Nodes (4): DB schema summary (generated), Functions (95), `name@last-defining-migration`, Migrations (179), oldest first, Tables (50) and where each was created
 
 ### Community 873 - "Open items at handoff"
 Cohesion: 0.40
@@ -5672,8 +5690,8 @@ Cohesion: 0.40
 Nodes (4): Rules, Stages — the only roadmap vocabulary, The stages, Translating the old names
 
 ### Community 881 - "orchestrateParticipation"
-Cohesion: 0.50
-Nodes (4): orchestrateParticipation(), here, main(), outDir
+Cohesion: 0.40
+Nodes (4): Cleanup and residue, Findings, MVP acceptance walk r4: ROLES lens (2026-11-21), Regressions since r3 (nav rail, headings, cards, empty states, errors, copy, sign-out)
 
 ### Community 882 - "Q: Why does requireStaff() connect Staff Event Edit & Publish to Dashboard & Analytics Actions, Staff Check-in Roster UI, and 13 other communities?"
 Cohesion: 0.40
@@ -5735,25 +5753,29 @@ Nodes (3): 1. Button pill vs. status-badge height mismatch — CLOSED, 2. Site-w
 Cohesion: 0.50
 Nodes (3): name, private, version
 
+### Community 946 - "SKILL.md"
+Cohesion: 0.70
+Nodes (3): HK_PUBLIC_HOLIDAYS, registrationWindow, ymdUtc()
+
 ## Knowledge Gaps
-- **6795 isolated node(s):** `local-psql.sh script`, `PGOPTIONS`, `mutant-harness.sh script`, `walk-window.sh script`, `21st` (+6790 more)
+- **6839 isolated node(s):** `local-psql.sh script`, `PGOPTIONS`, `mutant-harness.sh script`, `walk-window.sh script`, `21st` (+6834 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **3103 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **3104 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Button()` connect `button.tsx` to `page.tsx`, `utils.ts`, `exportEvidenceActions.ts`, `parts.tsx`, `actions.ts`, `frames.tsx`, `RosterClient.tsx`, `cn`, `NewEventForm.tsx`, `select.tsx`, `Dialog.tsx`, `EvidenceFileList.tsx`, `layout.tsx`, `RegisterCard.tsx`, `AgendaSection.tsx`, `SentimentSlice.tsx`, `requireStaff`, `actions.ts`, `page.tsx`, `PersonShareSheet.tsx`, `WorkspaceSwitcher.tsx`, `page.tsx`, `NewEventForm.test.tsx`, `multiBodyActions.ts`, `input.tsx`, `EventsHome.tsx`, `SettingsClient.tsx`, `EventCard.tsx`, `SurveyForm.tsx`, `page.tsx`, `CreateEventWizard.tsx`, `page.tsx`?**
-  _High betweenness centrality (0.008) - this node is a cross-community bridge._
-- **Why does `supabaseServer()` connect `supabaseServer` to `page.tsx`, `actions.ts`, `actions.ts`, `supabaseAdmin`, `page.tsx`, `exportEvidenceActions.ts`, `page.tsx`, `page.tsx`, `actions.ts`, `page.tsx`, `RosterClient.tsx`, `updateAction.ts`, `multiBodyActions.ts`, `requireStaff`, `isReviewMode`, `actions.ts`?**
-  _High betweenness centrality (0.005) - this node is a cross-community bridge._
-- **Why does `cn()` connect `cn` to `page.tsx`, `utils.ts`, `button.tsx`, `parts.tsx`, `AccountShell.tsx`, `frames.tsx`, `select.tsx`, `RegistrationSection.tsx`, `Dialog.tsx`, `NeedsAttention.tsx`, `EvidenceFileList.tsx`, `RegisterCard.tsx`, `page.tsx`, `WorkspaceSwitcher.tsx`, `input.tsx`, `EventsHome.tsx`, `FaqAccordion.tsx`, `EventCard.tsx`, `page.tsx`, `page.tsx`?**
-  _High betweenness centrality (0.005) - this node is a cross-community bridge._
+- **Why does `Button()` connect `button.tsx` to `supabaseServer`, `error.test.tsx`, `parts.tsx`, `actions.ts`, `exportCollegeActions.ts`, `frames.tsx`, `RosterClient.tsx`, `updateAction.ts`, `self_check_in.rls.test.ts`, `NewEventForm.tsx`, `select.tsx`, `page.tsx`, `Dialog.tsx`, `EvidenceFileList.tsx`, `AgendaSection.tsx`, `SentimentSlice.tsx`, `requireStaff`, `actions.ts`, `WorkspaceSwitcher.tsx`, `NewEventForm.test.tsx`, `multiBodyActions.ts`, `input.tsx`, `CompleteClient.test.tsx`, `SettingsClient.tsx`, `EventCard.tsx`, `SurveyForm.tsx`, `page.tsx`, `CreateEventWizard.tsx`, `page.tsx`, `page.tsx`?**
+  _High betweenness centrality (0.009) - this node is a cross-community bridge._
+- **Why does `supabaseServer()` connect `RegisterCard.tsx` to `page.tsx`, `utils.ts`, `supabaseServer`, `page.test.tsx`, `parts.tsx`, `actions.ts`, `RosterClient.tsx`, `updateAction.ts`, `accountCompleteness.test.ts`, `page.tsx`, `isReviewMode`, `orgActions.test.ts`, `actions.ts`, `actions.test.ts`, `actions.test.ts`, `requireStaff`, `actions.ts`, `actions.ts`, `page.tsx`, `page.tsx`, `page.tsx`, `multiBodyActions.ts`, `page.test.ts`, `actions.test.ts`, `page.tsx`?**
+  _High betweenness centrality (0.007) - this node is a cross-community bridge._
+- **Why does `cn()` connect `parts.tsx` to `page.tsx`, `page.test.ts`, `button.tsx`, `frames.tsx`, `self_check_in.rls.test.ts`, `cn`, `select.tsx`, `page.tsx`, `Dialog.tsx`, `EvidenceFileList.tsx`, `WorkspaceSwitcher.tsx`, `page.tsx`, `page.tsx`, `input.tsx`, `FaqAccordion.tsx`, `EventCard.tsx`, `page.tsx`, `CreateEventWizard.tsx`, `page.tsx`?**
+  _High betweenness centrality (0.006) - this node is a cross-community bridge._
 - **Are the 2 inferred relationships involving `supabaseAdmin()` (e.g. with `requireStaff()` and `supabaseServer()`) actually correct?**
   _`supabaseAdmin()` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `local-psql.sh script`, `PGOPTIONS`, `mutant-harness.sh script` to the rest of the system?**
-  _7436 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _7480 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `page.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.042412698412698416 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06519114688128773 - nodes in this community are weakly interconnected._
 - **Should `utils.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.06262626262626263 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.12698412698412698 - nodes in this community are weakly interconnected._
