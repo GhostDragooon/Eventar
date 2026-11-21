@@ -42,14 +42,14 @@ export function PriorApprovalAdvisory({ startTime, body }: Props) {
       {approval.passed ? (
         <>
           The suggested prior-approval application deadline for {label} was{' '}
-          <strong>{when}</strong>, and has passed.{yours && <> Your time: {yours}.</>}
+          <strong>{when}</strong>, and has passed.{yours && <> That is {yours} your time.</>}
           This is advisory only &mdash; saving still works; confirm directly with the body whether a late
           application is possible.
         </>
       ) : (
         <>
           Apply to {label} by{' '}
-          <strong>{when}</strong>{yours && <> (your time: {yours})</>} to meet its
+          <strong>{when}</strong>{yours && <> &mdash; {yours} your time &mdash;</>} to meet its
           prior-approval requirement. This is advisory only &mdash; Eventar doesn’t track applications, so
           saving here is never blocked by it.
         </>
