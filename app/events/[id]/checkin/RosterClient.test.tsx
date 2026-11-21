@@ -22,7 +22,8 @@ vi.mock('./SpeakersCard', () => ({
 }));
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { walkInRegisterAndCheckIn } from './actions';
 import RosterClient from './RosterClient';
 import { ToastProvider } from '@/components/ui/toast';
 
@@ -212,5 +213,48 @@ describe('RosterClient: a role that cannot check people in', () => {
     cleanup();
     renderDesk(-30);
     expect(screen.getByTestId('speakers-probe')).toHaveAttribute('data-closed-message', '');
+  });
+});
+
+// UX-R4 (MVP close pass): the walk-in form said why it would not submit only after a round trip, and the red
+// line stayed after the visitor fixed the field.
+describe('RosterClient: walk-in form', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'], now: T0 });
+  });
+
+  function openWalkIn() {
+    renderDesk(-30);
+    fireEvent.click(screen.getByRole('button', { name: /walk-in/i }));
+    return {
+      name: screen.getByPlaceholderText('Full name'),
+      email: screen.getByPlaceholderText('Email'),
+    };
+  }
+
+  it('greys the submit and says what is missing while the name is empty or only spaces', () => {
+    const { name, email } = openWalkIn();
+    const submit = screen.getByRole('button', { name: /register & check in/i });
+    expect(submit).toBeDisabled();
+    expect(screen.getByText('Enter the name and email to register this walk-in.')).toBeInTheDocument();
+    fireEvent.change(email, { target: { value: 'a@x.test' } });
+    fireEvent.change(name, { target: { value: '   ' } });
+    expect(submit).toBeDisabled();
+    expect(screen.getByText('Enter the name to register this walk-in.')).toBeInTheDocument();
+    fireEvent.change(name, { target: { value: 'Grace' } });
+    expect(submit).toBeEnabled();
+  });
+
+  it('clears the server error as soon as either field changes', async () => {
+    vi.mocked(walkInRegisterAndCheckIn).mockResolvedValueOnce({ error: 'That email is already registered for this event.' } as never);
+    const { name, email } = openWalkIn();
+    fireEvent.change(name, { target: { value: 'Grace' } });
+    fireEvent.change(email, { target: { value: 'a@x.test' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /register & check in/i }));
+    });
+    expect(screen.getByText(/already registered/)).toBeInTheDocument();
+    fireEvent.change(email, { target: { value: 'b@x.test' } });
+    expect(screen.queryByText(/already registered/)).not.toBeInTheDocument();
   });
 });

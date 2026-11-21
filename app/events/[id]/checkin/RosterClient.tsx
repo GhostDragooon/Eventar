@@ -462,6 +462,8 @@ function WalkInDialog({
   // is closed before filling the form and waiting on a doomed round trip,
   // rather than only after submitting (user-lens finding, 2026-09-19).
   const closedMessage = walkInClosedMessage(lifecycle);
+  // Why the button is grey (UX-R4): same wording shape as RegisterCard's reason line.
+  const missing = !name.trim() ? (!email.trim() ? 'name and email' : 'name') : !email.trim() ? 'email' : null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -507,7 +509,7 @@ function WalkInDialog({
           required
           placeholder="Full name"
           value={name}
-          onChange={e => setName(e.target.value)}
+          onChange={e => { setName(e.target.value); setError(null); setSignInHref(null); }}
           className="px-md py-sm bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
         />
         <input
@@ -515,7 +517,7 @@ function WalkInDialog({
           required
           placeholder="Email"
           value={email}
-          onChange={e => setEmail(e.target.value)}
+          onChange={e => { setEmail(e.target.value); setError(null); setSignInHref(null); }}
           className="px-md py-sm bg-surface-container-low border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
         />
         {error && (
@@ -531,9 +533,14 @@ function WalkInDialog({
             )}
           </p>
         )}
+        {missing && !closedMessage && !submitting && (
+          <p aria-live="polite" className="m-0 font-body-md text-body-md text-on-surface-variant">
+            Enter the {missing} to register this walk-in.
+          </p>
+        )}
         <Button
           type="submit"
-          disabled={submitting || closedMessage != null}
+          disabled={submitting || closedMessage != null || missing != null}
           className="self-start min-h-11 px-md py-sm font-label-md text-label-md"
         >
           {submitting ? 'Registering…' : 'Register & check in'}
