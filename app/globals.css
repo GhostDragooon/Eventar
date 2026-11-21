@@ -317,7 +317,7 @@
   --primary: #0070f3;
   --primary-ink: #1c3c94;
   --on-primary: #ffffff;
-  --primary-container: #eaf2fd;
+  --primary-container: #e8f0fb;
   --on-primary-container: #23449d;
   --primary-fixed: #eaf2fd;
   --primary-fixed-dim: #d5e6fb; /* one-step-stronger ramp tint */
@@ -371,7 +371,7 @@
 
   --error: #c0362c;
   --on-error: #ffffff;
-  --error-container: #fbe9e7;
+  --error-container: #fceae8;
   --on-error-container: #892218;
 
   /* Status hues (redesign §7a) — contrast-tuned in the M2 remap but still
@@ -379,11 +379,11 @@
      Danger aliases error by design. */
   --success: #1e874b;
   --on-success: #052e16; /* dark green — readable on --success in both modes */
-  --success-container: #e4f2e9;
+  --success-container: #e5f3ea;
   --on-success-container: #115c2f;
   --warning: #b26b00;
-  --warning-container: #f9efd9;
-  --on-warning-container: #6c4101;
+  --warning-container: #f8eed8;
+  --on-warning-container: #6c4102;
   --danger: #c0362c;
 
   /* A.2: inverse-* = the dark-scheme equivalents (dark surface, light text,
@@ -494,7 +494,7 @@
     --success-container: rgba(76, 196, 125, 0.15);
     --on-success-container: #a7e5bf;
     --warning: #e0a73c;
-    --warning-container: rgba(224, 167, 60, 0.16);
+    --warning-container: rgba(224, 167, 60, 0.13);
     --on-warning-container: #f1cf8e;
     --danger: #ec6a5e;
 
@@ -574,7 +574,7 @@
   --success-container: rgba(76, 196, 125, 0.15);
   --on-success-container: #a7e5bf;
   --warning: #e0a73c;
-  --warning-container: rgba(224, 167, 60, 0.16);
+  --warning-container: rgba(224, 167, 60, 0.13);
   --on-warning-container: #f1cf8e;
   --danger: #ec6a5e;
 
