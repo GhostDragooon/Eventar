@@ -4,7 +4,7 @@ Prior handoffs: `handoff_20261121-px-sweep-form-fixes.md`, `handoff_20261121-px-
 
 ## §0 Ivan's action list
 
-**STATUS 2026-11-21:** pushed `a47b860`, `0af48cd`, `84dd2dd`, `96488b1`. The close edits below (text-trim merge fix, tests, comments, specimen deletion, this handoff) are committed after `96488b1` in the close commit.
+**STATUS 2026-11-21:** pushed `a47b860`, `0af48cd`, `84dd2dd`, `96488b1`. Close commit `e395e19` (text-trim merge fix, tests, comments, specimen deletion, this handoff) is pushed too (`96488b1..e395e19`).
 
 **Decide (recommendation first)**
 1. **Roster error toast dwell.** You chose the shared toast (option B). It dismisses errors at 4.5 s, with no shake and the dark pill; the old desk toast held errors 8 s and shook. Recommend: add an optional duration to `toast()` and keep errors at 8 s on the check-in desk. Say "keep 4.5 s" to accept the change as is. Needs before and after renders.
@@ -14,7 +14,7 @@ Prior handoffs: `handoff_20261121-px-sweep-form-fixes.md`, `handoff_20261121-px-
 5. **Other public pages** (`/events`, `/account/sign-in`, `/login`, 404) still show both "Organiser log in" and the "Log in" pill. Locked rule covers the landing only. Say if you want one pill there too.
 6. **Local fixture titles** on `/events` ("F1-F5 Fixture ...", "DELETE ME"): local data only. Clean the local DB before any demo.
 
-**Execute (only you):** nothing blocks Claude. Push of the close commit is done only with your go.
+**Execute (only you):** nothing blocks Claude. Nothing pending to push.
 
 **Queued for Claude**
 1. Duplicate "See how it works" links in both landing tab panels: check the hidden panel is out of the tab order (user-lens finding 5).
