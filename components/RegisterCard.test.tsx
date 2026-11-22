@@ -567,3 +567,30 @@ describe('RegisterCard — why Register is disabled', () => {
     expect(screen.getByRole('button', { name: 'Register' })).toBeEnabled();
   });
 });
+
+// UX-R5 (Ivan picked 2C, 2026-11-22): a full event hands the visitor a next step instead of a dead end.
+describe('RegisterCard — at capacity next step', () => {
+  const full = { ...baseProps, lifecycle: 'registering' as const, maxAttendees: 5, currentCount: 5 };
+
+  it('names the other open events and links the button to /events', () => {
+    render(<RegisterCard {...full} openEventsCount={3} />);
+    expect(screen.getByText('This event is full. 3 other events are open for registration.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Browse 3 open events' })).toHaveAttribute('href', '/events');
+  });
+
+  it('says "event" for one, and hides the count at 0 so the button never reads "Browse 0"', () => {
+    const { unmount } = render(<RegisterCard {...full} openEventsCount={1} />);
+    expect(screen.getByText('This event is full. 1 other event is open for registration.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Browse 1 open event' })).toBeInTheDocument();
+    unmount();
+    render(<RegisterCard {...full} openEventsCount={0} />);
+    expect(screen.getByText('This event is full.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Browse other events' })).toHaveAttribute('href', '/events');
+  });
+
+  it('keeps the 1/1 registered line, and still gives the button when the count is not supplied', () => {
+    render(<RegisterCard {...full} />);
+    expect(screen.getByText('5/5 registered.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Browse other events' })).toBeInTheDocument();
+  });
+});

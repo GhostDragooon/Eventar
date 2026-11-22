@@ -86,6 +86,9 @@ export function EventsHome({ events, nowMs, initialTab = 'active', canCreate = t
   const [sort, setSort] = useState<SortKey>('soonest');
   const [chosenTab, setChosenTab] = useState<TabKey>(initialTab);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // UX-R1 (Ivan 1b, 2026-11-22): a read-only role keeps the tick boxes and Export CSV, but the write buttons are
+  // disabled with the reason. The refusal dialog stays as the second net.
+  const readOnly = !canCreate;
   const [pending, startTransition] = useTransition();
   const { toast } = useToast();
   const [confirm, setConfirm] = useState<null | {
@@ -272,10 +275,7 @@ export function EventsHome({ events, nowMs, initialTab = 'active', canCreate = t
         kind, ids, tone: 'danger', blocked: true,
         confirmLabel: kind === 'archive' ? `Delete ${n} event${n === 1 ? '' : 's'}` : `Cancel ${n} event${n === 1 ? '' : 's'}`,
         title: kind === 'archive' ? (n === 1 ? `Delete “${titleOf(ids[0])}”?` : `Delete ${n} events?`) : (n === 1 ? `Cancel “${titleOf(ids[0])}”?` : `Cancel ${n} events?`),
-        // A read-only role can change no event, so no selection would ever work: say the role, not the owner.
-        body: canCreate
-          ? `You can’t ${verb} ${notMine.join(', ')}. ${NOT_EVENT_WRITER} Unselect ${notMine.length === 1 ? 'it' : 'them'}, or ask an organiser admin.`
-          : `Your role can’t ${verb} events. Ask an organiser admin.`,
+        body: `You can’t ${verb} ${notMine.join(', ')}. ${NOT_EVENT_WRITER} Unselect ${notMine.length === 1 ? 'it' : 'them'}, or ask an organiser admin.`,
       });
       return;
     }
@@ -392,16 +392,16 @@ export function EventsHome({ events, nowMs, initialTab = 'active', canCreate = t
               <span className={cn('material-symbols-outlined', icon16)} aria-hidden>download</span>Export CSV
             </Button>
             {inBin ? (
-              <Button type="button" variant="outline" onClick={() => runBulk('restore')} disabled={busy} className={btn}>
+              <Button type="button" variant="outline" onClick={() => runBulk('restore')} disabled={busy || readOnly} aria-describedby={readOnly ? 'bulk-why' : undefined} className={btn}>
                 <span className={cn('material-symbols-outlined', icon16)} aria-hidden>restore_from_trash</span>Restore
               </Button>
             ) : (
               <>
-                <Button type="button" variant="outline" onClick={() => runBulk('archive')} disabled={busy} className={btn}>
+                <Button type="button" variant="outline" onClick={() => runBulk('archive')} disabled={busy || readOnly} aria-describedby={readOnly ? 'bulk-why' : undefined} className={btn}>
                   <span className={cn('material-symbols-outlined', icon16)} aria-hidden>delete</span>Delete
                 </Button>
                 {tab === 'active' && (
-                  <Button type="button" variant="destructive" onClick={() => runBulk('cancel')} disabled={busy} className={btn}>
+                  <Button type="button" variant="destructive" onClick={() => runBulk('cancel')} disabled={busy || readOnly} aria-describedby={readOnly ? 'bulk-why' : undefined} className={btn}>
                     <span className={cn('material-symbols-outlined', icon16)} aria-hidden>block</span>Cancel
                   </Button>
                 )}
@@ -409,6 +409,11 @@ export function EventsHome({ events, nowMs, initialTab = 'active', canCreate = t
             )}
             <Button type="button" variant="ghost" onClick={() => setSelected(new Set())} disabled={busy} className={cn(btn, 'text-on-surface-variant hover:text-on-surface')}>Clear</Button>
           </div>
+          {readOnly && (
+            <p id="bulk-why" className="m-0 basis-full font-body-md text-body-md text-on-surface-variant">
+              Your role can’t {inBin ? 'restore' : 'delete or cancel'} events. Ask an organiser admin.
+            </p>
+          )}
         </div>
       )}
 

@@ -14,6 +14,8 @@ type Props = {
   eventId: string;
   maxAttendees: number | null;
   currentCount: number;       // count of existing registrations
+  /** Other events a visitor can register for right now. Shown only when this one is full; 0 or unset hides the count. */
+  openEventsCount?: number;
   lifecycle: Lifecycle;       // form shows only while 'registering'
   /**
    * False when RESEND_API_KEY is unset — the send seam lands on devEmailStub
@@ -81,6 +83,7 @@ export default function RegisterCard({
   eventId,
   maxAttendees,
   currentCount,
+  openEventsCount = 0,
   lifecycle,
   defaultName,
   defaultEmail,
@@ -255,6 +258,13 @@ export default function RegisterCard({
         <p className="font-body-md text-body-md text-on-surface-variant m-0">
           {currentCount}/{maxAttendees} registered.
         </p>
+        <p className="font-body-md text-body-md text-on-surface-variant m-0">
+          This event is full.
+          {openEventsCount > 0 && ` ${openEventsCount} other event${openEventsCount === 1 ? ' is' : 's are'} open for registration.`}
+        </p>
+        <Link href="/events" className={cn(buttonVariants(), 'min-h-11 w-full')}>
+          {openEventsCount > 0 ? `Browse ${openEventsCount} open event${openEventsCount === 1 ? '' : 's'}` : 'Browse other events'}
+        </Link>
       </Section>
     );
   }

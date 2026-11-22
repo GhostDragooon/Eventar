@@ -11,6 +11,7 @@ import { requireStaff, NotAuthorizedError, canManageEvent, isStaffSession } from
 import { getUnlinkedRegistrationCount } from '@/app/account/actions';
 import { isAccountComplete } from '@/lib/accountCompleteness';
 import { emailLive } from '@/lib/email/eventEmails';
+import { fullEventIds } from '@/lib/events/fullEventIds';
 
 export const dynamic = 'force-dynamic';
 
@@ -108,6 +109,27 @@ export default async function PublicEventPage({
     .from('registrations')
     .select('id', { count: 'exact', head: true })
     .eq('event_id', id);
+
+  // A full event hands the visitor a next step: how many OTHER events they can register for right now. Only read when
+  // this one is full. Same rule as the public list: published, not deleted, registering, and not itself full.
+  // eslint-disable-next-line react-hooks/purity
+  const nowMs = Date.now();
+  const thisIsFull = event.max_attendees != null && (registrationCount ?? 0) >= event.max_attendees;
+  let openEventsCount = 0;
+  if (thisIsFull) {
+    const { data: others, error: othersErr } = await supabase
+      .from('events')
+      .select('id, status, start_time, end_time, max_attendees, registration_close_at, registration_open_at, deleted_at')
+      .eq('status', 'published')
+      .is('deleted_at', null)
+      .neq('id', id)
+      .gte('end_time', new Date(nowMs).toISOString())
+      .limit(100);
+    if (othersErr) throw othersErr;
+    const registering = (others ?? []).filter((o) => computeLifecycle(o as EventLifecycleRow, nowMs) === 'registering');
+    const full = await fullEventIds(registering);
+    openEventsCount = registering.filter((o) => !full.has(o.id)).length;
+  }
 
   // Self-serve walk-in flow: a signed-in visitor's registration attaches
   // user_id + profile_snapshot at INSERT time (see (public)/events/[id]/
@@ -239,7 +261,7 @@ export default async function PublicEventPage({
           Container padding matches the gap so page edges share the rhythm. */}
       <div className="mx-auto flex w-full max-w-md flex-col gap-lg px-grid-margin py-xxl">
         {/* §9 status pill, top-left of its container, leading the title row. */}
-        <StatusPill lifecycle={lifecycle} full={event.max_attendees != null && (registrationCount ?? 0) >= event.max_attendees} />
+        <StatusPill lifecycle={lifecycle} full={thisIsFull} />
 
         {/* §1 hero + 2-row event meta */}
         <header className="flex flex-col gap-sm">
@@ -329,6 +351,7 @@ export default async function PublicEventPage({
           eventId={event.id}
           maxAttendees={event.max_attendees}
           currentCount={registrationCount ?? 0}
+          openEventsCount={openEventsCount}
           lifecycle={lifecycle}
           // Server-side env probe → boolean. The success block uses this to
           // decide whether to render the "development stub" strip. Boolean-only

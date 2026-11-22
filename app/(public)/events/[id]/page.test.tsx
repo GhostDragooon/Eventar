@@ -11,6 +11,9 @@ const { state } = vi.hoisted(() => ({
   state: {
     user: null as { id: string; email: string; email_confirmed_at: string | null } | null,
     isStaff: false,
+    // UX-R5: the other published events the page may count, and per-event registration counts (default 4).
+    others: [] as Record<string, unknown>[],
+    counts: {} as Record<string, number>,
   },
 }));
 
@@ -29,7 +32,7 @@ const eventRow = {
   country: null,
   description: null,
   status: 'published',
-  max_attendees: null,
+  max_attendees: null as number | null,
   registration_close_at: null,
   registration_open_at: null,
   hosted_by: null,
@@ -64,7 +67,10 @@ vi.mock('@/lib/supabase/server', () => ({
               }),
             };
           }
-          return { maybeSingle: async () => ({ data: eventRow, error: null }) };
+          return {
+            maybeSingle: async () => ({ data: eventRow, error: null }),
+            is: () => ({ neq: () => ({ gte: () => ({ limit: async () => ({ data: state.others, error: null }) }) }) }),
+          };
         },
       }),
     }),
@@ -72,7 +78,7 @@ vi.mock('@/lib/supabase/server', () => ({
 }));
 vi.mock('@/lib/supabase/admin', () => ({
   supabaseAdmin: vi.fn(() => ({
-    from: () => ({ select: () => ({ eq: async () => ({ count: 4, error: null }) }) }),
+    from: () => ({ select: () => ({ eq: async (_c: string, id: string) => ({ count: state.counts[id] ?? 4, error: null }) }) }),
   })),
 }));
 vi.mock('@/lib/auth', () => ({
@@ -133,6 +139,9 @@ describe('/events/[id] page — what the register card is told about the session
     state.user = null;
     state.isStaff = false;
     getUnlinkedRegistrationCount.mockClear();
+    state.others = [];
+    state.counts = {};
+    eventRow.max_attendees = null;
   });
 
   it('staff session: isStaff reaches the card; no prefill, no sign-in nudge, no claim lookup', async () => {
@@ -204,3 +213,37 @@ describe('/events/[id] page — the way back to the portal', () => {
   });
 });
 
+// UX-R5 (Ivan picked 2C, 2026-11-22): a full event tells the card how many OTHER events a visitor can register for.
+describe('/events/[id] page — open events offered when this one is full', () => {
+  const other = (id: string, extra: Record<string, unknown> = {}) => ({
+    id, status: 'published', max_attendees: null, registration_close_at: null, registration_open_at: null, deleted_at: null,
+    start_time: new Date(Date.now() + 96 * HOUR).toISOString(), end_time: new Date(Date.now() + 99 * HOUR).toISOString(), ...extra,
+  });
+  beforeEach(() => {
+    state.user = null;
+    state.isStaff = false;
+    state.others = [];
+    state.counts = {};
+    eventRow.max_attendees = null;
+  });
+
+  it('counts registering events that still have seats: skips an upcoming one and a full one', async () => {
+    eventRow.max_attendees = 4; // the default count of 4 makes this event full
+    state.others = [
+      other('o1'),
+      other('o2', { max_attendees: 10 }),
+      other('o3', { max_attendees: 2 }), // 4 registered of 2: full
+      other('o4', { registration_open_at: new Date(Date.now() + 48 * HOUR).toISOString() }), // not open yet
+    ];
+    state.counts = { o2: 1, o3: 2 };
+    const { card } = await renderPage();
+    expect(card.openEventsCount).toBe(2);
+  });
+
+  it('reads nothing and passes 0 when this event still has seats', async () => {
+    eventRow.max_attendees = 50;
+    state.others = [other('o1')];
+    const { card } = await renderPage();
+    expect(card.openEventsCount).toBe(0);
+  });
+});

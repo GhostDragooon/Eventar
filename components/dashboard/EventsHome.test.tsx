@@ -343,6 +343,38 @@ describe('EventsHome', () => {
       expect(screen.queryByText(/Moved to the Cancelled tab/)).toBeNull();
     });
 
+    // UX-R1 (Ivan picked 1b, 2026-11-22): a read-only role keeps the ticks and Export CSV, but the write
+    // buttons are disabled and a line says why, instead of opening a dialog that can only refuse.
+    it('read-only role: bulk Delete and Cancel are disabled with the reason; Export CSV stays live', () => {
+      renderManage([event({ id: 'a1', title: 'Mine' })], { canCreate: false });
+      fireEvent.click(screen.getByLabelText('Select Mine'));
+      const why = screen.getByText('Your role can’t delete or cancel events. Ask an organiser admin.');
+      for (const name of ['Delete', 'Cancel']) {
+        const b = screen.getByRole('button', { name });
+        expect(b).toBeDisabled();
+        expect(b).toHaveAttribute('aria-describedby', why.id);
+      }
+      expect(screen.getByRole('button', { name: 'Export CSV' })).toBeEnabled();
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+
+    it('read-only role in Deleted: Restore is disabled with the reason', () => {
+      renderManage([event({ id: 'd1', title: 'Gone', deleted: true })], { canCreate: false, initialTab: 'deleted' });
+      fireEvent.click(screen.getByLabelText('Select Gone'));
+      // The row's own Restore is a separate control; the bar's is the one that names the reason.
+      const bar = screen.getAllByRole('button', { name: 'Restore' }).filter((b) => b.getAttribute('aria-describedby') === 'bulk-why');
+      expect(bar).toHaveLength(1);
+      expect(bar[0]).toBeDisabled();
+      expect(screen.getByText('Your role can’t restore events. Ask an organiser admin.')).toBeInTheDocument();
+    });
+
+    it('a role that can write sees no reason line and live buttons', () => {
+      renderManage([event({ id: 'a1', title: 'Mine' })]);
+      fireEvent.click(screen.getByLabelText('Select Mine'));
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled();
+      expect(screen.queryByText(/Your role can’t/)).toBeNull();
+    });
+
     it('labels Edit as View on an event this account may not change', () => {
       renderManage([event({ id: 'a1', title: 'Mine' }), event({ id: 'b1', title: 'Colleague talk', writable: false })]);
       expect(screen.getAllByRole('link', { name: 'Edit' })).toHaveLength(1);
@@ -574,16 +606,6 @@ describe('EventsHome', () => {
     it('a member still gets the New event link', () => {
       renderManage([event({ id: 'e-1' })]);
       expect(screen.getByRole('link', { name: /new event/i })).toHaveAttribute('href', '/events/new');
-    });
-
-    it('Delete is refused with the role reason, not the ownership sentence', () => {
-      renderManage([event({ id: 'a1', title: 'Alpha', writable: false })], { canCreate: false });
-      fireEvent.click(screen.getByLabelText('Select Alpha'));
-      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
-      const dialog = screen.getByRole('dialog');
-      expect(dialog).toHaveTextContent('Your role can’t delete events. Ask an organiser admin.');
-      expect(dialog).not.toHaveTextContent('Only the organiser who created this event');
-      expect(within(dialog).getByRole('button', { name: 'Delete 1 event' })).toBeDisabled();
     });
   });
 });

@@ -1,5 +1,5 @@
 import { supabaseServer } from '@/lib/supabase/server';
-import { supabaseAdmin } from '@/lib/supabase/admin';
+import { fullEventIds } from '@/lib/events/fullEventIds';
 import { SiteShell } from '@/components/shell/SiteShell';
 import { AccountShell } from '@/components/shell/AccountShell';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
@@ -58,21 +58,8 @@ export default async function PublicEventsPage() {
     .limit(100);
   if (eventsErr) throw eventsErr;
 
-  // A full event must not read "Registering" here while its own page says "At capacity". Anon cannot read
-  // `registrations` (PII), so the count comes via service-role, only for events that have a cap (an integer, not sensitive).
-  // ponytail: one head-count per capped event (at most 100, in parallel); move to one RPC if the list grows past that.
-  const capped = (events ?? []).filter((e) => e.max_attendees != null);
-  const fullIds = new Set(
-    (
-      await Promise.all(
-        capped.map(async (e) => {
-          const { count, error } = await supabaseAdmin().from('registrations').select('id', { count: 'exact', head: true }).eq('event_id', e.id);
-          if (error) throw error;
-          return [e.id, (count ?? 0) >= (e.max_attendees as number)] as const;
-        }),
-      )
-    ).filter(([, isFull]) => isFull).map(([id]) => id),
-  );
+  // A full event must not read "Registering" here while its own page says "At capacity".
+  const fullIds = await fullEventIds(events ?? []);
 
   type PartnerEntry = { name?: string } | string;
   const names = (v: unknown): string[] =>
