@@ -105,18 +105,20 @@ export default async function PublicEventPage({
   // `registrations` (PII — full visibility is organizer/manager only), so the
   // count must come via service-role. The count is non-sensitive (just an
   // integer), so surfacing it on the public page is safe.
-  const { count: registrationCount } = await supabaseAdmin()
+  const { count: registrationCount, error: registrationCountErr } = await supabaseAdmin()
     .from('registrations')
     .select('id', { count: 'exact', head: true })
     .eq('event_id', id);
+  // Thrown, not swallowed (rule 12): a failed count read as 0 would show a full event as open.
+  if (registrationCountErr) throw registrationCountErr;
 
   // A full event hands the visitor a next step: how many OTHER events they can register for right now. Only read when
-  // this one is full. Same rule as the public list: published, not deleted, registering, and not itself full.
+  // this one is full AND still registering (RegisterCard shows the lifecycle notice first otherwise). Same rule as the public list: published, not deleted, registering, and not itself full.
   // eslint-disable-next-line react-hooks/purity
   const nowMs = Date.now();
   const thisIsFull = event.max_attendees != null && (registrationCount ?? 0) >= event.max_attendees;
   let openEventsCount = 0;
-  if (thisIsFull) {
+  if (thisIsFull && lifecycle === 'registering') {
     const { data: others, error: othersErr } = await supabase
       .from('events')
       .select('id, status, start_time, end_time, max_attendees, registration_close_at, registration_open_at, deleted_at')
@@ -124,6 +126,8 @@ export default async function PublicEventPage({
       .is('deleted_at', null)
       .neq('id', id)
       .gte('end_time', new Date(nowMs).toISOString())
+      .order('start_time', { ascending: true })
+      .order('id', { ascending: true })
       .limit(100);
     if (othersErr) throw othersErr;
     const registering = (others ?? []).filter((o) => computeLifecycle(o as EventLifecycleRow, nowMs) === 'registering');

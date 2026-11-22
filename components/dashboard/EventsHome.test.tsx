@@ -348,7 +348,7 @@ describe('EventsHome', () => {
     it('read-only role: bulk Delete and Cancel are disabled with the reason; Export CSV stays live', () => {
       renderManage([event({ id: 'a1', title: 'Mine' })], { canCreate: false });
       fireEvent.click(screen.getByLabelText('Select Mine'));
-      const why = screen.getByText('Your role can’t delete or cancel events. Ask an organiser admin.');
+      const why = screen.getByText('Your role can’t delete or cancel events. Ask an organiser admin or member.');
       for (const name of ['Delete', 'Cancel']) {
         const b = screen.getByRole('button', { name });
         expect(b).toBeDisabled();
@@ -358,14 +358,25 @@ describe('EventsHome', () => {
       expect(screen.queryByRole('dialog')).toBeNull();
     });
 
-    it('read-only role in Deleted: Restore is disabled with the reason', () => {
+    it('read-only role in Deleted: every Restore (row and bar) is disabled, and the reason shows before anything is ticked', () => {
       renderManage([event({ id: 'd1', title: 'Gone', deleted: true })], { canCreate: false, initialTab: 'deleted' });
+      const why = screen.getByText('Your role can’t restore events. Ask an organiser admin or member.');
+      const rowRestore = screen.getAllByRole('button', { name: 'Restore' });
+      expect(rowRestore).toHaveLength(1);
+      expect(rowRestore[0]).toBeDisabled();
+      expect(rowRestore[0]).toHaveAttribute('aria-describedby', why.id);
       fireEvent.click(screen.getByLabelText('Select Gone'));
-      // The row's own Restore is a separate control; the bar's is the one that names the reason.
-      const bar = screen.getAllByRole('button', { name: 'Restore' }).filter((b) => b.getAttribute('aria-describedby') === 'bulk-why');
-      expect(bar).toHaveLength(1);
-      expect(bar[0]).toBeDisabled();
-      expect(screen.getByText('Your role can’t restore events. Ask an organiser admin.')).toBeInTheDocument();
+      const all = screen.getAllByRole('button', { name: 'Restore' });
+      expect(all).toHaveLength(2);
+      for (const b of all) expect(b).toBeDisabled();
+      expect(screen.getAllByText(/Your role can’t restore events/)).toHaveLength(1);
+      expect(restoreMock).not.toHaveBeenCalled();
+    });
+
+    it('a role that can write keeps a live row Restore in Deleted', () => {
+      renderManage([event({ id: 'd1', title: 'Gone', deleted: true })], { initialTab: 'deleted' });
+      expect(screen.getByRole('button', { name: 'Restore' })).toBeEnabled();
+      expect(screen.queryByText(/Your role can’t/)).toBeNull();
     });
 
     it('a role that can write sees no reason line and live buttons', () => {

@@ -73,7 +73,7 @@ export type EventsHomeProps = {
   nowMs: number;
   /** The tab a link asked for (?tab=). Read once on load; clicking a tab then keeps the address in step. */
   initialTab?: TabKey;
-  /** False for the read-only roles (body_admin, auditor): New event is shown disabled with the reason, and bulk refusals name the role. */
+  /** False for the read-only roles (body_admin, auditor): New event and the bulk write buttons are shown disabled with the reason. */
   canCreate?: boolean;
 };
 
@@ -87,7 +87,8 @@ export function EventsHome({ events, nowMs, initialTab = 'active', canCreate = t
   const [chosenTab, setChosenTab] = useState<TabKey>(initialTab);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   // UX-R1 (Ivan 1b, 2026-11-22): a read-only role keeps the tick boxes and Export CSV, but the write buttons are
-  // disabled with the reason. The refusal dialog stays as the second net.
+  // disabled with the reason. The server (canChangeEventStatus, dashboard/actions.ts) is the second net.
+  // ponytail: canCreateEvents and canChangeEventStatus name the same roles today; pass a separate prop if they diverge.
   const readOnly = !canCreate;
   const [pending, startTransition] = useTransition();
   const { toast } = useToast();
@@ -409,12 +410,19 @@ export function EventsHome({ events, nowMs, initialTab = 'active', canCreate = t
             )}
             <Button type="button" variant="ghost" onClick={() => setSelected(new Set())} disabled={busy} className={cn(btn, 'text-on-surface-variant hover:text-on-surface')}>Clear</Button>
           </div>
-          {readOnly && (
+          {readOnly && !inBin && (
             <p id="bulk-why" className="m-0 basis-full font-body-md text-body-md text-on-surface-variant">
-              Your role can’t {inBin ? 'restore' : 'delete or cancel'} events. Ask an organiser admin.
+              Your role can’t delete or cancel events. Ask an organiser admin or member.
             </p>
           )}
         </div>
+      )}
+
+      {readOnly && inBin && (
+        // The row Restore buttons are on screen before anything is ticked, so the reason sits above the list, not in the bar.
+        <p id="bulk-why" className="mb-md font-body-md text-body-md text-on-surface-variant">
+          Your role can’t restore events. Ask an organiser admin or member.
+        </p>
       )}
 
       {visible.length === 0 ? (
@@ -441,7 +449,7 @@ export function EventsHome({ events, nowMs, initialTab = 'active', canCreate = t
       ) : (
         <ul className="flex flex-col gap-sm">
           {visible.map((e) => (
-            <EventRow key={e.id} e={e} nowMs={nowMs} selected={picked.has(e.id)} onToggle={() => toggle(e.id)} inBin={inBin} onRestore={() => execute('restore', [e.id])} pending={busy} />
+            <EventRow key={e.id} e={e} nowMs={nowMs} selected={picked.has(e.id)} onToggle={() => toggle(e.id)} inBin={inBin} onRestore={() => execute('restore', [e.id])} pending={busy} readOnly={readOnly} />
           ))}
         </ul>
       )}
@@ -490,8 +498,8 @@ export function EventsHome({ events, nowMs, initialTab = 'active', canCreate = t
 // CX-04R pick 1f: the tick box sits outside the card, in a gutter as tall as the card, so it shares a centreline with the
 // date block. Inside the card the status pill and title are one 44 px line; the details and the buttons start at the pill's
 // left edge. Motion 2a: nothing animates here.
-function EventRow({ e, nowMs, selected, onToggle, onRestore, inBin, pending }: {
-  e: ProgrammeEvent; nowMs: number; selected: boolean; onToggle: () => void; onRestore: () => void; inBin: boolean; pending: boolean;
+function EventRow({ e, nowMs, selected, onToggle, onRestore, inBin, pending, readOnly }: {
+  e: ProgrammeEvent; nowMs: number; selected: boolean; onToggle: () => void; onRestore: () => void; inBin: boolean; pending: boolean; readOnly: boolean;
 }) {
   const day = Number(e.dayKey.slice(8));
   // dateLabel is "Mon 2 Nov" (en-GB, in the event's own timezone); dayKey is the same day as YYYY-MM-DD.
@@ -538,7 +546,7 @@ function EventRow({ e, nowMs, selected, onToggle, onRestore, inBin, pending }: {
           </div>
           <div className={cn('mt-xs grid gap-sm', e.lifecycle === 'drafted' || e.lifecycle === 'cancelled' ? 'grid-cols-2' : 'grid-cols-3')}>
             {inBin ? (
-              <Button type="button" variant="outline" onClick={onRestore} disabled={pending} className={cn(link, 'col-span-3')}>
+              <Button type="button" variant="outline" onClick={onRestore} disabled={pending || readOnly} aria-describedby={readOnly ? 'bulk-why' : undefined} className={cn(link, 'col-span-3')}>
                 <span className="material-symbols-outlined text-[calc(1rem*var(--text-scale))]" aria-hidden>restore_from_trash</span>Restore
               </Button>
             ) : (

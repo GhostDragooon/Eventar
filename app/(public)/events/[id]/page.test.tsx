@@ -14,6 +14,9 @@ const { state } = vi.hoisted(() => ({
     // UX-R5: the other published events the page may count, and per-event registration counts (default 4).
     others: [] as Record<string, unknown>[],
     counts: {} as Record<string, number>,
+    // Arguments of the other-events query, and whether it ran / should fail.
+    othersCalls: [] as string[],
+    othersError: null as Error | null,
   },
 }));
 
@@ -33,7 +36,7 @@ const eventRow = {
   description: null,
   status: 'published',
   max_attendees: null as number | null,
-  registration_close_at: null,
+  registration_close_at: null as string | null,
   registration_open_at: null,
   hosted_by: null,
   organized_by: null,
@@ -69,7 +72,19 @@ vi.mock('@/lib/supabase/server', () => ({
           }
           return {
             maybeSingle: async () => ({ data: eventRow, error: null }),
-            is: () => ({ neq: () => ({ gte: () => ({ limit: async () => ({ data: state.others, error: null }) }) }) }),
+            is: (col: string, v: unknown) => {
+              state.othersCalls.push(`is:${col}:${v}`);
+              return {
+                neq: (c: string, v2: unknown) => {
+                  state.othersCalls.push(`neq:${c}:${v2}`);
+                  return {
+                    gte: () => ({
+                      order: () => ({ order: () => ({ limit: async () => (state.othersError ? { data: null, error: state.othersError } : { data: state.others, error: null }) }) }),
+                    }),
+                  };
+                },
+              };
+            },
           };
         },
       }),
@@ -141,6 +156,8 @@ describe('/events/[id] page — what the register card is told about the session
     getUnlinkedRegistrationCount.mockClear();
     state.others = [];
     state.counts = {};
+    state.othersCalls = [];
+    state.othersError = null;
     eventRow.max_attendees = null;
   });
 
@@ -224,6 +241,8 @@ describe('/events/[id] page — open events offered when this one is full', () =
     state.isStaff = false;
     state.others = [];
     state.counts = {};
+    state.othersCalls = [];
+    state.othersError = null;
     eventRow.max_attendees = null;
   });
 
@@ -238,6 +257,9 @@ describe('/events/[id] page — open events offered when this one is full', () =
     state.counts = { o2: 1, o3: 2 };
     const { card } = await renderPage();
     expect(card.openEventsCount).toBe(2);
+    // Excludes this event and deleted rows.
+    expect(state.othersCalls).toContain(`neq:id:${eventRow.id}`);
+    expect(state.othersCalls).toContain('is:deleted_at:null');
   });
 
   it('reads nothing and passes 0 when this event still has seats', async () => {
@@ -245,5 +267,25 @@ describe('/events/[id] page — open events offered when this one is full', () =
     state.others = [other('o1')];
     const { card } = await renderPage();
     expect(card.openEventsCount).toBe(0);
+    expect(state.othersCalls).toEqual([]); // the other-events query never ran
+  });
+
+  it('reads nothing when it is full but no longer registering (the card shows the lifecycle notice)', async () => {
+    eventRow.max_attendees = 4;
+    const closed = eventRow.registration_close_at;
+    eventRow.registration_close_at = new Date(Date.now() - HOUR).toISOString();
+    try {
+      const { card } = await renderPage();
+      expect(card.openEventsCount).toBe(0);
+      expect(state.othersCalls).toEqual([]);
+    } finally {
+      eventRow.registration_close_at = closed;
+    }
+  });
+
+  it('throws when the other-events read fails, rather than hiding the count', async () => {
+    eventRow.max_attendees = 4;
+    state.othersError = new Error('boom');
+    await expect(renderPage()).rejects.toThrow('boom');
   });
 });
