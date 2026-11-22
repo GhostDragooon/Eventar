@@ -5,6 +5,8 @@ import { vi } from 'vitest';
 
 const h = vi.hoisted(() => ({
   role: 'organiser_member' as string,
+  rpcError: null as { code: string } | null,
+  rosterProps: null as null | { eligibilityUnavailable: boolean },
   event: { id: 'e1', title: 'Cardio Update 2026', start_time: '2026-11-10T01:00:00Z', end_time: '2026-11-10T03:00:00Z', timezone: 'Asia/Hong_Kong', venue_name: 'HKCC', status: 'published', max_attendees: null, registration_close_at: null, registration_open_at: null, organisation_id: 'org1', created_by: 'u1' },
 }));
 
@@ -26,10 +28,10 @@ vi.mock('@/lib/supabase/server', () => {
       return () => chain;
     },
   });
-  return { supabaseServer: async () => ({ from: () => chain, rpc: async () => result }) };
+  return { supabaseServer: async () => ({ from: () => chain, rpc: async () => (h.rpcError ? { data: null, error: h.rpcError } : result) }) };
 });
 vi.mock('@/components/shell/StaffShell', () => ({ StaffShell: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
-vi.mock('./RosterClient', () => ({ default: () => null }));
+vi.mock('./RosterClient', () => ({ default: (props: { eligibilityUnavailable: boolean }) => { h.rosterProps = props; return null; } }));
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
@@ -42,7 +44,7 @@ describe('Check-in page header', () => {
   const EDIT_ALL = "Live capture only: scan, enter a code or add a walk-in. To edit a person’s details or roles, open Registrations.";
   const EDIT_DETAILS = "Live capture only: scan, enter a code or add a walk-in. To edit a person’s details, open Registrations.";
 
-  beforeEach(() => { h.event.created_by = 'u1'; });
+  beforeEach(() => { h.event.created_by = 'u1'; h.rpcError = null; h.rosterProps = null; });
 
   it.each(['organiser_admin', 'organiser_member', 'eventar_staff'])('%s (the event creator): says live capture only and where to edit details and roles', async (role) => {
     h.role = role;
@@ -82,5 +84,25 @@ describe('Check-in page header', () => {
     expect(screen.getByText('Live capture only. To see everyone registered, open Registrations.')).toBeTruthy();
     expect(screen.queryByText(/read-only for your role/)).toBeNull();
     expect(screen.queryByText(/add a walk-in/)).toBeNull();
+  });
+});
+
+// UX-R8 (Ivan 1c, 2026-11-22): event_registration_eligibility refuses body_admin and auditor by design (42501). That is
+// not an outage, so the desk must not show the "couldn't be checked just now" banner for them; a real failure still does.
+describe('Check-in page eligibility notice', () => {
+  beforeEach(() => { h.rpcError = null; h.rosterProps = null; });
+
+  it('42501 (a role the RPC refuses): no outage banner', async () => {
+    h.role = 'body_admin';
+    h.rpcError = { code: '42501' };
+    await open();
+    expect(h.rosterProps?.eligibilityUnavailable).toBe(false);
+  });
+
+  it('any other failure still shows the banner', async () => {
+    h.role = 'organiser_member';
+    h.rpcError = { code: 'XX000' };
+    await open();
+    expect(h.rosterProps?.eligibilityUnavailable).toBe(true);
   });
 });

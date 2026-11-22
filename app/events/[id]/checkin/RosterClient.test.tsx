@@ -185,7 +185,7 @@ describe('RosterClient: a role that cannot check people in', () => {
     expect(screen.getByRole('button', { name: /enter code/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /check in/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /walk-in/i })).toBeDisabled();
-    expect(screen.getByRole('status')).toHaveTextContent('Your role cannot check people in. Ask an organiser admin or member.');
+    expect(screen.getByRole('status')).toHaveTextContent('Your role cannot check people in. Ask an organiser admin, organiser member or body admin.');
   });
 
   // Backtest M1: the Speakers card was the one control on the desk still live for these roles.

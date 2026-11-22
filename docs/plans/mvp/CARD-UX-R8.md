@@ -1,6 +1,6 @@
 # CARD UX-R8 — day-of check-in and walk-ins open to every org writer (reverses part of Q51)
 
-Card type: role-model change (kernel K1). Raised 2026-11-22 by Ivan. Status: PARTIAL (code, gates, live backtest and both review lenses done; four copy/role calls wait on Ivan, see Open decisions). LOCK-UX-R8 stays until he answers. Supersedes the open copy calls in `CARD-UX-R7.md` that concern an organiser member on a colleague's event.
+Card type: role-model change (kernel K1). Raised 2026-11-22 by Ivan. Status: DONE 2026-11-22 (Ivan answered the open decisions; see Decisions applied). Supersedes the open copy calls in `CARD-UX-R7.md` that concern an organiser member on a colleague's event.
 
 ## Ivan's ruling (2026-11-22)
 
@@ -46,7 +46,7 @@ Dev lens, separate user lens, backtest, per `eventar-mvp-card-handback`.
 
 ## Outcome (2026-11-22)
 
-STATUS: PARTIAL, as above. Commits: `e45e45f` (door rights), review follow-up commit named in Committed.
+STATUS: DONE. Commits: `e45e45f` (door rights), review follow-up commit named in Committed.
 
 ### Changed
 - Migration `20261122100000_door_rights_ux_r8.sql`: `app_private.can_run_door`; `mark_attended` accepts body_admin and uses it; `enforce_event_writer` door exemption (speaker ticks, and the two registration writes only while `mark_attended` names that registration in `app.door_registration`). [X] applied locally.
@@ -75,12 +75,17 @@ Fixed, mechanical (before -> after):
 - `SpeakersCard` dead `closedMessage !== NOT_EVENT_WRITER` -> removed with its test.
 Not applied (known ceiling): `app.door_registration` stays set to the end of the transaction. Nothing runs after `mark_attended` in the same call today; noted in the hardening migration header.
 
-### Open decisions (Ivan)
-1. body_admin desk shows a false "CPD eligibility couldn't be checked just now" banner, because `event_registration_eligibility` refuses body_admin. Options: let body_admin read eligibility (migration), hide the banner for body_admin, or say plainly that eligibility warnings are not shown to this role. Both lenses found it.
-2. Auditor status line says "Ask an organiser admin or member" although body_admin can now check in too.
-3. Dashboard hero banner tells an auditor "open check-in" while the row button says "View desk".
-4. Registrations page, body_admin: "an organiser admin or member can edit them" is wrong for a member on a colleague's event.
-5. Original open questions still stand: body_admin writes attendance (feeds credit); should a walk-in record who added it (default: audit event only).
+### Decisions applied (Ivan, 2026-11-22: "1c, 2c, 3b, 4b. 5 anyone can help with checkin and walkin. 6 open a card")
+1. 1c: body_admin desk shows no eligibility banner when the RPC refuses the role (42501); other failures still show it. `checkin/page.tsx`. Test: `page.test.tsx` "Check-in page eligibility notice".
+2. 2c: `CHECKIN_ROLE_MESSAGE` names all three roles. `lib/lifecycle/eventLifecycle.ts`; five test files follow the string.
+3. 3b: dashboard "live now" banner says "view desk" for a role that cannot check in. `app/dashboard/page.tsx` (no page test exists; checked live, frame sent).
+4. 4b: Registrations subtitle for every read-only role reuses `NOT_EVENT_WRITER`. `registrations/page.tsx`; `page.test.tsx` updated.
+5. Body admin writes attendance: kept as built. Walk-in actor: not answered, default kept (audit event only).
+6. Roster stays stale after check-in: card `CARD-UX-R9.md` opened.
+
+### Auditor audit (Ivan: "auditor is view only at all times. no editing of any kind.")
+Agent audit, 27 tool calls, DB probe in a rolled-back transaction. [X] No database write open to an auditor (events, registrations, check-ins, speakers, agenda, storage, ledger, audit, accreditation, staff, organisations, all definer RPCs). One UI gap, fixed: details page showed "Send reminders now" / "Send survey invites" to a role whose action is refused. Now gated on `writable` in `details/page.tsx` (3 slots); test `details/page.test.ts` fails on the old code for auditor and body_admin. Hardening idea, not applied: `updateRegistrationContact`, `set/removeRegistrationRole` have no app-side role check (DB refuses; UI hides the controls).
+For Ivan: the auditor's OWN account actions (profile, avatar, licence, email change, consent, self check-in as an attendee) are untouched. Say if "no editing of any kind" includes them. `changeEmail` on a staff account touches staff identity (staff rows match by email).
 
 ### Found outside the card, not fixed
 - Roster counter and rows do not update after a successful check-in or walk-in until reload; the desk relies on realtime only and local-stack realtime logs `subscription_errors`. Seen for every role, so not caused by R8. Hosted behaviour untested. Needs its own card (update local state after success, then investigate realtime).

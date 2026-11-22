@@ -55,9 +55,9 @@ describe('SpeakersCard closed caption', () => {
   });
 
   it('for a read-only role: repeats the role sentence without the window line', () => {
-    render(<SpeakersCard {...props} canCheckIn={false} closedMessage="Your role cannot check people in. Ask an organiser admin or member." />);
+    render(<SpeakersCard {...props} canCheckIn={false} closedMessage="Your role cannot check people in. Ask an organiser admin, organiser member or body admin." />);
     const card = screen.getByRole('region', { name: 'Speakers' });
-    expect(card).toHaveTextContent('Your role cannot check people in. Ask an organiser admin or member.');
+    expect(card).toHaveTextContent('Your role cannot check people in. Ask an organiser admin, organiser member or body admin.');
     expect(card).not.toHaveTextContent('locked outside');
   });
 

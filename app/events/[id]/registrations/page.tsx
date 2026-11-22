@@ -109,9 +109,7 @@ export default async function RegistrationsPage({ params }: { params: Promise<{ 
     'Everyone registered for this event.',
     canEdit
       ? canEditRoles ? 'Edit contact details and roles here.' : 'Edit contact details here.'
-      : canEditRegistrations(staff.role)
-        ? `You can view contact details. ${NOT_EVENT_WRITER}`
-        : 'You can view contact details; an organiser admin or member can edit them.',
+      : `You can view contact details. ${NOT_EVENT_WRITER}`, // UX-R8 (Ivan, 2026-11-22): one sentence for every read-only role
     canRunDoor(staff, event) ? 'To check people in, open Check-in.' : null,
   ].filter(Boolean).join(' ');
 

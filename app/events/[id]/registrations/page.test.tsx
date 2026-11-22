@@ -93,13 +93,13 @@ describe('Registrations page header', () => {
   // UX-R8: body_admin works the gate on the day; the registration list stays view-only for it.
   it('tells a body_admin they can view the list and open Check-in', async () => {
     expect(await subtitle({ role: 'body_admin' })).toBe(
-      'Everyone registered for this event. You can view contact details; an organiser admin or member can edit them. To check people in, open Check-in.',
+      'Everyone registered for this event. You can view contact details. Only the organiser who created this event, or an organiser admin, can change it. To check people in, open Check-in.',
     );
   });
 
-  it('tells a read-only auditor what they can do, not what they cannot', async () => {
+  it('auditor (view only, UX-R8 4b): same one sentence as every read-only role', async () => {
     expect(await subtitle({ role: 'auditor' })).toBe(
-      'Everyone registered for this event. You can view contact details; an organiser admin or member can edit them.',
+      'Everyone registered for this event. You can view contact details. Only the organiser who created this event, or an organiser admin, can change it.',
     );
   });
 });

@@ -67,7 +67,7 @@ export function checkInClosedMessage(reason: 'not_open_yet' | 'closed'): string 
 }
 
 /** Shown instead of the clock reason when the signed-in role cannot check people in (mark_attended refuses it with 42501). */
-export const CHECKIN_ROLE_MESSAGE = 'Your role cannot check people in. Ask an organiser admin or member.';
+export const CHECKIN_ROLE_MESSAGE = 'Your role cannot check people in. Ask an organiser admin, organiser member or body admin.';
 
 /** Q51: the one sentence shown wherever a control or a write is refused because the event belongs to someone else. */
 export const NOT_EVENT_WRITER = 'Only the organiser who created this event, or an organiser admin, can change it.';

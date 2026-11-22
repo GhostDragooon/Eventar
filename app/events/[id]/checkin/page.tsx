@@ -83,7 +83,9 @@ export default async function StaffCheckinPage({
     p_event_id: id,
     p_actor_override: staff.id,
   });
-  if (eligRes.error) {
+  // 42501 = the RPC refuses this role by design (body_admin, auditor): not an outage, so no banner and no log (UX-R8, Ivan 2026-11-22).
+  const eligibilityOutage = Boolean(eligRes.error) && eligRes.error?.code !== '42501';
+  if (eligRes.error && eligibilityOutage) {
     console.error('[checkin] eligibility read failed', { code: eligRes.error.code });
   }
   const eligibility: Record<string, string> = Object.fromEntries(
@@ -188,7 +190,7 @@ export default async function StaffCheckinPage({
         canCheckIn={canRunDoor(staff, event)}
         initialRoster={rosterRes.data ?? []}
         eligibility={eligibility}
-        eligibilityUnavailable={Boolean(eligRes.error)}
+        eligibilityUnavailable={eligibilityOutage}
         maxAttendees={event.max_attendees}
         speakerNames={speakerNames}
         initialSpeakerCheckins={initialSpeakerCheckins}

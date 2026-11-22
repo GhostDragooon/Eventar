@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { requireStaff, NotAuthorizedError, canCreateEvents } from '@/lib/auth';
+import { requireStaff, NotAuthorizedError, canCreateEvents, canCheckIn } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { StaffShell } from '@/components/shell/StaffShell';
@@ -93,7 +93,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       title: `${ev.title} is live now`,
       detail: `${ev.attended} of ${ev.registered} checked in`,
       meta: 'live',
-      metaSub: 'open check-in',
+      // UX-R8 (Ivan, 2026-11-22): follows the row button, which says "View desk" for a role that cannot check in.
+      metaSub: canCheckIn(staff.role) ? 'open check-in' : 'view desk',
       href: `/events/${id}/checkin`,
     });
   }

@@ -193,7 +193,7 @@ describe('markAttended — role refused by the database', () => {
     vi.mocked(requireStaff).mockResolvedValueOnce({ id: 'staff-2', email: 'a@example.test', role: 'body_admin', full_name: 'Body Admin' } as never);
     rpcError = { code: '42501', message: 'require_active_staff: caller is not active staff in {organiser_admin,organiser_member,eventar_staff}' };
     await expect(markAttended('WK-ABC234', 'qr')).resolves.toEqual({
-      error: 'Your role cannot check people in. Ask an organiser admin or member.',
+      error: 'Your role cannot check people in. Ask an organiser admin, organiser member or body admin.',
     });
   });
 

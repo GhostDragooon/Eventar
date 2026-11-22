@@ -172,7 +172,7 @@ describe('walkInRegisterAndCheckIn', () => {
     mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, created_by: 'staff-1', deleted_at: null, ...LIVE_TIMES });
 
     await expect(walkInRegisterAndCheckIn(validInput)).resolves.toEqual({
-      error: 'Your role cannot check people in. Ask an organiser admin or member.',
+      error: 'Your role cannot check people in. Ask an organiser admin, organiser member or body admin.',
     });
     expect(mockFrom).toHaveBeenCalledTimes(1); // the event read only: no registrations insert, no email_log
   });

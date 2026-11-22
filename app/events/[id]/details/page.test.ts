@@ -29,6 +29,7 @@ import EventDetailsPage from './page';
 import { PublishedNextSteps } from '@/components/details/PublishedNextSteps';
 import { FeedbackSection } from '@/components/details/FeedbackSection';
 import { ReadinessStrip, type ReadinessCell } from '@/components/details/ReadinessStrip';
+import { EmailSendControls } from './EmailSendControls';
 
 const staff = (role: string, organisation_id: string) => ({
   id: 'staff-1', email: 'staff@example.test', role, full_name: null, organisation_id,
@@ -154,5 +155,31 @@ describe('/events/[id]/details: a draft', () => {
     const tree = await treeFor(eventRow({ id: 'ev-p', organisation_id: 'org-b', status: 'published', ...later }));
     expect(findAll(tree, FeedbackSection)).toHaveLength(1);
     expect(surveyCell(tree)).toMatchObject({ value: 'Armed' });
+  });
+});
+
+// UX-R8 (Ivan, 2026-11-22: "auditor is view only at all times"): the send-email controls are an action the server
+// refuses unless the role can write the event (emailActions.ts canWriteEvent), so a read-only role must not be shown them.
+function hasEmailControls(node: unknown): boolean {
+  if (Array.isArray(node)) return node.some(hasEmailControls);
+  if (!node || typeof node !== 'object') return false;
+  const el = node as { type?: unknown; props?: Record<string, unknown> };
+  if (el.type === EmailSendControls) return true;
+  return Object.values(el.props ?? {}).some(hasEmailControls);
+}
+
+describe('/events/[id]/details: send-email controls on a live event', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(NOW);
+    h.tables = { events: [eventRow({ id: 'ev-live', organisation_id: 'org-b', created_by: 'staff-1', start_time: new Date(+NOW - 600_000).toISOString(), end_time: new Date(+NOW + 7_200_000).toISOString() })] };
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it.each([['organiser_admin', true], ['auditor', false], ['body_admin', false]])('%s: controls shown = %s', async (role, shown) => {
+    h.staff = staff(role as string, 'org-b');
+    const out = await open('ev-live');
+    expect(out.kind).toBe('render');
+    expect(out.kind === 'render' && hasEmailControls(out.tree)).toBe(shown);
   });
 });

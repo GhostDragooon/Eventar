@@ -491,7 +491,7 @@ export default async function EventDetailsPage({
         // Door prep: sending the reminder/pass belongs to the registration
         // wind-down (upcoming), categorized inside the section (not floating).
         actionSlot={
-          canSeeConfirmationsSent && lifecycle === 'upcoming' ? (
+          canSeeConfirmationsSent && writable && lifecycle === 'upcoming' ? (
             <EmailSendControls
               eventId={event.id}
               showReminder
@@ -540,7 +540,7 @@ export default async function EventDetailsPage({
         nowMs={nowMs}
         // Live door ops: late-arrival reminders live with attendance.
         actionSlot={
-          canSeeConfirmationsSent && lifecycle === 'live' ? (
+          canSeeConfirmationsSent && writable && lifecycle === 'live' ? (
             <EmailSendControls
               eventId={event.id}
               showReminder
@@ -590,7 +590,7 @@ export default async function EventDetailsPage({
         timezone={event.timezone}
         // Post-event: survey invites live with feedback.
         actionSlot={
-          canSeeConfirmationsSent && lifecycle === 'completed' ? (
+          canSeeConfirmationsSent && writable && lifecycle === 'completed' ? (
             <EmailSendControls
               eventId={event.id}
               showReminder={false}
