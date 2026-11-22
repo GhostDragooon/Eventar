@@ -59,12 +59,13 @@ describe('Check-in page header', () => {
     expect(screen.getByText(EDIT_ALL)).toBeTruthy();
   });
 
-  it('organiser_member who did not create the event: a read-only desk, sent to Registrations only to look', async () => {
-    h.role = 'organiser_member';
+  // UX-R8 (Ivan, 2026-11-22): the gate on the day is open to every door role of the organisation. Only the
+  // registration list keeps the creator-or-admin rule, so the pointer says "see", not "edit".
+  it.each(['organiser_member', 'body_admin'])('%s on a colleague\'s event: the full desk, sent to Registrations only to look', async (role) => {
+    h.role = role;
     h.event.created_by = 'someone-else';
     await open();
-    expect(screen.getByText('You can view this desk but not check people in. To see everyone registered, open Registrations.')).toBeTruthy();
-    expect(screen.queryByText(/add a walk-in/)).toBeNull();
+    expect(screen.getByText('Live capture only: scan, enter a code or add a walk-in. To see everyone registered, open Registrations.')).toBeTruthy();
   });
 
   it('eventar_staff who did not create the event can still edit roles', async () => {
@@ -74,8 +75,8 @@ describe('Check-in page header', () => {
     expect(screen.getByText(EDIT_ALL)).toBeTruthy();
   });
 
-  it.each(['body_admin', 'auditor'])('%s: cannot check in, so the line does not offer scan, code or walk-in', async (role) => {
-    h.role = role;
+  it('auditor: cannot check in, so the line does not offer scan, code or walk-in', async () => {
+    h.role = 'auditor';
     await open();
     // UX-R7: the role limit is said once, by the status line above the buttons (RosterClient), not again under the title.
     expect(screen.getByText('Live capture only. To see everyone registered, open Registrations.')).toBeTruthy();

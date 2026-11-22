@@ -313,12 +313,13 @@ describe('canCreateEvents', () => {
 });
 
 // mark_attended() names the same three roles; walk-in registers a person only for a role that can then check them in.
+// UX-R8 (Ivan, 2026-11-22): the gate on the day is open to every door role; auditor is the only read-only one.
 describe('canCheckIn', () => {
   it.each([
     ['organiser_admin', true],
     ['organiser_member', true],
     ['eventar_staff', true],
-    ['body_admin', false],
+    ['body_admin', true],
     ['auditor', false],
   ] as const)('%s -> %s', (role, expected) => {
     expect(canCheckIn(role)).toBe(expected);

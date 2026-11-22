@@ -80,7 +80,7 @@ describe('Registrations page header', () => {
   // Q51 (Ivan, 2026-11-07): a member acts only on events it created; an admin on every event in its organisation.
   it('a member who did not create the event can only look, and is told why', async () => {
     expect(await subtitle({ id: 'u2', role: 'organiser_member' })).toBe(
-      'Everyone registered for this event. You can view contact details. Only the organiser who created this event, or an organiser admin, can change it.',
+      'Everyone registered for this event. You can view contact details. Only the organiser who created this event, or an organiser admin, can change it. To check people in, open Check-in.',
     );
   });
 
@@ -90,8 +90,15 @@ describe('Registrations page header', () => {
     );
   });
 
-  it.each(['body_admin', 'auditor'])('tells a read-only %s what they can do, not what they cannot', async (role) => {
-    expect(await subtitle({ role })).toBe(
+  // UX-R8: body_admin works the gate on the day; the registration list stays view-only for it.
+  it('tells a body_admin they can view the list and open Check-in', async () => {
+    expect(await subtitle({ role: 'body_admin' })).toBe(
+      'Everyone registered for this event. You can view contact details; an organiser admin or member can edit them. To check people in, open Check-in.',
+    );
+  });
+
+  it('tells a read-only auditor what they can do, not what they cannot', async () => {
+    expect(await subtitle({ role: 'auditor' })).toBe(
       'Everyone registered for this event. You can view contact details; an organiser admin or member can edit them.',
     );
   });

@@ -386,14 +386,21 @@ describe('EventsHome', () => {
       expect(screen.queryByText(/Your role can’t/)).toBeNull();
     });
 
-    // UX-R7 (Ivan picked B, 2026-11-22): the desk of an event this account may not change is read-only, so the link says
-    // "View desk" and is never the blue call to action. The same writable flag drives Edit -> View beside it.
-    it('says "View desk", not a blue Check-in, for an event this account may not change', () => {
-      renderManage([event({ id: 'b1', title: 'Colleague talk', lifecycle: 'registering', writable: false })]);
+    // UX-R7 (Ivan picked B, 2026-11-22), narrowed by UX-R8: only a role that cannot use the desk (auditor) gets "View
+    // desk", never the blue call to action. A member on a colleague's event can work the gate, so it stays Check-in.
+    it('says "View desk", not a blue Check-in, for an account that cannot check people in', () => {
+      renderManage([event({ id: 'b1', title: 'Auditor talk', lifecycle: 'registering', checkInAllowed: false })]);
       const link = screen.getByRole('link', { name: 'View desk' });
       expect(link).toHaveAttribute('href', '/events/b1/checkin');
       expect(link.className).not.toContain('bg-primary');
       expect(screen.queryByRole('link', { name: 'Check-in' })).toBeNull();
+    });
+
+    it('keeps a blue Check-in on a colleague\'s event: the gate on the day is open to the whole organisation', () => {
+      renderManage([event({ id: 'b1', title: 'Colleague talk', lifecycle: 'registering', writable: false, checkInAllowed: true })]);
+      const link = screen.getByRole('link', { name: 'Check-in' });
+      expect(link.className).toContain('bg-primary');
+      expect(screen.queryByRole('link', { name: 'View desk' })).toBeNull();
     });
 
     it('keeps Check-in, blue while the door is open, on an event this account can change', () => {

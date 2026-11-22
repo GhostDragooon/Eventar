@@ -69,7 +69,6 @@ export default function RosterClient({
   lifecycleRow,
   serverNowMs,
   canCheckIn,
-  refusalMessage = CHECKIN_ROLE_MESSAGE,
   initialRoster,
   eligibility,
   eligibilityUnavailable,
@@ -88,10 +87,8 @@ export default function RosterClient({
    * time, so a tablet whose clock is minutes off never disables controls the server would accept (DB-02 review F2).
    */
   serverNowMs: number;
-  /** False for a role mark_attended refuses (body_admin, auditor): the desk says so instead of offering controls that fail. */
+  /** False for a role mark_attended refuses (auditor), or staff of another organisation: the desk says so instead of offering controls that fail. */
   canCheckIn: boolean;
-  /** Why the desk is read-only when canCheckIn is false: the role (default) or, Q51, someone else's event. */
-  refusalMessage?: string;
   initialRoster: RosterRow[];
   /** registration_id \u2192 eligibility enum from event_registration_eligibility. */
   eligibility: Record<string, string>;
@@ -137,7 +134,7 @@ export default function RosterClient({
   // [start - 60 min, end] (DB-02); computeLifecycle's 'live' is the same window, so the controls here are
   // disabled with the reason exactly when the server would refuse, and enable when the window opens.
   const lifecycle = computeLifecycle(lifecycleRow, nowMs);
-  const checkInClosed = canCheckIn ? checkInGateMessage(lifecycle) : refusalMessage;
+  const checkInClosed = canCheckIn ? checkInGateMessage(lifecycle) : CHECKIN_ROLE_MESSAGE;
 
   useEffect(() => {
     const client = supabaseBrowser();

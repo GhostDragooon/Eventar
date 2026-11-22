@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
-import { requireStaff, NotAuthorizedError, canManageEvent, canEditRegistrations, canEditRegistrationRoles, canCheckIn, canWriteEvent } from '@/lib/auth';
+import { requireStaff, NotAuthorizedError, canManageEvent, canEditRegistrations, canEditRegistrationRoles, canRunDoor, canWriteEvent } from '@/lib/auth';
 import { NOT_EVENT_WRITER } from '@/lib/lifecycle/eventLifecycle';
 import { supabaseServer } from '@/lib/supabase/server';
 import { formatInTz } from '@/lib/tz';
@@ -112,7 +112,7 @@ export default async function RegistrationsPage({ params }: { params: Promise<{ 
       : canEditRegistrations(staff.role)
         ? `You can view contact details. ${NOT_EVENT_WRITER}`
         : 'You can view contact details; an organiser admin or member can edit them.',
-    canCheckIn(staff.role) && writable ? 'To check people in, open Check-in.' : null,
+    canRunDoor(staff, event) ? 'To check people in, open Check-in.' : null,
   ].filter(Boolean).join(' ');
 
   return (

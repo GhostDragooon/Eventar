@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { requireStaff, canCheckIn, canWriteEvent, NotAuthorizedError } from '@/lib/auth';
-import { CHECKIN_ROLE_MESSAGE, NOT_EVENT_WRITER, checkInGateMessage, computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
+import { requireStaff, canCheckIn, canRunDoor, NotAuthorizedError } from '@/lib/auth';
+import { CHECKIN_ROLE_MESSAGE, checkInGateMessage, computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 import { supabaseServer } from '@/lib/supabase/server';
 import { deriveSpeakerNames } from '@/lib/agenda';
 
@@ -76,7 +76,7 @@ export async function toggleSpeakerCheckin(
     .maybeSingle();
   if (eventErr) throw eventErr;
   if (!event) return { error: NOT_FOUND };
-  if (!canWriteEvent(staff, event)) return { error: NOT_EVENT_WRITER };
+  if (!canRunDoor(staff, event)) return { error: NO_ACCESS };
   if (event.deleted_at) return { error: 'This event was deleted. Check-in is closed.' };
   const closedMessage = checkInGateMessage(computeLifecycle(event as EventLifecycleRow, Date.now()));
   if (closedMessage) return { error: closedMessage };

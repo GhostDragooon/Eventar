@@ -51,7 +51,7 @@ export function canEditRegistrations(role: Staff['role']): boolean {
 }
 
 // Q51 (Ivan, 2026-11-07): who may change an event and everything hanging off it (details, agenda, publish, status,
-// registrations, check-in, speakers, role chips, accreditation, hero image). organiser_admin: every event in its
+// registrations, role chips, accreditation, hero image; check-in, speaker ticks and walk-ins moved to canRunDoor, UX-R8). organiser_admin: every event in its
 // organisation. organiser_member: only events it created. body_admin and auditor: none. eventar_staff: every event.
 // Mirrors app_private.can_write_event, which the database applies at every write regardless of what this says.
 export function canWriteEvent(
@@ -77,12 +77,24 @@ export function canEditRegistrationRoles(
   return canWriteEvent(staff, event);
 }
 
-// Which roles mark_attended() accepts: its resolve_actor gate names organiser_admin, organiser_member and
-// eventar_staff (20261023170000). body_admin and auditor read the desk and cannot check anyone in. The walk-in
-// action checks this BEFORE it inserts a registration (a refusal after the insert left an orphan row, RV-FINAL F2);
-// the desk uses it to say so up front. The database stays the authority.
+// Which roles mark_attended() accepts: its resolve_actor gate names organiser_admin, organiser_member, body_admin
+// and eventar_staff (UX-R8, 20261122100000; Ivan 2026-11-22: everyone in the org works the gate on the day). auditor
+// reads the desk and cannot check anyone in. The walk-in action checks this BEFORE it inserts a registration (a
+// refusal after the insert left an orphan row, RV-FINAL F2); the desk uses it to say so up front. The database
+// stays the authority.
 export function canCheckIn(role: Staff['role']): boolean {
-  return role === 'organiser_admin' || role === 'organiser_member' || role === 'eventar_staff';
+  return role === 'organiser_admin' || role === 'organiser_member' || role === 'body_admin' || role === 'eventar_staff';
+}
+
+// The door on a given event: check-in, speaker ticks, walk-ins. Any door role of the event's organisation, whoever
+// created the event; eventar_staff on every event. Mirrors app_private.can_run_door. The registration list keeps
+// canWriteEvent (Q51); only the day-of work moved to this wider rule.
+export function canRunDoor(
+  staff: Pick<Staff, 'role' | 'organisation_id'>,
+  event: { organisation_id: string | null },
+): boolean {
+  if (staff.role === 'eventar_staff') return true;
+  return canCheckIn(staff.role) && event.organisation_id != null && event.organisation_id === staff.organisation_id;
 }
 
 // Which roles bulk_update_event_status() accepts (20261104100000): cancel, archive and restore events. Same three

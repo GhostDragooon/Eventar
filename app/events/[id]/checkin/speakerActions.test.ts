@@ -154,7 +154,7 @@ vi.mock('@/lib/supabase/server', () => ({
 
 import { beforeEach, describe, expect, it } from 'vitest';
 import { toggleSpeakerCheckin } from './speakerActions';
-import { NOT_EVENT_WRITER, CHECKIN_ROLE_MESSAGE } from '@/lib/lifecycle/eventLifecycle';
+import { CHECKIN_ROLE_MESSAGE } from '@/lib/lifecycle/eventLifecycle';
 import { NotAuthorizedError } from '@/lib/auth';
 
 beforeEach(() => {
@@ -334,7 +334,7 @@ describe('toggleSpeakerCheckin', () => {
   });
 
   // Backtest M1: the desk tells body_admin and auditor it is read-only, but this action wrote for them.
-  it.each(['body_admin', 'auditor'] as const)('refuses %s before any read or write, with the desk role sentence', async (role) => {
+  it.each(['auditor'] as const)('refuses %s before any read or write, with the desk role sentence', async (role) => {
     requireStaffMock.mockResolvedValueOnce({ id: 's-9', email: 'x@y.com', role, organisation_id: 'org-1' });
     const result = await toggleSpeakerCheckin(eventId, 'Ada Lovelace');
     expect(result).toEqual({ error: CHECKIN_ROLE_MESSAGE });
@@ -344,16 +344,17 @@ describe('toggleSpeakerCheckin', () => {
     expect(revalidatePathMock).not.toHaveBeenCalled();
   });
 
-  // Q51 (Ivan, 2026-11-07): a member acts only on events it created.
-  it('refuses an organiser_member on a colleague\'s event, without writing', async () => {
-    requireStaffMock.mockResolvedValueOnce({ id: 's-2', email: 'x@y.com', role: 'organiser_member', organisation_id: 'org-1' });
+  // UX-R8 (Ivan, 2026-11-22): the gate on the day is open to every door role of the organisation, whoever created
+  // the event. Another organisation's staff is refused without a write.
+  it('refuses a door role from another organisation, without writing', async () => {
+    requireStaffMock.mockResolvedValueOnce({ id: 's-2', email: 'x@y.com', role: 'organiser_member', organisation_id: 'org-other' });
     const result = await toggleSpeakerCheckin(eventId, 'Ada Lovelace');
-    expect(result).toEqual({ error: NOT_EVENT_WRITER });
+    expect(result).toEqual({ error: 'You do not have access to this event.' });
     expect(lastInsert).toBeNull();
     expect(lastUpdate).toBeNull();
   });
 
-  it.each(['organiser_admin', 'eventar_staff'] as const)('still lets %s toggle', async (role) => {
+  it.each(['organiser_admin', 'organiser_member', 'body_admin', 'eventar_staff'] as const)('lets %s toggle, whoever created the event', async (role) => {
     requireStaffMock.mockResolvedValueOnce({ id: 's-9', email: 'x@y.com', role, organisation_id: 'org-1' });
     const result = await toggleSpeakerCheckin(eventId, 'Ada Lovelace');
     expect(result).toMatchObject({ ok: true });

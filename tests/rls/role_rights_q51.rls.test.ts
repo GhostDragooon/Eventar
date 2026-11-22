@@ -2,7 +2,8 @@
 // only on events it created, body_admin and auditor are read-only, eventar_staff acts on every event.
 // Enforced at the write by app_private.enforce_event_writer() on every event-owned table, plus the RPCs whose own
 // checks disagreed (role chips, multi-body accreditation, mark_attended, bulk_update_event_status) and the hero-image
-// storage policies.
+// storage policies. UX-R8 (2026-11-22) narrowed this for the door only: check-in and speaker ticks no longer need the
+// event-writer rule (see door_rights_ux_r8.rls.test.ts), so those two expectations below read 'ok'.
 //
 // One DO block that ends in RAISE, so every fixture rolls back and nothing leaks. Each attempt runs in its own
 // sub-block, so an allowed write is undone before the next attempt. Refusals must be SQLSTATE 42501 (Hard rule 11:
@@ -271,11 +272,11 @@ describe.skipIf(!process.env.RLS_TESTS)('Q51 role rights', () => {
       'member:create_spoofed': DENY,
 
       'member:bulk:mixed': DENY, 'member:bulk:mixed_changed': 0,
-      'admin:checkin:admin_event': 'ok', 'member:checkin:admin_event': 'not_recognised', 'eventar_b:checkin:admin_event': 'ok',
+      'admin:checkin:admin_event': 'ok', 'member:checkin:admin_event': 'ok', 'eventar_b:checkin:admin_event': 'ok',
       // Pre-existing, not changed by Q51: the events UPDATE policy is organisation-scoped, so eventar_staff of another
       // organisation edits nothing through PostgREST (0 rows), while the definer RPCs (publish, check-in) let it act.
       'eventar_b:edit:own': 'none', 'eventar_b:publish:other': 'ok',
-      'member:move_speaker_row': DENY, 'member:speaker:other': DENY, 'member:contact:other': DENY,
+      'member:move_speaker_row': DENY, 'member:speaker:other': '23514' /* UX-R8: past the role guard; ev_a is 10 days out, so the speaker window trigger refuses */, 'member:contact:other': DENY,
       'member:claim_own_registration': 1,
       'member:bulk:own': 'ok',
     });

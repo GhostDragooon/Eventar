@@ -2,12 +2,12 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { requireStaff, canManageEvent, canCheckIn, canWriteEvent, NotAuthorizedError, type Staff } from '@/lib/auth';
+import { requireStaff, canManageEvent, canCheckIn, NotAuthorizedError, type Staff } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { isValidRegistrationCode, generateRegistrationCode } from '@/lib/registrationCode';
 import { rateLimitBySession } from '@/lib/rateLimit';
-import { CHECKIN_ROLE_MESSAGE, NOT_EVENT_WRITER, checkInClosedMessage, computeLifecycle, walkInClosedMessage, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
+import { CHECKIN_ROLE_MESSAGE, checkInClosedMessage, computeLifecycle, walkInClosedMessage, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 import {
   awardAttendanceCredit,
   type AwardOutcome,
@@ -308,8 +308,6 @@ export async function walkInRegisterAndCheckIn(input: {
   // Before any insert: mark_attended refuses this role AFTER the registration exists, which left an orphan row and
   // a 500 (RV-FINAL F2). Same list as the RPC's resolve_actor gate.
   if (!canCheckIn(staff.role)) return { error: CHECKIN_ROLE_MESSAGE };
-  // Q51, also before the insert (the insert runs on the admin client, so no database guard sees it).
-  if (!canWriteEvent(staff, event)) return { error: NOT_EVENT_WRITER };
 
   // Gate on the DERIVED lifecycle, not the raw status column: pg_cron
   // (Stage 8, deferred) never flips status to 'completed' automatically, so

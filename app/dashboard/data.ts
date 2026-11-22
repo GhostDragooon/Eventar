@@ -1,7 +1,7 @@
 import 'server-only';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { canWriteEvent, type Staff } from '@/lib/auth';
+import { canCheckIn, canWriteEvent, type Staff } from '@/lib/auth';
 import type { ProgrammeEvent } from '@/components/dashboard/programmeEvent';
 import { computeLifecycle, type EventLifecycleRow } from '@/lib/lifecycle/eventLifecycle';
 import { idBatches } from '@/lib/supabase/inBatches';
@@ -112,6 +112,8 @@ export async function fetchDecoratedEvents(
       hosts: organizedBy.filter((h) => h.name).map((h) => ({ name: h.name as string, avatar_url: null })),
       // ownEvents already limits non-eventar staff to their own organisation, so the event's organisation is the staff's.
       writable: canWriteEvent(staff, { organisation_id: staff.organisation_id, created_by: e.created_by }),
+      // Same organisation as above, so the door rule reduces to the role (canRunDoor).
+      checkInAllowed: canCheckIn(staff.role),
     };
   });
 

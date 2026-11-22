@@ -243,12 +243,12 @@ describe.skipIf(!process.env.RLS_TESTS)('mark_attended RLS + audit', () => {
     expect((auditRow?.payload as { event_id?: string })?.event_id).toBe(eventId);
   });
 
-  // ---- 2. a same-org organiser_member who did not create the event cannot check in ----
+  // ---- 2. a same-org organiser_member who did not create the event CAN check in ----
   //
-  // Q51 (Ivan, 2026-11-07): an organiser_member acts only on events it created; an organiser_admin acts on every
-  // event in its organisation (admin coverage: tests/rls/role_rights_q51.rls.test.ts). This replaces the 20260910
-  // org-wide rule this case used to pin. The answer stays info-hiding (not_recognised) and nothing is written.
-  it('a same-org organiser_member who did not create the event sees not_recognised and nothing changes', async () => {
+  // UX-R8 (Ivan, 2026-11-22): the gate on the day is open to every door role of the organisation, whoever created the
+  // event (Q51 had limited a member to its own events). The registration list keeps the Q51 rule (door_rights_ux_r8
+  // and role_rights_q51 cover that). Another organisation stays not_recognised (2b below).
+  it('a same-org organiser_member who did not create the event checks the person in', async () => {
     const eventId = await makeEventFixture();
     const regCode = code('MA002');
     await makeRegistrationFixture(eventId, regCode);
@@ -259,14 +259,14 @@ describe.skipIf(!process.env.RLS_TESTS)('mark_attended RLS + audit', () => {
     });
     expect(error).toBeNull();
     const row = Array.isArray(data) ? data[0] : data;
-    expect(row.result).toBe('not_recognised');
+    expect(row.result).toBe('ok');
 
     const { data: reg } = await admin
       .from('registrations')
       .select('status')
       .eq('registration_code', regCode)
       .single();
-    expect(reg?.status).toBe('registered');
+    expect(reg?.status).toBe('attended');
   });
 
   // ---- 2b. a staff member from a DIFFERENT organisation is denied ----

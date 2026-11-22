@@ -26,4 +26,6 @@ export type ProgrammeEvent = {
   hosts: Array<{ name: string; avatar_url: string | null }>;
   /** Q51: false when this account may look at the event but not change it. Absent means it may. */
   writable?: boolean;
+  /** UX-R8: false when this account may open the check-in desk but not use it (auditor). Absent means it may. */
+  checkInAllowed?: boolean;
 };

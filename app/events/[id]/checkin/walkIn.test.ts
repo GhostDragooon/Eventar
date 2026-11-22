@@ -7,11 +7,10 @@ const { MockNotAuthorizedError } = vi.hoisted(() => ({
   MockNotAuthorizedError: class NotAuthorizedError extends Error {},
 }));
 vi.mock('@/lib/auth', async (orig) => ({
-  // Q51: canWriteEvent is the real helper.
-  canWriteEvent: (await orig<typeof import('@/lib/auth')>()).canWriteEvent,
+  // The real role helper, so this suite follows lib/auth.ts instead of keeping its own copy of the role list (UX-R8).
+  canCheckIn: (await orig<typeof import('@/lib/auth')>()).canCheckIn,
   NotAuthorizedError: MockNotAuthorizedError,
   requireStaff: (...args: unknown[]) => mockRequireStaff(...args),
-  canCheckIn: (role: string) => ['organiser_admin', 'organiser_member', 'eventar_staff'].includes(role),
   canManageEvent: (event: { organisation_id: string | null }, staff: { role: string; organisation_id?: string }) => {
     if (staff.role === 'eventar_staff') return true;
     return event.organisation_id != null && event.organisation_id === staff.organisation_id;
@@ -170,8 +169,9 @@ describe('walkInRegisterAndCheckIn', () => {
 
   // RV-FINAL F2: body_admin passed canManageEvent, the registration was inserted, then mark_attended refused the
   // role with 42501 and the action threw (HTTP 500), leaving a `registered` walk_in row. The role is refused first.
-  it.each(['body_admin', 'auditor'])('%s cannot check people in: refused with a plain message and NO registration is inserted', async (role) => {
-    mockRequireStaff.mockResolvedValueOnce({ ...staff, role });
+  // UX-R8 (Ivan, 2026-11-22): body_admin now works the gate; auditor is the one role refused.
+  it('auditor cannot check people in: refused with a plain message and NO registration is inserted', async () => {
+    mockRequireStaff.mockResolvedValueOnce({ ...staff, role: 'auditor' });
     mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, created_by: 'staff-1', deleted_at: null, ...LIVE_TIMES });
 
     await expect(walkInRegisterAndCheckIn(validInput)).resolves.toEqual({
@@ -180,14 +180,23 @@ describe('walkInRegisterAndCheckIn', () => {
     expect(mockFrom).toHaveBeenCalledTimes(1); // the event read only: no registrations insert, no email_log
   });
 
-  // Q51 (Ivan, 2026-11-07): the insert runs on the admin client, so the member rule is checked before it.
-  it('an organiser_member on a colleague\'s event is refused and NO registration is inserted', async () => {
-    mockRequireStaff.mockResolvedValueOnce({ ...staff, id: 'staff-2', role: 'organiser_member' });
+  // UX-R8 (Ivan, 2026-11-22): the gate on the day is open to every door role of the organisation, so a member
+  // registers a walk-in on a colleague's event. The insert runs on the admin client, so the action is the gate.
+  it.each(['organiser_member', 'body_admin'])('a %s registers a walk-in on a colleague\'s event', async (role) => {
+    mockRequireStaff.mockResolvedValueOnce({ ...staff, id: 'staff-2', role });
+    mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, created_by: 'staff-1', deleted_at: null, ...LIVE_TIMES });
+    mockRegInsert({ id: 'reg-1', registration_code: 'WK-TEST1' });
+    mockEmailLogInsert();
+
+    const res = await walkInRegisterAndCheckIn(validInput);
+    expect(res).toMatchObject({ ok: true, registration: { code: 'WK-TEST1' } });
+  });
+
+  it('door staff from another organisation is refused and NO registration is inserted', async () => {
+    mockRequireStaff.mockResolvedValueOnce({ ...staff, id: 'staff-3', role: 'organiser_member', organisation_id: 'org-other' });
     mockEventSelect({ id: EVENT_ID, title: 'Test', status: 'published', max_attendees: null, organisation_id: ORG_ID, created_by: 'staff-1', deleted_at: null, ...LIVE_TIMES });
 
-    await expect(walkInRegisterAndCheckIn(validInput)).resolves.toEqual({
-      error: 'Only the organiser who created this event, or an organiser admin, can change it.',
-    });
+    await expect(walkInRegisterAndCheckIn(validInput)).resolves.toEqual({ error: 'You do not have access to this event.' });
     expect(mockFrom).toHaveBeenCalledTimes(1);
   });
 

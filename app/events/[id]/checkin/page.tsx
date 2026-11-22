@@ -1,6 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
-import { requireStaff, NotAuthorizedError, canManageEvent, canCheckIn, canEditRegistrations, canEditRegistrationRoles, canWriteEvent } from '@/lib/auth';
-import { CHECKIN_ROLE_MESSAGE, NOT_EVENT_WRITER } from '@/lib/lifecycle/eventLifecycle';
+import { requireStaff, NotAuthorizedError, canManageEvent, canRunDoor, canEditRegistrations, canEditRegistrationRoles, canWriteEvent } from '@/lib/auth';
 import { supabaseServer } from '@/lib/supabase/server';
 import { formatInTz } from '@/lib/tz';
 import { StaffShell } from '@/components/shell/StaffShell';
@@ -153,10 +152,8 @@ export default async function StaffCheckinPage({
             sentence in RosterClient), so it is not told to scan or add a walk-in. */}
         <p className="mt-xs font-body-md text-body-md text-on-surface-variant">
           {[
-            canCheckIn(staff.role) && canWriteEvent(staff, event)
+            canRunDoor(staff, event)
               ? 'Live capture only: scan, enter a code or add a walk-in.'
-              : canCheckIn(staff.role)
-              ? 'You can view this desk but not check people in.'
               : 'Live capture only.', // the role limit is said once, in the status line above the buttons (UX-R7)
             // Same predicates as the Registrations page controls, so no role is sent there to do what it cannot.
             canEditRegistrations(staff.role) && canWriteEvent(staff, event)
@@ -189,8 +186,7 @@ export default async function StaffCheckinPage({
         }}
         // eslint-disable-next-line react-hooks/purity -- the server's clock, handed to the desk so a skewed device clock cannot gate it
         serverNowMs={Date.now()}
-        canCheckIn={canCheckIn(staff.role) && canWriteEvent(staff, event)}
-        refusalMessage={canCheckIn(staff.role) ? NOT_EVENT_WRITER : CHECKIN_ROLE_MESSAGE}
+        canCheckIn={canRunDoor(staff, event)}
         initialRoster={rosterRes.data ?? []}
         eligibility={eligibility}
         eligibilityUnavailable={Boolean(eligRes.error)}
