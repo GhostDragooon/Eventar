@@ -171,7 +171,7 @@ export async function markAttended(
     p_actor_override: staff.id,
   });
   // 42501 is a refusal, not a crash: a message, not a 500. The database raises the same 42501 for a wrong role
-  // (body_admin, auditor) and for a suspended or removed staff row, so the error cannot say which. The role this
+  // (auditor) and for a suspended or removed staff row, so the error cannot say which. The role this
   // action just read can: only a role that cannot check in is told so; anything else gets the neutral line.
   if (error?.code === '42501') {
     return { error: canCheckIn(staff.role) ? 'You cannot check people in on this event.' : CHECKIN_ROLE_MESSAGE };

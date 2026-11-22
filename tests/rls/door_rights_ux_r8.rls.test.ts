@@ -12,7 +12,7 @@ import { sqlSuperuserQuery } from '../helpers/clients';
 const PROBE = `
 do $$
 declare
-  org uuid; org_b uuid; ev uuid; reg_x uuid; sp uuid; occ uuid;
+  org uuid; org_b uuid; ev uuid; reg_x uuid; sp uuid; occ uuid; adm uuid;
   r record; t record;
   res jsonb := '{}';
   sq text; n integer; k text;
@@ -39,6 +39,7 @@ begin
   insert into public.registrations (event_id, email, full_name, registration_code)
     values (ev, 'zz-r8-x@example.test', 'X', 'R8X' || substr(gen_random_uuid()::text, 1, 6)) returning id into reg_x;
   insert into public.speaker_checkins (event_id, speaker_name) values (ev, 'R8 Speaker') returning id into sp;
+  select id into adm from p where who = 'admin';
   for r in select * from p loop
     insert into public.registrations (event_id, email, full_name, registration_code)
       values (ev, 'zz-r8-live-' || r.who || '@example.test', 'L', 'R8L' || substr(md5(r.who), 1, 6));
@@ -58,8 +59,12 @@ begin
       if sq <> 'P0099' then res := res || jsonb_build_object(r.who || ':checkin', sq); end if;
     end;
     for t in select * from (values
-      ('speaker_ins',  format($q$insert into public.speaker_checkins (event_id, speaker_name, checked_in_at) values (%L, 'R8 New', now())$q$, ev)),
-      ('speaker_tick', format($q$update public.speaker_checkins set checked_in_at = now() where id = %L$q$, sp)),
+      -- The door stamps itself and the present time, as the app's toggleSpeakerCheckin does.
+      ('speaker_ins',  format($q$insert into public.speaker_checkins (event_id, speaker_name, checked_in_at, updated_by) values (%L, 'R8 New', now(), %L)$q$, ev, r.id)),
+      ('speaker_tick', format($q$update public.speaker_checkins set checked_in_at = now(), updated_by = %L where id = %L$q$, r.id, sp)),
+      -- Review: another staff id, or a back-dated time, is not the door. The event's writer (admin) may still do either.
+      ('speaker_forge_by',  format($q$update public.speaker_checkins set checked_in_at = now(), updated_by = %L where id = %L$q$, adm, sp)),
+      ('speaker_backdate',  format($q$update public.speaker_checkins set checked_in_at = now() - interval '1 day', updated_by = %L where id = %L$q$, r.id, sp)),
       -- Everything below is NOT the door: the registration list and the speaker row itself stay writer-only.
       ('speaker_rename', format($q$update public.speaker_checkins set speaker_name = 'Renamed' where id = %L$q$, sp)),
       ('speaker_delete', format($q$delete from public.speaker_checkins where id = %L$q$, sp)),
@@ -131,6 +136,10 @@ describe.skipIf(!process.env.RLS_TESTS)('UX-R8 door rights', () => {
 
       'admin:speaker_ins': 'ok', 'member:speaker_ins': 'ok', 'body:speaker_ins': 'ok', 'auditor:speaker_ins': DENY,
       'admin:speaker_tick': 'ok', 'member:speaker_tick': 'ok', 'body:speaker_tick': 'ok', 'auditor:speaker_tick': DENY,
+      // eventar_staff of another organisation works the speaker card too (policies and guard say "every event").
+      'eventar_b:speaker_ins': 'ok', 'eventar_b:speaker_tick': 'ok',
+      'admin:speaker_forge_by': 'ok', 'member:speaker_forge_by': DENY, 'body:speaker_forge_by': DENY, 'auditor:speaker_forge_by': DENY,
+      'admin:speaker_backdate': 'ok', 'member:speaker_backdate': DENY, 'body:speaker_backdate': DENY, 'auditor:speaker_backdate': DENY,
 
       // Not the door.
       'admin:speaker_rename': 'ok', 'member:speaker_rename': DENY, 'body:speaker_rename': DENY, 'auditor:speaker_rename': DENY,

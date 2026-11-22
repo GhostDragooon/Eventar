@@ -44,10 +44,9 @@ export default async function StaffCheckinPage({
   if (eventErr) throw eventErr;
   if (!event) notFound();
 
-  // Owner-only gate: /checkin mutates registrations (status → attended).
-  // Per the 2026-06-02 access policy refinement, check-in is owner-exclusive
-  // (reverses Q4's prior "manager running multi-event check-in" use case).
-  // Non-managers are sent to /details, which 404s them (it has no read-only lens).
+  // Organisation gate: /checkin mutates registrations (status → attended). Staff of another organisation are sent
+  // to /details, which 404s them (it has no read-only lens). Within the organisation, who may act on the desk is
+  // canRunDoor (UX-R8); an auditor sees it read-only.
   if (!canManageEvent(event, staff)) {
     redirect(`/events/${id}/details`);
   }

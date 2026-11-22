@@ -11,10 +11,7 @@ vi.mock('@/lib/auth', async (orig) => ({
   canCheckIn: (await orig<typeof import('@/lib/auth')>()).canCheckIn,
   NotAuthorizedError: MockNotAuthorizedError,
   requireStaff: (...args: unknown[]) => mockRequireStaff(...args),
-  canManageEvent: (event: { organisation_id: string | null }, staff: { role: string; organisation_id?: string }) => {
-    if (staff.role === 'eventar_staff') return true;
-    return event.organisation_id != null && event.organisation_id === staff.organisation_id;
-  },
+  canManageEvent: (await orig<typeof import('@/lib/auth')>()).canManageEvent,
 }));
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));

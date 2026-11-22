@@ -166,7 +166,7 @@ begin
     if sq <> 'P0099' then res := res || jsonb_build_object('member:move_speaker_row', sq); end if;
   end;
   begin
-    insert into public.speaker_checkins (event_id, speaker_name) values (ev_a, 'Q51 New');
+    insert into public.speaker_checkins (event_id, speaker_name, updated_by) values (ev_a, 'Q51 New', r.id);
     res := res || jsonb_build_object('member:speaker:other', 'ok');
     raise exception 'undo' using errcode = 'P0099';
   exception when others then

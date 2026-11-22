@@ -45,8 +45,8 @@ type ToggleResult =
  * Clearing a tick is refused outside the window too. The gate is app-layer only (the speaker_checkins policies do not
  * check the clock), and a multi-occurrence event uses its whole span, not each occurrence's own window.
  *
- * Role: the desk tells body_admin and auditor it is read-only, so this refuses them with the same sentence BEFORE any
- * read or write (canCheckIn, the helper mark_attended's gate mirrors).
+ * Role: the desk tells an auditor it is read-only, so this refuses that role with the same sentence BEFORE any read
+ * or write (canCheckIn), then checks the event's organisation (canRunDoor, the helper the database guard mirrors).
  *
  * Toggle semantics: no row OR checked_in_at null → stamp now() + updated_by;
  * currently stamped → clear to null (updated_by still recorded).

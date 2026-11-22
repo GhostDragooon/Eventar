@@ -77,7 +77,7 @@ describe('RosterClient: the eligibility-unavailable notice', () => {
     expect(screen.getByText(/eligibility couldn.t be checked/i)).toBeTruthy();
   });
 
-  // event_registration_eligibility refuses body_admin and auditor by design, so for them the notice would call a
+  // event_registration_eligibility refuses auditor by design, so for it the notice would call a
   // normal refusal an outage and promise "check-in still works" on a desk that is read-only.
   it('is not shown on a read-only desk, where the roster read is refused by design', () => {
     renderDesk(-30, T0, false, {}, true);
@@ -172,7 +172,7 @@ describe('RosterClient: check-in follows the clock (DB-02)', () => {
   });
 });
 
-// RV-FINAL F2: a role that cannot check people in (body_admin, auditor) used to get a fully enabled desk whose every
+// RV-FINAL F2: a role that cannot check people in (auditor since UX-R8) used to get a fully enabled desk whose every
 // action ended on an error. Now the desk says so up front and nothing invites a doomed submit.
 describe('RosterClient: a role that cannot check people in', () => {
   beforeEach(() => {
