@@ -511,7 +511,7 @@ function EventRow({ e, nowMs, selected, onToggle, onRestore, inBin, pending, rea
   // The filled button is the next thing an organiser does: check people in while the event is live or open.
   const doorNow = e.lifecycle === 'live' || e.lifecycle === 'registering';
   const passed = e.lifecycle === 'drafted' && !e.deleted && e.startMs < nowMs;
-  const link = cn('min-h-11 w-full gap-xs px-sm font-label-md text-label-md');
+  const link = cn('min-h-11 w-full gap-xs px-xs sm:px-sm font-label-md text-label-md');
 
   return (
     <li className={cn('grid grid-cols-[44px_minmax(0,1fr)] gap-sm', e.deleted && 'opacity-70')}>
@@ -544,9 +544,9 @@ function EventRow({ e, nowMs, selected, onToggle, onRestore, inBin, pending, rea
             </div>
             {passed && <p className="mt-xs text-[calc(0.78125rem*var(--text-scale))] font-medium text-on-surface">The date has passed. Edit the date to publish this draft.</p>}
           </div>
-          <div className={cn('mt-xs grid gap-sm', e.lifecycle === 'drafted' || e.lifecycle === 'cancelled' ? 'grid-cols-2' : 'grid-cols-3')}>
+          <div className={cn('mt-xs grid gap-sm', e.lifecycle === 'drafted' || e.lifecycle === 'cancelled' ? 'grid-cols-2' : 'grid-cols-2 min-[24rem]:grid-cols-3 [&>:nth-child(3):last-child]:max-[24rem]:col-span-2')}>
             {inBin ? (
-              <Button type="button" variant="outline" onClick={onRestore} disabled={pending || readOnly} aria-describedby={readOnly ? 'bulk-why' : undefined} className={cn(link, 'col-span-3')}>
+              <Button type="button" variant="outline" onClick={onRestore} disabled={pending || readOnly} aria-describedby={readOnly ? 'bulk-why' : undefined} className={cn(link, 'col-span-full')}>
                 <span className="material-symbols-outlined text-[calc(1rem*var(--text-scale))]" aria-hidden>restore_from_trash</span>Restore
               </Button>
             ) : (
