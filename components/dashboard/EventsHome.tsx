@@ -556,7 +556,9 @@ function EventRow({ e, nowMs, selected, onToggle, onRestore, inBin, pending, rea
                 <Link href={`/events/${e.id}/edit`} className={cn(buttonVariants({ variant: 'outline' }), link)}>{e.writable === false ? 'View' : 'Edit'}</Link>
                 {/* Check-in is refused on a draft until it is published, and closed on a cancelled event (checkInGateMessage). */}
                 {e.lifecycle !== 'drafted' && e.lifecycle !== 'cancelled' && (
-                  <Link href={`/events/${e.id}/checkin`} className={cn(buttonVariants({ variant: doorNow ? 'default' : 'outline' }), link)}>Check-in</Link>
+                  // UX-R7 (Ivan picked B, 2026-11-22): the desk of an event this account may not change is read-only,
+                  // so the label says what opens (same flag as Edit -> View) and it is never the blue call to action.
+                  <Link href={`/events/${e.id}/checkin`} className={cn(buttonVariants({ variant: doorNow && e.writable !== false ? 'default' : 'outline' }), link)}>{e.writable === false ? 'View desk' : 'Check-in'}</Link>
                 )}
               </>
             )}

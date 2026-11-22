@@ -77,7 +77,9 @@ describe('Check-in page header', () => {
   it.each(['body_admin', 'auditor'])('%s: cannot check in, so the line does not offer scan, code or walk-in', async (role) => {
     h.role = role;
     await open();
-    expect(screen.getByText('Live capture only: this desk is read-only for your role. To see everyone registered, open Registrations.')).toBeTruthy();
+    // UX-R7: the role limit is said once, by the status line above the buttons (RosterClient), not again under the title.
+    expect(screen.getByText('Live capture only. To see everyone registered, open Registrations.')).toBeTruthy();
+    expect(screen.queryByText(/read-only for your role/)).toBeNull();
     expect(screen.queryByText(/add a walk-in/)).toBeNull();
   });
 });

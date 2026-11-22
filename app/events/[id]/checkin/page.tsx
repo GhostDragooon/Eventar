@@ -157,7 +157,7 @@ export default async function StaffCheckinPage({
               ? 'Live capture only: scan, enter a code or add a walk-in.'
               : canCheckIn(staff.role)
               ? 'You can view this desk but not check people in.'
-              : 'Live capture only: this desk is read-only for your role.',
+              : 'Live capture only.', // the role limit is said once, in the status line above the buttons (UX-R7)
             // Same predicates as the Registrations page controls, so no role is sent there to do what it cannot.
             canEditRegistrations(staff.role) && canWriteEvent(staff, event)
               ? canEditRegistrationRoles(staff, event)
