@@ -373,7 +373,7 @@ export default async function EventDetailsPage({
 
       {/* Event Manager header — eyebrow + title + status pill on the left, the
           for-use toolbar (Edit / Registrations / Check-in / Public / Analytics) top-right. */}
-      <header className="mb-lg flex flex-col md:flex-row md:items-start md:justify-between gap-md">
+      <header className="mb-lg flex flex-col lg:flex-row lg:items-start lg:justify-between gap-md">
         <div className="min-w-0">
           <p className="text-label-md font-semibold uppercase tracking-[0.14em] text-[color:var(--on-primary-container)] mb-xs">Event Manager</p>
           <div className="flex items-center gap-sm flex-wrap">
@@ -628,7 +628,7 @@ function ActionToolbar({ eventId, lifecycle, writable = true }: { eventId: strin
   const live = `${base} border-transparent bg-primary text-on-primary hover:opacity-90`;
 
   return (
-    <div className="flex gap-xs flex-wrap shrink-0">
+    <div className="flex gap-xs flex-wrap">
       <Link href={`/events/${eventId}/edit`} className={outline}>
         <span className="material-symbols-outlined text-[calc(1rem*var(--text-scale))]" aria-hidden>{writable ? 'edit' : 'visibility'}</span>{writable ? 'Edit' : 'View'}
       </Link>
