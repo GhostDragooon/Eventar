@@ -1,0 +1,3 @@
+last-prompt: "and again if user went to the wrong page the helper line should redirect them, something like are you an organizer? or are you an attendee?   we talked about this, stop going in circle."
+
+Assistant final message: "**Trigger.** `MagicLinkSignInForm` counts errors the submit returns in the browser. Two in a row shows the line, and a success resets the count. There is no DB lookup." and "**Removed.** The old \"Attending an event? Sign up\" line on `/login` is gone. It appeared when the URL carried `not_organiser` or `not_authorized`, which comes from the DB role check, so it broke your rule."

@@ -1,0 +1,1 @@
+Dev-lens hand-back (UX-R7 review of 2a7a496): "`components/dashboard/programmeEvent.ts:28`: `writable?: boolean` is optional, and every check is `=== false` or `!== false`. A future caller that leaves the field out gets the blue \"Check-in\" and \"Edit\". That is fail-open." Proposed fix: make `writable: boolean` required, which turns an omission into a tsc error.

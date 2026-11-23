@@ -1,0 +1,1 @@
+assistant: The "before" hero is still mid-fade; waiting once more for the settled frame.

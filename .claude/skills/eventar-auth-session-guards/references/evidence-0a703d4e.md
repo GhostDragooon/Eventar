@@ -1,0 +1,3 @@
+From docs/plans/mvp/CARD-UX-R8.md, Ivan's ruling: "\"For check in at the gate on the day, everyone in the org should be able to check people in. Where the auth or RLS matter is the reg list, esp with deleting any info. Everyone should also be able to reg walk-ins.\" Asked who: \"all org members\"."
+
+Git state at session start: "e45e45f feat(door): every org writer works the gate on the day: check-in, speaker ticks and walk-ins on any org event; auditor stays read-only; registration list keeps Q51 (UX-R8)"

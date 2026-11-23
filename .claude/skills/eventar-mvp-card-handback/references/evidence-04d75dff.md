@@ -1,0 +1,1 @@
+**3. Download QR and Export CSV stay enabled.** Checked and judged NOT a defect: they read data the role may already see. `DownloadQrButton` sits on the edit page (`app/events/[id]/edit/page.tsx:457`), which a read-only role opens as "View".

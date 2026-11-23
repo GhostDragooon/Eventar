@@ -1,0 +1,1 @@
+Assistant, UX-R7 hand-back: "Nit 5: the card text says option B needs a role prop, but I reused `writable`. I'll update `CARD-UX-R7.md` once the user lens reports." Dev-lens nit 5 as recorded: the card names a role prop while the code uses the writable flag.

@@ -1,0 +1,4 @@
+**MAJOR-1: body_admin now gets a working desk with a false \"eligibility couldn't be checked\" outage banner on every load, and no CPD eligibility warnings.**
+  - Where: `app/events/[id]/checkin/RosterClient.tsx:277`, `app/events/[id]/checkin/page.tsx:83-88`.
+  - Evidence [X, read of the live function definition]: `event_registration_eligibility` calls `resolve_actor(p_actor_override, 'organiser_admin','organiser_member','eventar_staff')`, so it refuses body_admin with 42501.
+  - Effect [I]: `eligibilityUnavailable` is true for body_admin, and `canCheckIn` (now `canRunDoor`) is true. So the banner shows

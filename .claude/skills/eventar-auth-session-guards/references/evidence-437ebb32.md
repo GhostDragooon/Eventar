@@ -1,0 +1,1 @@
+Ivan's follow-up ruling, quoted in docs/plans/mvp/CARD-UX-R8.md: "Follow-up, same day: \"not the auditor\". Read as: `organiser_admin`, `organiser_member`, `body_admin` and `eventar_staff` of the event's organisation may check in, tick speakers and register walk-ins on ANY event of that organisation, whoever created it. `auditor` stays read-only."

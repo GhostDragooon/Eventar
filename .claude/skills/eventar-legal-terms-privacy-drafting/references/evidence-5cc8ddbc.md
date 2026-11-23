@@ -1,0 +1,1 @@
+The copy now says the full documents are not published yet and will be shown before launch. Consent strings `tos-0.1-draft` and `pp-0.2-draft` are NOT bumped. The wording still needs the solicitor's review.

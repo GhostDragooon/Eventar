@@ -1,0 +1,1 @@
+Teardown: events=0 staff=0 orgs=0 auth=0, 0 orphans. The first cleanup rolled back on a participation_evidence FK, so I deleted my one evidence row and re-ran. Audit residue stays: attendee_checked_in, evidence_recorded, evidence_deleted.

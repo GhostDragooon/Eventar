@@ -1,0 +1,1 @@
+`text-trim` was being dropped from default, link and destructive buttons whenever a text colour followed it. `lib/utils.ts` now registers it as its own class group, and the live "Next" button carries it.

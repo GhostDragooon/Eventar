@@ -1,0 +1,1 @@
+Assistant reply: "There is no sales email or contact page anywhere in the code, and I won't invent an address. - mailto link: quick, and you give me the address. - Short contact form: it needs a table to store the leads, so it is a bigger change. - Link to `/pricing`: it has an Enterprise tier that says \"Contact us\" with no action behind it."

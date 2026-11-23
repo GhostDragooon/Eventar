@@ -1,0 +1,1 @@
+A lens that hit the usage limit was resumed with its fixtures still in place and told to write its review file early.

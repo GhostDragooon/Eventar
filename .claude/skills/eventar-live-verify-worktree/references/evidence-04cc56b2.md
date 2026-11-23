@@ -1,0 +1,1 @@
+SendUserFile caption: After removing the Organisers item. 1) Event page, phone 375: Events | Log in, two equal halves. 2) /login (the organiser login page itself), phone: the "N" dev badge is in this frame. 3) Event page, desktop: Upcoming events | Log in.

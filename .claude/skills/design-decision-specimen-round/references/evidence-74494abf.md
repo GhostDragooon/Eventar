@@ -1,0 +1,1 @@
+{"tool":"Write","input":{"file_path":"/Users/ivan/Eventar/scratch-demo/ux-r-wave2-options.html"}} — then Artifact publish: {"file_path":"/Users/ivan/Eventar/scratch-demo/ux-r-wave2-options.html","icon":"compare"}

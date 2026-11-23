@@ -1,0 +1,1 @@
+User: "the event is hanging awkwardly and the organizer landing page should have a button for them to reachout to our sale team so we can pitch them"

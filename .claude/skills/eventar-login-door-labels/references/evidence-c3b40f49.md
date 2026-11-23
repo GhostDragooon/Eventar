@@ -1,0 +1,3 @@
+user: we agree that the attendee and organizer path are separated by the landing page pill? so why is there an organizer in the nav bar??? give me straight answer, and if you cannot then remove it.
+assistant (test edit): // Ivan 2026-11-22: the nav has no organiser item at all; the card carries no cross-link to the other door.
+assistant (test edit): // Ivan 2026-11-22: no organiser door anywhere on the attendee path; nothing here links to /login.

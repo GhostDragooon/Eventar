@@ -1,0 +1,1 @@
+**Frames:** before and after were sent for the walk-in form, the capacity chip (public page and Events list) and the signed-in hero. The breadcrumb, pricing title, email strings and accreditation dedupe have no frame. They need a read-only role, which the frame servers (review mode on) don't have, or are non-visual.

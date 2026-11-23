@@ -1,0 +1,3 @@
+Final door rule (Ivan, 2026-11-22), from docs/plans/mvp/CARD-UX-R8.md: "Follow-up, same day: \"not the auditor\". Read as: `organiser_admin`, `organiser_member`, `body_admin` and `eventar_staff` of the event's organisation may check in, tick speakers and register walk-ins on ANY event of that organisation, whoever created it. `auditor` stays read-only. The registration list (edit, delete, roles) keeps the Q51 creator-or-admin rule for every role, `body_admin` included."
+
+Git state at session start: "e45e45f feat(door): every org writer works the gate on the day: check-in, speaker ticks and walk-ins on any org event; auditor stays read-only; registration list keeps Q51 (UX-R8)"

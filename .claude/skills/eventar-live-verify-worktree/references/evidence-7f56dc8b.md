@@ -1,0 +1,1 @@
+A one-shot redirector on :3917 (exited, 0 listeners) kept magic-link tokens out of the transcript.

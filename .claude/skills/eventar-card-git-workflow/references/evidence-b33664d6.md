@@ -1,0 +1,2 @@
+s=s.replace("committed locally `c6383eb` (2026-11-21, `handoff_20261121-px-sweep-close.md`); NOT pushed (push needs Ivan's go naming the SHA).**","pushed (`c6383eb`, 2026-11-21, `handoff_20261121-px-sweep-close.md`).**",1)
+t=t.replace("Push of the close commit is done only with your go.","Nothing pending to push.",1)

@@ -42,6 +42,7 @@ category: git-workflow
 - A rejected push means a peer pushed first. Fetch, then read the incoming commits and their files (`git log --oneline HEAD..origin/main`, `git diff --name-only HEAD...origin/main`). Do not merge, rebase or push on your own. A merge or rebase makes a new SHA, so state the new tip and ask Ivan for a fresh go that names it.
 - Push by refspec even when the go is given in chat: `git push origin main` is a bare branch push, which this file forbids.
 - Commits after the approved SHA stay local; ask again before pushing them. Never push on a go quoted from a handoff. Never force-push.
+- After a push lands, fix every status line that still says the commit is not pushed (the `PROJECT_STATE.md` state block, the handoff status line). Put the fix in the same docs commit. Read the file back with `grep -n "NOT pushed\|not pushed\|pending" <file>` before you report. A stale "NOT pushed" misleads the next session about what is on origin.
 
 ## Dependency changes
 - `pnpm add <pkg>` from the repo root touches only `package.json` and `pnpm-lock.yaml`. Never run `npm install`. Verify with `grep -n '"<pkg>"' package.json` and `git status --short package.json pnpm-lock.yaml`.
@@ -51,6 +52,8 @@ category: git-workflow
 ## Graph refresh commits
 - Refresh `graphify-out/` incrementally: `graphify --update` over tracked changes, then `graphify cluster-only .`. Run any Python that calls the build functions from a script file, never from a stdin heredoc.
 - Never run a bare `graphify update .` when docs and code both changed. On 2026-11-17 it cut INFERRED edges from 873 to 87.
+- A merge that shrinks the node count is refused, not forced. On 2026-11-21 `build_merge` refused a code-only refresh (11255 to 11140 nodes, net -115: 106 dedup, 8 pruned for deleted files). Do not pass `force=True`. Run `graphify cluster-only .` on the existing graph and say in the handoff that the merge did not land.
+- The vault graph has the same trap. A bare `graphify update <vault>` rebuilds from markdown structure and drops curated semantic edges. Back up `graph.json`, add a new note by `build_merge` of a small extraction JSON into the existing graph, then `graphify cluster-only .`. On 2026-11-21 a bare vault update cut edges from 1579 to 1058 and replaced the god nodes (Data Model, PRD). Restore the dated backup first, and copy back `GRAPH_REPORT.md`, `manifest.json` and `cost.json` with `graph.json`. Never run bare `graphify update` on the vault, even when it reports code-only.
 - Judge health against the previous graph before you call anything a regression.
 - A vault graph extraction run by a subagent can stop on an API error after it has written its output. Before any merge, check that output by script for wikilink or edge targets that name no existing note or node, and correct them. On 2026-11-19 the vault extraction left 4 links to missing notes; they were fixed before the merge and named in the handoff.
 - Stage and commit the tracked outputs by pathspec. Leave out dated backup folders and `.graphify_labels.json.sig`.

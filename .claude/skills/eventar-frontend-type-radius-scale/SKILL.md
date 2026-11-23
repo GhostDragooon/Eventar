@@ -40,4 +40,6 @@ Unit rule (Ivan, 2026-11-21, new frontend code): text sizes in `rem`, layout wid
 
 15. A `--text-*` or radius token that a Tailwind utility reads through `@theme inline` copies its value when the CSS builds. Overriding or editing the `:root` value of that token alone can leave the rendered size unchanged. Keep the token as an indirection (`--text-hero: var(--text-hero-step)`) and change the step variable. Then reload and read `getComputedStyle(el).fontSize` at two widths before showing any frame. This does not approve a new size: rule 5 still applies.
 
+16. A class that `cn()` does not know is evicted when a later class from the same group wins. On 2026-11-21 `text-trim` vanished from the default, link and destructive `Button` whenever a text-colour class followed it, because tailwind-merge read it as a colour. Fix it once in the shared twMerge config in `lib/utils.ts` (register it as its own class group), and add a case in `lib/utils.test.ts`, as rule 13 does for radii. Check the rendered button in the pane, not only the class string.
+
 Audit detail, with its limits: `references/token-audit-2026-11-15.md`.
