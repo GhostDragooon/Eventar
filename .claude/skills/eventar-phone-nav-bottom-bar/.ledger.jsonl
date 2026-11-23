@@ -1,1 +1,0 @@
-{"action": "create", "reason": "Ivan asked for a phone nav layout change: logo stays on top, no top nav pill on phones, nav moves to a compact bottom bar. Nothing existed that owned phone nav placement; the closest skill covers scroll strips, which the phone nav no longer uses.", "evidence": "references/evidence-f4be7bce.md"}

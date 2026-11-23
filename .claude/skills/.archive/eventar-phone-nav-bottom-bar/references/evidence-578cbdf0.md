@@ -1,0 +1,2 @@
+{"labels":["EventsUpcoming","Log in"],"w":[160.5,160.5],"left":9,"right":9,"orgOrLoginLinks":0}
+SendUserFile caption: After removing the Organisers item. 1) Event page, phone 375: Events | Log in, two equal halves.

@@ -1,0 +1,3 @@
+Bash edit to CLAUDE.md in the window: "The phone bottom bar is `Events | Log in`, equal halves, and only the current page is highlighted."
+
+Assistant final message: "Both whole-page frames are sent" was followed by the nav-state check; the window's javascript read shows the bottom-bar labels: "[[\"Organiser? Organiser log in\",337,350,\"center\"],[\"New here? Sign up\",337,350,\"center\"]] vw=1024"
